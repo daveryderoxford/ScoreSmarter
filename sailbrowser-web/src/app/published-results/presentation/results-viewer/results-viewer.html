@@ -44,6 +44,11 @@
                <h3>Race {{race.index}} - {{race.scheduledStart| date:'dd MMM yy'}} {{race.results.length === 0 ? ' - No
                   competitors' : '' }}</h3>
                <div class="race-nav">
+                  @if (auth.isRaceOfficer()) {
+                  <button mat-icon-button (click)="editRace(race.id)" title="Edit race results" class="nav-button">
+                     <mat-icon>edit</mat-icon>
+                  </button>
+                  }
                   <button mat-icon-button (click)="scrollToTop()" title="Scroll to top" class="nav-button">
                      <mat-icon>arrow_upward</mat-icon>
                   </button>

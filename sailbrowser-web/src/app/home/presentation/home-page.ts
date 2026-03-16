@@ -32,7 +32,7 @@ export class HomePage {
 
   title = computed( () => {
     const club = this.clubStore.club();
-    return ' SmartScorer:  ' + (club.shortName ?? club.name);
+    return ' ScoreSmarter:  ' + (club.shortName ?? club.name);
       });
 
   pageTitleEffect = effect(() => 

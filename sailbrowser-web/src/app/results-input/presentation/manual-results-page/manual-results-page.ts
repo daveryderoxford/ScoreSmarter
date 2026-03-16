@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, linkedSignal, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, linkedSignal, signal, untracked, viewChild, input } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -55,6 +55,8 @@ export class ManualResultsPage {
 
   readonly searchInput = viewChild.required<ElementRef<HTMLInputElement>>('searchInput');
 
+  readonly raceId = input<string>();
+
   readonly raceFilterControl = new FormControl<string | null>(null);
 
   readonly resultCodes = RESULT_CODE_DEFINITIONS.filter(c => c.id !== 'NOT FINISHED');
@@ -62,7 +64,7 @@ export class ManualResultsPage {
   // Form for data entry
   readonly form = this.fb.group({
     finishTime: this.fb.control<Date | null>(null, { updateOn: 'blur' }),
-    laps: this.fb.nonNullable.control(1, [Validators.required, Validators.min(1)]),
+    laps: this.fb.nonNullable.control(1, Validators.required),
     resultCode: this.fb.nonNullable.control<ResultCode>('OK'),
   });
 
@@ -161,6 +163,13 @@ export class ManualResultsPage {
   });
 
   constructor() {
+    effect(() => {
+      const id = this.raceId();
+      if (id && this.raceFilterControl.value !== id) {
+        untracked(() => this.raceFilterControl.setValue(id));
+      }
+    });
+
     // When a competitor is selected (via table or autocomplete), populate the form and search control
     const selectedCompetitorEffect = effect(() => {
       const comp = this.selectedCompetitor();

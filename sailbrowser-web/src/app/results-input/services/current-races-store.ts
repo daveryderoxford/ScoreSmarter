@@ -35,6 +35,9 @@ export class CurrentRaces {
     });
   }
 
-  addRaceId = (raceId: string) => this.selectedRaceIds.update(races => [...races, raceId]);
+  addRaceId = (raceId: string) => this.selectedRaceIds.update(races => {
+    if (races.includes(raceId)) return races;
+    return [...races, raceId];
+  });
   removeRaceId = (raceId: string) => this.selectedRaceIds.update(races => races.filter(id => id !== raceId));
 }
