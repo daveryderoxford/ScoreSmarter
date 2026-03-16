@@ -54,7 +54,7 @@ describe('RaceScorer', () => {
     seriesId: 'series',
     scheduledStart: new Date('2023-01-01T10:00:00Z'),
     raceOfDay: 1,
-    type: 'Conventional',
+    type: 'Handicap',
     status: 'Completed',
     isDiscardable: true,
     isAverageLap: false,
@@ -104,7 +104,7 @@ describe('RaceScorer', () => {
   });
 
   it('should score a level rating race with tied manual positions', () => {
-    const levelRace: Race = { ...mockRace, type: 'Conventional' };
+    const levelRace: Race = { ...mockRace, type: 'Handicap' };
     const competitors = [
       createCompetitor('1', null, 'OK', { manualPosition: 2 }), // Tied for 2nd
       createCompetitor('2', null, 'OK', { manualPosition: 1 }), // 1st

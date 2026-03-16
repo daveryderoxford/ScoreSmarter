@@ -71,7 +71,7 @@ export class RaceAdd {
   raceTypes = RACE_TYPES;
 
   detailsForm = this.fb.group({
-    type: ['Conventional', Validators.required],
+    type: ['Handicap', Validators.required],
     isDiscardable: [true, Validators.required],
     isAverageLap: [true, Validators.required],
   });

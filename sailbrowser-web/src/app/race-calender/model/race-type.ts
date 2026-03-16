@@ -1,7 +1,8 @@
 
 export const RACE_TYPES = [
-   'Conventional',
+   'Handicap',
    'Pursuit',
+   'Level Rating',
 ] as const;
 
 export type RaceType = typeof RACE_TYPES[number];

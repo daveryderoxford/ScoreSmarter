@@ -2,11 +2,13 @@
   "name": "sailbrowser-web",
   "version": "0.0.0",
   "scripts": {
+    "dev": "ng serve --port 3000",
     "serve": "ng serve",
     "build": "ng build",
     "stats": "ng build --stats-json --named-chunks && npx @angular-experts/hawkeye dist/sailbrowser/stats.json",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "lint": "ng lint",
     "storybook": "ng run sailbrowser-web:storybook",
     "build-storybook": "ng run sailbrowser-web:build-storybook"
   },

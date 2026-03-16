@@ -14,7 +14,7 @@ function createMockRace(id: string, index: number): Race {
     fleetId: 'fleet1',
     scheduledStart: new Date(),
     raceOfDay: 1,
-    type: 'Conventional',
+    type: 'Handicap',
     isDiscardable: true,
     status: 'Completed',
     isAverageLap: false,

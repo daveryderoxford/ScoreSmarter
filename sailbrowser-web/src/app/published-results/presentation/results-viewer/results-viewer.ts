@@ -4,7 +4,7 @@ import { Component, computed, effect, ElementRef, inject, input, Signal, signal 
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { PublishedResultsReader } from 'app/published-results/services/published-results-store';
 import { LoadingCentered } from 'app/shared/components/loading-centered';
 import { Toolbar } from "app/shared/components/toolbar";
@@ -14,6 +14,8 @@ import { SeasonList } from "../season-list/season-list";
 import { CenteredText } from 'app/shared/components/centered-text';
 import { ClubStore, Fleet } from 'app/club-tenant';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
+import { AuthService } from 'app/auth/auth.service';
+import { CurrentRaces } from 'app/results-input';
 
 @Component({
   selector: 'app-results-viewer',
@@ -29,6 +31,9 @@ export class ResultsViewer {
   protected isPanelCollapsed = signal(false);
   private elementRef = inject(ElementRef);
   protected breakpoints = inject(AppBreakpoints)
+  protected auth = inject(AuthService);
+  private router = inject(Router);
+  private currentRacesStore = inject(CurrentRaces);
 
   id = input<string>('');  // Route parameter
 
@@ -58,6 +63,11 @@ export class ResultsViewer {
   raceClicked(raceId: string) {
     const raceElement = this.elementRef.nativeElement.querySelector(`[data-race-id="${raceId}"]`);
     raceElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  editRace(raceId: string) {
+    this.currentRacesStore.addRaceId(raceId);
+    this.router.navigate(['/results-input/manual'], { queryParams: { raceId } });
   }
 
   scrollToTop() {
