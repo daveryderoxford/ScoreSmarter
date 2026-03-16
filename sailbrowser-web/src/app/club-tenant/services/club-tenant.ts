@@ -18,20 +18,34 @@ export class ClubContextService {
    * This is called before the Angualar router is avaliable
    */
   async initialize(): Promise<void> {
+    console.log('ClubContextService: Initializing...');
 
-    // Resolve ClubId from subdomain
     const host = window.location.hostname;
+    console.log('ClubContextService: Hostname is', host);
 
-    const parts = host.split('.');
+    // If running in AI Studio or localhost, use the 'demo' test database
+    const isTrustedTestDomain = 
+      host.includes('aistudio.google.com') || 
+      host.endsWith('.run.app') || 
+      host.endsWith('.googleusercontent.com') ||
+      host === 'localhost' || 
+      host === '127.0.0.1';
 
-    // Default club to 'test' if no domain is specified during local testing 
-    this._clubId = (parts.length > 1 && parts[0] !== 'localhost') ? 
-      parts[0] : 'test';
-
-    console.log(`ClubTenant: Club domain: ${this._clubId}`);
+    if (isTrustedTestDomain) {
+      console.log('ClubContextService: Trusted test domain detected. Using "demo" club ID.');
+      this._clubId = 'demo';
+    } else {
+      // Resolve ClubId from subdomain for production domains
+      if (host.endsWith('.localhost')) {
+        this._clubId = host.replace('.localhost', '');
+      } else {
+        this._clubId = host.split('.')[0];
+      }
+      console.log('ClubContextService: Resolved club ID from subdomain:', this._clubId);
+    }
 
     // Read club data and verify that the clubid corresponds
-    // If read fails redirect to home site
+    // If read fails redirect to 'all clubs' page TODO
     try {
       const club = await this.clubStore.initialize(this._clubId);
 
@@ -48,7 +62,7 @@ export class ClubContextService {
         originalError: e,
         clubId: this._clubId
       });
-      window.location.href = 'https://scoresmarter.app/clubs';
+      // window.location.href = 'https://sailbrowser.com/clublist.html';
     }
   }
 }

@@ -13,7 +13,7 @@ function createMockRace(raceIndex: number, results: Partial<RaceResult>[]): Publ
     fleetId: 'fleet1',
     scheduledStart: new Date(),
     raceOfDay: 1,
-    type: 'Conventional',
+    type: 'Handicap',
     isDiscardable: true, // This property on the RACE is correct
     results: results.map((res, i) => ({
       seriesEntryId: res.seriesEntryId || `entry${101 + i}`,

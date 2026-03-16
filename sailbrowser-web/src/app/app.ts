@@ -31,6 +31,7 @@ export class App implements OnInit {
   );
 
   ngOnInit() {
+    console.log('App component: Initializing...');
     this.sidebarService.setSidenav(this.sidenav());
     this.cookieConsent();
   }

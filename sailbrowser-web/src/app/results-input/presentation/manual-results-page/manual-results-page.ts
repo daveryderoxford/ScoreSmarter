@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, linkedSignal, signal, untracked, viewChild, input } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,20 +8,22 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
+import { MatSelectChange, MatSelectModule } from '@angular/material/select';
 import { ScoringEngine } from 'app/published-results';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces, RaceCompetitor, RaceCompetitorStore } from 'app/results-input';
 import { RESULT_CODE_DEFINITIONS, ResultCode, getResultCodeDefinition } from 'app/scoring/model/result-code';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { normaliseString } from 'app/shared/utils/string-utils';
-import { firstValueFrom, map, startWith } from 'rxjs';
+import { firstValueFrom, map, of, startWith, switchMap, Observable } from 'rxjs';
 import { ManualResultsTable } from '../manual-results-table';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-time-dialog';
 import { RaceTimeInput } from '../race-time-input';
+import { ResultCodeSelector } from '../result-code-selector';
 import { requiresTime } from 'app/scoring/model/result-code-scoring';
 import { manualRaceTableSort, ManualResultsService } from '../../services/manual-results.service';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
+import { MoreRacesDialog } from '../more-races-dialog';
 
 @Component({
   selector: 'app-manual-results-page',
@@ -41,6 +43,7 @@ import { DurationPipe } from 'app/shared/pipes/duration.pipe';
     RaceTimeInput,
     ManualResultsTable,
     DurationPipe,
+    ResultCodeSelector,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -61,21 +64,45 @@ export class ManualResultsPage {
 
   readonly resultCodes = RESULT_CODE_DEFINITIONS.filter(c => c.id !== 'NOT FINISHED');
 
-  // Form for data entry
-  readonly form = this.fb.group({
+  // Forms for data entry
+  readonly handicapForm = this.fb.group({
     finishTime: this.fb.control<Date | null>(null, { updateOn: 'blur' }),
     laps: this.fb.nonNullable.control(1, Validators.required),
     resultCode: this.fb.nonNullable.control<ResultCode>('OK'),
   });
 
-  readonly resultCodeValue = toSignal(this.form.controls.resultCode.valueChanges, { initialValue: 'OK' });
+  readonly pursuitForm = this.fb.group({
+    position: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
+    resultCode: this.fb.nonNullable.control<ResultCode>('OK'),
+  });
+
+  readonly levelRatingForm = this.fb.group({
+    position: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
+    finishTime: this.fb.control<Date | null>(null, { updateOn: 'blur' }),
+    resultCode: this.fb.nonNullable.control<ResultCode>('OK'),
+  });
+
+  readonly activeForm = computed(() => {
+    const type = this.selectedRace()?.type;
+    if (type === 'Pursuit') return this.pursuitForm;
+    if (type === 'Level Rating') return this.levelRatingForm;
+    return this.handicapForm;
+  });
+
+  readonly resultCodeValue = toSignal(
+    toObservable(this.activeForm).pipe(
+      switchMap(form => form.controls.resultCode.valueChanges.pipe(startWith(form.controls.resultCode.value as ResultCode)))
+    ), { initialValue: 'OK' as ResultCode }
+  );
+  // Note: We might need to sync resultCode across forms if we want to keep it consistent when switching
+  // but usually we only switch race once.
   readonly resultCodeDescription = computed(() => getResultCodeDefinition(this.resultCodeValue())?.description);
   timeInputRequired = computed(() => {
     const code = this.resultCodeValue();
     return requiresTime(code) || code === 'NOT FINISHED';
   });
 
-  readonly selectedRaceId = toSignal(this.raceFilterControl.valueChanges);
+  readonly selectedRaceId = toSignal(this.raceFilterControl.valueChanges.pipe(startWith(this.raceFilterControl.value)), { initialValue: this.raceFilterControl.value });
 
   readonly selectedRace = computed(() =>
     this.currentRacesStore.selectedRaces().find(r => this.selectedRaceId() == r.id));
@@ -107,8 +134,23 @@ export class ManualResultsPage {
   });
 
   // Feedback signals for the RO
-  readonly enteredFinishTime = toSignal(this.form.controls.finishTime.valueChanges, { initialValue: null });
-  readonly enteredLapsValue = toSignal(this.form.controls.laps.valueChanges, { initialValue: 1 });
+  readonly enteredFinishTime = toSignal(
+    toObservable(this.activeForm).pipe(
+      switchMap(form => {
+        const ctrl = (form.controls as any).finishTime;
+        return (ctrl ? ctrl.valueChanges.pipe(startWith(ctrl.value)) : of(null)) as Observable<Date | null>;
+      })
+    ), { initialValue: null }
+  );
+
+  readonly enteredLapsValue = toSignal(
+    toObservable(this.activeForm).pipe(
+      switchMap(form => {
+        const ctrl = (form.controls as any).laps;
+        return (ctrl ? ctrl.valueChanges.pipe(startWith(ctrl.value)) : of(1)) as Observable<number>;
+      })
+    ), { initialValue: 1 }
+  );
 
   readonly calculatedStats = computed(() => {
     const stats = this.manualResultsService.calculateStats(
@@ -162,6 +204,25 @@ export class ManualResultsPage {
     return groups;
   });
 
+  onRaceSelectionChange(event: MatSelectChange) {
+    if (event.value === 'MORE') {
+      this.openMoreRacesDialog();
+      this.raceFilterControl.setValue(null);
+    }
+  }
+
+  async openMoreRacesDialog() {
+    const dialogRef = this.dialog.open(MoreRacesDialog, {
+      width: '400px',
+      maxHeight: '80vh'
+    });
+
+    const result = await firstValueFrom(dialogRef.afterClosed());
+    if (result) {
+      this.raceFilterControl.setValue(result);
+    }
+  }
+
   constructor() {
     effect(() => {
       const id = this.raceId();
@@ -184,18 +245,19 @@ export class ManualResultsPage {
         if (comp.resultCode === 'NOT FINISHED') {
           this.resetFormDefaults();
         } else {
-          this.form.reset({
+          this.activeForm().reset({
             finishTime: comp.manualFinishTime,
             laps: comp.manualLaps || 1,
-            resultCode: comp.resultCode
-          });
+            resultCode: comp.resultCode,
+            position: comp.manualPosition
+          } as any);
         }
       });
     });
 
     const startTimePromptEffect = effect(() => {
       const race = this.selectedRace();
-      if (race) {
+      if (race && race.type !== 'Level Rating' && race.type !== 'Pursuit') {
         untracked(() => {
           if (!race.actualStart) {
             this.setStartTime(race);
@@ -205,7 +267,10 @@ export class ManualResultsPage {
     });
 
     const timeInputRequiredEffect = effect(() => {
-      const control = this.form.controls.finishTime;
+      const form = this.activeForm();
+      const control = (form.controls as any).finishTime;
+      if (!control) return;
+
       if (this.timeInputRequired()) {
         control.setValidators(Validators.required);
       } else {
@@ -218,11 +283,12 @@ export class ManualResultsPage {
   }
 
   resetFormDefaults() {
-    this.form.reset({
+    this.activeForm().reset({
       finishTime: null,
       laps: this.lastEnteredLaps(),
-      resultCode: 'OK'
-    });
+      resultCode: 'OK',
+      position: null
+    } as any);
   }
 
   displayFn(comp: RaceCompetitor): string {
@@ -252,9 +318,11 @@ export class ManualResultsPage {
   }
 
   async save() {
-    if (this.form.invalid) return;
+    const form = this.activeForm();
+    if (form.invalid) return;
 
-    const { finishTime, laps, resultCode } = this.form.getRawValue();
+    const values = form.getRawValue() as any;
+    const { finishTime, laps, resultCode, position } = values;
     const competitor = this.selectedCompetitor();
 
     if (!competitor) return;
@@ -263,16 +331,15 @@ export class ManualResultsPage {
 
     // Start time must have been set for the competitor prior 
     // to saving the result. 
-    if (!race.actualStart) {
+    // Pursuit and Level Rating races don't require start time for input
+    if (race.type === 'Handicap' && !race.actualStart) {
       console.error('ManualResultsRage: Attempting to save result before start time set');
       await this.setStartTime(race!);
       return;
     }
 
-    // If Result is OK, a finish time must be provided. 
-    // If not OK then it is valid not to have a finish time.
-    // This should be handled by form validaity
-    if (requiresTime(resultCode) && !finishTime) {
+    // If Result is OK, a finish time must be provided for Handicap races.
+    if (race.type === 'Handicap' && requiresTime(resultCode) && !finishTime) {
       console.error('ManualResultsRage: Attempting to save competitor with result code OK and no finish time');
       return;
     }
@@ -281,6 +348,7 @@ export class ManualResultsPage {
       finishTime: finishTime,
       laps: laps,
       resultCode: resultCode,
+      position: position
     });
 
     // Remember laps for next entry

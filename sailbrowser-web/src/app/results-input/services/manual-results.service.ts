@@ -13,6 +13,7 @@ export interface ResultInput {
   finishTime: Date | null;
   laps: number;
   resultCode: ResultCode;
+  position?: number | null;
 }
 
 export interface CalculatedStats {
@@ -77,12 +78,13 @@ export class ManualResultsService {
    * It calculates derived values and updates the competitor in the store.
    */
   async recordResult(competitor: RaceCompetitor, race: Race, input: ResultInput): Promise<void> {
-    const { finishTime, laps, resultCode } = input;
+    const { finishTime, laps, resultCode, position } = input;
 
     const update: Partial<RaceCompetitor> = {
       startTime: race!.actualStart,
       manualLaps: laps || 1,
-      resultCode: resultCode
+      resultCode: resultCode,
+      manualPosition: position ?? undefined
     };
     if (finishTime) {
       update.manualFinishTime = finishTime;

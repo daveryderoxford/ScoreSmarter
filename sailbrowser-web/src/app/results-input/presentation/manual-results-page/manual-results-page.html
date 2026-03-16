@@ -1,16 +1,20 @@
 <app-toolbar title="Results Entry">
 
+  <div center class="race-selector-toolbar">
+    <mat-form-field appearance="outline" class="race-selector dense-form-field" subscriptSizing="dynamic">
+      <mat-select [formControl]="raceFilterControl" placeholder="Select Race" (selectionChange)="onRaceSelectionChange($event)">
+        @for (race of currentRacesStore.selectedRaces(); track race.id) {
+        <mat-option [value]="race.id">{{ race.seriesName }} - {{race.scheduledStart | date: "dd/MM/yy"}} Race {{
+          race.raceOfDay }}</mat-option>
+        }
+        <mat-option value="MORE">...more races</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
   <button matButton (click)="publish()">  
     Publish race
   </button>
-  <mat-form-field appearance="outline" class="race-selector dense-form-field" subscriptSizing="dynamic">
-    <mat-select [formControl]="raceFilterControl" placeholder="Select Race">
-      @for (race of currentRacesStore.selectedRaces(); track race.id) {
-      <mat-option [value]="race.id">{{ race.seriesName }} - {{race.scheduledStart | date: "dd/mm/yy"}} Race {{
-        race.raceOfDay }}</mat-option>
-      }
-    </mat-select>
-  </mat-form-field>
 
   @if (selectedRace()) {
     <button matButton="outlined" (click)="setStartTime(selectedRace()!)">Set Start Time</button>
@@ -18,6 +22,7 @@
 
 </app-toolbar>
 
+@if (selectedRace()) {
 <div class="container">
   <div class="table-section">
     <app-manual-results-table [competitors]="sortedCompetitors()"
@@ -47,7 +52,7 @@
       </div>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="save()">
+    <form [formGroup]="activeForm()" (ngSubmit)="save()">
 
       <mat-form-field appearance="outline">
         <mat-label>Competitor</mat-label>
@@ -71,36 +76,59 @@
         }
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Finish Time</mat-label>
-        <app-race-time-input formControlName="finishTime" [mode]="timeInputContext().mode"
-          [baseTime]="timeInputContext().baseTime">
-        </app-race-time-input>
-        @if (form.controls.finishTime.hasError('timeGreaterThan')) {
-          <mat-error>Finish time must be after start time</mat-error>
-        }
-        @if (form.controls.finishTime.hasError('positiveDuration')) {
-          <mat-error>Elapsed time must be positive</mat-error>
-        }
-        @if (form.controls.finishTime.hasError('required')) {
-          <mat-error>Finish time is required</mat-error>
-        }
-      </mat-form-field>
+      @switch (selectedRace()?.type) {
+        @case ('Handicap') {
+          <mat-form-field appearance="outline">
+            <mat-label>Finish Time</mat-label>
+            <app-race-time-input formControlName="finishTime" [mode]="timeInputContext().mode"
+              [baseTime]="timeInputContext().baseTime">
+            </app-race-time-input>
+            @if (handicapForm.controls.finishTime.hasError('timeGreaterThan')) {
+              <mat-error>Finish time must be after start time</mat-error>
+            }
+            @if (handicapForm.controls.finishTime.hasError('positiveDuration')) {
+              <mat-error>Elapsed time must be positive</mat-error>
+            }
+            @if (handicapForm.controls.finishTime.hasError('required')) {
+              <mat-error>Finish time is required</mat-error>
+            }
+          </mat-form-field>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Laps</mat-label>
-        <input matInput type="number" formControlName="laps">
-      </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Laps</mat-label>
+            <input matInput type="number" formControlName="laps">
+          </mat-form-field>
+        }
 
-      <mat-form-field appearance="outline">
-        <mat-label>Result Code</mat-label>
-        <mat-select formControlName="resultCode">
-          @for (code of resultCodes; track code.id) {
-            <mat-option [value]="code.id">{{ code.id }}</mat-option>
-          }
-        </mat-select>
-        <mat-hint>{{ resultCodeDescription() }}</mat-hint>
-      </mat-form-field>
+        @case ('Pursuit') {
+          <mat-form-field appearance="outline">
+            <mat-label>Position</mat-label>
+            <input matInput type="number" formControlName="position">
+            @if (pursuitForm.controls.position.hasError('required')) {
+              <mat-error>Position is required</mat-error>
+            }
+          </mat-form-field>
+        }
+
+        @case ('Level Rating') {
+          <mat-form-field appearance="outline">
+            <mat-label>Position</mat-label>
+            <input matInput type="number" formControlName="position">
+            @if (levelRatingForm.controls.position.hasError('required')) {
+              <mat-error>Position is required</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Finish Time (Optional)</mat-label>
+            <app-race-time-input formControlName="finishTime" [mode]="timeInputContext().mode"
+              [baseTime]="timeInputContext().baseTime">
+            </app-race-time-input>
+          </mat-form-field>
+        }
+      }
+
+      <app-result-code-selector formControlName="resultCode"></app-result-code-selector>
 
       <div class="actions">
         <button mat-button type="button" (click)="this.selectedCompetitor.set(undefined)">Clear</button>
@@ -109,3 +137,4 @@
     </form>
   </div>
 </div>
+}
