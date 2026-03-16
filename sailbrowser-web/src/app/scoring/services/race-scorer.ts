@@ -69,7 +69,7 @@ export function calculateRanks(results: RaceResult[]) {
 /**
  * Determines the property to sort finishers 
  * and validates that all finishers have the required data.
- * Throws SailbrowserError if complet data to rank all competitors is not avaliable
+ * Throws ScoreSmarterError if complet data to rank all competitors is not avaliable
  * Algorithm is: 
  * 1. If Pursuit -> position.
  * 2. If Level Rating -> if manualPositions -> position, else elapsedTime.

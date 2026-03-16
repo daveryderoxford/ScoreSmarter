@@ -45,7 +45,7 @@ export class ClubContextService {
     }
 
     // Read club data and verify that the clubid corresponds
-    // If read fails redirect to 'all clubs' page TODO
+    // If read fails redirect to home site
     try {
       const club = await this.clubStore.initialize(this._clubId);
 
@@ -62,7 +62,7 @@ export class ClubContextService {
         originalError: e,
         clubId: this._clubId
       });
-      // window.location.href = 'https://sailbrowser.com/clublist.html';
+      window.location.href = 'https://scoresmarter.app/clubs';
     }
   }
 }

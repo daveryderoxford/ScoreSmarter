@@ -81,13 +81,23 @@ export class ManualResultsService {
     const { finishTime, laps, resultCode, position } = input;
 
     const update: Partial<RaceCompetitor> = {
-      startTime: race!.actualStart,
-      manualLaps: laps || 1,
       resultCode: resultCode,
-      manualPosition: position ?? undefined
     };
+
+    if (race.actualStart) {
+      update.startTime = race.actualStart;
+    }
+
     if (finishTime) {
       update.manualFinishTime = finishTime;
+    }
+
+    if (laps) {
+      update.manualLaps = laps;
+    }
+
+    if (position) {
+      update.manualPosition = position;
     }
 
     // Set a dirty flag on the race to indicate that its results have changed

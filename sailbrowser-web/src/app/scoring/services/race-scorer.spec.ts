@@ -2,7 +2,7 @@ import { RaceCompetitor, SeriesEntry } from 'app/results-input';
 import { ResultCode } from '../model/result-code';
 import { Race } from 'app/race-calender';
 import { scoreRace } from './race-scorer';
-import { SailbrowserError } from 'app/shared/utils/sailbrowser-error';
+import { ScoreSmarterError } from '../../shared/utils/scoresmarter-error';
 
 /** Helper to create RaceCompetitor objects for testing */
 function createCompetitor(
@@ -305,7 +305,7 @@ describe('RaceScorer', () => {
       const expectedError = 'Inconsistent ordering data: Manual positions are used, but finisher with sail number 102 is missing a position.';
 
       expect(() => scoreRace(mockRace, competitors, seriesEntries, 'Level Rating', 'short', 3))
-        .toThrow(new SailbrowserError(expectedError));
+        .toThrow(new ScoreSmarterError(expectedError));
     });
 
     it('should throw error for level rating race with inconsistent finish times', () => {
@@ -319,7 +319,7 @@ describe('RaceScorer', () => {
       const expectedError = 'Inconsistent ordering data: Finish times are used, but finisher with sail number 102 is missing a finish time.';
 
       expect(() => scoreRace(mockRace, competitors, seriesEntries, 'Level Rating', 'short', 3))
-        .toThrow(new SailbrowserError(expectedError));
+        .toThrow(new ScoreSmarterError(expectedError));
     });
 
     it('should throw error for pursuit race with inconsistent manual positions', () => {
@@ -335,7 +335,7 @@ describe('RaceScorer', () => {
       const expectedError = 'Inconsistent ordering data: Pursuit races require a manual position, but finisher with sail number 102 is missing a position.';
 
       expect(() => scoreRace(pursuitRace, competitors, seriesEntries, 'Level Rating', 'short', 4))
-        .toThrow(new SailbrowserError(expectedError));
+        .toThrow(new ScoreSmarterError(expectedError));
     });
 
     it('should assign correct ranks for tied points', () => {
