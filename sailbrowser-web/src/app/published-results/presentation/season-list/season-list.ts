@@ -10,7 +10,7 @@ import { RouterLink } from '@angular/router';
 import { PublishedSeason } from 'app/published-results';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { normaliseString } from 'app/shared/utils/string-utils';
-import { endOfDay, isWithinInterval } from 'date-fns';
+import { endOfDay, subDays } from 'date-fns';
 
 /**
  * A dumb component to display a list of published race series, grouped by season.
@@ -60,15 +60,28 @@ export class SeasonList {
   /** Signal to hold the current filter text for fleets. */
   protected fleetFilter = signal('');
 
-  private allSeries = computed(() => this.seasons().flatMap(season => season.series));
+  /** All series */
+  private allSeries = computed(() =>
+    this.seasons().flatMap(s => s.series)
+  );
 
-  inProgressSeries = computed(() => {
-    const now = new Date();
-    return this.allSeries().filter(series => {
-      return isWithinInterval(now, {
-        start: new Date(series.startDate),
-        end: endOfDay(new Date(series.endDate)),
-      });
+  /** Series with a race in the last week */
+  latestSeries = computed(() => {
+    const series = this.allSeries();
+    if (series.length === 0) return [];
+
+    const lastRaceDate = series.reduce((max, s) =>
+      s.endDate > max ? s.endDate : max,
+      series[0].endDate
+    );
+
+    const cutoff = subDays(lastRaceDate, 7).getTime();
+    const end = lastRaceDate.getTime();
+
+    // 2. Filter for everything in that 7-day window
+    return series.filter(s => {
+      const time = s.endDate.getTime();
+      return time >= cutoff && time <= end;
     });
   });
 
@@ -88,12 +101,12 @@ export class SeasonList {
     }));
   });
 
-  // Expansion data. In progress series followed by seasons
-  protected expansionPanels = computed( () => {
+  // Expansion data. 
+  protected expansionPanels = computed(() => {
     return [
-      {title: 'Current Series', series: this.inProgressSeries()},
-      ...this.filteredSeasons().map( s => ({title: s.id, series: s.series}))
-    ]
+      { title: 'Latest results', series: this.latestSeries() },
+      ...this.filteredSeasons().map(s => ({ title: s.id, series: s.series }))
+    ];
   });
 
   /**
