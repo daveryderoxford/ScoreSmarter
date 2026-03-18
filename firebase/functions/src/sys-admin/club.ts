@@ -29,10 +29,28 @@ exports.createNewTenant = onCall(async (request) => {
       });
 
       // 3. Set Custom Claims on the User's Auth Token
-      // We add 'tenantId' and 'role' so Security Rules can see them instantly
+      // We use the new multi-tenant structure
+      const user = await auth.getUser(uid);
+      const currentClaims = user.customClaims || {};
+      const clubs = currentClaims.clubs || {};
+      clubs[tenantId] = "club-admin";
+
       await auth.setCustomUserClaims(uid, {
-         tenantId: tenantId,
-         role: "owner"
+         ...currentClaims,
+         clubs
+      });
+
+      // Also create the user record in the club's users collection
+      const userDoc = await db.doc(`users/${uid}`).get();
+      const userData = userDoc.exists ? userDoc.data() : {};
+
+      await db.doc(`clubs/${tenantId}/users/${uid}`).set({
+         uid: uid,
+         email: userData?.email || request.auth.token.email || "",
+         firstname: userData?.firstname || "",
+         surname: userData?.surname || "",
+         role: "club-admin",
+         joinedAt: new Date().toISOString()
       });
 
       return { success: true, tenantId: tenantId };

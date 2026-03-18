@@ -6,4 +6,5 @@ export interface UserData {
   firstname: string;
   surname: string;
   boats: Boat[];
+  role?: string;
 }

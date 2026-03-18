@@ -1,0 +1,233 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: clubs
+    // Document ID: {clubId}
+    // Fields: 
+    //   - name: string (required)
+    //   - fleets: list of strings
+    //   - classes: list of strings
+    //   - seasons: list of strings
+    //
+    // Collection: clubs/{clubId}/boats
+    // Document ID: {boatId}
+    // Fields: 
+    //   - name: string (required)
+    //   - ownerUid: string (required) - UID of the boat owner
+    //   - class: string
+    //   - handicap: number
+    //
+    // Collection: clubs/{clubId}/race-results
+    // Document ID: {resultId}
+    // Fields: 
+    //   - raceId: string (required)
+    //   - boatId: string (required)
+    //   - position: int
+    //   - points: number
+    //
+    // Collection: clubs/{clubId}/series-entries
+    // Document ID: {entryId}
+    // Fields: 
+    //   - seriesId: string (required)
+    //   - boatId: string (required)
+    //
+    // Collection: clubs/{clubId}/calendar
+    // Document ID: {raceId}
+    // Fields: 
+    //   - name: string (required)
+    //   - date: timestamp (required)
+    //   - seriesId: string
+    //
+    // Collection: clubs/{clubId}/series
+    // Document ID: {seriesId}
+    // Fields: 
+    //   - name: string (required)
+    //   - seasonId: string
+    //
+    // Collection: users
+    // Document ID: {uid}
+    // Fields: 
+    //   - email: string (required)
+    //   - firstname: string (required)
+    //   - surname: string (required)
+    //   - role: string (sys-admin, user)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isSysAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.sysAdmin == true || 
+         (request.auth.token.email == "DaveRyderOxford@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function getClubRole(clubId) {
+      return request.auth.token.clubs[clubId];
+    }
+
+    function isClubAdmin(clubId) {
+      return isSysAdmin() || (isAuthenticated() && getClubRole(clubId) == 'club-admin');
+    }
+
+    function isRO(clubId) {
+      return isClubAdmin(clubId) || (isAuthenticated() && getClubRole(clubId) == 'race-officer');
+    }
+
+    function isAuthorisedUser(clubId) {
+      return isRO(clubId) || (isAuthenticated() && getClubRole(clubId) != null);
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(['email', 'firstname', 'surname']) &&
+             hasOnlyAllowedFields(['email', 'firstname', 'surname', 'role']) &&
+             data.email is string && data.email.size() < 100 &&
+             data.firstname is string && data.firstname.size() < 50 &&
+             data.surname is string && data.surname.size() < 50 &&
+             (!('role' in data) || data.role in ['sys-admin', 'user']);
+    }
+
+    function isValidBoat(data) {
+      return hasRequiredFields(['name', 'ownerUid']) &&
+             hasOnlyAllowedFields(['name', 'ownerUid', 'class', 'handicap']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.ownerUid is string &&
+             (!('class' in data) || (data.class is string && data.class.size() < 50)) &&
+             (!('handicap' in data) || data.handicap is number);
+    }
+
+    function isValidRaceResult(data) {
+      return hasRequiredFields(['raceId', 'boatId']) &&
+             hasOnlyAllowedFields(['raceId', 'boatId', 'position', 'points']) &&
+             data.raceId is string && data.raceId.size() > 0 && data.raceId.size() < 100 &&
+             data.boatId is string && data.boatId.size() > 0 && data.boatId.size() < 100 &&
+             (!('position' in data) || data.position is int) &&
+             (!('points' in data) || data.points is number);
+    }
+
+    function isValidSeriesEntry(data) {
+      return hasRequiredFields(['seriesId', 'boatId']) &&
+             hasOnlyAllowedFields(['seriesId', 'boatId']) &&
+             data.seriesId is string && data.seriesId.size() > 0 && data.seriesId.size() < 100 &&
+             data.boatId is string && data.boatId.size() > 0 && data.boatId.size() < 100;
+    }
+
+    function isValidRace(data) {
+      return hasRequiredFields(['name', 'date']) &&
+             hasOnlyAllowedFields(['name', 'date', 'seriesId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.date is timestamp &&
+             (!('seriesId' in data) || (data.seriesId is string && data.seriesId.size() < 100));
+    }
+
+    function isValidSeries(data) {
+      return hasRequiredFields(['name']) &&
+             hasOnlyAllowedFields(['name', 'seasonId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             (!('seasonId' in data) || (data.seasonId is string && data.seasonId.size() < 100));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Clubs
+    match /clubs/{clubId} {
+      allow read: if true; // All users can read club info
+      allow write: if isClubAdmin(clubId);
+      
+      // Boats
+      match /boats/{boatId} {
+        allow read: if true; // All users can see boats
+        allow create, update: if isAuthorisedUser(clubId) && isValidBoat(request.resource.data);
+        allow delete: if isRO(clubId);
+      }
+
+      // Race Data
+      match /race-results/{resultId} {
+        allow read: if true; // All users can see results
+        allow create, update: if isAuthorisedUser(clubId) && isValidRaceResult(request.resource.data);
+        allow delete: if isRO(clubId);
+      }
+
+      match /series-entries/{entryId} {
+        allow read: if true; // All users can see entries
+        allow create, update: if isAuthorisedUser(clubId) && isValidSeriesEntry(request.resource.data);
+        allow delete: if isRO(clubId);
+      }
+
+      // Race Calendar
+      match /calendar/{raceId} {
+        allow read: if true; // All users can see calendar
+        allow create, update: if isRO(clubId) && isValidRace(request.resource.data);
+        allow delete: if isClubAdmin(clubId);
+      }
+
+      match /series/{seriesId} {
+        allow read: if true; // All users can see series
+        allow create, update: if isRO(clubId) && isValidSeries(request.resource.data);
+        allow delete: if isClubAdmin(clubId);
+      }
+
+      // Results (Published)
+      match /published-seasons/{seasonId} {
+        allow read: if true;
+        allow write: if isRO(clubId);
+      }
+      match /published-races/{raceId} {
+        allow read: if true;
+        allow write: if isRO(clubId);
+      }
+      match /published-series/{seriesId} {
+        allow read: if true;
+        allow write: if isRO(clubId);
+      }
+    }
+
+    // User Management
+    match /users/{userId} {
+      // Strictly limit read access to the owner to protect PII
+      allow read: if isOwner(userId) || isSysAdmin();
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isSysAdmin());
+      allow create: if isSysAdmin() && isValidUser(request.resource.data);
+      allow delete: if isSysAdmin();
+    }
+
+    // System Data
+    match /system/public/{id} {
+      allow read: if true;
+      allow write: if isSysAdmin();
+    }
+
+    match /system/private/{id} {
+      allow read, write: if isSysAdmin();
+    }
+  }
+}

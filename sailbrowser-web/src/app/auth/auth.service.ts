@@ -1,13 +1,15 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Auth, authState, signOut } from '@angular/fire/auth';
-import { map } from 'rxjs';
+import { Auth, authState, signOut, idToken } from '@angular/fire/auth';
+import { map, of, switchMap, from } from 'rxjs';
+import { ClubStore } from 'app/club-tenant';
 
 @Injectable({
    providedIn: 'root'
 })
 export class AuthService {
    auth = inject(Auth);
+   private clubStore = inject(ClubStore);
 
    private user$ = authState(this.auth).pipe(
       map(val => val === null ? undefined : val)
@@ -15,23 +17,31 @@ export class AuthService {
    
    user = toSignal(this.user$);
 
+   private idTokenResult$ = authState(this.auth).pipe(
+      switchMap(user => user ? from(user.getIdTokenResult()) : of(undefined))
+   );
+   idTokenResult = toSignal(this.idTokenResult$);
+
    loggedIn = computed<boolean>( () => this.user() !== undefined );
 
    isSysAdmin = computed<boolean>(() => {
-      return this.user() ? this.user()!.uid === 'Uw4HKGlcHla1Fm8Zw8B7DBVyl1j1' : false;
+      return this.idTokenResult()?.claims['sysAdmin'] === true;
    });
 
-   // TODO could implement with secure firestore collection or custom claim at some point
    isClubAdmin = computed <boolean>( () => {
-      return this.user() ? 
-        this.user()!.uid === 'XXX' || this.isSysAdmin(): 
-        false;
+      if (this.isSysAdmin()) return true;
+      const clubId = this.clubStore.clubId();
+      if (!clubId) return false;
+      const clubs = this.idTokenResult()?.claims['clubs'] as Record<string, string> | undefined;
+      return clubs?.[clubId] === 'club-admin';
    });
 
    isRaceOfficer = computed<boolean>(() => {
-      return this.user() ? 
-      this.user()!.uid === 'YYY' || this.isClubAdmin(): 
-      false;
+      if (this.isClubAdmin()) return true;
+      const clubId = this.clubStore.clubId();
+      if (!clubId) return false;
+      const clubs = this.idTokenResult()?.claims['clubs'] as Record<string, string> | undefined;
+      return clubs?.[clubId] === 'race-officer';
    });
    
    async signOut(): Promise<void> {
