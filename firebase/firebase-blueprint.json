@@ -1,0 +1,152 @@
+{
+  "entities": {
+    "Club": {
+      "title": "Club",
+      "description": "Core club configuration and metadata.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the club." },
+        "fleets": { "type": "array", "items": { "type": "string" }, "description": "List of fleets in the club." },
+        "classes": { "type": "array", "items": { "type": "string" }, "description": "List of boat classes supported." },
+        "seasons": { "type": "array", "items": { "type": "string" }, "description": "List of season IDs." }
+      },
+      "required": ["name"]
+    },
+    "Boat": {
+      "title": "Boat",
+      "description": "A boat registered in a club.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerUid": { "type": "string" },
+        "class": { "type": "string" },
+        "handicap": { "type": "number" }
+      },
+      "required": ["name", "ownerUid"]
+    },
+    "Race": {
+      "title": "Race",
+      "description": "A single race event.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "seriesId": { "type": "string" }
+      },
+      "required": ["name", "date"]
+    },
+    "Series": {
+      "title": "Series",
+      "description": "A series of races.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "seasonId": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Season": {
+      "title": "Season",
+      "description": "A sailing season.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "year": { "type": "integer" }
+      },
+      "required": ["name", "year"]
+    },
+    "RaceResult": {
+      "title": "Race Result",
+      "description": "Results for a specific boat in a race.",
+      "type": "object",
+      "properties": {
+        "raceId": { "type": "string" },
+        "boatId": { "type": "string" },
+        "position": { "type": "integer" },
+        "points": { "type": "number" }
+      },
+      "required": ["raceId", "boatId"]
+    },
+    "SeriesEntry": {
+      "title": "Series Entry",
+      "description": "A boat's entry into a series.",
+      "type": "object",
+      "properties": {
+        "seriesId": { "type": "string" },
+        "boatId": { "type": "string" }
+      },
+      "required": ["seriesId", "boatId"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile and global role.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "firstname": { "type": "string" },
+        "surname": { "type": "string" },
+        "role": { "type": "string", "enum": ["sys-admin", "user"] }
+      },
+      "required": ["email", "firstname", "surname"]
+    },
+    "SystemData": {
+      "title": "System Data",
+      "description": "Global system configuration.",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/clubs/{clubId}": {
+      "schema": "Club",
+      "description": "Club settings."
+    },
+    "/clubs/{clubId}/boats/{boatId}": {
+      "schema": "Boat",
+      "description": "Boats in the club."
+    },
+    "/clubs/{clubId}/race-results/{resultId}": {
+      "schema": "RaceResult",
+      "description": "Race results."
+    },
+    "/clubs/{clubId}/series-entries/{entryId}": {
+      "schema": "SeriesEntry",
+      "description": "Series entries."
+    },
+    "/clubs/{clubId}/calendar/{raceId}": {
+      "schema": "Race",
+      "description": "Race calendar."
+    },
+    "/clubs/{clubId}/series/{seriesId}": {
+      "schema": "Series",
+      "description": "Series definitions."
+    },
+    "/clubs/{clubId}/published-seasons/{seasonId}": {
+      "schema": "Season",
+      "description": "Published season results."
+    },
+    "/clubs/{clubId}/published-races/{raceId}": {
+      "schema": "Race",
+      "description": "Published race results."
+    },
+    "/clubs/{clubId}/published-series/{seriesId}": {
+      "schema": "Series",
+      "description": "Published series results."
+    },
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "Global user profiles."
+    },
+    "/system/public/{id}": {
+      "schema": "SystemData",
+      "description": "Public system data."
+    },
+    "/system/private/{id}": {
+      "schema": "SystemData",
+      "description": "Private system data."
+    }
+  }
+}

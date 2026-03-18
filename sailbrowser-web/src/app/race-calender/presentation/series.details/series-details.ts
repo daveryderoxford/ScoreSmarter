@@ -107,8 +107,6 @@ export class SeriesDetails {
          } finally {
             this.busy.set(false);
          }
-
-         this.router.navigate(['/race-calender', 'series']);
       }
    }
 

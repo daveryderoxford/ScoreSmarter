@@ -4,7 +4,7 @@ import { ClubStore } from './club-store';
 @Injectable({ 
   providedIn: 'root' 
 })
-export class ClubContextService {
+export class ClubTenant {
   private _clubId: string = '';
 
   get clubId() { return this._clubId; }
@@ -23,7 +23,7 @@ export class ClubContextService {
     const host = window.location.hostname;
     console.log('ClubContextService: Hostname is', host);
 
-    // If running in AI Studio or localhost, use the 'demo' test database
+    // If running in AI Studio or localhost, use the 'test' database
     const isTrustedTestDomain = 
       host.includes('aistudio.google.com') || 
       host.endsWith('.run.app') || 
@@ -32,15 +32,12 @@ export class ClubContextService {
       host === '127.0.0.1';
 
     if (isTrustedTestDomain) {
-      console.log('ClubContextService: Trusted test domain detected. Using "demo" club ID.');
-      this._clubId = 'demo';
+      console.log('ClubContextService: Trusted test domain detected. Using "test" club ID.');
+      this._clubId = 'test';
     } else {
       // Resolve ClubId from subdomain for production domains
-      if (host.endsWith('.localhost')) {
-        this._clubId = host.replace('.localhost', '');
-      } else {
-        this._clubId = host.split('.')[0];
-      }
+      this._clubId = host.split('.')[0];
+    
       console.log('ClubContextService: Resolved club ID from subdomain:', this._clubId);
     }
 

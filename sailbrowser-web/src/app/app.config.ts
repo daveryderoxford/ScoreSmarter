@@ -1,23 +1,22 @@
 import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideZonelessChangeDetection } from '@angular/core';
-import { getApp, initializeApp, provideFirebaseApp } from '@angular/fire/app';
-import { initializeAppCheck, provideAppCheck, ReCaptchaEnterpriseProvider } from '@angular/fire/app-check';
+import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { connectAuthEmulator, getAuth, provideAuth } from '@angular/fire/auth';
 import { connectFirestoreEmulator, getFirestore, provideFirestore } from '@angular/fire/firestore';
+import { getFunctions, provideFunctions } from '@angular/fire/functions';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
-import { APP_ROUTES } from './app.routes';
-import { firebaseConfig } from './firebase-config';
 import { environment } from '../environments/environment';
-import { ClubContextService } from './club-tenant/services/club-tenant';
+import { APP_ROUTES } from './app.routes';
+import { ClubTenant } from './club-tenant/services/club-tenant';
+import { firebaseConfig } from './firebase-config';
 
 if (isDevMode()) {
   (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
   console.log('AppCheck configured in debug mode');
 }
 
-
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideAppInitializer(() => inject(ClubContextService).initialize()),    
+    provideAppInitializer(() => inject(ClubTenant).initialize()),    
     provideZonelessChangeDetection(),
     provideFirebaseApp(() => initializeApp(firebaseConfig)),
     provideAuth(() => {
@@ -27,6 +26,7 @@ export const appConfig: ApplicationConfig = {
       }
       return auth;
     }),
+    provideFunctions(() => getFunctions()),
     provideFirestore(() => {
       const firestore = getFirestore();
       if (environment.useEmulators) {

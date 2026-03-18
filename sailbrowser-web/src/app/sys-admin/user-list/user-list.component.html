@@ -1,0 +1,68 @@
+<app-toolbar title="User Admin" style="grid-area: toolbar">
+   <div center>
+      @if (auth.isSysAdmin()) {
+      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="role-filter">
+         <mat-label>Min Role</mat-label>
+         <mat-select [value]="uas.roleFilter()" (selectionChange)="uas.filterRole($event.value)">
+            <mat-option [value]="null">All</mat-option>
+            <mat-option value="user">User</mat-option>
+            <mat-option value="race-officer">Race Officer</mat-option>
+            <mat-option value="club-admin">Club Admin</mat-option>
+            <mat-option value="sys-admin">Sys Admin</mat-option>
+         </mat-select>
+      </mat-form-field>
+      <mat-slide-toggle [checked]="uas.isGlobal()" (change)="toggleGlobal($event.checked)">
+         Show Global Users
+      </mat-slide-toggle>
+      }
+   </div>
+</app-toolbar>
+
+@switch (uas.status()) {
+@case ('loading') {
+<app-loading-centered />
+}
+@case ('error') {
+<div class="alert alert-danger">
+   <p>Error loading users:</p>
+   <pre>{{ uas.error()?.message }}</pre>
+</div>
+}
+@case ('resolved') {
+<div class="main-container">
+   @if (roleUpdateError()) {
+   <div class="error-banner">
+      {{ roleUpdateError() }}
+   </div>
+   }
+   <mat-list>
+      @for (user of uas.users(); track user.id) {
+      <mat-list-item>
+         <div matListItemTitle>{{ user.firstname }} {{ user.surname }}</div>
+         <div matListItemLine>Email: {{ user.email }} </div>
+         <div matListItemLine>UID: {{user.id }}</div>
+         @if (uas.isGlobal()) {
+         <div matListItemLine>Club: {{ $any(user).clubId }}</div>
+         }
+         <div matListItemMeta>
+            <mat-form-field appearance="outline" class="dense-form role-select">
+               <mat-label>Role</mat-label>
+               <mat-select [value]="user.role || 'user'" (selectionChange)="updateRole(user.id, $event.value)">
+                  <mat-option value="user">User</mat-option>
+                  <mat-option value="race-officer">Race Officer</mat-option>
+                  @if (auth.isSysAdmin()) {
+                  <mat-option value="club-admin">Club Admin</mat-option>
+                  <mat-option value="sys-admin">Sys Admin</mat-option>
+                  }
+               </mat-select>
+            </mat-form-field>
+         </div>
+      </mat-list-item>
+      <mat-divider />
+      } @empty {
+      <app-centered-text>No users found</app-centered-text>
+      }
+   </mat-list>
+</div>
+}
+}
