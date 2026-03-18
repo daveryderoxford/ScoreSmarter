@@ -1,3 +1,23 @@
 @use "mixins" as mix;
 
-@include mix.centered-column-page("mat-list", 600px);
+@include mix.centered-column-page(".main-container", 500px);
+
+.error-banner {
+  background-color: var(--mat-sys-error);
+  color: var(--mat-sys-on-error);
+  padding: 5px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.role-filter {
+  margin-right: 16px;
+  margin-left: 16px;
+}
+
+.role-select {
+  width: 150px;
+  margin-top: 8px;
+}

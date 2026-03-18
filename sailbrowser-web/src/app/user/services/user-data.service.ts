@@ -1,12 +1,14 @@
-import { Injectable, computed, inject } from "@angular/core";
+import { Injectable, computed, effect, inject } from "@angular/core";
 import { rxResource } from '@angular/core/rxjs-interop';
 import { User } from "@angular/fire/auth";
 import { DocumentReference, arrayRemove, arrayUnion, doc, docData, setDoc, updateDoc } from "@angular/fire/firestore";
 import { AuthService } from 'app/auth';
-import { Boat } from 'app/boats';
+import type { Boat } from 'app/boats';
 import { of } from 'rxjs';
 import { UserData } from '../model/user';
-import { FirestoreTenantService } from 'app/club-tenant';
+import { ClubTenant, FirestoreTenantService } from 'app/club-tenant';
+import { httpsCallable } from 'firebase/functions';
+import { Functions } from '@angular/fire/functions';
 
 @Injectable({
   providedIn: "root"
@@ -14,6 +16,8 @@ import { FirestoreTenantService } from 'app/club-tenant';
 export class UserDataService {
   private as = inject(AuthService);
   private tenant = inject(FirestoreTenantService);
+  private functions = inject(Functions);
+  private clubId = inject(ClubTenant).clubId;
 
   private userCollection = this.tenant.collectionRef<UserData>('users');
   
@@ -24,22 +28,39 @@ export class UserDataService {
 
   readonly user = this._userResource.value.asReadonly();
 
-  key = computed( () => this.user()?.key);
+  id = computed( () => this.user()?.id);
 
-  /** Update the user info.  */
+  constructor() {
+    /** Ensure user data exists on login */
+    effect( async () => {
+      const ensureUserData = httpsCallable<{clubId: string}, {user: UserData, id: string, isNew: boolean}>(this.functions, 'ensureUserData');
+      if (this.as.loggedIn()) {
+        try  {
+          const result = await ensureUserData({ clubId: this.clubId });
+
+          console.log('UserDataService: User data returned for ' + result.data.id);
+        } catch (error) {
+          console.error('UserDataService:  Error creating user data ', error);
+        }
+      }
+    });
+  }
+
+
+  /** Update the user info. */
   async updateDetails(details: Partial<UserData>): Promise<void> {
 
-    const key = this.key();
+    const id = this.id();
 
-    if (!key) {
+    if (!id) {
       console.error('UserDataService: Saving user: Unexpectedly null');
       throw new Error('UserDataService: Saving user: Unexpectedly null');
     }
 
     console.log('UserDataService: Saving user ' + this);
-    details.key = key;
+    details.id = id;
     // Use setDoc with merge=true rather than update as update does not support withConverter
-    await setDoc(this._doc(key), details, { merge: true });
+    await setDoc(this._doc(id), details, { merge: true });
   }
 
   private _doc(uid: string): DocumentReference<UserData> {
@@ -47,10 +68,10 @@ export class UserDataService {
   }
 
   async addBoat(boat: Boat) {
-    await updateDoc(this._doc(this.key()!), { boats: arrayUnion(boat) });
+    await updateDoc(this._doc(this.id()!), { boats: arrayUnion(boat) });
   }
 
   async removeBoat(boat: Boat) {
-    await updateDoc(this._doc(this.key()!), { classes: arrayRemove(boat) });
+    await updateDoc(this._doc(this.id()!), { classes: arrayRemove(boat) });
   }
 }

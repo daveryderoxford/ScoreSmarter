@@ -3,7 +3,7 @@ import { Injectable, Signal, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FirebaseApp } from '@angular/fire/app';
 import { arrayRemove, arrayUnion, doc, docData, DocumentReference, getFirestore, setDoc, updateDoc, } from '@angular/fire/firestore';
-import { firstValueFrom, filter, Observable } from 'rxjs';
+import { firstValueFrom, filter } from 'rxjs';
 import { Club } from '../model/club';
 import { Fleet } from '../model/fleet';
 import { BoatClass } from '../model/boat-class';

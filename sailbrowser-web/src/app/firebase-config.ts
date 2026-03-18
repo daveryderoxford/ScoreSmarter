@@ -1,6 +1,6 @@
 export const firebaseConfig = {
    apiKey: "AIzaSyDJMflCnJkd4oFIHHVBSCh2C9sD8tiwUoA",
-   authDomain: "sailbrowser-efef0.firebaseapp.com",
+   authDomain: "auth.scoresmarter.app",
    projectId: "sailbrowser-efef0",
    storageBucket: "sailbrowser-efef0.appspot.com",
    messagingSenderId: "500477680330",
