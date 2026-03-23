@@ -1,6 +1,7 @@
 import { Season } from 'app/race-calender/model/season';
 import { BoatClass } from './boat-class';
-import { Fleet } from './fleet';
+import { Fleet } from 'app/club-tenant/model/fleet';
+import { HandicapScheme } from '../../scoring/model/handicap-scheme';
 
 export interface Club {
    id: string;
@@ -12,4 +13,5 @@ export interface Club {
    classes: BoatClass[];
    seasons: Season[];
    logoUrl?: string;
+   supportedHandicapSchemes: HandicapScheme[];
 }

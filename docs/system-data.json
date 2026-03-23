@@ -11,54 +11,28 @@
     ],
     "fleets": [
       {
-        "id": "fhc",
+        "type": "HandicapRange",
+        "id": "fasthandicap",
         "name": "Fast handicap",
-        "shortName": "Fast Hcap",
-        "startOrder": 1,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "PY"
-        ]
+        "min": 0,
+        "max": 1000
       },
       {
-        "id": "shc",
+        "type": "HandicapRange",
+        "id": "slowhandicap",
         "name": "Slow handicap",
-        "shortName": "Slow Hcap",
-        "startOrder": 2,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "PY"
-        ]
+        "min": 1000,
+        "max": 9999
       },
       {
-        "id": "ghc",
-        "name": "General handicap",
-        "shortName": "handicap",
-        "startOrder": 1,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "PY"
-        ]
-      },
-      {
+        "type": "BoatClass",
         "id": "topper",
-        "name": "Topper",
-        "shortName": "Topper",
-        "startOrder": 1,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "Level Rating"
-        ]
+        "boatClassId": "Topper"
       },
       {
-        "id": "Laser",
-        "name": "Laser",
-        "shortName": "Laser",
-        "startOrder": 1,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "Level Rating"
-        ]
+        "type": "BoatClass",
+        "id": "ilca7",
+        "boatClassId": "ILCA 7"
       }
     ],
     "classes": [
@@ -201,54 +175,28 @@
     ],
     "fleets": [
       {
-        "id": "fhc",
+        "type": "HandicapRange",
+        "id": "fasthandicap",
         "name": "Fast handicap",
-        "shortName": "Fast Hcap",
-        "startOrder": 1,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "PY"
-        ]
+        "min": 0,
+        "max": 1000
       },
       {
-        "id": "shc",
+        "type": "HandicapRange",
+        "id": "slowhandicap",
         "name": "Slow handicap",
-        "shortName": "Slow Hcap",
-        "startOrder": 2,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "PY"
-        ]
+        "min": 1000,
+        "max": 9999
       },
       {
-        "id": "ghc",
-        "name": "General handicap",
-        "shortName": "handicap",
-        "startOrder": 1,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "PY"
-        ]
-      },
-      {
+        "type": "BoatClass",
         "id": "topper",
-        "name": "Topper",
-        "shortName": "Topper",
-        "startOrder": 1,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "Level Rating"
-        ]
+        "boatClassId": "Topper"
       },
       {
-        "id": "Laser",
-        "name": "Laser",
-        "shortName": "Laser",
-        "startOrder": 1,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "Level Rating"
-        ]
+        "type": "BoatClass",
+        "id": "ilca7",
+        "boatClassId": "ILCA 7"
       }
     ],
     "classes": [
@@ -391,54 +339,28 @@
     ],
     "fleets": [
       {
-        "id": "fhc",
+        "type": "HandicapRange",
+        "id": "fasthandicap",
         "name": "Fast handicap",
-        "shortName": "Fast Hcap",
-        "startOrder": 1,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "PY"
-        ]
+        "min": 0,
+        "max": 1000
       },
       {
-        "id": "shc",
+        "type": "HandicapRange",
+        "id": "slowhandicap",
         "name": "Slow handicap",
-        "shortName": "Slow Hcap",
-        "startOrder": 2,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "PY"
-        ]
+        "min": 1000,
+        "max": 9999
       },
       {
-        "id": "ghc",
-        "name": "General handicap",
-        "shortName": "handicap",
-        "startOrder": 1,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "PY"
-        ]
-      },
-      {
+        "type": "BoatClass",
         "id": "topper",
-        "name": "Topper",
-        "shortName": "Topper",
-        "startOrder": 1,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "Level Rating"
-        ]
+        "boatClassId": "Topper"
       },
       {
-        "id": "Laser",
-        "name": "Laser",
-        "shortName": "Laser",
-        "startOrder": 1,
-        "classFlag": "H",
-        "handicapSchemes": [
-          "Level Rating"
-        ]
+        "type": "BoatClass",
+        "id": "ilca7",
+        "boatClassId": "ILCA 7"
       }
     ],
     "classes": [
