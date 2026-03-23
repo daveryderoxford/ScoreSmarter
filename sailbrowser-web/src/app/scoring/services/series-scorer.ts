@@ -1,8 +1,8 @@
-import { PublishedSeriesResult } from 'app/published-results';
+import { PublishedSeriesResult } from '../../published-results';
 import { SeriesScoringScheme } from '../model/scoring-algotirhm';
-import { PublishedRace } from 'app/published-results/model/published-race';
+import { PublishedRace } from '../../published-results/model/published-race';
 import { getShortAlgorithm, includeInAveragePool, isDiscardable as isResultCodeDiscardable, ResultCodeAlgorithm, isStartAreaComp, isFinishedComp } from '../model/result-code-scoring';
-import { SeriesEntry } from 'app/results-input';
+import { SeriesEntry } from '../../results-input';
 
 export interface ScoringConfig {
   seriesType: SeriesScoringScheme;

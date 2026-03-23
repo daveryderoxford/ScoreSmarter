@@ -22,7 +22,7 @@
       <button matIconButton (click)="edit.emit(race())">
          <mat-icon class="green">edit</mat-icon>
       </button>
-      <button matIconButton (click)="delete.emit(race())">
+      <button matIconButton (click)="delete.emit(race())" [disabled]="disableDelete()" [title]="disableDelete() ? 'Cannot delete published race' : 'Delete race'">
          <mat-icon class="warning">delete</mat-icon>
       </button>
    </span>

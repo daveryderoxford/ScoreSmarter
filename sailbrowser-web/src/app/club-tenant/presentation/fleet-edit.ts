@@ -3,7 +3,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { FleetForm } from './fleet-form/fleet-form';
 import { Toolbar } from 'app/shared/components/toolbar';
-import { Fleet } from '../model/fleet';
+import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 import { ClubStore } from '../services/club-store';
 
 @Component({
@@ -12,7 +12,7 @@ import { ClubStore } from '../services/club-store';
   imports: [FleetForm, Toolbar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-   <app-toolbar [title]="'Edit Fleet - ' + fleet()?.name" showBack/>
+   <app-toolbar [title]="'Edit Fleet - ' + getFleetName(fleet())" showBack/>
     @if (fleet()) {
       <app-fleet-form [fleet]="fleet()" (submitted)="submitted($event)"></app-fleet-form>
     }
@@ -26,6 +26,7 @@ export class FleetEdit {
   id = input.required<string>();
 
   fleet = computed(() => this.store.club().fleets.find(f => f.id === this.id()));
+  getFleetName = (f: Fleet | undefined) => f ? getFleetName(f) : '';
 
   busy = signal(false);
 
@@ -34,19 +35,11 @@ export class FleetEdit {
   async submitted(data: Partial<Fleet>) {
     try {
       this.busy.set(true);
-      const currentFleet = this.fleet();
+      const currentFleet = this.fleet()!;
       if (!currentFleet) return;
 
-      const newId = data.shortName!.trim();
-      
-      // Check if ID is being changed and if the new ID already exists
-      if (newId !== currentFleet.id && this.store.club().fleets.some(f => f.id === newId)) {
-        this.snackbar.open(`Fleet with short name '${newId}' already exists`, "Dismiss", { duration: 3000 });
-        return;
-      }
-
-      const newFleet = { ...currentFleet, ...data, id: newId } as Fleet;
-      await this.store.updateFleet(currentFleet, newFleet);
+      const update = { id: currentFleet.id, ...data  } as Fleet;
+      await this.store.updateFleet(update);
       
       this.router.navigate(["/club/fleets"]);
     } catch (error: any) {

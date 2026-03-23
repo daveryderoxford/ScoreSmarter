@@ -1,21 +1,20 @@
-import { SeriesEntryMatchingStrategy } from '../../entry/model/entry-grouping';
 import { HandicapScheme } from './handicap-scheme';
-import { SeriesScoringScheme } from './scoring-algotirhm';
+import { Fleet } from 'app/club-tenant/model/fleet';
 
-/** Configuration for scoring series and race */
-export interface ScoringConfiguration {
-  handicapScheme: HandicapScheme;
-  scheme: SeriesScoringScheme;
-  initialDiscardAfter: number;
-  subsequentDiscardsEveryN: number;
-  entryAlgorithm: SeriesEntryMatchingStrategy;
+export type ScoringConfiguration = LevelRatingConfiguration | HandicapConfiguration;
+
+export interface BaseScoringConfiguration {
+   id: string;
+   name: string;
+   fleet: Fleet;
 }
 
-export const defaultSeriesScoringData: ScoringConfiguration = {
-  handicapScheme: 'PY',
-  scheme: 'long',
-  initialDiscardAfter: 3,
-  subsequentDiscardsEveryN: 2,
-  entryAlgorithm: 'classSailNumberHelm',
-};
+export interface LevelRatingConfiguration extends BaseScoringConfiguration {
+   type: 'LevelRating';
+   handicapScheme: 'Level Rating';
+}
 
+export interface HandicapConfiguration extends BaseScoringConfiguration {
+   type: 'Handicap';
+   handicapScheme: Exclude<HandicapScheme, 'Level Rating'>;
+}

@@ -57,12 +57,12 @@ export class SeasonList {
   seasons = input.required<PublishedSeason[]>();
   hide = output();
 
-  /** Signal to hold the current filter text for fleets. */
-  protected fleetFilter = signal('');
+  /** Signal to hold the current filter text for subseries. */
+  protected subseriesFilter = signal('');
 
   /** All series */
   private allSeries = computed(() =>
-    this.seasons().flatMap(s => s.series)
+    this.seasons().flatMap(s => s.series).filter(s => !s.baseSeriesId || s.id === s.baseSeriesId)
   );
 
   /** Series with a race in the last week */
@@ -86,27 +86,49 @@ export class SeasonList {
   });
 
   /**
-   * A computed signal that filters the seasons based on the fleetFilter.
-   * A season is included if any of its series contain a fleet matching the filter.
+   * A computed signal that filters the seasons based on the subseriesFilter.
+   * A season is included if any of its series contain a name or fleet matching the filter.
    */
   protected filteredSeasons = computed(() => {
-    const filter = normaliseString(this.fleetFilter());
-    if (!filter) {
-      return this.seasons();
-    }
-
+    const filter = normaliseString(this.subseriesFilter());
+    
     return this.seasons().map((season) => ({
       ...season,
-      series: season.series.filter((series) => series.fleetId === filter)
+      series: season.series
+        .filter(s => !s.baseSeriesId || s.id === s.baseSeriesId) // Show primary series in the list
+        .filter((primarySeries) => {
+          if (!filter) return true;
+          // Check if primary OR any of its alternatives match the filter
+          const alternatives = season.series.filter(s => s.baseSeriesId === primarySeries.id || s.id === primarySeries.id);
+          return alternatives.some(s => 
+            normaliseString(s.name).includes(filter) || 
+            normaliseString(s.fleetId).includes(filter)
+          );
+        })
+        .map(primarySeries => {
+           if (!filter) return primarySeries;
+           // Find the best matching configuration to link to
+           const alternatives = season.series.filter(s => s.baseSeriesId === primarySeries.id || s.id === primarySeries.id);
+           const bestMatch = alternatives.find(s => 
+             normaliseString(s.name).includes(filter) || 
+             normaliseString(s.fleetId).includes(filter)
+           );
+           return bestMatch || primarySeries;
+        })
     }));
   });
 
   // Expansion data. 
   protected expansionPanels = computed(() => {
-    return [
-      { title: 'Latest results', series: this.latestSeries() },
-      ...this.filteredSeasons().map(s => ({ title: s.id, series: s.series }))
-    ];
+    const panels = [];
+    const latest = this.latestSeries();
+    if (latest.length > 0) {
+      panels.push({ title: 'Latest results', series: latest });
+    }
+    panels.push(...this.filteredSeasons()
+      .filter(s => s.series.length > 0)
+      .map(s => ({ title: s.id, series: s.series })));
+    return panels;
   });
 
   /**

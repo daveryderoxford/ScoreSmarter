@@ -1,23 +1,28 @@
-import { Race, Series } from 'app/race-calender';
-import { RaceCompetitor, SeriesEntry } from 'app/results-input';
+import { describe, it, expect } from 'vitest';
+import { Race } from '../../race-calender/model/race';
+import { Series } from '../../race-calender/model/series';
+import { RaceCompetitor } from '../../results-input/model/race-competitor';
+import { SeriesEntry } from '../../results-input/model/series-entry';
 import { score } from './scorer';
-import { PublishedRace } from 'app/published-results/model/published-race';
+import { PublishedRace } from '../../published-results/model/published-race';
 import { ScoringConfig } from './series-scorer';
+import { getAllCompetitorKeys, getAllCompetitorKeysFromPublished } from './competitor-aggregator';
 
 /** Helper to create a mock Race */
 function createMockRace(id: string, index: number): Race {
   return {
     id,
     index,
+    fleetId: 'fleet1',
     seriesId: 'series1',
     seriesName: 'Test Series',
-    fleetId: 'fleet1',
     scheduledStart: new Date(),
     raceOfDay: 1,
     type: 'Handicap',
     isDiscardable: true,
     status: 'Completed',
     isAverageLap: false,
+    timeInputMode: 'tod',
     dirty: false,
   };
 }
@@ -29,14 +34,17 @@ function createMockSeries(): Series {
     seasonId: 'Season',
     archived: false,
     name: 'Test Series',
-    fleetId: 'fleet1',
-    scoringScheme: {
-      handicapScheme: 'PY',
-      initialDiscardAfter: 3,
-      subsequentDiscardsEveryN: 2,
-      entryAlgorithm: 'classSailNumber',
-      scheme: 'long'
-    },
+    scoringAlgorithm: 'short',
+    entryAlgorithm: 'classSailNumber',
+    initialDiscardAfter: 3,
+    subsequentDiscardsEveryN: 2,
+    primaryScoringConfiguration: {
+      id: 'overall',
+      name: 'Overall',
+      type: 'Handicap',
+      fleet: { id: 'fleet1', type: 'All', name:'All competitors' },
+      handicapScheme: 'PY'
+    }
   };
 }
 
@@ -72,7 +80,7 @@ function generateMockSeriesEntries(competitors: RaceCompetitor[], existingRaces:
       seriesId: 'series1',
       helm,
       boatClass,
-      sailNumber,
+      sailNumber: parseInt(sailNumber, 10),
       handicap: 1000,
     };
   });
@@ -95,7 +103,7 @@ describe('score (Orchestrator)', () => {
 
     // Score Race 1
     let seriesEntries = generateMockSeriesEntries(competitors1, scoredRaces);
-    ({ scoredRaces, seriesResults } = score(series, race1, competitors1, scoredRaces, seriesEntries, config));
+    ({ scoredRaces, seriesResults } = score(race1, competitors1, scoredRaces, seriesEntries, config, series.primaryScoringConfiguration));
 
     let race1Result = scoredRaces.find(r => r.id === 'race1')!;
     expect(race1Result.results.find(r => r.sailNumber === 101)?.points).toBe(1);
@@ -112,7 +120,7 @@ describe('score (Orchestrator)', () => {
 
     // Score Race 2, passing in the results from the first run
     seriesEntries = generateMockSeriesEntries(competitors2, scoredRaces);
-    ({ scoredRaces, seriesResults } = score(series, race2, competitors2, scoredRaces, seriesEntries, config));
+    ({ scoredRaces, seriesResults } = score(race2, competitors2, scoredRaces, seriesEntries, config, series.primaryScoringConfiguration));
 
     // Now there are 3 competitors in the series. DNC = 3 + 1 = 4 points.
     const dncPoints = 3 + 1;
@@ -140,12 +148,12 @@ describe('score (Orchestrator)', () => {
 
     // Score Race 1
     let seriesEntries = generateMockSeriesEntries(competitors1, []);
-    let { scoredRaces } = score(series, race1, competitors1, [], seriesEntries, config);
+    let { scoredRaces } = score(race1, competitors1, [], seriesEntries, config, series.primaryScoringConfiguration);
 
-    // With 2 competitors, DNF points = 2 + 1 = 3. Penalty = 20% of 3 = 0.6.
-    // Helm 2 gets 2 points for position + 0.6 penalty = 2.6
+    // With 2 competitors, DNF points = 2 + 1 = 3. Penalty = max(2, round(2 * 0.2 * 10) / 10) = 2.
+    // Helm 2 gets 2 points for position + 2 penalty = 4. Capped at DNF points (3).
     let race1Result = scoredRaces.find(r => r.id === 'race1')!;
-    expect(race1Result.results.find(r => r.sailNumber === 102)?.points).toBe(2.6);
+    expect(race1Result.results.find(r => r.sailNumber === 102)?.points).toBe(3);
 
     // === Race 2: A third competitor joins ===
     const race2 = createMockRace('race2', 1);
@@ -155,12 +163,12 @@ describe('score (Orchestrator)', () => {
 
     // Score Race 2
     seriesEntries = generateMockSeriesEntries(competitors2, scoredRaces);
-    ({ scoredRaces } = score(series, race2, competitors2, scoredRaces, seriesEntries, config));
+    ({ scoredRaces } = score(race2, competitors2, scoredRaces, seriesEntries, config, series.primaryScoringConfiguration));
 
-    // With 3 competitors, DNF points = 3 + 1 = 4. Penalty = 20% of 4 = 0.8.
-    // Helm 2's score in Race 1 should be re-scored to 2 points + 0.8 penalty = 2.8
+    // With 3 competitors, DNF points = 3 + 1 = 4. Penalty = max(2, round(3 * 0.2 * 10) / 10) = 2.
+    // Helm 2's score in Race 1 should be re-scored to 2 points + 2 penalty = 4
     race1Result = scoredRaces.find(r => r.id === 'race1')!;
-    expect(race1Result.results.find(r => r.sailNumber === 102)?.points).toBe(2.8);
+    expect(race1Result.results.find(r => r.sailNumber === 102)?.points).toBe(4);
   });
 
   it('should update race results with points calculated from series averages (e.g., RDGA)', () => {
@@ -171,7 +179,7 @@ describe('score (Orchestrator)', () => {
       { helm: 'Helm 2', sailNumber: 102, finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) }, // 1st -> 1 point
     ]);
     let seriesEntries = generateMockSeriesEntries(competitors1, []);
-    let { scoredRaces } = score(series, race1, competitors1, [], seriesEntries, config);
+    let { scoredRaces } = score(race1, competitors1, [], seriesEntries, config, series.primaryScoringConfiguration);
 
     // === Race 2: Helm 101 gets RDGA ===
     const race2 = createMockRace('race2', 1);
@@ -184,7 +192,7 @@ describe('score (Orchestrator)', () => {
 
     // Score race 2, passing in the results from race 1
     seriesEntries = generateMockSeriesEntries(competitors2, scoredRaces);
-    ({ scoredRaces } = score(series, race2, competitors2, scoredRaces, seriesEntries, config));
+    ({ scoredRaces } = score(race2, competitors2, scoredRaces, seriesEntries, config, series.primaryScoringConfiguration));
 
     // The RDGA points are calculated in the series scoring pass.
     // This test verifies that the points in the individual race result are updated.

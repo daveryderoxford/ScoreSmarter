@@ -118,3 +118,38 @@ function toAppModelRecursive(value: any): any {
    }
    return value;
 }
+
+/** 
+ * Removes any invalid character from a string so it can be used as 
+ * a Firestore object Id
+ */
+export function toFirebaseId(str: string): string {
+   return str.toLowerCase().replace(/[^a-z0-9]/g, '-');
+}
+
+/** 
+ * Generates a an Id for an object that is (statistically) gasrenteed
+ * to be unique given a maximum number to items.
+ * Optinally a prefix may be added to the Id
+ */
+export function generateSecureID(n: number, prefix?: string): string {
+   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+   const targetRisk = 1e-12; // 1 in 1 trillion chance of collision
+
+   // 1. Calculate required length based on Birthday Paradox formula:
+   // length = ceil( log( (n^2) / (2 * risk) ) / log(alphabetSize) )
+   const length = Math.max(1, Math.ceil(
+      Math.log((n * n) / (2 * targetRisk)) / Math.log(chars.length)
+   ));
+
+   // 2. Generate the random string
+   let result = '';
+   const randomValues = new Uint32Array(length);
+   window.crypto.getRandomValues(randomValues);
+
+   for (let i = 0; i < length; i++) {
+      result += chars[randomValues[i] % chars.length];
+   }
+
+   return prefix ? toFirebaseId(prefix) + '-' + result : result;
+}

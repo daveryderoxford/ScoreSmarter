@@ -17,6 +17,7 @@ import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
 import { Series } from '../model/series';
 import { RaceCalendarStore } from '../services/full-race-calander';
 import { normaliseString } from 'app/shared/utils/string-utils';
+import { getFleetName } from 'app/club-tenant/model/fleet';
 
 @Component({
   selector: 'app-series-list',
@@ -54,7 +55,7 @@ import { normaliseString } from 'app/shared/utils/string-utils';
             <mat-list-item>
               <span matListItemTitle>{{series.name}} ({{this.getSeasonName(series.seasonId)}})</span>
               <span matListItemLine>
-                  {{getFleetName(series.fleetId)}}
+                  {{getFleetName(series.primaryScoringConfiguration.fleet.id)}}
                   @if(series.startDate) { - {{series.startDate | date}} }
               </span>
               <span matListItemMeta>
@@ -95,7 +96,11 @@ export class SeriesList {
       !term || normaliseString(s.name).includes(term) || normaliseString(s.seasonId).includes(term));
   });
 
-  getFleetName = (id: string) => this.cs.findFleet(id)()?.name ?? 'Unknown Fleet';
+  getFleetName = (id: string | undefined) => {
+    if (!id) return 'Unknown Fleet';
+    const fleet = this.cs.findFleet(id)();
+    return fleet ? getFleetName(fleet) : 'Unknown Fleet';
+  };
 
   getSeasonName = (id: string) => this.cs.club().seasons.find(s => s.id === id)?.name ?? 'Unknown Season';
 }

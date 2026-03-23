@@ -1,7 +1,8 @@
-import { PublishedRace, RaceResult } from 'app/published-results/model/published-race';
+import { describe, it, expect } from 'vitest';
+import { PublishedRace, RaceResult } from '../../published-results/model/published-race';
 import { scoreSeries, ScoringConfig } from './series-scorer';
 import { SeriesScoringScheme } from '../model/scoring-algotirhm';
-import { SeriesEntry } from 'app/results-input';
+import { SeriesEntry } from '../../results-input';
 
 /** Helper to create a mock PublishedRace */
 function createMockRace(raceIndex: number, results: Partial<RaceResult>[]): PublishedRace {
@@ -10,11 +11,11 @@ function createMockRace(raceIndex: number, results: Partial<RaceResult>[]): Publ
     index: raceIndex,
     seriesId: 'series1',
     seriesName: 'Test Series',
-    fleetId: 'fleet1',
     scheduledStart: new Date(),
     raceOfDay: 1,
     type: 'Handicap',
     isDiscardable: true, // This property on the RACE is correct
+    isAverageLap: false,
     results: results.map((res, i) => ({
       seriesEntryId: res.seriesEntryId || `entry${101 + i}`,
       rank: i + 1,
@@ -43,7 +44,7 @@ function createMockEntries(keys: string[]): SeriesEntry[] {
       seriesId: 'series1',
       helm,
       boatClass,
-      sailNumber,
+      sailNumber: parseInt(sailNumber, 10),
       handicap: 1000,
     };
   });

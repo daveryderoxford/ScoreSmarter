@@ -20,9 +20,22 @@
     <mat-list>
       @for (fleet of filteredFleets(); track fleet.id) {
         <mat-list-item [routerLink]="['edit', fleet.id]">
-          <span matListItemTitle>{{ fleet.name }}</span>
-          <span matListItemLine>Short Name: {{ fleet.shortName }}</span>
-          <span matListItemLine>Handicap Systems: {{ fleet.handicapSchemes.join(', ') || 'None' }}</span>
+          <span matListItemTitle>{{ getFleetName(fleet) }} ({{ fleet.type | titlecase }})</span>
+          @if (fleet.type === 'BoatClass') {
+            <ng-container>
+              <span matListItemLine>Handicap: {{ fleet.boatClassId }}</span>
+            </ng-container>
+          }
+          @if (fleet.type === 'HandicapRange') {
+            <ng-container>
+              <span matListItemLine>Range: {{ fleet.min }} - {{ fleet.max }} ({{ fleet.scheme }})</span>
+            </ng-container>
+          }
+          @if (fleet.type === 'Tag') {
+            <ng-container>
+              <span matListItemLine>Tag Value: {{ fleet.value }}</span>
+            </ng-container>
+          }
           <span matListItemMeta>
             <button matIconButton [routerLink]="['edit', fleet.id]" (click)="$event.stopPropagation()">
               <mat-icon class="green">edit</mat-icon>

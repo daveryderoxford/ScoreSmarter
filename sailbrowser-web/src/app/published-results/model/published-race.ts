@@ -6,13 +6,13 @@ export interface PublishedRace {
    id: string;
    seriesName: string;
    index: number;
-   fleetId: string;
    seriesId: string;
    raceOfDay: number;
    scheduledStart: Date;
    type: RaceType;
    isDiscardable: boolean;
-   results: RaceResult[]
+   isAverageLap: boolean;
+   results: RaceResult[];
 }
 
 export interface RaceResult {

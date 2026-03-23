@@ -1,14 +1,18 @@
 import { RaceStatus } from './race-status';
 import { RaceType } from './race-type';
+import { RaceStart } from './race-start';
 
 export interface Race {
   id: string;
   seriesName: string;
-  index: number;
   fleetId: string;
+  index: number;
   seriesId: string;
   scheduledStart: Date;
   raceOfDay: number;
+  
+  starts?: RaceStart[];
+
   /**
    * The actual start time of the race.
    * 

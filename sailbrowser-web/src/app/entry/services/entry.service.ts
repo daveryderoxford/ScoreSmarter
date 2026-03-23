@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { RaceCalendarStore } from 'app/race-calender';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
-import { ScoreSmarterError } from '../../shared/utils/scoresmarter-error';
+import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
 import { ClubStore } from '../../club-tenant';
 import { Race } from '../../race-calender/model/race';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
@@ -26,9 +26,9 @@ export class EntryService {
   private raceCalanderStore = inject(RaceCalendarStore);
 
   /** Enter a race 
-   * throws a SailbrowserError exception if the entry is a duplicate. 
+   * throws a ScoreSmarterError exception if the entry is a duplicate. 
    * @
-  */
+   */
   async enterRaces(details: EntryDetails): Promise<void> {
 
     console.log("Calling enter races");
@@ -72,7 +72,7 @@ export class EntryService {
    * Check if a boat (class+sailnumber) is already entered
    * in any of the races being entered.
    * Returns true if a duplicate is found.
- */
+   */
   isDuplicateEntry(details: EntryDetails): boolean {
     for (const race of details.races) {
       const dup = this.raceResultsStore.selectedCompetitors().find(comp =>
@@ -101,7 +101,7 @@ export class EntryService {
     }
 
     let entry;
-    switch (series.scoringScheme.entryAlgorithm) {
+    switch (series.entryAlgorithm) {
       case 'classSailNumberHelm':
         entry = seriesEntries.find(e =>
           e.boatClass === details.boatClass &&

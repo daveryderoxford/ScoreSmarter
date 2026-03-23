@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { FleetForm } from './fleet-form/fleet-form';
 import { Toolbar } from 'app/shared/components/toolbar';
-import { Fleet } from '../model/fleet';
+import { generateSecureID } from 'app/shared/firebase/firestore-helper';
+import { Fleet, getFleetName } from '../model/fleet';
 import { ClubStore } from '../services/club-store';
+import { FleetForm } from './fleet-form/fleet-form';
 
 @Component({
   selector: 'app-fleet-add',
@@ -25,15 +26,12 @@ export class FleetAdd {
   readonly form = viewChild.required(FleetForm);
 
   async submitted(fleet: Partial<Fleet>) {
+    const f = (fleet as Fleet);
     try {
       this.busy.set(true);
-      const id = fleet.shortName!.trim();
-      
-      // Check if ID already exists
-      if (this.store.club().fleets.some(f => f.id === id)) {
-        this.snackbar.open(`Fleet with short name '${id}' already exists`, "Dismiss", { duration: 3000 });
-        return;
-      }
+
+      // Create Id with 
+      const id = generateSecureID( 100, getFleetName(f));
 
       const newFleet = { ...fleet, id } as Fleet;
       await this.store.addFleet(newFleet);

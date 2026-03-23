@@ -15,6 +15,7 @@ export class RaceCompetitor {
   boatClass: string;
   sailNumber: number;
   handicap: number;
+  fleetId?: string;
 
   /**
    * Finish time recorded when competitor finishes.
@@ -59,6 +60,7 @@ export class RaceCompetitor {
     this.boatClass = data.boatClass || '';
     this.sailNumber = data.sailNumber || 0;
     this.handicap = data.handicap || 0;
+    this.fleetId = data.fleetId;
     this.recordedFinishTime = data.recordedFinishTime;
     this.manualFinishTime = data.manualFinishTime;
     this.startTime = data.startTime;

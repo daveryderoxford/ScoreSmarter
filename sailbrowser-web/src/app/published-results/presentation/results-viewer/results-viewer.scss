@@ -83,3 +83,27 @@
          margin: 0;
       }
   }
+
+  .series-header {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+  }
+
+  .series-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .config-selector-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .config-label {
+    font-size: 0.875rem;
+    color: var(--mat-sys-on-surface-variant);
+  }

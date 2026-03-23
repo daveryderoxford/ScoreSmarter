@@ -20,11 +20,10 @@ export class FirestoreTenantService {
   }
 
   /** Creates a typed DocumentReference for a document within the current club's tenant space. 
-   * @param collectionPath string containing collection path
-   * @param id id of document instance
+   * @param path Path segments of the document
   */
-  docRef<T>(collectionPath: string, id: string): DocumentReference<T> {
-    return doc(this.firestore, 'clubs', this.clubId, collectionPath, id).withConverter(dataObjectConverter<T>());
+  docRef<T>(...path: string[]): DocumentReference<T> {
+    return doc(this.firestore, 'clubs', this.clubId, ...path).withConverter(dataObjectConverter<T>());
   }
   
   /** Creates a typed CollectionReference for a sub-collection within the current club's tenant space. 

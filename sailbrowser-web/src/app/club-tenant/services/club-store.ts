@@ -5,7 +5,7 @@ import { FirebaseApp } from '@angular/fire/app';
 import { arrayRemove, arrayUnion, doc, docData, DocumentReference, getFirestore, setDoc, updateDoc, } from '@angular/fire/firestore';
 import { firstValueFrom, filter } from 'rxjs';
 import { Club } from '../model/club';
-import { Fleet } from '../model/fleet';
+import { Fleet } from 'app/club-tenant/model/fleet';
 import { BoatClass } from '../model/boat-class';
 import { Season } from 'app/race-calender/model/season';
 import { dataObjectConverter } from 'app/shared/firebase/firestore-helper';
@@ -41,11 +41,33 @@ export class ClubStore {
       contactName: '', 
       fleets: [], 
       classes: [], 
-      seasons: [] 
+      seasons: [],
+      supportedHandicapSchemes: []
     }
   });
 
-  public club = this._clubResource.value.asReadonly();
+  public club = computed(() => {
+    const club = this._clubResource.value();
+    if (!club) return club;
+
+    const systemFleets: Fleet[] = [
+      { 
+        id: 'all', 
+        type: 'All',
+        name: 'All competitors'
+      }
+    ];
+
+    // Combine system fleets with club fleets, avoiding duplicates by id
+    const allFleets = [...systemFleets];
+    club.fleets.forEach(f => {
+      if (!allFleets.find(sf => sf.id === f.id)) {
+        allFleets.push(f);
+      }
+    });
+
+    return { ...club, fleets: allFleets };
+  });
   public isLoading = this._clubResource.isLoading;
   public error = this._clubResource.error;
 
@@ -72,17 +94,16 @@ export class ClubStore {
     await updateDoc(this.clubDoc()!, { fleets: arrayUnion(fleet) });
   }
 
-  async updateFleet(oldFleet: Fleet, newFleet: Fleet) {
-    // We can't use arrayRemove and arrayUnion in the same updateDoc call easily if they might conflict,
-    // but since they are different objects, we can do it in two steps or by reading and writing the array.
-    // Actually, reading the current array, mapping the updated one, and writing it back is safer.
-    const currentFleets = this.club().fleets;
-    const updatedFleets = currentFleets.map(f => f.id === oldFleet.id ? newFleet : f);
+  async updateFleet(newFleet: Fleet) {
+    const currentFleets = this._clubResource.value().fleets;
+    const updatedFleets = currentFleets.map(f => f.id === newFleet.id ? newFleet : f);
     await updateDoc(this.clubDoc()!, { fleets: updatedFleets });
   }
 
   async removeFleet(fleet: Fleet) {
-    await updateDoc(this.clubDoc()!, { fleets: arrayRemove(fleet) });
+    const currentFleets = this._clubResource.value()!.fleets;
+    const updatedFleets = currentFleets.filter(f => f.id !== fleet.id);
+    await updateDoc(this.clubDoc()!, { fleets: updatedFleets });
   }
 
   async addClass(boatClass: BoatClass) {

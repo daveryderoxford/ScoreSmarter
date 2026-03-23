@@ -11,7 +11,7 @@
      on mobile, navgate via a full screen list page -->
    @if (!isMobile()) {
    <aside class="sidebar">
-      <app-season-list [seasons]="reader.seasons()" (hide)="togglePanel()" />
+      <app-season-list [seasons]="store.seasons()" (hide)="togglePanel()" />
    </aside>
    }
 
@@ -34,7 +34,23 @@
          } @else if (!series()) {
          <app-centered-text>Select a series to display</app-centered-text>
          } @else {
-         <h3> {{series()!.name}} - {{fleetName(series()!.fleetId)}}</h3>
+         <div class="series-header">
+            <div class="series-title-row">
+               <h3> {{series()?.name}} - {{currentFleetName()}}</h3>
+            </div>
+            @if (alternativeConfigurations().length > 1) {
+               <div class="config-selector-row">
+                  <span class="config-label">Scoring View:</span>
+                  <mat-chip-listbox [value]="id()" (change)="onConfigurationChange($event.value)">
+                     @for (config of alternativeConfigurations(); track config.id) {
+                        <mat-chip-option [value]="config.id" [selected]="config.id === id()">
+                           {{config.name}}
+                        </mat-chip-option>
+                     }
+                  </mat-chip-listbox>
+               </div>
+            }
+         </div>
          <app-series-results-table [series]="series()!" [raceTitles]="raceTitles()"
             (raceClicked)="raceClicked($event)" />
 

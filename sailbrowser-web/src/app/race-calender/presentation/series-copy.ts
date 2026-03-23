@@ -11,6 +11,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { RaceCalendarStore } from '../services/full-race-calander';
 import { Series } from '../model/series';
 import { ClubStore } from 'app/club-tenant';
+import { getFleetName } from 'app/club-tenant/model/fleet';
 
 @Component({
   selector: 'app-series-copy',
@@ -35,7 +36,7 @@ import { ClubStore } from 'app/club-tenant';
         <mat-label>Fleet</mat-label>
         <mat-select formControlName="fleetId">
           @for (f of cs.club().fleets; track f.id) {
-            <mat-option [value]="f.id">{{f.name}}</mat-option>
+            <mat-option [value]="f.id">{{getFleetName(f)}}</mat-option>
           }
         </mat-select>
         <mat-error>Fleet required</mat-error>
@@ -71,6 +72,7 @@ export class SeriesCopy {
   races = this.rcs.getSeriesRaces(this.id);
 
   busy = signal(false);
+  getFleetName = getFleetName;
 
   form = new FormGroup({
     name: new FormControl('', { validators: [Validators.required] }),
@@ -81,10 +83,23 @@ export class SeriesCopy {
     try {
       this.busy.set(true);
 
+      const fleetId = this.form.value.fleetId!;
+      const fleet = this.cs.club().fleets.find(f => f.id === fleetId);
+
       const newSeries: Series = {
         ...this.series()!, 
         name: this.form.value.name!, 
-        fleetId: this.form.value.fleetId!, 
+      };
+
+      if (fleet && newSeries.primaryScoringConfiguration) {
+         const isLevelRating = fleet.type === 'BoatClass';
+         newSeries.primaryScoringConfiguration = {
+            ...newSeries.primaryScoringConfiguration,
+            type: isLevelRating ? 'LevelRating' : 'Handicap',
+            fleet: fleet,
+            name: getFleetName(fleet),
+            handicapScheme: isLevelRating ? 'Level Rating' : (newSeries.primaryScoringConfiguration.handicapScheme === 'Level Rating' ? 'PY' : newSeries.primaryScoringConfiguration.handicapScheme) as any
+         };
       }
 
       const newSeriesId = await this.rcs.addSeries(newSeries);
@@ -92,7 +107,7 @@ export class SeriesCopy {
       const seriesDetails = {
         id: newSeriesId,
         name: this.form.value.name!,
-        fleetId: this.form.value.fleetId!
+        fleetId: fleetId
       };
 
       this.rcs.addRaces(seriesDetails, this.races());

@@ -1,30 +1,29 @@
 import { ResultCode } from 'app/scoring/model/result-code';
 
-/** Represents published results for a series
- */
-export interface PublishedSeries {
-   id: string;
-   name: string;
-   fleetId: string;
-   competitors: PublishedSeriesResult[];
-}
-
 export interface PublishedSeriesResult {
    seriesEntryId: string;
+   rank: number;
    helm: string;
    crew?: string;
+   boatClass: string;
    sailNumber: number;
    club: string;
-   boatClass: string;
    handicap: number;
+   totalPoints: number;
+   netPoints: number;
    raceScores: {
       raceIndex: number;
       points: number;
       resultCode: ResultCode;
       isDiscard: boolean;
+      notes?: string;
    }[];
-   totalPoints: number;
-   netPoints: number;
-   rank: number;
    scoresForTiebreak: number[];
+}
+
+export interface PublishedSeries {
+   id: string;
+   name: string;
+   fleetId: string;
+   competitors: PublishedSeriesResult[];
 }

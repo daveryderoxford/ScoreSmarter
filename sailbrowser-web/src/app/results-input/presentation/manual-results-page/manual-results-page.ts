@@ -67,7 +67,7 @@ export class ManualResultsPage {
   // Forms for data entry
   readonly handicapForm = this.fb.group({
     finishTime: this.fb.control<Date | null>(null, { updateOn: 'blur' }),
-    laps: this.fb.nonNullable.control(1, Validators.required),
+    laps: this.fb.nonNullable.control(1, [Validators.required, Validators.min(1)]),
     resultCode: this.fb.nonNullable.control<ResultCode>('OK'),
   });
 
@@ -97,8 +97,19 @@ export class ManualResultsPage {
   // Note: We might need to sync resultCode across forms if we want to keep it consistent when switching
   // but usually we only switch race once.
   readonly resultCodeDescription = computed(() => getResultCodeDefinition(this.resultCodeValue())?.description);
+  
+  /** 
+   * Time input is required is only required if 
+   * 1. The race is not level rating/pursuit
+   * 2. The results code requires a finish time
+   */
   timeInputRequired = computed(() => {
+    const race = this.selectedRace();
     const code = this.resultCodeValue();
+
+    if (!race || race.type === 'Level Rating' || race.type === 'Pursuit') {
+      return false;
+    }
     return requiresTime(code) || code === 'NOT FINISHED';
   });
 
@@ -335,12 +346,6 @@ export class ManualResultsPage {
     if (race.type === 'Handicap' && !race.actualStart) {
       console.error('ManualResultsRage: Attempting to save result before start time set');
       await this.setStartTime(race!);
-      return;
-    }
-
-    // If Result is OK, a finish time must be provided for Handicap races.
-    if (race.type === 'Handicap' && requiresTime(resultCode) && !finishTime) {
-      console.error('ManualResultsRage: Attempting to save competitor with result code OK and no finish time');
       return;
     }
 

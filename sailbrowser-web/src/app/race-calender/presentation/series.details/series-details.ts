@@ -14,10 +14,11 @@ import { seriesEntryGroupingDetails } from 'app/scoring';
 import { Race, RaceCalendarStore, Series } from 'app/race-calender';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { ClubStore } from 'app/club-tenant';
+import { getFleetName } from 'app/club-tenant/model/fleet';
 
 /** Displays series details with a list of races 
  * Includes buttons to add/edit races and duplicate the series
-*/
+ */
 @Component({
    selector: 'app-series-details',
    imports: [DatePipe, Toolbar, MatListModule, MatCardModule, MatIconModule, MatButtonModule, LoadingCentered, RaceListItem],
@@ -62,21 +63,31 @@ export class SeriesDetails {
    // Reactive state derived from services
    series = computed(() => this.rc.allSeries().find(s => s.id === this.id())!);
    fleets = computed(() => this.clubStore.club().fleets);
-   fleet = computed(() => this.fleets().find((f) => f.shortName === this.series()?.fleetId));
+   fleet = computed(() => this.fleets().find((f) => f.id === this.series()?.primaryScoringConfiguration?.fleet?.id));
+   getFleetName = getFleetName;
+
+   canDeleteSeries = computed(() => {
+      const races = this.races();
+      return !races.some(r => this.isRacePublished(r));
+   });
 
    scoringSchemeName = computed(() => {
-      const scheme = this.series()?.scoringScheme?.scheme;
+      const scheme = this.series()?.scoringAlgorithm;
       if (!scheme) return '';
       return seriesScoringSchemeDetails.find(s => s.name === scheme)?.displayName ?? '';
    });
 
    entryAlgorithmName = computed(() => {
-      const algorithm = this.series()?.scoringScheme?.entryAlgorithm;
+      const algorithm = this.series()?.entryAlgorithm;
       if (!algorithm) return '';
       return seriesEntryGroupingDetails.find(a => a.name === algorithm)?.displayName ?? '';
    });
 
    races = this.rc.getSeriesRaces(this.id);
+
+   isRacePublished(race: Race): boolean {
+      return race.status === 'Published' || race.status === 'Verified';
+   }
 
    busy = signal(false);
 
@@ -107,6 +118,8 @@ export class SeriesDetails {
          } finally {
             this.busy.set(false);
          }
+
+         this.router.navigate(['/race-calender', 'series']);
       }
    }
 
