@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, signal, viewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
@@ -14,7 +14,7 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
   template: `
     <app-toolbar [title]="'Edit Series - ' + series()?.name" showBack/>
     @if (series()) {
-      <app-series-form [series]="series()" (submitted)="submitted($event)"></app-series-form>
+      <app-series-form [series]="series()" [busy]="busy()" (save)="submitted($event)"></app-series-form>
     }
   `
 })
@@ -41,7 +41,6 @@ export class SeriesEdit {
       this.busy.set(false);
     }
     this.router.navigate(['race-calender/series-details', this.id()]);
-
   }
 
   canDeactivate = () => this.form()?.canDeactivate() ?? true;

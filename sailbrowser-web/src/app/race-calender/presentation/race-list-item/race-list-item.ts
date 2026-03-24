@@ -18,6 +18,7 @@ import { Race } from 'app/race-calender';
 })
 export class RaceListItem {
   race = input.required<Race>();
+  disableDelete = input<boolean>(false);
   edit = output<Race>();
   delete = output<Race>();
 }

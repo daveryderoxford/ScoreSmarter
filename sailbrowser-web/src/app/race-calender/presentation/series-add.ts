@@ -13,7 +13,7 @@ import { Series } from '../model/series';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-toolbar title="Add Series" showBack/>
-    <app-series-form (submitted)="submitted($event)"></app-series-form>
+    <app-series-form [busy]="busy()" (save)="submitted($event)"></app-series-form>
   `
 })
 export class SeriesAdd {

@@ -11,7 +11,6 @@ export type { SeriesScoringScheme } from './model/scoring-algotirhm';
 export { SERIES_SCORING_SCHEMES, seriesScoringSchemeDetails } from './model/scoring-algotirhm';
 
 export type { ScoringConfiguration } from './model/scoring-configuration';
-export { defaultSeriesScoringData } from './model/scoring-configuration';
 
 // Services
 export { score } from './services/scorer';

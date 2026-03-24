@@ -1,11 +1,12 @@
 <div class="container">
   <div class="filter-container">
     <mat-form-field class="filter" appearance="outline">
-      <mat-label>Filter by Fleet</mat-label>
-      <input matInput type="text" [ngModel]="fleetFilter()" (ngModelChange)="fleetFilter.set($event)"
+      <mat-label>Filter Series</mat-label>
+      <input matInput type="text" [ngModel]="subseriesFilter()" (ngModelChange)="subseriesFilter.set($event)"
         placeholder="e.g., Laser" />
-      @if (fleetFilter()) {
-      <button matSuffix matIconButton aria-label="Clear" (click)="fleetFilter.set('')">
+      <mat-icon matPrefix>search</mat-icon>
+      @if (subseriesFilter()) {
+      <button matSuffix matIconButton aria-label="Clear" (click)="subseriesFilter.set('')">
         <mat-icon>close</mat-icon>
       </button>
       }

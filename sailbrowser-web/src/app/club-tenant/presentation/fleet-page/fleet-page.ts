@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import { CommonModule, TitleCasePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,20 +17,28 @@ import { ClubStore } from '../../services/club-store';
 import { LoadingCentered } from "app/shared/components/loading-centered";
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Fleet } from '../../model/fleet';
+import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 
 @Component({
   selector: 'app-fleet-page',
   imports: [Toolbar, MatListModule, MatMenuModule,
     MatButtonModule, MatIconModule, RouterModule, MatDividerModule,
     MatTooltipModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, LoadingCentered,
-    MatDividerModule],
+    MatDividerModule, TitleCasePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './fleet-page.html',
   styles: `
     @use "mixins" as mix;
 
     @include mix.centered-column-page(".content", 600px);
+
+    .system-fleet {
+      cursor: default;
+    }
+
+    .system-lock-icon {
+      color: #9e9e9e;
+    }
   `
 })
 export class FleetPage {
@@ -54,14 +63,17 @@ export class FleetPage {
 
   filteredFleets = computed(() => {
     const filter = this.searchTerm()?.toLowerCase() || '';
-    return this.cs.club().fleets.filter((fleet: Fleet) => 
-      fleet.name.toLowerCase().includes(filter) || 
-      fleet.shortName.toLowerCase().includes(filter)
-    ).sort((a, b) => a.name.localeCompare(b.name));
+    return this.cs.club().fleets.filter((fleet: Fleet) => {
+      if (fleet.type === 'All') return false; // Hide 'All competitors' fleet from the UI
+      const name = getFleetName(fleet).toLowerCase();
+      return name.includes(filter);
+    }).sort((a, b) => getFleetName(a).localeCompare(getFleetName(b)));
   });
 
+  getFleetName = getFleetName;
+
   async deleteFleet(fleet: Fleet) {
-    if (await this.ds.confirm('Delete Fleet', `Are you sure you want to delete ${fleet.name}?`)) {
+    if (await this.ds.confirm('Delete Fleet', `Are you sure you want to delete ${getFleetName(fleet)}?`)) {
       try {
         await this.cs.removeFleet(fleet);
         this.snackbar.open("Fleet deleted", "Dismiss", { duration: 3000 });

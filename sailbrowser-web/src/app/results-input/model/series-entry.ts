@@ -11,6 +11,7 @@ export interface SeriesEntry {
    boatClass: string;
    sailNumber: number;
    handicap: number;
+   fleetId?: string;
 
    // For subset scoring
    tags?: string[];

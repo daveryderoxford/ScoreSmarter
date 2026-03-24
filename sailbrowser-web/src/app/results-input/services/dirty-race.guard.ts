@@ -17,33 +17,30 @@ export const dirtyRaceGuard: CanDeactivateFn<ManualResultsPage> = async (compone
 
   const scoringEngine = inject(ScoringEngine);
 
-  // Find all races that have been marked as dirty
+  // Find all races and series that have been marked as dirty
   const dirtyRaces = raceStore.allRaces().filter(race => race.dirty);
 
   if (dirtyRaces.length === 0) {
-    return true; // No dirty races, allow navigation immediately.
+    return true; // No dirty data, allow navigation immediately.
   }
 
-  console.log(`ManualResultsInput:  Found ${dirtyRaces.length} race(s) to publish...`);
+  console.log(`DirtyRaceGuard: Found ${dirtyRaces.length} race(s) to publish...`);
 
-  snackbar.open('Scoring races', 'Cancel');
+  snackbar.open('Scoring results', 'Cancel');
 
   try {
-  // Create an array of promises for publishing each dirty race.
-  const publishPromises = dirtyRaces.map(race => scoringEngine.publishRace(race));
-
- 
-    // Wait for all publishing operations to complete.
-    await Promise.all(publishPromises);  
+    for (const race of dirtyRaces) {
+      await scoringEngine.publishRace(race);
+    }
   } catch (e: unknown) {
     console.error(`DirtyRaceGuard:  Error encountered publishing race results
-      ${dirtyRaces.map( race => race.id + '  ')}
+      ${dirtyRaces.map(race => race.id + '  ')}
       ${e}
       `);
     snackbar.dismiss();
     const ret = await dialog.confirm('Error processing results', 'Press OK to exit or cancel to remain on page');
-     return ret;
-    }
+    return ret;
+  }
   snackbar.dismiss();
 
   return true; // Allow navigation to proceed.

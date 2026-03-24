@@ -100,7 +100,6 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
                ...raceData,
                seriesId: seriesDetails.id,
                seriesName: seriesDetails.name,
-               fleetId: seriesDetails.fleetId,
                status: 'Future',
             } as Partial<Race>);
          } else {
@@ -109,6 +108,14 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
             batch.update(raceRef, { index: updatedRace.index, raceOfDay: updatedRace.raceOfDay });
          }
       });
+
+      // Update series dates
+      if (allRacesForSeries.length > 0) {
+         const dates = allRacesForSeries.map(r => r.scheduledStart.getTime());
+         const startDate = new Date(Math.min(...dates));
+         const endDate = new Date(Math.max(...dates));
+         batch.update(this.ref(seriesDetails.id), { startDate, endDate });
+      }
 
       await batch.commit();
    }
@@ -133,6 +140,39 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
          const raceRef = this.raceRef(race.id);
          batch.update(raceRef, { index: i + 1, raceOfDay: dayCounter });
       });
+
+      // Update series dates
+      if (remainingRaces.length > 0) {
+         const dates = remainingRaces.map(r => r.scheduledStart.getTime());
+         const startDate = new Date(Math.min(...dates));
+         const endDate = new Date(Math.max(...dates));
+         batch.update(this.ref(raceToDelete.seriesId), { startDate, endDate });
+      } else {
+         batch.update(this.ref(raceToDelete.seriesId), { startDate: null, endDate: null });
+      }
+
+      await batch.commit();
+   }
+
+   /** Update a race and recalculate series dates if scheduledStart changed */
+   override async updateRace(raceId: string, data: Partial<Race>): Promise<void> {
+      const batch = writeBatch(this.firestore);
+      batch.set(this.raceRef(raceId), data, { merge: true });
+
+      if (data.scheduledStart) {
+         const race = this.allRaces().find(r => r.id === raceId);
+         if (race) {
+            const allRacesForSeries = this.allRaces().filter(r => r.seriesId === race.seriesId);
+            const updatedRaces = allRacesForSeries.map(r => r.id === raceId ? { ...r, ...data } as Race : r);
+            
+            const dates = updatedRaces.map(r => r.scheduledStart.getTime());
+            if (dates.length > 0) {
+               const startDate = new Date(Math.min(...dates));
+               const endDate = new Date(Math.max(...dates));
+               batch.update(this.ref(race.seriesId), { startDate, endDate });
+            }
+         }
+      }
 
       await batch.commit();
    }

@@ -1,70 +1,47 @@
-import { computed, inject, Injectable, resource, signal } from '@angular/core';
-import { doc, getDoc, getDocs, query, where } from '@angular/fire/firestore';
-import { PublishedRace } from '../model/published-race';
+import { Injectable, inject, signal, computed } from '@angular/core';
+import { collectionData, docData, query, orderBy } from '@angular/fire/firestore';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { of, combineLatest } from 'rxjs';
 import { PublishedSeason } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
-import { FirestoreTenantService } from 'app/club-tenant';
+import { PublishedRace } from '../model/published-race';
+import { FirestoreTenantService } from 'app/club-tenant/services/firestore-tenant';
 
-interface SeriesRaces {
-  series: PublishedSeries | undefined;
-  races: PublishedRace[];
-}
+export const PUBLISHED_SEASONS_PATH = 'published_seasons';
+export const PUBLISHED_SERIES_PATH = 'published_series';
 
-export const PUBLISHED_SEASONS_PATH = '/published-seasons';
-export const PUBLISHED_SERIES_PATH = '/published-series';
-export const PUBLISHED_RACES_PATH = '/published-races';
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class PublishedResultsReader {
-  private tenant = inject(FirestoreTenantService);
+   private readonly tenant = inject(FirestoreTenantService);
 
-  private seasonsCollection = this.tenant.collectionRef<PublishedSeason>(PUBLISHED_SEASONS_PATH);
-  private seriesCollection = this.tenant.collectionRef<PublishedSeries>(PUBLISHED_SERIES_PATH);
-  private racesCollection = this.tenant.collectionRef<PublishedRace>(PUBLISHED_RACES_PATH);
+   // 1. Seasons Index
+   private readonly _seasonsResource = rxResource<PublishedSeason[], void>({
+      stream: () => collectionData(this.tenant.collectionRef<PublishedSeason>(PUBLISHED_SEASONS_PATH))
+   });
+   readonly seasons = computed(() => this._seasonsResource.value() || []);
+   readonly seasonsLoading = this._seasonsResource.isLoading;
 
-  /** One-time load with no monitoring of all published seasons */
-  private readonly seasonsResource = resource({
-    loader: () => getDocs(this.seasonsCollection).then(
-      snapshot => snapshot.docs.map(d => d.data())
-    ),
-    defaultValue: [],
-  });
+   // 2. Selected Series and its Races
+   selectedSeriesId = signal<string | undefined>(undefined);
+   
+   private readonly _seriesDataResource = rxResource({
+      params: () => this.selectedSeriesId(),
+      stream: ({ params: id }) => {
+         if (!id) return of({ series: undefined, races: [] });
+         
+         const seriesDocRef = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, id);
+         const racesCol = this.tenant.collectionRef<PublishedRace>(PUBLISHED_SERIES_PATH, id, 'races');
+         const q = query(racesCol, orderBy('index', 'asc'));
 
-  readonly seasons = this.seasonsResource.value.asReadonly();
-  readonly isLoadingSeasons = this.seasonsResource.isLoading;
-
-  selectedSeriesId = signal<string | undefined>(undefined);
-
-  private readonly seriesResource = resource<SeriesRaces, string | undefined>({
-    params: () => this.selectedSeriesId(),
-    loader: async (data) => {
-      const seriesId = data.params;
-      if (!seriesId) {
-        return ({ series: undefined, races: [] });
-      } else {
-        const seriesDocRef = doc(this.seriesCollection, seriesId);
-
-        const racesQuery = query(this.racesCollection, where('seriesId', '==', seriesId));
-
-        const [seriesSnap, racesSnap] =
-          await Promise.all([getDoc(seriesDocRef), getDocs(racesQuery)]);
-
-        const series = seriesSnap.data();
-        const races = racesSnap.docs.map(d => d.data()).sort((a, b) => a.index - b.index);
-
-        return { series, races };
-
+         return combineLatest({
+            series: docData(seriesDocRef),
+            races: collectionData(q)
+         });
       }
-    },
-    defaultValue: { series: undefined, races: [] }
-  });
+   });
 
-  readonly series = computed(() => this.seriesResource.value().series);
-  readonly races = computed(() => this.seriesResource.value().races);
-
-  readonly seriesLoading = this.seriesResource.isLoading;
-  readonly seriesError = this.seriesResource.error;
-
+   readonly series = computed(() => this._seriesDataResource.value()?.series);
+   readonly races = computed(() => this._seriesDataResource.value()?.races || []);
+   readonly seriesLoading = this._seriesDataResource.isLoading;
+   readonly seriesError = this._seriesDataResource.error;
 }

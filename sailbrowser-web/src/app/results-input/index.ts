@@ -10,3 +10,5 @@ export { RESULTS_ENTRY_ROUTES } from './race-results.routes';
 export { CurrentRaces } from './services/current-races-store';
 
 export { RaceCompetitorStore, sortEntries } from './services/race-competitor-store';
+
+export { dirtySeriesGuard } from './services/dirty-series-guard';

@@ -1,8 +1,8 @@
-import { PublishedRace, RaceResult } from 'app/published-results/model/published-race';
-import { Race, RaceType } from 'app/race-calender';
-import { RaceCompetitor, SeriesEntry } from 'app/results-input';
+import { PublishedRace, RaceResult } from '../../published-results/model/published-race';
+import { Race, RaceType } from '../../race-calender';
+import { RaceCompetitor, SeriesEntry } from '../../results-input';
 import { HandicapScheme } from '../model/handicap-scheme';
-import { getLongAlgorithm, getShortAlgorithm, isFinishedComp, isRedress, isStartAreaComp, ResultCodeAlgorithm } from 'app/scoring/model/result-code-scoring';
+import { getLongAlgorithm, getShortAlgorithm, isFinishedComp, isRedress, isStartAreaComp, ResultCodeAlgorithm } from '../model/result-code-scoring';
 import { ScoreSmarterError } from '../../shared/utils/scoresmarter-error';
 import { differenceInSeconds } from 'date-fns';
 import { SeriesScoringScheme } from '../model/scoring-algotirhm';
@@ -11,26 +11,40 @@ import { SeriesScoringScheme } from '../model/scoring-algotirhm';
  * Uses competitor start, finish. lap and status to calculate results for a single race. 
  * All data in the ResultsData object is populated (elapsed/corrected times points and positions).
  * 
- * Assumes all competitors in the race are supplied.  
- * The maximum number of laps and number of starters is calculated based on all competitors. 
+ * Assumes all results for the race are supplied.  
+ * The maximum number of laps and number of starters is calculated based on all results. 
  */
 export function scoreRace(
   race: Race,
-  competitors: RaceCompetitor[],
-  seriesEntries: SeriesEntry[],
+  results: RaceResult[],
   scheme: HandicapScheme,
   seriesType: SeriesScoringScheme,
   seriesCompetitorCount: number,
 ): RaceResult[] {
 
-  // Build initial results from competitors.
-  const results = buildRaceResults(competitors, seriesEntries);
+  // Calculate elapsed and corrected times for all results.
+  calculateTimes(results, race.isAverageLap, scheme);
 
-  // Calculate elapsed and corrected times for all competitors.
-  calculateTimes(results, competitors, race.isAverageLap, scheme);
+  // Calculate points and ranks.
+  calculateRacePoints(results, race.type, scheme, seriesType, seriesCompetitorCount);
 
+  return results;
+}
+
+/**
+ * Recalculates points and ranks for a race that already has times calculated.
+ * This is useful when the number of competitors in the series changes, 
+ * affecting penalty points (SCP, ZFP, etc.).
+ */
+export function calculateRacePoints(
+  results: RaceResult[],
+  raceType: RaceType,
+  scheme: HandicapScheme,
+  seriesType: SeriesScoringScheme,
+  seriesCompetitorCount: number,
+) {
   // Determine the ordering property for finishers and sort them
-  const orderingProperty = determineOrdering(race.type, scheme, results);
+  const orderingProperty = determineOrdering(raceType, scheme, results);
   // Sort all results to establish finishing order (finishers first, then by ordering property).
   results.sort((a, b) => sortByFinishingOrder(a, b, orderingProperty));
 
@@ -46,8 +60,6 @@ export function scoreRace(
 
   // Calcualte final ranks within race
   calculateRanks(results);
-
-  return results;
 }
 
 /** 
@@ -115,34 +127,9 @@ function validateFinishersHaveData(finishers: RaceResult[], property: keyof Race
 }
 
 /**
- * Re-calculates points for a previously scored race. This is necessary when the
- * total number of competitors in a series changes, affecting DNC/DNS scores.
- * It modifies the points for non-finishers directly on the provided race object.
+ * Maps RaceCompetitor data to initial RaceResult objects.
  */
-export function rescoreRacePoints(
-  race: PublishedRace,
-  newSeriesCompetitorCount: number,
-  seriesType: SeriesScoringScheme
-): void {
-  // Determine the original ordering property. 
-  // TODO Ordering depen ds on if the race is level rating, pursult or handicap
-  // Wew should make this explict rahter than having to infer from elapsd/corretced times 
-  // Could be simplified just to update scores for updated resullts codes
-  const results = race.results;
-  const scheme = results.some(r => r.correctedTime !== r.elapsedTime) ? 'PY' : 'Level Rating';
-  const orderingProperty = determineOrdering(race.type, scheme, results);
-
-  // Re-assign points for finishers, as SCP penalties may change with series competitor count.
-  assignPointsForFinishers(results, orderingProperty, seriesType, newSeriesCompetitorCount);
-  
-  // Re-assign points for non-finishers based on the new total competitor count.
-  applyStaticRacePenalties(results, newSeriesCompetitorCount, seriesType);
-
-  results.sort((a, b) => sortByPoints(a, b));
-  calculateRanks(results);
-}
-
-function buildRaceResults(
+export function buildRaceResults(
   competitors: RaceCompetitor[],
   seriesEntries: SeriesEntry[]
 ): RaceResult[] {
@@ -162,7 +149,7 @@ function buildRaceResults(
       helm: comp.helm || entry.helm,
       crew: comp.crew || entry.crew,
       club: entry.club,
-      laps: 0, // Will be set in calculateTimes
+      laps: comp.numLaps,
       handicap: comp.handicap || entry.handicap,
       startTime: comp.startTime!,
       finishTime: comp.finishTime!,
@@ -176,17 +163,12 @@ function buildRaceResults(
 
 /**
  * Calculates elapsed and corrected times for each result.
- * from competitor timings
  */
-function calculateTimes(results: RaceResult[], competitors: RaceCompetitor[], isAverageLap: boolean, scheme: HandicapScheme) {
-  const maxLaps = competitors.reduce((max, comp) => (comp.numLaps > max) ? comp.numLaps : max, 0);
+function calculateTimes(results: RaceResult[], isAverageLap: boolean, scheme: HandicapScheme) {
+  const maxLaps = results.reduce((max, res) => (res.laps > max) ? res.laps : max, 0);
 
-  for (let i = 0; i < results.length; i++) {
-    const result = results[i];
-    const competitor = competitors[i];
-
-    result.laps = competitor.numLaps;
-    result.elapsedTime = getElapsedTime(competitor, isAverageLap, maxLaps);
+  for (const result of results) {
+    result.elapsedTime = getElapsedTime(result, isAverageLap, maxLaps);
     result.correctedTime = calculateCorrectedTime(result.elapsedTime, result.handicap, scheme);
   }
 }
@@ -196,9 +178,9 @@ function calculateTimes(results: RaceResult[], competitors: RaceCompetitor[], is
  * the average lap time is scaled to the maximun number of laps completed
  * by any competitor 
 */
-function getElapsedTime(comp: RaceCompetitor, isAverageLap: boolean, maxLaps: number): number {
-  const finishTime = comp.finishTime;
-  const compStartTime = comp.startTime;
+function getElapsedTime(result: RaceResult, isAverageLap: boolean, maxLaps: number): number {
+  const finishTime = result.finishTime;
+  const compStartTime = result.startTime;
 
   if (finishTime && compStartTime) {
     const diff = differenceInSeconds(finishTime.getTime(), compStartTime.getTime());
@@ -208,7 +190,7 @@ function getElapsedTime(comp: RaceCompetitor, isAverageLap: boolean, maxLaps: nu
       return 0;
     }
 
-    const numLaps = comp.numLaps;
+    const numLaps = result.laps;
     if (isAverageLap && numLaps === 0) {
       // Consider logging this error
       return 0;
@@ -281,7 +263,9 @@ function assignPointsForFinishers(
       const algorithm = getShortAlgorithm(res.resultCode);
       if (algorithm === ResultCodeAlgorithm.scoringPenalty) {
         // RRS 44.3(c): Finish position + (20% * Boats Entered)
-        const penalty = Math.round((dnfPoints * 0.2) * 10) / 10;
+        // The minimum penalty is two places.
+        // Rounding to 1/10 of a point as per user requirement.
+        const penalty = Math.max(2, Math.round(seriesCompetitorCount * 0.2 * 10) / 10);
         // The penalty is capped at the DNF score.
         res.points = Math.min(res.points + penalty, dnfPoints);
       }

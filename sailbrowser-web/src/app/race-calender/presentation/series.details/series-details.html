@@ -7,7 +7,7 @@
 } @else {
   @let s = series();
 
-  <app-toolbar showBack title="Series Details">
+  <app-toolbar title="Series Details">
     <button matIconButton (click)="copySeries(series())">
       <mat-icon>content_copy</mat-icon>
     </button>
@@ -21,7 +21,9 @@
           <span>{{ series().name }}</span>
         </mat-card-title>
         <mat-card-subtitle>
-          <span>{{fleet()?.name}}</span>
+          @if (fleet()) {
+            <span>{{getFleetName(fleet()!)}}</span>
+          }
           @if (s.startDate && s.endDate) {
             <span>{{ s.startDate| date:'MMM d, y' }} to {{ s.endDate | date:'MMM d, y' }}</span>
           }
@@ -29,7 +31,6 @@
       </mat-card-header>
 
       <mat-card-content>
-        @let scoring = s.scoringScheme;
         <div class="scoring-details">
           <div class="detail-item">
             <span class="detail-label">Scoring Scheme:</span>
@@ -39,13 +40,8 @@
           <div class="detail-item">
             <span class="detail-label">Discards:</span>
             <span class="detail-value">
-              Initial after {{ scoring.initialDiscardAfter}} races then every {{ scoring.subsequentDiscardsEveryN}}
+              Initial after {{ s.initialDiscardAfter}} races then every {{ s.subsequentDiscardsEveryN}}
             </span>
-          </div>
-
-          <div class="detail-item">
-            <span class="detail-label">Handicap system:</span>
-            <span class="detail-value">{{ scoring.handicapScheme }}</span>
           </div>
 
           <div class="detail-item">
@@ -60,7 +56,7 @@
           Edit Details
         </button>
 
-        <button matButton (click)="deleteSeries(s.id)">
+        <button matButton color="warn" (click)="deleteSeries(s.id)" title="Delete Series" [disabled]="!canDeleteSeries()">
           Delete Series
         </button>
       </mat-card-actions>
@@ -80,11 +76,11 @@
     <app-loading-centered />
     }
     @if (this.races().length === 0) {
-    <span>`Add races to the series"</span>
+    <span>Add races to the series</span>
     } @else {
       <mat-list>
         @for (race of races(); track race.id) {
-        <app-race-list-item [race]="race" (edit)="editRace(race)" (delete)="deleteRace(race)" />
+        <app-race-list-item [race]="race" (edit)="editRace(race)" (delete)="deleteRace(race)" [disableDelete]="isRacePublished(race)" />
         }
 
       </mat-list>

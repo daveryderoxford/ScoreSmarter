@@ -15,6 +15,7 @@ export class RaceCompetitor {
   boatClass: string;
   sailNumber: number;
   handicap: number;
+  fleetId?: string;
 
   /**
    * Finish time recorded when competitor finishes.
@@ -49,16 +50,18 @@ export class RaceCompetitor {
   manualPosition?: number;
 
   constructor(data: Partial<RaceCompetitor>) {
-    console.log("RaceCompetitor: Constructor called for " + data.id);
+    // Keys
     this.id = data.id || '';
     this.seriesEntryId = data.seriesEntryId || ''; 
     this.raceId = data.raceId || '';
     this.seriesId = data.seriesId || '';
+    // Competitor info
     this.helm = data.helm || '';
     this.crew = data.crew;
     this.boatClass = data.boatClass || '';
     this.sailNumber = data.sailNumber || 0;
-    this.handicap = data.handicap || 0;
+    this.handicap = data.handicap || 0;   
+    // Scoring data
     this.recordedFinishTime = data.recordedFinishTime;
     this.manualFinishTime = data.manualFinishTime;
     this.startTime = data.startTime;
@@ -81,8 +84,6 @@ export class RaceCompetitor {
    * or undefined if it cannot be calculated.
   */
   get elapsedTime(): number | undefined {
-    console.log("RaceCompetitor: Elapsed time getter called");
-
     // Competitor has not finished, or does not have a valid start/finish time.
     if (this.resultCode === 'NOT FINISHED' || !this.startTime || !this.finishTime) {
       return undefined;
@@ -110,8 +111,6 @@ export class RaceCompetitor {
   }
 
   get helmCrew(): string {
-    console.log("RaceCompetitor:  Hem/crew called");
-
     return this.crew && this.crew.trim().length > 0 ? `${this.helm} / ${this.crew}` : this.helm;
   }
 

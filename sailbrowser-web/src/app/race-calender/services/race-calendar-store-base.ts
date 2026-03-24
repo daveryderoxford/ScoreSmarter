@@ -31,6 +31,20 @@ export class RaceCalendarStoreBase {
   }
 
   async updateSeries(id: string, data: Partial<Series>) {
+    const scoringCriticalFields: (keyof Series)[] = [
+      'scoringAlgorithm',
+      'entryAlgorithm',
+      'initialDiscardAfter',
+      'subsequentDiscardsEveryN',
+      'primaryScoringConfiguration',
+      'secondaryScoringConfigurations'
+    ];
+
+    const hasScoringChange = scoringCriticalFields.some(field => field in data);
+    if (hasScoringChange) {
+      data.dirty = true;
+    }
+
     await setDoc(this.ref(id), data, { merge: true });
   }
 
@@ -76,7 +90,7 @@ export function seriesSort(a: Series, b: Series): number {
   if (ret !== 0) {
     return ret;
   } else {
-    return a.fleetId.localeCompare(b.fleetId);
+    return a.name.localeCompare(b.name);
   }
 }
 

@@ -4,7 +4,7 @@
 */
 import { inject, Injectable } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { addDoc, collectionData, deleteDoc, doc, Firestore, query, updateDoc, where } from '@angular/fire/firestore';
+import { addDoc, collectionData, deleteDoc, doc, Firestore, getDocs, query, updateDoc, where } from '@angular/fire/firestore';
 import { FirestoreTenantService } from 'app/club-tenant';
 import { map, of, tap } from 'rxjs';
 import { RaceCompetitor } from '../model/race-competitor';
@@ -20,6 +20,15 @@ export class RaceCompetitorStore {
   
   private collection = this.tenant.collectionOf<RaceCompetitor>(RaceCompetitor, 'race-results');
   private ref = (id: string) => doc(this.collection, id);
+
+  /**
+   * Fetches all competitors for a series without monitoring for changes.
+   */
+  async getSeriesCompetitors(seriesId: string): Promise<RaceCompetitor[]> {
+    const q = query(this.collection, where('seriesId', '==', seriesId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data());
+  }
 
   /** Race competitors in selected races */
   private readonly selectedCompResource = rxResource<RaceCompetitor[], string[]>({

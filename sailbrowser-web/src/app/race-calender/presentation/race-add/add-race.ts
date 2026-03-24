@@ -107,7 +107,12 @@ export class RaceAdd {
 
       try {
         this.busy.set(true);
-        await this.rcs.addRaces(this.series()!, races);
+        const series = this.series()!;
+        await this.rcs.addRaces({
+          id: series.id,
+          name: series.name,
+          fleetId: series.primaryScoringConfiguration.fleet.id
+        }, races);
       } catch (error: any) {
         this.snackbar.open("Error encountered adding races", "Dismiss", { duration: 3000 });
         console.log('AddRace: Error adding races ' + error.toString());

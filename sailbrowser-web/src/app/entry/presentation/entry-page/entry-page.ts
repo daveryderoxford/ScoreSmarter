@@ -177,7 +177,6 @@ export class EntryPage {
 
   async onSubmit() {
 
-    console.log("OnoSubmit triggered");
     if (this.raceSelectionGroup.invalid || this.competitorDetailsGroup.invalid) return;
 
     const races = this.raceSelectionGroup.value.enteredRaces as Race[];
@@ -206,7 +205,7 @@ export class EntryPage {
       await this._entryService.enterRaces(entryData);
     } catch (error: any) {
       this.snackbar.open("Error encountered adding entries", "Dismiss", { duration: 3000 });
-      console.log('EntryPage:  Error adding entris: ' + error.toString());
+      console.log('EntryPage:  Error adding entries: ' + error.toString());
     } finally {
       this.busy.set(false);
     }
