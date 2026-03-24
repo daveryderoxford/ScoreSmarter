@@ -31,8 +31,6 @@ export class EntryService {
    */
   async enterRaces(details: EntryDetails): Promise<void> {
 
-    console.log("Calling enter races");
-
     if (this.isDuplicateEntry(details)) {
       throw new ScoreSmarterError("Duplicate entry");
     }
@@ -60,8 +58,6 @@ export class EntryService {
         handicap: handicap,
         resultCode: 'NOT FINISHED'
       };
-
-      console.log("Adding competitor");
 
      await this.raceResultsStore.addResult(competitor);
 
@@ -91,7 +87,7 @@ export class EntryService {
    */
   async createSeriesEntryIfRequired(race: Race, details: EntryDetails, handicap: number): Promise<string> {
     const seriesEntries = this.seriesEntryStore.selectedEntries()
-      .filter(seriesEntry => seriesEntry.seriesId = race.seriesId);
+      .filter(seriesEntry => seriesEntry.seriesId === race.seriesId);
 
     const series = this.raceCalanderStore.allSeries().find(s => s.id = race.seriesId);
     if (!series) {
@@ -116,12 +112,14 @@ export class EntryService {
       case 'helm':
         entry = seriesEntries.find(e => e.helm === details.helm);
         break;
+      default:
+        throw new ScoreSmarterError('invalid entry algorithm');
     }
     if (entry) {
       return entry.id;
     }
 
-    console.log(`EntryService: Adding series entry${race.seriesName} index:  ${race.index}`);
+    console.log(`EntryService: Adding series entry ${race.seriesName} index: ${race.index}`);
     
     const entryId = await this.seriesEntryStore.addEntry({
       seriesId: race.seriesId,

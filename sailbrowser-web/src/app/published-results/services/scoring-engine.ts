@@ -37,13 +37,11 @@ export class ScoringEngine {
 
     const competitors = this.rcs.selectedCompetitors().filter(c => c.raceId === race.id);
 
-    console.log(`publishRace: Selected competitors  ${this.rcs.selectedCompetitors().map(c => `/ ${c.boatClass} ${c.helm}`).join(' ')}`);
-
     const seriesEntries = this.seriesEntryStore.selectedEntries().filter(s => s.seriesId === race.seriesId);
 
     const configsToScore = [series.primaryScoringConfiguration, ...(series.secondaryScoringConfigurations || [])];
 
-    console.log(`publishRace Scoring: ${race.id}  Series${race.seriesName} Race: ${race.index} Competitors: ${competitors.map(c => c.helm).join(' ')}`);
+    console.log(`publishRace Scoring: ${race.id}  Series${race.seriesName} Race: ${race.index} Num competitors: ${competitors.length}`);
     const batch = writeBatch(this.firestore);
     const seasonUpdates = new Map<string, PublishedSeason>();
 

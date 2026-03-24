@@ -50,7 +50,6 @@ export class RaceCompetitor {
   manualPosition?: number;
 
   constructor(data: Partial<RaceCompetitor>) {
-    console.log("RaceCompetitor: Constructor called for " + data.id);
     // Keys
     this.id = data.id || '';
     this.seriesEntryId = data.seriesEntryId || ''; 
@@ -85,8 +84,6 @@ export class RaceCompetitor {
    * or undefined if it cannot be calculated.
   */
   get elapsedTime(): number | undefined {
-    console.log("RaceCompetitor: Elapsed time getter called");
-
     // Competitor has not finished, or does not have a valid start/finish time.
     if (this.resultCode === 'NOT FINISHED' || !this.startTime || !this.finishTime) {
       return undefined;
@@ -114,8 +111,6 @@ export class RaceCompetitor {
   }
 
   get helmCrew(): string {
-    console.log("RaceCompetitor:  Hem/crew called");
-
     return this.crew && this.crew.trim().length > 0 ? `${this.helm} / ${this.crew}` : this.helm;
   }
 
