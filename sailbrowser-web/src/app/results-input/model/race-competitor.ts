@@ -51,16 +51,18 @@ export class RaceCompetitor {
 
   constructor(data: Partial<RaceCompetitor>) {
     console.log("RaceCompetitor: Constructor called for " + data.id);
+    // Keys
     this.id = data.id || '';
     this.seriesEntryId = data.seriesEntryId || ''; 
     this.raceId = data.raceId || '';
     this.seriesId = data.seriesId || '';
+    // Competitor info
     this.helm = data.helm || '';
     this.crew = data.crew;
     this.boatClass = data.boatClass || '';
     this.sailNumber = data.sailNumber || 0;
-    this.handicap = data.handicap || 0;
-    this.fleetId = data.fleetId;
+    this.handicap = data.handicap || 0;   
+    // Scoring data
     this.recordedFinishTime = data.recordedFinishTime;
     this.manualFinishTime = data.manualFinishTime;
     this.startTime = data.startTime;

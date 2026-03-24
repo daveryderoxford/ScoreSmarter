@@ -111,11 +111,8 @@ export class ResultsViewer {
   }
 
   editRace(raceId: string) {
-    const seriesId = this.series()?.id;
-    if (seriesId) {
-      this.currentRacesStore.selectedRaceIds.set([raceId]);
-      this.router.navigate(['/results-input/race-results', raceId]);
-    }
+    this.currentRacesStore.addRaceId(raceId);
+    this.router.navigate(['/results-input/manual'], { queryParams: { raceId } });
   }
 
   onConfigurationChange(newSeriesId: string) {
