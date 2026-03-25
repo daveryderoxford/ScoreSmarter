@@ -65,33 +65,16 @@ export class ManualResultsPage {
   readonly resultCodes = RESULT_CODE_DEFINITIONS.filter(c => c.id !== 'NOT FINISHED');
 
   // Forms for data entry
-  readonly handicapForm = this.fb.group({
+  readonly form = this.fb.group({
     finishTime: this.fb.control<Date | null>(null, { updateOn: 'blur' }),
     laps: this.fb.nonNullable.control(1, [Validators.required, Validators.min(1)]),
-    resultCode: this.fb.nonNullable.control<ResultCode>('OK'),
-  });
-
-  readonly pursuitForm = this.fb.group({
     position: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
     resultCode: this.fb.nonNullable.control<ResultCode>('OK'),
-  });
-
-  readonly levelRatingForm = this.fb.group({
-    position: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
-    finishTime: this.fb.control<Date | null>(null, { updateOn: 'blur' }),
-    resultCode: this.fb.nonNullable.control<ResultCode>('OK'),
-  });
-
-  readonly activeForm = computed(() => {
-    const type = this.selectedRace()?.type;
-    if (type === 'Pursuit') return this.pursuitForm;
-    if (type === 'Level Rating') return this.levelRatingForm;
-    return this.handicapForm;
   });
 
   readonly resultCodeValue = toSignal(
-    toObservable(this.activeForm).pipe(
-      switchMap(form => form.controls.resultCode.valueChanges.pipe(startWith(form.controls.resultCode.value as ResultCode)))
+    this.form.controls.resultCode.valueChanges.pipe(
+      startWith(this.form.controls.resultCode.value as ResultCode)
     ), { initialValue: 'OK' as ResultCode }
   );
   // Note: We might need to sync resultCode across forms if we want to keep it consistent when switching
@@ -146,20 +129,14 @@ export class ManualResultsPage {
 
   // Feedback signals for the RO
   readonly enteredFinishTime = toSignal(
-    toObservable(this.activeForm).pipe(
-      switchMap(form => {
-        const ctrl = (form.controls as any).finishTime;
-        return (ctrl ? ctrl.valueChanges.pipe(startWith(ctrl.value)) : of(null)) as Observable<Date | null>;
-      })
-    ), { initialValue: null }
+    this.form.controls.finishTime.valueChanges.pipe(
+      startWith(this.form.controls.finishTime.value)
+    ), { initialValue: null as Date | null }
   );
 
   readonly enteredLapsValue = toSignal(
-    toObservable(this.activeForm).pipe(
-      switchMap(form => {
-        const ctrl = (form.controls as any).laps;
-        return (ctrl ? ctrl.valueChanges.pipe(startWith(ctrl.value)) : of(1)) as Observable<number>;
-      })
+    this.form.controls.laps.valueChanges.pipe(
+      startWith(this.form.controls.laps.value)
     ), { initialValue: 1 }
   );
 
@@ -256,7 +233,7 @@ export class ManualResultsPage {
         if (comp.resultCode === 'NOT FINISHED') {
           this.resetFormDefaults();
         } else {
-          this.activeForm().reset({
+          this.form.reset({
             finishTime: comp.manualFinishTime,
             laps: comp.manualLaps || 1,
             resultCode: comp.resultCode,
@@ -278,8 +255,7 @@ export class ManualResultsPage {
     });
 
     const timeInputRequiredEffect = effect(() => {
-      const form = this.activeForm();
-      const control = (form.controls as any).finishTime;
+      const control = this.form.controls.finishTime;
       if (!control) return;
 
       if (this.timeInputRequired()) {
@@ -291,10 +267,22 @@ export class ManualResultsPage {
         control.updateValueAndValidity({ emitEvent: false });
       });
     });
+
+    // Manage position required validator based on race type
+    const positionRequiredEffect = effect(() => {
+      const race = this.selectedRace();
+      const control = this.form.controls.position;
+      if (race?.type === 'Pursuit' || race?.type === 'Level Rating') {
+        control.setValidators([Validators.required, Validators.min(1)]);
+      } else {
+        control.clearValidators();
+      }
+      untracked(() => control.updateValueAndValidity({ emitEvent: false }));
+    });
   }
 
   resetFormDefaults() {
-    this.activeForm().reset({
+    this.form.reset({
       finishTime: null,
       laps: this.lastEnteredLaps(),
       resultCode: 'OK',
@@ -329,7 +317,7 @@ export class ManualResultsPage {
   }
 
   async save() {
-    const form = this.activeForm();
+    const form = this.form;
     if (form.invalid) return;
 
     const values = form.getRawValue() as any;
