@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { addDoc, collectionData, deleteDoc, updateDoc } from '@angular/fire/firestore';
+import { collectionData, deleteDoc, updateDoc, setDoc } from '@angular/fire/firestore';
+import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { map, Observable } from 'rxjs';
 import { Boat } from '../model/boat';
@@ -48,7 +49,8 @@ export class BoatsStore {
 
   async add(boat: Partial<Boat>): Promise<void> {
     const update = this.trimStrings(boat);
-    await addDoc(this.boatsCollection, update);
+    const id = generateSecureID(1000, `B-${update.boatClass}-${update.sailNumber}`);
+    await setDoc(this.ref(id), update);
   }
 
   async update(id: string, data: Partial<Boat>): Promise<void> {

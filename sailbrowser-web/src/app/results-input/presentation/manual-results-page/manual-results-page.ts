@@ -15,7 +15,7 @@ import { CurrentRaces, RaceCompetitor, RaceCompetitorStore } from 'app/results-i
 import { RESULT_CODE_DEFINITIONS, ResultCode, getResultCodeDefinition } from 'app/scoring/model/result-code';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { normaliseString } from 'app/shared/utils/string-utils';
-import { firstValueFrom, map, of, startWith, switchMap, Observable } from 'rxjs';
+import { firstValueFrom, map, of, startWith, switchMap, Observable, tap } from 'rxjs';
 import { ManualResultsTable } from '../manual-results-table';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-time-dialog';
 import { RaceTimeInput } from '../race-time-input';
@@ -24,6 +24,9 @@ import { requiresTime } from 'app/scoring/model/result-code-scoring';
 import { manualRaceTableSort, ManualResultsService } from '../../services/manual-results.service';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { MoreRacesDialog } from '../more-races-dialog';
+import { BusyButton } from 'app/shared/components/busy-button';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import { RaceTitlePipe } from '../../../shared/pipes/race-title-pipe';
 
 @Component({
   selector: 'app-manual-results-page',
@@ -44,6 +47,8 @@ import { MoreRacesDialog } from '../more-races-dialog';
     ManualResultsTable,
     DurationPipe,
     ResultCodeSelector,
+    BusyButton, 
+    RaceTitlePipe
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -55,8 +60,11 @@ export class ManualResultsPage {
   private readonly publishService = inject(ScoringEngine);
   private readonly manualResultsService = inject(ManualResultsService);
   private readonly fb = inject(FormBuilder);
+  private message = inject(DialogsService);
 
-  readonly searchInput = viewChild.required<ElementRef<HTMLInputElement>>('searchInput');
+  publishing = signal(false);
+
+  readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
 
   readonly raceId = input<string>();
 
@@ -65,33 +73,16 @@ export class ManualResultsPage {
   readonly resultCodes = RESULT_CODE_DEFINITIONS.filter(c => c.id !== 'NOT FINISHED');
 
   // Forms for data entry
-  readonly handicapForm = this.fb.group({
+  readonly form = this.fb.group({
     finishTime: this.fb.control<Date | null>(null, { updateOn: 'blur' }),
     laps: this.fb.nonNullable.control(1, [Validators.required, Validators.min(1)]),
-    resultCode: this.fb.nonNullable.control<ResultCode>('OK'),
-  });
-
-  readonly pursuitForm = this.fb.group({
     position: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
     resultCode: this.fb.nonNullable.control<ResultCode>('OK'),
-  });
-
-  readonly levelRatingForm = this.fb.group({
-    position: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
-    finishTime: this.fb.control<Date | null>(null, { updateOn: 'blur' }),
-    resultCode: this.fb.nonNullable.control<ResultCode>('OK'),
-  });
-
-  readonly activeForm = computed(() => {
-    const type = this.selectedRace()?.type;
-    if (type === 'Pursuit') return this.pursuitForm;
-    if (type === 'Level Rating') return this.levelRatingForm;
-    return this.handicapForm;
   });
 
   readonly resultCodeValue = toSignal(
-    toObservable(this.activeForm).pipe(
-      switchMap(form => form.controls.resultCode.valueChanges.pipe(startWith(form.controls.resultCode.value as ResultCode)))
+    this.form.controls.resultCode.valueChanges.pipe(
+      startWith(this.form.controls.resultCode.value as ResultCode)
     ), { initialValue: 'OK' as ResultCode }
   );
   // Note: We might need to sync resultCode across forms if we want to keep it consistent when switching
@@ -113,7 +104,10 @@ export class ManualResultsPage {
     return requiresTime(code) || code === 'NOT FINISHED';
   });
 
-  readonly selectedRaceId = toSignal(this.raceFilterControl.valueChanges.pipe(startWith(this.raceFilterControl.value)), { initialValue: this.raceFilterControl.value });
+  readonly selectedRaceId = toSignal(this.raceFilterControl.valueChanges.pipe(
+    startWith(this.raceFilterControl.value),
+  ), 
+  { initialValue: this.raceFilterControl.value });
 
   readonly selectedRace = computed(() =>
     this.currentRacesStore.selectedRaces().find(r => this.selectedRaceId() == r.id));
@@ -146,20 +140,14 @@ export class ManualResultsPage {
 
   // Feedback signals for the RO
   readonly enteredFinishTime = toSignal(
-    toObservable(this.activeForm).pipe(
-      switchMap(form => {
-        const ctrl = (form.controls as any).finishTime;
-        return (ctrl ? ctrl.valueChanges.pipe(startWith(ctrl.value)) : of(null)) as Observable<Date | null>;
-      })
-    ), { initialValue: null }
+    this.form.controls.finishTime.valueChanges.pipe(
+      startWith(this.form.controls.finishTime.value)
+    ), { initialValue: null as Date | null }
   );
 
   readonly enteredLapsValue = toSignal(
-    toObservable(this.activeForm).pipe(
-      switchMap(form => {
-        const ctrl = (form.controls as any).laps;
-        return (ctrl ? ctrl.valueChanges.pipe(startWith(ctrl.value)) : of(1)) as Observable<number>;
-      })
+    this.form.controls.laps.valueChanges.pipe(
+      startWith(this.form.controls.laps.value)
     ), { initialValue: 1 }
   );
 
@@ -256,7 +244,7 @@ export class ManualResultsPage {
         if (comp.resultCode === 'NOT FINISHED') {
           this.resetFormDefaults();
         } else {
-          this.activeForm().reset({
+          this.form.reset({
             finishTime: comp.manualFinishTime,
             laps: comp.manualLaps || 1,
             resultCode: comp.resultCode,
@@ -278,8 +266,7 @@ export class ManualResultsPage {
     });
 
     const timeInputRequiredEffect = effect(() => {
-      const form = this.activeForm();
-      const control = (form.controls as any).finishTime;
+      const control = this.form.controls.finishTime;
       if (!control) return;
 
       if (this.timeInputRequired()) {
@@ -291,10 +278,22 @@ export class ManualResultsPage {
         control.updateValueAndValidity({ emitEvent: false });
       });
     });
+
+    // Manage position required validator based on race type
+    const positionRequiredEffect = effect(() => {
+      const race = this.selectedRace();
+      const control = this.form.controls.position;
+      if (race?.type === 'Pursuit' || race?.type === 'Level Rating') {
+        control.setValidators([Validators.required, Validators.min(1)]);
+      } else {
+        control.clearValidators();
+      }
+      untracked(() => control.updateValueAndValidity({ emitEvent: false }));
+    });
   }
 
   resetFormDefaults() {
-    this.activeForm().reset({
+    this.form.reset({
       finishTime: null,
       laps: this.lastEnteredLaps(),
       resultCode: 'OK',
@@ -329,7 +328,7 @@ export class ManualResultsPage {
   }
 
   async save() {
-    const form = this.activeForm();
+    const form = this.form;
     if (form.invalid) return;
 
     const values = form.getRawValue() as any;
@@ -360,15 +359,27 @@ export class ManualResultsPage {
     if (laps) this.lastEnteredLaps.set(laps);
 
     this.selectedCompetitor.set(undefined);
-    this.searchInput().nativeElement.focus();
+    if (this.searchInput()) {
+      this.searchInput()!.nativeElement.focus();
+    }
 
   }
 
   /** Publish the race results */
-  publish() {
-    if (this.selectedRace()) {
-      this.publishService.publishRace(this.selectedRace()!);
+  async publish() {
+    if (this.selectedRace() && !this.publishing()) {
+      const race = this.selectedRace()!;
+      this.publishing.set(true);
+      try {
+        await this.publishService.publishRace(race);
+      } catch (e: unknown) {
+        const msg = 'Manual results: Publishing results' + 
+          `Race: ${race.id} SeriesId ${race.seriesId}. ${e}`
+        console.log(msg);
+        this.message.message("Error publihing results", msg);
+      } finally {
+        this.publishing.set(false);
+      }
     }
-
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { collectionData, docData, query, orderBy } from '@angular/fire/firestore';
+import { collectionData, docData, query, orderBy, getDoc } from '@angular/fire/firestore';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { of, combineLatest } from 'rxjs';
 import { PublishedSeason } from '../model/published-season';
@@ -44,4 +44,18 @@ export class PublishedResultsReader {
    readonly races = computed(() => this._seriesDataResource.value()?.races || []);
    readonly seriesLoading = this._seriesDataResource.isLoading;
    readonly seriesError = this._seriesDataResource.error;
+
+   // Fallback fetch for a specific series if not in cache
+   async getSeriesById(id: string): Promise<PublishedSeries | undefined> {
+      // Check if it's the currently loaded series
+      const currentSeries = this.series();
+      if (currentSeries && currentSeries.id === id) {
+         return currentSeries;
+      }
+
+      // Fallback to fetching directly from Firestore
+      const seriesDocRef = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, id);
+      const snapshot = await getDoc(seriesDocRef);
+      return snapshot.exists() ? snapshot.data() : undefined;
+   }
 }

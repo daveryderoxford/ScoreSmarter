@@ -4,17 +4,18 @@
     <mat-form-field appearance="outline" class="race-selector dense-form-field" subscriptSizing="dynamic">
       <mat-select [formControl]="raceFilterControl" placeholder="Select Race" (selectionChange)="onRaceSelectionChange($event)">
         @for (race of currentRacesStore.selectedRaces(); track race.id) {
-        <mat-option [value]="race.id">{{ race.seriesName }} - {{race.scheduledStart | date: "dd/MM/yy"}} Race {{
-          race.raceOfDay }}</mat-option>
+        <mat-option [value]="race.id">
+          {{race | racetitle}}
+          </mat-option>
         }
         <mat-option value="MORE">...more races</mat-option>
       </mat-select>
     </mat-form-field>
   </div>
 
-  <button matButton (click)="publish()">  
+  <app-busy-button [busy]="publishing()" (click)="publish()">
     Publish race
-  </button>
+  </app-busy-button>
 
   @if (selectedRace()) {
     <button matButton="outlined" (click)="setStartTime(selectedRace()!)">Set Start Time</button>
@@ -23,27 +24,26 @@
 </app-toolbar>
 
 @if (selectedRace()) {
+  @let race = selectedRace()!;
 <div class="container">
   <div class="table-section">
     <app-manual-results-table [competitors]="sortedCompetitors()"
-      (rowClicked)="onRowClick($event)"/>
+      [type]="race.type" (rowClicked)="onRowClick($event)"/>
   </div>
 
   <div class="input-section mat-elevation-z2">
     <h3>Record Result</h3>
 
-    @if (selectedRace(); as race) {
-      <div class="mode-display">
-        <div class="mode-info">
-          <mat-icon>{{ race.timeInputMode === 'elapsed' ? 'timer' : 'schedule' }}</mat-icon>
-          <span>{{ race.timeInputMode === 'elapsed' ? 'Stopwatch' : 'Time of Day' }}</span>
-        </div>
-        @if(race.actualStart) {
-          <span class="start-time">Start: {{ race.actualStart | date:'HH:mm:ss' }}</span>
-        }
-      </div>
+  <div class="mode-display">
+    <div class="mode-info">
+      <mat-icon>{{ race.timeInputMode === 'elapsed' ? 'timer' : 'schedule' }}</mat-icon>
+      <span>{{ race.timeInputMode === 'elapsed' ? 'Stopwatch' : 'Time of Day' }}</span>
+    </div>
+    @if(race.actualStart) {
+      <span class="start-time">Start: {{ race.actualStart | date:'HH:mm:ss' }}</span>
     }
-
+  </div>
+    
     @let stats = calculatedStats();
     <div class="stats-display" [class.suspicious]="stats?.isSuspicious">
       <div class="stat-row">
@@ -52,7 +52,7 @@
       </div>
     </div>
 
-    <form [formGroup]="activeForm()" (ngSubmit)="save()">
+    <form [formGroup]="form" (ngSubmit)="save()">
 
       <mat-form-field appearance="outline">
         <mat-label>Competitor</mat-label>
@@ -83,13 +83,13 @@
             <app-race-time-input formControlName="finishTime" [mode]="timeInputContext().mode"
               [baseTime]="timeInputContext().baseTime">
             </app-race-time-input>
-            @if (handicapForm.controls.finishTime.hasError('timeGreaterThan')) {
+            @if (form.controls.finishTime.hasError('timeGreaterThan')) {
               <mat-error>Finish time must be after start time</mat-error>
             }
-            @if (handicapForm.controls.finishTime.hasError('positiveDuration')) {
+            @if (form.controls.finishTime.hasError('positiveDuration')) {
               <mat-error>Elapsed time must be positive</mat-error>
             }
-            @if (handicapForm.controls.finishTime.hasError('required')) {
+            @if (form.controls.finishTime.hasError('required')) {
               <mat-error>Finish time is required</mat-error>
             }
           </mat-form-field>
@@ -104,7 +104,7 @@
           <mat-form-field appearance="outline">
             <mat-label>Position</mat-label>
             <input matInput type="number" formControlName="position">
-            @if (pursuitForm.controls.position.hasError('required')) {
+            @if (form.controls.position.hasError('required')) {
               <mat-error>Position is required</mat-error>
             }
           </mat-form-field>
@@ -114,7 +114,7 @@
           <mat-form-field appearance="outline">
             <mat-label>Position</mat-label>
             <input matInput type="number" formControlName="position">
-            @if (levelRatingForm.controls.position.hasError('required')) {
+            @if (form.controls.position.hasError('required')) {
               <mat-error>Position is required</mat-error>
             }
           </mat-form-field>

@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { addDoc, deleteDoc, getDocs, getFirestore, query, setDoc, where, writeBatch, Firestore } from '@angular/fire/firestore';
+import { generateSecureID } from 'app/shared/firebase/firestore-helper';
+import { deleteDoc, getDocs, getFirestore, query, setDoc, where, writeBatch, Firestore } from '@angular/fire/firestore';
 import { Race } from '../model/race';
 import { Series } from '../model/series';
 import { FirestoreTenantService } from 'app/club-tenant';
@@ -26,8 +27,9 @@ export class RaceCalendarStoreBase {
   /** Add a series retruning a document Id */
   async addSeries(series: Partial<Series>): Promise<string> {
     series.archived = false;
-    const ref = await addDoc(this.seriesCollection, series);
-    return ref.id;
+    const id = generateSecureID(1000, `S-${series.name}`);
+    await setDoc(this.ref(id), series);
+    return id;
   }
 
   async updateSeries(id: string, data: Partial<Series>) {
@@ -65,7 +67,8 @@ export class RaceCalendarStoreBase {
     race.seriesName = seriesDetails.name;
     race.fleetId = seriesDetails.fleetId;
     race.status = 'Future';
-    await addDoc(this.racesCollection, race);
+    const id = generateSecureID(10000, `R-${seriesDetails.name}`);
+    await setDoc(this.raceRef(id), race);
   }
 
   async updateRace(raceId: string, data: Partial<Race>): Promise<void> {

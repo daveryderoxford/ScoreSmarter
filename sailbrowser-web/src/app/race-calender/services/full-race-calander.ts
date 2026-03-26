@@ -2,10 +2,11 @@ import { computed, Injectable, Signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Series } from '../model/series';
 import { Race } from '../model/race';
-import { collectionData, query, where, writeBatch, doc } from '@angular/fire/firestore';
+import { collectionData, query, where, writeBatch, doc, getDoc, getDocs } from '@angular/fire/firestore';
 import { Observable, map, tap } from 'rxjs';
 import { isSameDay } from 'date-fns';
 import { RaceCalendarStoreBase, RaceSeriesDetails, seriesSort, sortRaces } from './race-calendar-store-base';
+import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 
 /** Service that returns the complete race calander 
  * Used for race calander administration and planning
@@ -60,6 +61,41 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
       return computed(() => this.allRaces().filter(s => s.seriesId === id()));
    }
 
+   // Fallback fetch for a specific series if not in cache
+   async getSeriesById(id: string): Promise<Series | undefined> {
+      const currentSeries = this.allSeries().find(s => s.id === id);
+      if (currentSeries) {
+         return currentSeries;
+      }
+
+      // Fallback to fetching directly from Firestore
+      const seriesDocRef = this.ref(id);
+      const snapshot = await getDoc(seriesDocRef);
+      return snapshot.exists() ? { ...snapshot.data(), id: snapshot.id } : undefined;
+   }
+
+   // Fallback fetch for a specific race if not in cache
+   async getRaceById(id: string): Promise<Race | undefined> {
+      const currentRace = this.allRaces().find(r => r.id === id);
+      if (currentRace) {
+         return currentRace;
+      }
+
+      // Fallback to fetching directly from Firestore
+      const raceDocRef = this.raceRef(id);
+      const snapshot = await getDoc(raceDocRef);
+      return snapshot.exists() ? { ...snapshot.data(), id: snapshot.id } : undefined;
+   }
+
+   /**
+    * Fetches all races for a series directly from Firestore.
+    */
+   async getSeriesRacesById(seriesId: string): Promise<Race[]> {
+      const q = query(this.racesCollection, where('seriesId', '==', seriesId), where('status', '!=', 'Archived'));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })).sort(sortRaces);
+   }
+
    /** Adds races to a specified series 
     *  Race indices and race-of-day are set based on date. 
    */
@@ -92,7 +128,8 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
 
          if (race.id.startsWith('new-')) {
             // This is a new race, add it to the batch
-            const newRaceRef = doc(this.racesCollection);
+            const newId = generateSecureID(10000, `R-${seriesDetails.name}`);
+            const newRaceRef = this.raceRef(newId);
             // Exclude the temporary id from the data being set
             const { id, ...raceData } = updatedRace;
 

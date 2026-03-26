@@ -5,6 +5,7 @@ import { MatListModule } from '@angular/material/list';
 import { DatePipe } from '@angular/common';
 import { RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces } from 'app/results-input';
+import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
 
 @Component({
   selector: 'app-more-races-dialog',
@@ -14,8 +15,7 @@ import { CurrentRaces } from 'app/results-input';
       <mat-list>
         @for (race of raceStore.allRaces(); track race.id) {
           <mat-list-item (click)="selectRace(race.id)">
-            <div matListItemTitle>{{ race.seriesName }} - Race {{ race.raceOfDay }}</div>
-            <div matListItemLine>{{ race.scheduledStart | date: "dd/MM/yy HH:mm" }}</div>
+            <div matListItemTitle>{{ race | racetitle }}</div>
           </mat-list-item>
         }
       </mat-list>
@@ -28,7 +28,7 @@ import { CurrentRaces } from 'app/results-input';
     mat-list-item { cursor: pointer; }
     mat-list-item:hover { background-color: rgba(0,0,0,0.04); }
   `],
-  imports: [MatDialogModule, MatButtonModule, MatListModule, DatePipe],
+  imports: [MatDialogModule, MatButtonModule, MatListModule, RaceTitlePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MoreRacesDialog {

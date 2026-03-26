@@ -68,7 +68,7 @@ export class ManualResultsService {
       .filter(comp => comp.raceId == raceId && comp.startTime);
 
     for (const comp of comps) {
-      this.competitorStore.updateResult(comp.id, { startTime: startTime });
+      await this.competitorStore.updateResult(comp.id, { startTime: startTime });
     }
 
   }
@@ -151,14 +151,22 @@ export function sortCompetitorsWithResult(
     const valueA = a[finishedOrder];
     const valueB = b[finishedOrder];
     let ret = 0;
-    if (valueA instanceof Date && valueB instanceof Date) {
+    
+    if (valueA === undefined || valueA === null || valueB === undefined || valueB === null) {
+      if (valueA === valueB) {
+        ret = 0;
+      } else {
+        // If one is missing a value, place the one with a value first
+        ret = (valueA === undefined || valueA === null) ? 1 : -1;
+      }
+    } else if (valueA instanceof Date && valueB instanceof Date) {
       ret = valueA.getTime() - valueB.getTime();
     } else if (typeof valueA === 'number') {
       ret = (valueA as number) - (valueB as number);
     } else if (typeof valueA === 'string') {
       ret = valueA.localeCompare(valueB as string);
     } else {
-      console.error('ManualResultsPage: Unexpected sort order' + finishedOrder);
+      console.error('ManualResultsPage: Unexpected sort order: ' + finishedOrder);
       ret = 0;
     }
     return (dir === 'asc') ? ret : -ret;

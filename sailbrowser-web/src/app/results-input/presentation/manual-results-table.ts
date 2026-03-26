@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { RaceCompetitor } from '../model/race-competitor';
-import { Sort, MatSortModule } from '@angular/material/sort';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { ExtendedRaceCompetitor, manualRaceTableSort } from '../services/manual-results.service';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
+import { RaceType } from 'app/race-calender';
 
 @Component({
   selector: 'app-manual-results-table',
@@ -12,6 +13,13 @@ import { DurationPipe } from 'app/shared/pipes/duration.pipe';
   template: `
     <table mat-table matSort [dataSource]="tabledata()"
     (matSortChange)="this.sortState.set($event)" class="mat-elevation-z0">
+
+      <ng-container matColumnDef="position">
+        <th mat-header-cell mat-sort-header="manualPosition" *matHeaderCellDef>Pos</th>
+        <td mat-cell *matCellDef="let element">
+          {{element.manualPosition}}
+        </td>
+      </ng-container>
       
       <ng-container matColumnDef="boatClass">
         <th mat-header-cell mat-sort-header *matHeaderCellDef>Class<br>H'Cap</th>
@@ -32,7 +40,7 @@ import { DurationPipe } from 'app/shared/pipes/duration.pipe';
       </ng-container>
 
       <ng-container matColumnDef="finishTime">
-        <th mat-header-cell mat-sort-header *matHeaderCellDef>Finish Time</th>
+        <th mat-header-cell mat-sort-header="manualFinishTime" *matHeaderCellDef>Finish Time</th>
         <td mat-cell *matCellDef="let element"> {{element.manualFinishTime | date:'HH:mm:ss'}} </td>
       </ng-container>
 
@@ -63,8 +71,8 @@ import { DurationPipe } from 'app/shared/pipes/duration.pipe';
         </td>
       </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+      <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns();" 
           [class.processed]="!(row.resultCode === 'NOT FINISHED')"
           (click)="onRowClick(row)">
       </tr>
@@ -95,14 +103,19 @@ import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 })
 export class ManualResultsTable {
   competitors = input.required<RaceCompetitor[]>();
+  type = input<RaceType>('Handicap');
+
   rowClicked = output<RaceCompetitor>();
 
-  sortState = signal<Sort>({
-    active: 'correctedTime',
-    direction: 'asc'
-  });
+  sortState = linkedSignal<Sort>(() => (this.type() === 'Handicap') ?
+    { active: 'correctedTime', direction: 'asc'} :
+    { active: 'manualPosition', direction: 'asc' });
 
-  protected displayedColumns = ['boatClass', 'sailNumber', 'helm', 'finishTime', 'elapsedTime', 'correctedTime', 'averageLapTime'];
+  private baseColumns = ['boatClass', 'sailNumber', 'helm', 'finishTime', 'elapsedTime'];
+ 
+  displayedColumns = computed(() => (this.type() ==='Handicap') ?
+        [...this.baseColumns, 'correctedTime', 'averageLapTime'] :
+        ['position', ...this.baseColumns]);
 
   maxLaps = computed(() => this.competitors().reduce((max, comp) => {
     return (comp.numLaps > max) ? comp.numLaps : max;

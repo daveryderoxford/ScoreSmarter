@@ -54,7 +54,7 @@
          <app-series-results-table [series]="series()!" [raceTitles]="raceTitles()"
             (raceClicked)="raceClicked($event)" />
 
-         @for (race of reversedRaces(); track race; let i = $index, isFirst = $first, isLast = $last) {
+         @for (race of reversedRaces(); track race.id; let i = $index, isFirst = $first, isLast = $last) {
          <div class="race-container">
             <div class="race-title" [attr.data-race-id]="race.id">
                <h3>Race {{race.index}} - {{race.scheduledStart| date:'dd MMM yy'}} {{race.results.length === 0 ? ' - No
