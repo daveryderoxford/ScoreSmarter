@@ -15,7 +15,7 @@ import { CurrentRaces, RaceCompetitor, RaceCompetitorStore } from 'app/results-i
 import { RESULT_CODE_DEFINITIONS, ResultCode, getResultCodeDefinition } from 'app/scoring/model/result-code';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { normaliseString } from 'app/shared/utils/string-utils';
-import { firstValueFrom, map, of, startWith, switchMap, Observable } from 'rxjs';
+import { firstValueFrom, map, of, startWith, switchMap, Observable, tap } from 'rxjs';
 import { ManualResultsTable } from '../manual-results-table';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-time-dialog';
 import { RaceTimeInput } from '../race-time-input';
@@ -24,6 +24,9 @@ import { requiresTime } from 'app/scoring/model/result-code-scoring';
 import { manualRaceTableSort, ManualResultsService } from '../../services/manual-results.service';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { MoreRacesDialog } from '../more-races-dialog';
+import { BusyButton } from 'app/shared/components/busy-button';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import { RaceTitlePipe } from '../../../shared/pipes/race-title-pipe';
 
 @Component({
   selector: 'app-manual-results-page',
@@ -44,6 +47,8 @@ import { MoreRacesDialog } from '../more-races-dialog';
     ManualResultsTable,
     DurationPipe,
     ResultCodeSelector,
+    BusyButton, 
+    RaceTitlePipe
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -55,8 +60,11 @@ export class ManualResultsPage {
   private readonly publishService = inject(ScoringEngine);
   private readonly manualResultsService = inject(ManualResultsService);
   private readonly fb = inject(FormBuilder);
+  private message = inject(DialogsService);
 
-  readonly searchInput = viewChild.required<ElementRef<HTMLInputElement>>('searchInput');
+  publishing = signal(false);
+
+  readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
 
   readonly raceId = input<string>();
 
@@ -96,7 +104,10 @@ export class ManualResultsPage {
     return requiresTime(code) || code === 'NOT FINISHED';
   });
 
-  readonly selectedRaceId = toSignal(this.raceFilterControl.valueChanges.pipe(startWith(this.raceFilterControl.value)), { initialValue: this.raceFilterControl.value });
+  readonly selectedRaceId = toSignal(this.raceFilterControl.valueChanges.pipe(
+    startWith(this.raceFilterControl.value),
+  ), 
+  { initialValue: this.raceFilterControl.value });
 
   readonly selectedRace = computed(() =>
     this.currentRacesStore.selectedRaces().find(r => this.selectedRaceId() == r.id));
@@ -348,15 +359,27 @@ export class ManualResultsPage {
     if (laps) this.lastEnteredLaps.set(laps);
 
     this.selectedCompetitor.set(undefined);
-    this.searchInput().nativeElement.focus();
+    if (this.searchInput()) {
+      this.searchInput()!.nativeElement.focus();
+    }
 
   }
 
   /** Publish the race results */
-  publish() {
-    if (this.selectedRace()) {
-      this.publishService.publishRace(this.selectedRace()!);
+  async publish() {
+    if (this.selectedRace() && !this.publishing()) {
+      const race = this.selectedRace()!;
+      this.publishing.set(true);
+      try {
+        await this.publishService.publishRace(race);
+      } catch (e: unknown) {
+        const msg = 'Manual results: Publishing results' + 
+          `Race: ${race.id} SeriesId ${race.seriesId}. ${e}`
+        console.log(msg);
+        this.message.message("Error publihing results", msg);
+      } finally {
+        this.publishing.set(false);
+      }
     }
-
   }
 }

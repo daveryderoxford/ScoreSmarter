@@ -4,17 +4,18 @@
     <mat-form-field appearance="outline" class="race-selector dense-form-field" subscriptSizing="dynamic">
       <mat-select [formControl]="raceFilterControl" placeholder="Select Race" (selectionChange)="onRaceSelectionChange($event)">
         @for (race of currentRacesStore.selectedRaces(); track race.id) {
-        <mat-option [value]="race.id">{{ race.seriesName }} - {{race.scheduledStart | date: "dd/MM/yy"}} Race {{
-          race.raceOfDay }}</mat-option>
+        <mat-option [value]="race.id">
+          {{race | racetitle}}
+          </mat-option>
         }
         <mat-option value="MORE">...more races</mat-option>
       </mat-select>
     </mat-form-field>
   </div>
 
-  <button matButton (click)="publish()">  
+  <app-busy-button [busy]="publishing()" (click)="publish()">
     Publish race
-  </button>
+  </app-busy-button>
 
   @if (selectedRace()) {
     <button matButton="outlined" (click)="setStartTime(selectedRace()!)">Set Start Time</button>
@@ -22,7 +23,8 @@
 
 </app-toolbar>
 
-@if (selectedRace(); as race) {
+@if (selectedRace()) {
+  @let race = selectedRace()!;
 <div class="container">
   <div class="table-section">
     <app-manual-results-table [competitors]="sortedCompetitors()"
@@ -42,7 +44,6 @@
     }
   </div>
     
-
     @let stats = calculatedStats();
     <div class="stats-display" [class.suspicious]="stats?.isSuspicious">
       <div class="stat-row">

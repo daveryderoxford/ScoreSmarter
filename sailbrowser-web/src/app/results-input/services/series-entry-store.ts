@@ -4,7 +4,8 @@
 */
 import { computed, inject, Injectable } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { addDoc, collectionData, deleteDoc, doc, Firestore, query, updateDoc, where } from '@angular/fire/firestore';
+import { collectionData, deleteDoc, doc, Firestore, query, updateDoc, where, setDoc, getDocs } from '@angular/fire/firestore';
+import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { FirestoreTenantService } from 'app/club-tenant';
 import { map, of, tap } from 'rxjs';
 import { SeriesEntry } from '../model/series-entry';
@@ -20,6 +21,15 @@ export class SeriesEntryStore {
 
   private collection = this.tenant.collectionRef<SeriesEntry>('series-entries');
   private ref = (id: string) => doc(this.collection, id);
+  
+  /**
+   * Fetches all entries for a series without monitoring for changes.
+   */
+  async getSeriesEntries(seriesId: string): Promise<SeriesEntry[]> {
+    const q = query(this.collection, where('seriesId', '==', seriesId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+  }
 
   private readonly selectedSeriesIds = computed(() => this.currentRaces.selectedSeries().map(s => s.id));
 
@@ -65,8 +75,9 @@ export class SeriesEntryStore {
 
   async addEntry(entry: Partial<SeriesEntry>): Promise<string> {
     const update = this.tidyStrings(entry);
-    const ref = await addDoc(this.collection, update);
-    return ref.id;
+    const id = generateSecureID(10000, `SE-${update.boatClass}-${update.sailNumber}`);
+    await setDoc(this.ref(id), update);
+    return id;
   }
 
   async updateEntry(id: string, changes: Partial<SeriesEntry>) {

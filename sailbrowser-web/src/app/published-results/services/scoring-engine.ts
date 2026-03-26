@@ -25,59 +25,26 @@ export class ScoringEngine {
 
   /**
    * Publishes the results of a single race to the public results area.
-   * This involves:
-   * 1. Scoring the series including the new race.
-   * 2. Saving the updated series results.
-   * 3. Saving the results of the published race.
-   * 4. Updating the season index.
    */
   async publishRace(race: Race): Promise<void> {
-    const series = this.raceCalendarStore.allSeries().find(s => s.id === race.seriesId);
-    if (!series) throw new Error('Series not found');
+    await this.publishRaces([race]);
+  }
 
-    const competitors = this.rcs.selectedCompetitors().filter(c => c.raceId === race.id);
+  /**
+   * Publishes multiple races at once, grouping them by series for efficiency and to avoid race conditions.
+   */
+  async publishRaces(races: Race[]): Promise<void> {
+    if (races.length === 0) return;
 
-    const seriesEntries = this.seriesEntryStore.selectedEntries().filter(s => s.seriesId === race.seriesId);
+    console.log(`ScoringEngine.publishRaces: Publishing ${races.length} races: ${races.map(r => r.id).join(', ')}`);
 
-    const configsToScore = [series.primaryScoringConfiguration, ...(series.secondaryScoringConfigurations || [])];
-
-    console.log(`publishRace Scoring: ${race.id}  Series${race.seriesName} Race: ${race.index} Num competitors: ${competitors.length}`);
     const batch = writeBatch(this.firestore);
     const seasonUpdates = new Map<string, PublishedSeason>();
+    const seriesIds = new Set(races.map(r => r.seriesId));
 
-    for (const config of configsToScore) {
-      const isPrimary = config.id === series.primaryScoringConfiguration.id;
-      const publishedSeriesId = isPrimary ? series.id : `${series.id}_${config.id}`;
-      const publishedSeriesName = isPrimary ? series.name : `${series.name} - ${config.name}`;
-
-      // Filter entries and competitors
-      const filteredSeriesEntries = seriesEntries.filter(e => isInFleet(e, config.fleet));
-
-      const filteredCompetitors = competitors.filter(c => {
-        const entry = seriesEntries.find(e => e.id === c.seriesEntryId);
-        return entry ? isInFleet(entry, config.fleet) : false;
-      });
-
-      // 1. Fetch all existing data required for scoring.
-      const existingRaces = await this.readPublishedRaces(publishedSeriesId);
-      const raceCount = existingRaces.filter(r => r.id !== race.id).length + 1;
-
-      // 2. Perform the scoring.
-      const { scoredRaces, seriesResults } = score(race, filteredCompetitors, existingRaces, filteredSeriesEntries, {
-        seriesType: series.scoringAlgorithm,
-        discards: this.calculateDiscards(series, raceCount),
-      }, config);
-
-      // Update seriesId and seriesName in scoredRaces
-      scoredRaces.forEach((r: PublishedRace) => {
-        r.seriesId = publishedSeriesId;
-        r.seriesName = publishedSeriesName;
-      });
-
-      // 3. Add to batch
-      this.batchSavePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, seriesResults);
-      this.batchSavePublishedRaces(batch, publishedSeriesId, scoredRaces, existingRaces);
-      await this.prepareSeasonUpdate(seasonUpdates, series, publishedSeriesId, publishedSeriesName, config.fleet.id, raceCount);
+    for (const seriesId of seriesIds) {
+      const seriesRaces = races.filter(r => r.seriesId === seriesId).map(r => r.id);
+      await this.publishSeriesInternal(batch, seasonUpdates, seriesId, seriesRaces);
     }
 
     // Apply season updates to batch
@@ -86,43 +53,90 @@ export class ScoringEngine {
       batch.set(seasonDoc, seasonData);
     }
 
-    // Clear dirty flag if it was set
-    if (race.dirty) {
-      const raceDoc = this.tenant.docRef<Series>('races', race.id);
-      batch.update(raceDoc, { dirty: false });
-    }
-
     await batch.commit();
   }
 
   /**
    * Recalculates the complete series scores from scratch.
-   * This handles changes to series configurations after races have been published.
    */
   async scoreCompleteSeries(seriesId: string): Promise<void> {
-    const series = this.raceCalendarStore.allSeries().find(s => s.id === seriesId);
-    if (!series) throw new Error('Series not found');
+    const batch = writeBatch(this.firestore);
+    const seasonUpdates = new Map<string, PublishedSeason>();
 
-    // 1. Fetch all races and filter for those that are "run"
-    const allRaces = this.raceCalendarStore.allRaces()
-      .filter(r => r.seriesId === seriesId && (r.status === 'Published' || r.status === 'Verified'));
+    await this.publishSeriesInternal(batch, seasonUpdates, seriesId);
 
-    if (allRaces.length === 0) return;
+    // Apply season updates to batch
+    for (const [seasonId, seasonData] of seasonUpdates) {
+      const seasonDoc = this.tenant.docRef<PublishedSeason>(PUBLISHED_SEASONS_PATH, seasonId);
+      batch.set(seasonDoc, seasonData);
+    }
 
-    // 2. Sort races chronologically (Actual Start)
-    allRaces.sort((a, b) => {
+    // Clear the Series dirty flag
+    const seriesDoc = this.tenant.docRef<Series>('series', seriesId);
+    batch.update(seriesDoc, { dirty: false });
+
+    await batch.commit();
+  }
+
+  /**
+   * Internal method to publish a series. 
+   * If additionalRaceIds is provided, it ensures those races are included even if not yet Published/Verified.
+   */
+  private async publishSeriesInternal(
+    batch: WriteBatch,
+    seasonUpdates: Map<string, PublishedSeason>,
+    seriesId: string,
+    additionalRaceIds: string[] = []
+  ): Promise<void> {
+    const series = await this.raceCalendarStore.getSeriesById(seriesId);
+    if (!series) {
+      console.error(`ScoringEngine: Series ${seriesId} not found in Firestore.`);
+      throw new Error('Series not found');
+    }
+
+    // 1. Fetch all races for this series.
+    //    We do *not* rely on race status being correct (Published/Verified/Completed),
+    //    because the manual results workflow can mark races dirty and publish immediately.
+    //    Instead we include races that have results-entered competitor rows for that race id.
+    //    Constraint: never include cancelled races.
+    const racesForSeries = await this.raceCalendarStore.getSeriesRacesById(seriesId);
+
+    // We'll filter further after we fetch competitors (so we can detect "results entered").
+    let candidateRaces = racesForSeries.filter(r => r.status !== 'Canceled');
+
+    // Ensure the race being published is included even if it doesn't appear in the initial candidate list.
+    // (But still never include cancelled races.)
+    for (const raceId of additionalRaceIds) {
+      const race = racesForSeries.find(r => r.id === raceId);
+      if (race && race.status !== 'Canceled' && !candidateRaces.some(r => r.id === raceId)) {
+        candidateRaces = [...candidateRaces, race];
+      }
+    }
+
+    if (candidateRaces.length === 0) {
+      console.log(`ScoringEngine: No races to publish for series ${seriesId}`);
+      return;
+    }
+
+    // 2. Sort races chronologically
+    candidateRaces.sort((a, b) => {
       const timeA = (a.actualStart || a.scheduledStart).getTime();
       const timeB = (b.actualStart || b.scheduledStart).getTime();
       return timeA - timeB;
     });
 
-    // 3. Fetch all competitors for the series
+    // 3. Fetch all competitors and entries
     const allSeriesCompetitors = await this.rcs.getSeriesCompetitors(seriesId);
-    const seriesEntries = this.seriesEntryStore.selectedEntries().filter(s => s.seriesId === seriesId);
+    const seriesEntries = await this.seriesEntryStore.getSeriesEntries(seriesId);
+
+    // Include races that have *any* competitor row in the race-results collection.
+    // This includes the case where everyone is still NOT_FINISHED (we still want feedback/visibility).
+    const racesWithCompetitorRows = new Set(allSeriesCompetitors.map(c => c.raceId));
+    const allRaces = candidateRaces.filter(r => racesWithCompetitorRows.has(r.id) || additionalRaceIds.includes(r.id));
+
+    console.log(`ScoringEngine: Series ${seriesId} - Races: ${allRaces.length}, Competitors: ${allSeriesCompetitors.length}, Entries: ${seriesEntries.length}`);
 
     const configsToScore = [series.primaryScoringConfiguration, ...(series.secondaryScoringConfigurations || [])];
-    const batch = writeBatch(this.firestore);
-    const seasonUpdates = new Map<string, PublishedSeason>();
 
     for (const config of configsToScore) {
       const isPrimary = config.id === series.primaryScoringConfiguration.id;
@@ -132,24 +146,15 @@ export class ScoringEngine {
       await this.rescoreAllRacesForConfig(batch, seasonUpdates, series, config, publishedSeriesId, publishedSeriesName, allRaces, allSeriesCompetitors, seriesEntries);
     }
 
-    // Apply season updates to batch
-    for (const [seasonId, seasonData] of seasonUpdates) {
-      const seasonDoc = this.tenant.docRef<PublishedSeason>(PUBLISHED_SEASONS_PATH, seasonId);
-      batch.set(seasonDoc, seasonData);
-    }
+    this.cleanupStaleSeries(batch, seasonUpdates, series, configsToScore);
 
-    // 4. Clear the Series and races dirty flag
-    const seriesDoc = this.tenant.docRef<Series>('series', seriesId);
-    batch.update(seriesDoc, { dirty: false });
-
+    // 4. Clear dirty flags for all races we just published
     for (const race of allRaces) {
       if (race.dirty) {
-        const raceDoc = this.tenant.docRef<Race>('race', race.id);
+        const raceDoc = this.tenant.docRef<Race>('races', race.id);
         batch.update(raceDoc, { dirty: false });
       }
     }
-
-    await batch.commit();
   }
 
   private calculateDiscards(series: Series, raceCount: number): number {
@@ -239,6 +244,26 @@ export class ScoringEngine {
         batch.delete(raceDoc);
       }
     });
+  }
+
+  private cleanupStaleSeries(
+    batch: WriteBatch,
+    seasonUpdates: Map<string, PublishedSeason>,
+    series: Series,
+    configsToScore: ScoringConfiguration[]
+  ): void {
+    const currentConfigIds = new Set(configsToScore.map(c => c.id === series.primaryScoringConfiguration.id ? series.id : `${series.id}_${c.id}`));
+    for (const [seasonId, seasonData] of seasonUpdates) {
+      const staleSeries = seasonData.series.filter(s => s.baseSeriesId === series.id && !currentConfigIds.has(s.id));
+      for (const stale of staleSeries) {
+        console.log(`ScoringEngine: Cleaning up stale series ${stale.id}`);
+        // Remove from season index
+        seasonData.series = seasonData.series.filter(s => s.id !== stale.id);
+        // Delete published series document
+        const seriesDoc = this.tenant.docRef(PUBLISHED_SERIES_PATH, stale.id);
+        batch.delete(seriesDoc);
+      }
+    }
   }
 
   private async prepareSeasonUpdate(

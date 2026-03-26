@@ -16,6 +16,7 @@ import { CurrentRaces } from '../../results-input/services/current-races-store';
 import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
 import { CenteredText } from "app/shared/components/centered-text";
 import { BoatEntrySummaryComponent } from "./entry-summary";
+import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
 
 @Component({
   selector: 'app-entries-list-page',
@@ -30,8 +31,9 @@ import { BoatEntrySummaryComponent } from "./entry-summary";
     MatButtonModule,
     MatIconModule,
     CenteredText,
-    BoatEntrySummaryComponent
-  ],
+    BoatEntrySummaryComponent,
+    RaceTitlePipe
+],
   template: `
     <app-toolbar title="Entries"></app-toolbar>
     <div class="content">
@@ -42,7 +44,7 @@ import { BoatEntrySummaryComponent } from "./entry-summary";
             <mat-option [value]="'all'">All Races</mat-option>
             @for (race of currentRaces.selectedRaces(); track race.id) {
               <mat-option [value]="race.id">
-                {{ race.seriesName }} - Race {{ race.raceOfDay }}
+                {{ race | racetitle}}
               </mat-option>
             }
           </mat-select>

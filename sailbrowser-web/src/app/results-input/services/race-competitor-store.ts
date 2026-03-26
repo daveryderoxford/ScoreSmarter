@@ -4,7 +4,8 @@
 */
 import { inject, Injectable } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { addDoc, collectionData, deleteDoc, doc, Firestore, getDocs, query, updateDoc, where } from '@angular/fire/firestore';
+import { collectionData, deleteDoc, doc, Firestore, getDocs, query, updateDoc, where, setDoc } from '@angular/fire/firestore';
+import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { FirestoreTenantService } from 'app/club-tenant';
 import { map, of, tap } from 'rxjs';
 import { RaceCompetitor } from '../model/race-competitor';
@@ -42,7 +43,7 @@ export class RaceCompetitorStore {
           this.collection,
           where('raceId', 'in', selectedIds)
         );
-        return collectionData(q).pipe(
+        return collectionData(q, { idField: 'id' }).pipe(
           map(rc => rc.sort(sortEntries)),
           tap(rc => console.log(`RaceCompetitorStore. Loaded ${rc.length} competitors`))
         );
@@ -72,8 +73,9 @@ export class RaceCompetitorStore {
 
   async addResult(result: Partial<RaceCompetitor>): Promise<string> {
     const update = this.tidyStrings(result);
-    const ref = await addDoc(this.collection, update);
-    return ref.id;
+    const id = generateSecureID(10000, `RC-${update.boatClass}-${update.sailNumber}`);
+    await setDoc(this.ref(id), update);
+    return id;
   }
 
   async updateResult(id: string, changes: Partial<RaceCompetitor>) {

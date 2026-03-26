@@ -68,7 +68,7 @@ export class ManualResultsService {
       .filter(comp => comp.raceId == raceId && comp.startTime);
 
     for (const comp of comps) {
-      this.competitorStore.updateResult(comp.id, { startTime: startTime });
+      await this.competitorStore.updateResult(comp.id, { startTime: startTime });
     }
 
   }
