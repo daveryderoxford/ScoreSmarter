@@ -33,7 +33,7 @@ export class ClubTenant {
 
     if (isTrustedTestDomain) {
       console.log('ClubContextService: Trusted test domain detected. Using "test" club ID.');
-      this._clubId = 'demo';
+      this._clubId = 'test';
     } else {
       // Resolve ClubId from subdomain for production domains
       this._clubId = host.split('.')[0];
