@@ -28,15 +28,15 @@
         <div class="md:col-span-2">
           <label for="clubName" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Club Name</label>
           <input id="clubName" type="text" formControlName="name" placeholder="e.g. West Bay Sailing Club"
-            class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+            class="w-full bg-slate-900/60 border border-white/15 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
         </div>
 
         <div class="md:col-span-2">
           <label for="subdomain" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Website name (eg bwsc)</label>
           <div class="flex items-center">
             <input id="subdomain" type="text" formControlName="subdomain" placeholder="westbay"
-              class="flex-grow bg-slate-950/50 border border-white/10 rounded-l-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
-            <span class="bg-slate-900 border border-l-0 border-white/10 rounded-r-xl px-4 py-3 text-slate-500 font-mono text-sm">.scoresmarter.app</span>
+              class="flex-grow bg-slate-900/60 border border-white/15 rounded-l-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+            <span class="bg-slate-900 border border-l-0 border-white/15 rounded-r-xl px-4 py-3 text-slate-500 font-mono text-sm">.scoresmarter.app</span>
           </div>
           @if ((clubForm.controls.subdomain.touched || submitted()) && clubForm.controls.subdomain.errors?.['maxlength']) {
           <p class="text-red-400 text-sm mt-2">Subdomain must be 12 characters or fewer.</p>
@@ -50,19 +50,19 @@
         <div>
           <label for="contactName" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Contact Name</label>
           <input id="contactName" type="text" formControlName="contactName" placeholder="Jane Smith"
-            class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+            class="w-full bg-slate-900/60 border border-white/15 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
         </div>
 
         <div>
           <label for="contactEmail" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Contact Email</label>
           <input id="contactEmail" type="email" formControlName="contactEmail" placeholder="club@example.com"
-            class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+            class="w-full bg-slate-900/60 border border-white/15 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
         </div>
 
         <div class="md:col-span-2">
           <label for="burgeeUrl" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Burgee URL (Optional)</label>
           <input id="burgeeUrl" type="url" formControlName="burgeeUrl" placeholder="https://example.com/burgee.png"
-            class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+            class="w-full bg-slate-900/60 border border-white/15 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
         </div>
 
         <div class="md:col-span-2 mt-2">

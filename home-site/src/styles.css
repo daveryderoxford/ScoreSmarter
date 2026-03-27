@@ -33,7 +33,7 @@
 }
 
 .glass {
-  @apply bg-slate-900/40 backdrop-blur-xl border border-white/10;
+  @apply bg-slate-900/60 backdrop-blur-xl border border-white/15;
 }
 
 .card-glow {
