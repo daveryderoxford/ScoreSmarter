@@ -1,0 +1,85 @@
+<section class="py-24 grid-pattern">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="mb-10">
+      <a routerLink="/clubs" class="btn-secondary !py-2 !px-4 inline-flex">
+        <mat-icon>arrow_back</mat-icon>
+        Back to Clubs
+      </a>
+    </div>
+
+    <div class="glass rounded-[3rem] p-12 md:p-20 border-primary-500/20">
+      <div class="max-w-2xl">
+        <h1 class="text-5xl md:text-6xl font-light tracking-tighter mb-6 leading-tight text-white">
+          Register Your <span class="text-gradient">Club</span>
+        </h1>
+        <p class="text-xl text-slate-400 mb-10 leading-relaxed">
+          Submit your details and we will create a tenant request for provisioning.
+        </p>
+      </div>
+
+      @if (submitted()) {
+      <div class="text-center py-10">
+        <div class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-500 mx-auto mb-6">
+          <mat-icon class="!text-4xl">check_circle</mat-icon>
+        </div>
+        <h3 class="text-2xl font-bold text-white mb-2">Request Received!</h3>
+        <p class="text-slate-400 mb-8">
+          We have saved your tenant request. We will contact you soon.
+        </p>
+        <button (click)="submitted.set(false)" class="btn-secondary mx-auto">Submit Another Request</button>
+      </div>
+      } @else {
+      <form [formGroup]="clubForm" (ngSubmit)="onSubmit()" class="grid md:grid-cols-2 gap-6">
+        <div class="md:col-span-2">
+          <label for="clubName" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Club Name</label>
+          <input id="clubName" type="text" formControlName="name" placeholder="e.g. West Bay Sailing Club"
+            class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+        </div>
+
+        <div class="md:col-span-2">
+          <label for="subdomain" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Desired Subdomain</label>
+          <div class="flex items-center">
+            <input id="subdomain" type="text" formControlName="subdomain" placeholder="westbay"
+              class="flex-grow bg-slate-950/50 border border-white/10 rounded-l-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+            <span class="bg-slate-900 border border-l-0 border-white/10 rounded-r-xl px-4 py-3 text-slate-500 font-mono text-sm">.scoresmarter.com</span>
+          </div>
+          @if (clubForm.controls.subdomain.errors?.['notUnique']) {
+          <p class="text-red-400 text-sm mt-2">That subdomain is already in use. Please choose another.</p>
+          }
+        </div>
+
+        <div>
+          <label for="contactName" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Contact Name</label>
+          <input id="contactName" type="text" formControlName="contactName" placeholder="Jane Smith"
+            class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+        </div>
+
+        <div>
+          <label for="contactEmail" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Contact Email</label>
+          <input id="contactEmail" type="email" formControlName="contactEmail" placeholder="club@example.com"
+            class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+        </div>
+
+        <div class="md:col-span-2">
+          <label for="burgeeUrl" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Burgee URL (Optional)</label>
+          <input id="burgeeUrl" type="url" formControlName="burgeeUrl" placeholder="https://example.com/burgee.png"
+            class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+        </div>
+
+        <div class="md:col-span-2 mt-2">
+          <button type="submit" [disabled]="clubForm.invalid || isSubmitting()"
+            class="btn-primary w-full justify-center py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
+            @if (isSubmitting()) {
+            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            Processing...
+            } @else {
+            Submit Registration
+            <mat-icon>rocket_launch</mat-icon>
+            }
+          </button>
+        </div>
+      </form>
+      }
+    </div>
+  </div>
+</section>
