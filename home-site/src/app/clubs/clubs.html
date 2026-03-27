@@ -1,9 +1,9 @@
 <section class="py-24 grid-pattern">
   <div class="max-w-7xl mx-auto px-6">
     <div class="text-center max-w-3xl mx-auto mb-20">
-      <h2 class="text-5xl md:text-6xl font-light tracking-tighter mb-6 text-white">Our Sailing <span
-          class="text-gradient">Community</span></h2>
-      <p class="text-xl text-slate-400">Discover the clubs that power their racing with ScoreSmarter.</p>
+      <h2 class="text-5xl md:text-6xl font-light tracking-tighter mb-6 text-white">ScoreSmarter<span
+          class="text-gradient">Clubs</span></h2>
+      <p class="text-xl text-slate-400">The following clubs are making use of ScoreSmarter to power their results</p>
     </div>
 
     @if (clubs.isLoading()) {
@@ -54,98 +54,12 @@
     </div>
     }
 
-    <!-- Registration Form -->
-    <div id="register" class="mt-32 relative group">
-      <div class="absolute inset-0 bg-primary-600 blur-[100px] opacity-20 group-hover:opacity-30 transition-opacity">
+      <div class="mt-10 flex justify-start">
+        <a routerLink="/clubs/register" class="btn-primary inline-flex !py-4 !px-8 text-lg w-[240px] justify-center">
+          Add Your Club
+          <mat-icon>arrow_forward</mat-icon>
+        </a>
       </div>
-      <div class="relative z-10 glass rounded-[3rem] p-12 md:p-24 overflow-hidden border-primary-500/20">
-        <div class="grid lg:grid-cols-2 gap-16 items-start">
-          <div>
-            <h2 class="text-5xl md:text-6xl font-light tracking-tighter mb-8 leading-tight text-white">Register
-              Your <span class="text-gradient">Club</span></h2>
-            <p class="text-xl text-slate-400 mb-8 leading-relaxed">Ready to join the ScoreSmarter community? Fill
-              out the form to request a new tenant for your sailing club.</p>
 
-            <div class="space-y-6">
-              <div class="flex items-start gap-4">
-                <div
-                  class="w-10 h-10 rounded-full bg-primary-500/10 flex items-center justify-center text-primary-400 shrink-0">
-                  <mat-icon>domain</mat-icon>
-                </div>
-                <div>
-                  <h4 class="font-bold text-white">Club uRL</h4>
-                  <p class="text-slate-400">Your club will get a dedicated URL like yourclub.scoresmarter.com
-                  </p>
-                </div>
-              </div>
-              <div class="flex items-start gap-4">
-                <div
-                  class="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
-                  <mat-icon>auto_awesome</mat-icon>
-                </div>
-                <div>
-                  <h4 class="font-bold text-white">Automated Setup</h4>
-                  <p class="text-slate-400">Our cloud functions handle the provisioning of your secure
-                    environment.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="glass p-8 rounded-[2rem] border-white/5">
-            @if (submitted()) {
-            <div class="text-center py-12">
-              <div
-                class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-500 mx-auto mb-6">
-                <mat-icon class="!text-4xl">check_circle</mat-icon>
-              </div>
-              <h3 class="text-2xl font-bold text-white mb-2">Request Received!</h3>
-              <p class="text-slate-400 mb-8">We're processing your club registration. You'll receive an email
-                once your tenant is ready.</p>
-              <button (click)="submitted.set(false)" class="btn-secondary mx-auto">Register Another</button>
-            </div>
-            } @else {
-            <form [formGroup]="clubForm" (ngSubmit)="onSubmit()" class="space-y-6">
-              <div>
-                <label for="clubName" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Club
-                  Name</label>
-                <input id="clubName" type="text" formControlName="name" placeholder="e.g. West Bay Sailing Club"
-                  class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
-              </div>
-              <div>
-                <label for="subdomain"
-                  class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Desired
-                  Subdomain</label>
-                <div class="flex items-center">
-                  <input id="subdomain" type="text" formControlName="subdomain" placeholder="westbay"
-                    class="flex-grow bg-slate-950/50 border border-white/10 rounded-l-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
-                  <span
-                    class="bg-slate-900 border border-l-0 border-white/10 rounded-r-xl px-4 py-3 text-slate-500 font-mono text-sm">.scoresmarter.com</span>
-                </div>
-              </div>
-              <div>
-                <label for="burgeeUrl"
-                  class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Burgee URL
-                  (Optional)</label>
-                <input id="burgeeUrl" type="url" formControlName="burgeeUrl"
-                  placeholder="https://example.com/burgee.png"
-                  class="w-full bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
-              </div>
-              <button type="submit" [disabled]="clubForm.invalid || isSubmitting()"
-                class="btn-primary w-full justify-center py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                @if (isSubmitting()) {
-                <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                Processing...
-                } @else {
-                Register Club
-                <mat-icon>rocket_launch</mat-icon>
-                }
-              </button>
-            </form>
-            }
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </section>

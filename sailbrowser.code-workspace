@@ -9,6 +9,10 @@
       "path": "mobile-recorder"
     },
     {
+      "name": "Home Site",
+      "path": "home-site"
+    },
+    {
       "name": "Firebase: Functions & Rules",
       "path": "firebase" 
     },
