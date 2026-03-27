@@ -4,11 +4,10 @@ import { FirebaseApp } from '@angular/fire/app';
 import { collection, doc, getDoc, getFirestore, serverTimestamp, writeBatch } from '@angular/fire/firestore';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-club-registration',
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule],
   templateUrl: './club-registration.html'
 })
 export class ClubRegistration {
@@ -20,17 +19,33 @@ export class ClubRegistration {
 
   clubForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(3)]],
-    subdomain: ['', [Validators.required, Validators.pattern(/^[a-z0-9-]+$/)]],
+    // Lowercase letters/numbers with hyphen-separated segments.
+    // Examples: "bwsc", "west-bay", "sailing-club-1"
+    // Not allowed: leading/trailing hyphen, spaces, uppercase, special chars.
+    subdomain: [
+      '',
+      [
+        Validators.required,
+        Validators.maxLength(12),
+        Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+      ],
+    ],
     contactName: ['', [Validators.required, Validators.minLength(2)]],
     contactEmail: ['', [Validators.required, Validators.email]],
     burgeeUrl: ['', [Validators.pattern(/https?:\/\/.+/)]]
   });
 
   async onSubmit() {
+    const form = this.clubForm.getRawValue();
+    const subdomainControl = this.clubForm.controls.subdomain;
+    const subdomain = (form.subdomain || '').toLowerCase().trim();
+
+    // Normalize to lowercase before running validators/uniqueness checks.
+    subdomainControl.setValue(subdomain, { emitEvent: false });
+    subdomainControl.updateValueAndValidity({ emitEvent: false });
+
     if (this.clubForm.invalid) return;
 
-    const form = this.clubForm.getRawValue();
-    const subdomain = (form.subdomain || '').toLowerCase();
     const contactName = form.contactName || '';
     const contactEmail = form.contactEmail || '';
     const clubName = form.name || '';
@@ -39,11 +54,11 @@ export class ClubRegistration {
     this.isSubmitting.set(true);
 
     try {
-      const subdomainControl = this.clubForm.controls.subdomain;
       const existingClubRef = doc(this.firestore, 'clubs', subdomain);
       const existingClub = await getDoc(existingClubRef);
       if (existingClub.exists()) {
         subdomainControl.setErrors({ ...(subdomainControl.errors || {}), notUnique: true });
+        subdomainControl.markAsTouched();
         return;
       }
 

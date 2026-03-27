@@ -1,66 +1,65 @@
 <section class="py-24 grid-pattern">
-   <div class="max-w-7xl mx-auto px-6">
-      <div class="text-center max-w-3xl mx-auto mb-24">
-         <h2 class="text-5xl md:text-7xl font-light tracking-tighter mb-8 leading-tight text-white">Engineered for
-            the<br /><span class="text-gradient">Modern Sailing Club</span></h2>
-         <p class="text-xl text-slate-400">Everything you need to manage your club's racing results in one powerful,
-            multi-tenanted platform.</p>
-      </div>
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center max-w-3xl mx-auto mb-24">
+      <h2 class="text-5xl md:text-7xl font-light tracking-tighter mb-8 leading-tight text-white">Engineered for
+        the<br /><span class="text-gradient">Modern Sailing Club</span></h2>
+      <p class="text-xl text-slate-400">Everything you need to manage your club's racing results in one powerful,
+        multi-tenanted platform.</p>
+    </div>
 
-      <div class="grid md:grid-cols-3 gap-6">
-         @for (feature of features; track feature.title) {
-         <div class="p-10 glass rounded-[2.5rem] hover:bg-slate-900/60 transition-all duration-500 group card-glow">
-            <div
-               class="w-14 h-14 bg-slate-950 rounded-2xl flex items-center justify-center text-primary-500 mb-8 border border-white/5 group-hover:border-primary-500/50 transition-all duration-500">
-               <mat-icon>{{ feature.icon }}</mat-icon>
-            </div>
-            <h3 class="text-2xl font-bold text-white mb-4">{{ feature.title }}</h3>
-            <p class="text-slate-400 leading-relaxed">{{ feature.description }}</p>
-         </div>
-         }
+    <div class="grid md:grid-cols-3 gap-6">
+      @for (feature of features; track feature.title) {
+      <div class="p-10 glass rounded-[2.5rem] hover:bg-slate-900/60 transition-all duration-500 group card-glow">
+        <div
+          class="w-14 h-14 bg-slate-950 rounded-2xl flex items-center justify-center text-primary-500 mb-8 border border-white/5 group-hover:border-primary-500/50 transition-all duration-500">
+          <mat-icon>{{ feature.icon }}</mat-icon>
+        </div>
+        <h3 class="text-2xl font-bold text-white mb-4">{{ feature.title }}</h3>
+        <p class="text-slate-400 leading-relaxed">{{ feature.description }}</p>
       </div>
+      }
+    </div>
 
-      <!-- Detailed Section -->
-      <div class="mt-40 grid lg:grid-cols-2 gap-24 items-center">
-         <div>
-            <div class="text-primary-500 font-mono text-sm tracking-[0.2em] uppercase mb-4">Architecture</div>
-            <h2 class="text-5xl font-extrabold tracking-tighter text-white mb-8">Multi-tenancy at its core</h2>
-            <p class="text-xl text-slate-400 mb-10 leading-relaxed">
-               Each club gets its own dedicated space, custom domain, and branding. Manage your members, boats, and
-               series without interference from other organizations.
-            </p>
-            <ul class="space-y-6">
-               @for (item of benefits; track item) {
-               <li class="flex items-center gap-4 text-slate-300">
-                  <div class="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                     <mat-icon class="text-emerald-500 !text-sm">check</mat-icon>
-                  </div>
-                  <span class="text-lg">{{ item }}</span>
-               </li>
-               }
-            </ul>
-         </div>
-         <div class="relative">
-            <div class="aspect-square p-4 glass rounded-[3rem] rotate-3">
-               <div class="w-full h-full rounded-[2.5rem] overflow-hidden relative">
-                  <img src="https://picsum.photos/seed/sailing-action/800/800" alt="Sailing action"
-                     class="w-full h-full object-cover opacity-80" referrerpolicy="no-referrer">
-                  <div class="absolute inset-0 bg-gradient-to-tr from-primary-600/20 to-transparent"></div>
-               </div>
+    <!-- Detailed Section -->
+    <div class="mt-40 grid lg:grid-cols-2 gap-24 items-center">
+      <div>
+        <div class="text-primary-500 font-mono text-sm tracking-[0.2em] uppercase mb-4">Architecture</div>
+        <h2 class="text-5xl font-extrabold tracking-tighter text-white mb-8">Multi-tenancy at its core</h2>
+        <p class="text-xl text-slate-400 mb-10 leading-relaxed">
+          Each club gets its own dedicated space, custom domain, and branding. Manage your members, boats, and
+          series without interference from other organizations.
+        </p>
+        <ul class="space-y-6">
+          @for (item of benefits; track item) {
+          <li class="flex items-center gap-4 text-slate-300">
+            <div class="w-6 h-6 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <mat-icon class="text-emerald-500 !text-sm">check</mat-icon>
             </div>
-            <div
-               class="absolute -bottom-12 -left-12 glass p-8 rounded-[2rem] shadow-2xl max-w-sm border-primary-500/20">
-               <p class="italic text-slate-300 text-lg leading-relaxed">"ScoreSmarter transformed how we handle our
-                  Wednesday night series. Results are out before the sailors are off the water!"</p>
-               <div class="mt-6 flex items-center gap-4">
-                  <div class="w-10 h-10 bg-primary-600 rounded-full"></div>
-                  <div>
-                     <p class="font-bold text-white">Commodore</p>
-                     <p class="text-sm text-slate-500">West Bay SC</p>
-                  </div>
-               </div>
-            </div>
-         </div>
+            <span class="text-lg">{{ item }}</span>
+          </li>
+          }
+        </ul>
       </div>
-   </div>
+      <div class="relative">
+        <div class="aspect-square p-4 glass rounded-[3rem] rotate-3">
+          <div class="w-full h-full rounded-[2.5rem] overflow-hidden relative">
+            <img src="https://picsum.photos/seed/sailing-action/800/800" alt="Sailing action"
+              class="w-full h-full object-cover opacity-80" referrerpolicy="no-referrer">
+            <div class="absolute inset-0 bg-gradient-to-tr from-primary-600/20 to-transparent"></div>
+          </div>
+        </div>
+        <div class="absolute -bottom-12 -left-12 glass p-8 rounded-[2rem] shadow-2xl max-w-sm border-primary-500/20">
+          <p class="italic text-slate-300 text-lg leading-relaxed">"ScoreSmarter transformed how we handle our
+            Wednesday night series. Results are out before the sailors are off the water!"</p>
+          <div class="mt-6 flex items-center gap-4">
+            <div class="w-10 h-10 bg-primary-600 rounded-full"></div>
+            <div>
+              <p class="font-bold text-white">Commodore</p>
+              <p class="text-sm text-slate-500">West Bay SC</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>

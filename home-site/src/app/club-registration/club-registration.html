@@ -1,11 +1,5 @@
 <section class="py-24 grid-pattern">
   <div class="max-w-5xl mx-auto px-6">
-    <div class="mb-10">
-      <a routerLink="/clubs" class="btn-secondary !py-2 !px-4 inline-flex">
-        <mat-icon>arrow_back</mat-icon>
-        Back to Clubs
-      </a>
-    </div>
 
     <div class="glass rounded-[3rem] p-12 md:p-20 border-primary-500/20">
       <div class="max-w-2xl">
@@ -13,10 +7,11 @@
           Register Your <span class="text-gradient">Club</span>
         </h1>
         <p class="text-xl text-slate-400 mb-10 leading-relaxed">
-          Submit your details and we will create a tenant request for provisioning.
+          Complete details below to add your club
         </p>
       </div>
 
+      <div class="w-full md:max-w-[500px] md:mx-auto">
       @if (submitted()) {
       <div class="text-center py-10">
         <div class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-500 mx-auto mb-6">
@@ -24,7 +19,7 @@
         </div>
         <h3 class="text-2xl font-bold text-white mb-2">Request Received!</h3>
         <p class="text-slate-400 mb-8">
-          We have saved your tenant request. We will contact you soon.
+          We have saved your request. We will contact you soon.
         </p>
         <button (click)="submitted.set(false)" class="btn-secondary mx-auto">Submit Another Request</button>
       </div>
@@ -37,14 +32,18 @@
         </div>
 
         <div class="md:col-span-2">
-          <label for="subdomain" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Desired Subdomain</label>
+          <label for="subdomain" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Website name (eg bwsc)</label>
           <div class="flex items-center">
             <input id="subdomain" type="text" formControlName="subdomain" placeholder="westbay"
               class="flex-grow bg-slate-950/50 border border-white/10 rounded-l-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
-            <span class="bg-slate-900 border border-l-0 border-white/10 rounded-r-xl px-4 py-3 text-slate-500 font-mono text-sm">.scoresmarter.com</span>
+            <span class="bg-slate-900 border border-l-0 border-white/10 rounded-r-xl px-4 py-3 text-slate-500 font-mono text-sm">.scoresmarter.app</span>
           </div>
-          @if (clubForm.controls.subdomain.errors?.['notUnique']) {
-          <p class="text-red-400 text-sm mt-2">That subdomain is already in use. Please choose another.</p>
+          @if ((clubForm.controls.subdomain.touched || submitted()) && clubForm.controls.subdomain.errors?.['maxlength']) {
+          <p class="text-red-400 text-sm mt-2">Subdomain must be 12 characters or fewer.</p>
+          } @else if ((clubForm.controls.subdomain.touched || submitted()) && clubForm.controls.subdomain.errors?.['pattern']) {
+          <p class="text-red-400 text-sm mt-2">Use lowercase letters/numbers with hyphens between segments (no leading/trailing hyphen).</p>
+          } @else if ((clubForm.controls.subdomain.touched || submitted()) && clubForm.controls.subdomain.errors?.['notUnique']) {
+          <p class="text-red-400 text-sm mt-2">That club id is already in use. Please choose another.</p>
           }
         </div>
 
@@ -74,12 +73,12 @@
             Processing...
             } @else {
             Submit Registration
-            <mat-icon>rocket_launch</mat-icon>
             }
           </button>
         </div>
       </form>
       }
+      </div>
     </div>
   </div>
 </section>
