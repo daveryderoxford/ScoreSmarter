@@ -1,15 +1,32 @@
-import { computed, inject, Injectable, signal, effect } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import type { Race } from 'app/race-calender';
 import { RaceCalendarStore } from '../../race-calender/services/full-race-calander';
 
 /** Manages a list of 'currect races'
  * All information for currect races is held in memory
  */
 @Injectable({
-   providedIn: 'root',
+  providedIn: 'root',
 })
 export class CurrentRaces {
   private readonly raceStore = inject(RaceCalendarStore);
-  readonly selectedRaceIds = signal<string[]>([]);
+
+  /** Races opened explicitly (e.g. historical race from results viewer), not part of "today" auto-selection. */
+  private readonly manuallyAddedRaceIds = signal<string[]>([]);
+
+  /** Today's races (from calendar) plus any manual extras still present in `allRaces`. */
+  readonly selectedRaceIds = computed(() => {
+    const allRaces = this.raceStore.allRaces();
+    const todayIds = raceIdsScheduledToday(allRaces);
+    const manual = this.manuallyAddedRaceIds();
+    const selected: string[] = [...todayIds];
+    for (const id of manual) {
+      if (!allRaces.some(r => r.id === id)) continue;
+      if (todayIds.includes(id)) continue;
+      if (!selected.includes(id)) selected.push(id);
+    }
+    return selected;
+  });
 
   readonly selectedRaces = computed(() => {
     const races = this.raceStore.allRaces();
@@ -24,20 +41,16 @@ export class CurrentRaces {
     return allSeries.filter(series => seriesIds.includes(series.id));
   });
 
-  constructor() {
-    effect(() => {
-      // Initialize with today's races
-      const todayStr = new Date().toDateString();
-      const todaysRaceIds = this.raceStore.allRaces()
-        .filter(race => new Date(race.scheduledStart).toDateString() === todayStr)
-        .map(race => race.id);
-      this.selectedRaceIds.set(todaysRaceIds);
-    });
-  }
+  addRaceId = (raceId: string) =>
+    this.manuallyAddedRaceIds.update(ids => (ids.includes(raceId) ? ids : [...ids, raceId]));
 
-  addRaceId = (raceId: string) => this.selectedRaceIds.update(races => {
-    if (races.includes(raceId)) return races;
-    return [...races, raceId];
-  });
-  removeRaceId = (raceId: string) => this.selectedRaceIds.update(races => races.filter(id => id !== raceId));
+  removeRaceId = (raceId: string) =>
+    this.manuallyAddedRaceIds.update(ids => ids.filter(id => id !== raceId));
+}
+
+function raceIdsScheduledToday(allRaces: Race[]): string[] {
+  const todayStr = new Date().toDateString();
+  return allRaces
+    .filter(race => new Date(race.scheduledStart).toDateString() === todayStr)
+    .map(race => race.id);
 }
