@@ -138,7 +138,7 @@ export class ManualResultsTable {
 
     return this.competitors().map(c => {
       const data = new ExtendedRaceCompetitor(c);
-      data.correctedTime = this.corrected(c, maxLaps);
+      data.correctedTime = this.corrected(data, maxLaps);
       return data;
     }).sort((a, b) =>
       manualRaceTableSort(a, b, sort.active as keyof ExtendedRaceCompetitor, sort.direction));
