@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { ResultCode } from 'app/scoring/model/result-code';
+import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { differenceInSeconds } from 'date-fns';
+import { deleteField } from 'firebase/firestore';
 import { RaceCompetitorStore, sortEntries } from './race-competitor-store';
 import { RaceCompetitor } from '../model/race-competitor';
 
@@ -14,6 +16,59 @@ export interface ResultInput {
   laps: number;
   resultCode: ResultCode;
   position?: number | null;
+}
+
+/** Per-row editor state for pursuit / level-rating order entry UI */
+export interface OrderEntryRowState {
+  resultCode: ResultCode;
+  /** Optional finish time for Level Rating (competitor info) */
+  manualFinishTime?: Date | null;
+  /** When set, overrides default sequential rank among finishers */
+  rankOverride?: number | null;
+}
+
+export interface OrderEntryPersistInput {
+  race: Race;
+  /** All competitors for this race (from store) */
+  competitors: RaceCompetitor[];
+  /** Processed queue order (right pane), first = earliest processed */
+  processedIds: string[];
+  /** State keyed by competitor id for processed rows */
+  rowState: Map<string, OrderEntryRowState>;
+}
+
+/**
+ * Computes target manualPosition for finishers in processed order (ties share the same value).
+ * Non-finishers (per isFinishedComp) get no rank (undefined).
+ */
+export function computeManualPositionsForOrderEntry(
+  processedIds: string[],
+  rowState: Map<string, OrderEntryRowState>
+): Map<string, number | undefined> {
+  const out = new Map<string, number | undefined>();
+  let nextDefault = 1;
+  for (const id of processedIds) {
+    const row = rowState.get(id);
+    if (!row) {
+      out.set(id, undefined);
+      continue;
+    }
+    const code = row.resultCode;
+    if (!isFinishedComp(code)) {
+      out.set(id, undefined);
+      continue;
+    }
+    const ov = row.rankOverride;
+    if (ov != null && !Number.isNaN(Number(ov))) {
+      const p = Number(ov);
+      out.set(id, p);
+      nextDefault = Math.max(nextDefault, p + 1);
+    } else {
+      out.set(id, nextDefault);
+      nextDefault++;
+    }
+  }
+  return out;
 }
 
 export interface CalculatedStats {
@@ -107,6 +162,83 @@ export class ManualResultsService {
     }
 
     await this.competitorStore.updateResult(competitor.id, update);
+  }
+
+  /**
+   * Computes target manualPosition for finishers in processed order.
+   * Non-finishers (per isFinishedComp) get no rank (undefined).
+   */
+  computeManualPositionsForOrderEntry(
+    processedIds: string[],
+    rowState: Map<string, OrderEntryRowState>
+  ): Map<string, number | undefined> {
+    return computeManualPositionsForOrderEntry(processedIds, rowState);
+  }
+
+  /**
+   * Persists order-entry state with diff-only writes (manualPosition, resultCode, manualFinishTime).
+   */
+  async persistOrderEntryState(input: OrderEntryPersistInput): Promise<void> {
+    const { race, competitors, processedIds, rowState } = input;
+    const processedSet = new Set(processedIds);
+    const positions = computeManualPositionsForOrderEntry(processedIds, rowState);
+
+    const updates: { id: string; patch: Record<string, unknown> }[] = [];
+
+    for (const comp of competitors) {
+      const inProcessed = processedSet.has(comp.id);
+      const row = rowState.get(comp.id);
+      const targetCode: ResultCode = inProcessed && row ? row.resultCode : 'NOT FINISHED';
+
+      const targetManualFinish: Date | undefined | null =
+        inProcessed && row ? row.manualFinishTime ?? undefined : undefined;
+
+      const targetMp =
+        inProcessed && row && isFinishedComp(targetCode) ? positions.get(comp.id) : undefined;
+
+      const patch: Record<string, unknown> = {};
+
+      if (comp.resultCode !== targetCode) {
+        patch['resultCode'] = targetCode;
+      }
+
+      const prevTime = comp.manualFinishTime?.getTime();
+      const nextTime = targetManualFinish instanceof Date ? targetManualFinish.getTime() : undefined;
+      if (prevTime !== nextTime) {
+        if (targetManualFinish === undefined || targetManualFinish === null) {
+          if (prevTime !== undefined) {
+            patch['manualFinishTime'] = deleteField();
+          }
+        } else {
+          patch['manualFinishTime'] = targetManualFinish;
+        }
+      }
+
+      const prevMp = comp.manualPosition;
+      if (targetMp === undefined) {
+        if (prevMp !== undefined && prevMp !== null) {
+          patch['manualPosition'] = deleteField();
+        }
+      } else if (prevMp !== targetMp) {
+        patch['manualPosition'] = targetMp;
+      }
+
+      if (Object.keys(patch).length > 0) {
+        updates.push({ id: comp.id, patch });
+      }
+    }
+
+    if (updates.length === 0) {
+      return;
+    }
+
+    if (!race.dirty) {
+      await this.raceStore.updateRace(race.id, { dirty: true });
+    }
+
+    for (const { id, patch } of updates) {
+      await this.competitorStore.updateResult(id, patch as Partial<RaceCompetitor>);
+    }
   }
 }
 

@@ -1,0 +1,144 @@
+<div class="order-entry" [class.mobile]="isMobile()">
+  <div class="pane source">
+    <div class="pane-header">
+      <span class="pane-title">Remaining ({{ remainingCount() }} / {{ totalCount() }})</span>
+      <span class="pane-hint">Drag rows to finish order</span>
+    </div>
+    <div
+      cdkDropList
+      #remainingList="cdkDropList"
+      [cdkDropListData]="remainingIds()"
+      [cdkDropListConnectedTo]="[queueList]"
+      (cdkDropListDropped)="drop($event)"
+      class="drop-list">
+      @for (id of remainingIds(); track id) {
+        <div
+          cdkDrag
+          class="row source-row"
+          [class.dim]="searchTerm().trim() && !matchesSearch(id)"
+          [class.search-match]="searchTerm().trim() && matchesSearch(id)"
+          [class.selected]="selectedMatchId() === id"
+          [class.exact-sail]="exactSailMatchId() === id"
+          (click)="selectMatch(id)">
+          <span class="drag-handle" aria-hidden="true">
+            <mat-icon>drag_indicator</mat-icon>
+          </span>
+          <span class="mono">{{ compById().get(id)?.sailNumber }}</span>
+          <span>{{ compById().get(id)?.helm }}</span>
+          <span class="muted">{{ compById().get(id)?.boatClass }}</span>
+          <ng-container>
+            <mat-menu #srcMenu="matMenu">
+              <button mat-menu-item type="button" (click)="setRemainingResultCode(id)">
+                <mat-icon>edit</mat-icon>
+                <span>Set result code</span>
+              </button>
+            </mat-menu>
+          </ng-container>
+          <button
+            mat-icon-button
+            type="button"
+            [matMenuTriggerFor]="srcMenu"
+            (click)="$event.stopPropagation()"
+            (pointerdown)="$event.stopPropagation()"
+            aria-label="Remaining row actions">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+        </div>
+      } @empty {
+        <div class="empty">None left</div>
+      }
+    </div>
+  </div>
+
+  <div class="pane queue">
+    <div class="pane-header">
+      <span class="pane-title">Finish order</span>
+      <span class="pane-hint">Drag to reorder or return to remaining</span>
+    </div>
+    <div
+      cdkDropList
+      #queueList="cdkDropList"
+      [cdkDropListData]="processedIds()"
+      [cdkDropListConnectedTo]="[remainingList]"
+      (cdkDropListDropped)="drop($event)"
+      class="drop-list">
+      @for (id of processedIds(); track id) {
+        <div cdkDrag class="row queue-row">
+          <span class="drag-handle" aria-hidden="true">
+            <mat-icon>drag_indicator</mat-icon>
+          </span>
+          <span class="rank">{{ queueRankLabel(id) }}</span>
+          <span class="mono">{{ compById().get(id)?.sailNumber }}</span>
+          <span class="code">{{ rowFor(id)?.resultCode }}</span>
+          <ng-container>
+            <mat-menu #rowMenu="matMenu">
+              <button mat-menu-item type="button" (click)="setRowResultCode(id)">
+                <mat-icon>edit</mat-icon>
+                <span>Set result code</span>
+              </button>
+              <button mat-menu-item type="button" (click)="tieWithAbove(id)" [disabled]="!canTieWithAbove(id)">
+                <mat-icon>call_split</mat-icon>
+                <span>Tie with above</span>
+              </button>
+              <button mat-menu-item type="button" (click)="clearTie(id)" [disabled]="!canClearTie(id)">
+                <mat-icon>link_off</mat-icon>
+                <span>Clear tie</span>
+              </button>
+              <button mat-menu-item type="button" (click)="removeFromQueue(id)">
+                <mat-icon>close</mat-icon>
+                <span>Unfinish</span>
+              </button>
+            </mat-menu>
+          </ng-container>
+          <button
+            mat-icon-button
+            type="button"
+            [matMenuTriggerFor]="rowMenu"
+            (click)="$event.stopPropagation()"
+            (pointerdown)="$event.stopPropagation()"
+            aria-label="Row actions">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+        </div>
+      } @empty {
+        <div class="empty">Empty — add from search or drag</div>
+      }
+    </div>
+  </div>
+
+  <div class="pane center">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search sail no, helm, class</mat-label>
+      <input
+        #entrySearch
+        matInput
+        [formControl]="searchControl"
+        (keydown)="onSearchKeydown($event)"
+        autocomplete="off" />
+    </mat-form-field>
+
+    @if (previewCompetitor(); as p) {
+      <div class="preview">
+        <div class="preview-main">{{ p.sailNumber }} — {{ p.helm }}</div>
+        <div class="preview-sub">{{ p.boatClass }}</div>
+        @if (previewPending(); as pend) {
+          <div class="preview-hint">When added: {{ pend.resultCode }}</div>
+        }
+      </div>
+    }
+
+    <div class="center-actions">
+      <button mat-button type="button" (click)="undoLast()">Undo last</button>
+    </div>
+
+    <button
+      mat-flat-button
+      color="primary"
+      class="commit-btn"
+      type="button"
+      [disabled]="!canCommitEnter()"
+      (click)="commitFromEntry()">
+      Add to order (Enter)
+    </button>
+  </div>
+</div>
