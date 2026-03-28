@@ -52,7 +52,6 @@
       </div>
     </div>
 
-    @if (race.type === 'Handicap') {
     <form [formGroup]="form" (ngSubmit)="save()">
 
       <mat-form-field appearance="outline">
@@ -77,6 +76,8 @@
         }
       </mat-form-field>
 
+      @switch (selectedRace()?.type) {
+        @case ('Handicap') {
           <mat-form-field appearance="outline">
             <mat-label>Finish Time</mat-label>
             <app-race-time-input formControlName="finishTime" [mode]="timeInputContext().mode"
@@ -97,6 +98,35 @@
             <mat-label>Laps</mat-label>
             <input matInput type="number" formControlName="laps">
           </mat-form-field>
+        }
+
+        @case ('Pursuit') {
+          <mat-form-field appearance="outline">
+            <mat-label>Position</mat-label>
+            <input matInput type="number" formControlName="position">
+            @if (form.controls.position.hasError('required')) {
+              <mat-error>Position is required</mat-error>
+            }
+          </mat-form-field>
+        }
+
+        @case ('Level Rating') {
+          <mat-form-field appearance="outline">
+            <mat-label>Position</mat-label>
+            <input matInput type="number" formControlName="position">
+            @if (form.controls.position.hasError('required')) {
+              <mat-error>Position is required</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Finish Time (Optional)</mat-label>
+            <app-race-time-input formControlName="finishTime" [mode]="timeInputContext().mode"
+              [baseTime]="timeInputContext().baseTime">
+            </app-race-time-input>
+          </mat-form-field>
+        }
+      }
 
       <app-result-code-selector formControlName="resultCode"></app-result-code-selector>
 
@@ -105,9 +135,6 @@
         <button mat-flat-button color="primary" type="submit">Record</button>
       </div>
     </form>
-    } @else {
-      <app-manual-order-entry [race]="race" [competitors]="sortedCompetitors()" />
-    }
   </div>
 </div>
 }

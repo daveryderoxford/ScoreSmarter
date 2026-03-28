@@ -16,7 +16,6 @@ import { RESULT_CODE_DEFINITIONS, ResultCode, getResultCodeDefinition } from 'ap
 import { Toolbar } from 'app/shared/components/toolbar';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { firstValueFrom, map, of, startWith, switchMap, Observable, tap } from 'rxjs';
-import { ManualOrderEntry } from '../manual-order-entry/manual-order-entry';
 import { ManualResultsTable } from '../manual-results-table';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-time-dialog';
 import { RaceTimeInput } from '../race-time-input';
@@ -45,7 +44,6 @@ import { RaceTitlePipe } from '../../../shared/pipes/race-title-pipe';
     MatSelectModule,
     MatDialogModule,
     RaceTimeInput,
-    ManualOrderEntry,
     ManualResultsTable,
     DurationPipe,
     ResultCodeSelector,
@@ -279,6 +277,18 @@ export class ManualResultsPage {
       untracked(() => {
         control.updateValueAndValidity({ emitEvent: false });
       });
+    });
+
+    // Manage position required validator based on race type
+    const positionRequiredEffect = effect(() => {
+      const race = this.selectedRace();
+      const control = this.form.controls.position;
+      if (race?.type === 'Pursuit' || race?.type === 'Level Rating') {
+        control.setValidators([Validators.required, Validators.min(1)]);
+      } else {
+        control.clearValidators();
+      }
+      untracked(() => control.updateValueAndValidity({ emitEvent: false }));
     });
   }
 
