@@ -43,7 +43,7 @@ export class RaceCompetitorStore {
           this.collection,
           where('raceId', 'in', selectedIds)
         );
-        return collectionData(q, { idField: 'id' }).pipe(
+        return collectionData(q).pipe(
           map(rc => rc.sort(sortEntries)),
           tap(rc => console.log(`RaceCompetitorStore. Loaded ${rc.length} competitors`))
         );
