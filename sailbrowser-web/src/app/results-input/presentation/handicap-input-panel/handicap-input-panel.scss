@@ -1,0 +1,73 @@
+.mode-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+.mode-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.start-time {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.stats-display {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border-left: 4px solid transparent;
+
+  &.suspicious {
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+    border-left-color: var(--mat-sys-error);
+  }
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-variant-numeric: tabular-nums;
+}
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 0; /* Allow overflow scrolling inside the parent height */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+@media (max-width: 700px) {
+  .mode-display {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}

@@ -38,8 +38,8 @@ export function score(
     updateGridWithRace(scoringGrid, raceToScore, scoredResults);
   }
 
-  // 2.5 Re-score all races in the grid to ensure series-size dependent penalties (SCP, ZFP, etc.) are correct.
-  // This is necessary because as new competitors join the series, the penalty points (which are often % of fleet) change.
+  // 2.5 Re-score all races in the grid to ensure series-size
+  // dependent penalties (SCP, ZFP, etc.) are correct in the othe races.
   for (const race of scoringGrid) {
     calculateRacePoints(race.results, race.type, handicapScheme, config.seriesType, seriesCompetitorCount);
   }
@@ -48,22 +48,24 @@ export function score(
   const finalSeriesResults = scoreSeries(scoringGrid, seriesEntries, config);
 
   // 4. Update the scoring grid with points calculated during series scoring (e.g., RDG).
-  finalSeriesResults.forEach(seriesResult => {
-    seriesResult.raceScores.forEach(raceScore => {
+  for (const seriesResult of finalSeriesResults) {
+    for (const raceScore of seriesResult.raceScores) {
       const race = scoringGrid.find(r => r.index === raceScore.raceIndex);
       if (race) {
         const raceResult = race.results.find(res => res.seriesEntryId === seriesResult.seriesEntryId);
         if (raceResult) raceResult.points = raceScore.points;
       }
-    });
-  });
+    }
+  }
 
   scoringGrid.sort((a, b) => a.index - b.index);
 
   return { scoredRaces: scoringGrid, seriesResults: finalSeriesResults };
 }
 
-/** Updates the race grid with  */
+/** Updates the race grid with results from a scored race
+ * either add a new race or replacing an exisit on with updated scores
+*/
 function updateGridWithRace(scoringGrid: PublishedRace[], race: Race, updatedResults: RaceResult[]) {
   const index = scoringGrid.findIndex(r => r.id === race.id);
   if (index > -1) {

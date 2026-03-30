@@ -23,9 +23,15 @@
           <span class="drag-handle" aria-hidden="true">
             <mat-icon>drag_indicator</mat-icon>
           </span>
-          <span class="mono">{{ compById().get(id)?.sailNumber }}</span>
-          <span>{{ compById().get(id)?.helm }}</span>
-          <span class="muted">{{ compById().get(id)?.boatClass }}</span>
+          <span
+            class="mono"
+            [class.long-number]="(compById().get(id)?.sailNumber?.toString()?.length || 0) > 5">
+            {{ compById().get(id)?.sailNumber }}
+          </span>
+          <span class="person-lines">
+            <span class="helm">{{ compById().get(id)?.helm }}</span>
+            <span class="boat-class">{{ compById().get(id)?.boatClass }}</span>
+          </span>
           <ng-container>
             <mat-menu #srcMenu="matMenu">
               <button mat-menu-item type="button" (click)="setRemainingResultCode(id)">
@@ -68,7 +74,15 @@
             <mat-icon>drag_indicator</mat-icon>
           </span>
           <span class="rank">{{ queueRankLabel(id) }}</span>
-          <span class="mono">{{ compById().get(id)?.sailNumber }}</span>
+          <span
+            class="mono"
+            [class.long-number]="(compById().get(id)?.sailNumber?.toString()?.length || 0) > 5">
+            {{ compById().get(id)?.sailNumber }}
+          </span>
+          <span class="person-lines">
+            <span class="helm">{{ compById().get(id)?.helm }}</span>
+            <span class="boat-class">{{ compById().get(id)?.boatClass }}</span>
+          </span>
           <span class="code">{{ rowFor(id)?.resultCode }}</span>
           <ng-container>
             <mat-menu #rowMenu="matMenu">
@@ -107,8 +121,12 @@
   </div>
 
   <div class="pane center">
+    <h3 class="entry-title">
+      Enter sail numbers in Finish Order<br>
+      Press Enter to select
+     </h3>
     <mat-form-field appearance="outline" class="search-field">
-      <mat-label>Search sail no, helm, class</mat-label>
+      <mat-label>Next sail number or helm</mat-label>
       <input
         #entrySearch
         matInput
@@ -128,17 +146,16 @@
     }
 
     <div class="center-actions">
+      <button
+        mat-flat-button
+        color="primary"
+        class="commit-btn"
+        type="button"
+        [disabled]="!canCommitEnter()"
+        (click)="commitFromEntry()">
+        Add to order (Enter)
+      </button>
       <button mat-button type="button" (click)="undoLast()">Undo last</button>
     </div>
-
-    <button
-      mat-flat-button
-      color="primary"
-      class="commit-btn"
-      type="button"
-      [disabled]="!canCommitEnter()"
-      (click)="commitFromEntry()">
-      Add to order (Enter)
-    </button>
   </div>
 </div>
