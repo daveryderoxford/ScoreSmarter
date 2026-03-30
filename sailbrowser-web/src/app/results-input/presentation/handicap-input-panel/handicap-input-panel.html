@@ -1,0 +1,69 @@
+<div class="mode-display">
+  <div class="mode-info">
+    <mat-icon>{{ race().timeInputMode === 'elapsed' ? 'timer' : 'schedule' }}</mat-icon>
+    <span>{{ race().timeInputMode === 'elapsed' ? 'Stopwatch' : 'Time of Day' }}</span>
+  </div>
+  @if (race().actualStart) {
+    <span class="start-time">Start: {{ race().actualStart | date:'HH:mm:ss' }}</span>
+  }
+</div>
+
+@let stats = calculatedStats();
+<div class="stats-display" [class.suspicious]="stats?.isSuspicious">
+  <div class="stat-row">
+    <span>Elapsed: <b>{{ stats ? (stats.elapsedSeconds | duration) : ''}}</b></span>
+    <span>Avg Lap: <b>{{ stats ? (stats.avgLapTime | duration) : ''}}</b></span>
+  </div>
+</div>
+
+<form [formGroup]="form" (ngSubmit)="save()">
+  <mat-form-field appearance="outline">
+    <mat-label>Competitor</mat-label>
+    <input #searchInput matInput [formControl]="searchControl" [matAutocomplete]="auto" placeholder="Class, Sail No or Helm">
+    <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn"
+      (optionSelected)="onCompetitorSelected($event)">
+      @for (group of autoCompleteGroups(); track group.name) {
+        <mat-optgroup [label]="group.name">
+          @for (comp of group.competitors; track comp.id) {
+            <mat-option [value]="comp">
+              {{comp.boatClass}} {{comp.sailNumber}} - {{comp.helm}}
+            </mat-option>
+          }
+        </mat-optgroup>
+      }
+    </mat-autocomplete>
+    @if (searchControl.value) {
+      <button mat-icon-button matSuffix type="button" (click)="searchControl.setValue('')" aria-label="Clear search">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Finish Time</mat-label>
+    <app-race-time-input formControlName="finishTime" [mode]="timeInputContext().mode"
+      [baseTime]="timeInputContext().baseTime">
+    </app-race-time-input>
+    @if (form.controls.finishTime.hasError('timeGreaterThan')) {
+      <mat-error>Finish time must be after start time</mat-error>
+    }
+    @if (form.controls.finishTime.hasError('positiveDuration')) {
+      <mat-error>Elapsed time must be positive</mat-error>
+    }
+    @if (form.controls.finishTime.hasError('required')) {
+      <mat-error>Finish time is required</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Laps</mat-label>
+    <input matInput type="number" formControlName="laps">
+  </mat-form-field>
+
+  <app-result-code-selector formControlName="resultCode"></app-result-code-selector>
+
+  <div class="actions">
+    <button mat-button type="button" (click)="selectedCompetitor.set(undefined)">Clear</button>
+    <button mat-flat-button color="primary" type="submit">Record</button>
+  </div>
+</form>
