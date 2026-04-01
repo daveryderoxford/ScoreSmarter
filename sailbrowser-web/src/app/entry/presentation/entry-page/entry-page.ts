@@ -66,11 +66,17 @@ import { EntryService } from '../../services/entry.service';
     }
     .search-field {
       flex-grow: 1;
+      font-size: 15px;
     }
     .placeholder {
       padding: 15px;
       text-align: center;
       font: var(--mat-sys-body-large);
+    }
+    .class-row {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
     }
     .save-boat-cb {
       display: block;
