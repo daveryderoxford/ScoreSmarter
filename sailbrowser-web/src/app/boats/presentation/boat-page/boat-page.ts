@@ -29,7 +29,7 @@ import { Boat } from 'app/boats';
   styles: `
     @use "mixins" as mix;
 
-    @include mix.centered-column-page(".content", 600px)
+    @include mix.centered-column-page(".content", 400px)
   `
 })
 export class BoatsPage {

@@ -37,9 +37,11 @@ import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
   template: `
     <app-toolbar title="Entries"></app-toolbar>
     <div class="content">
-      <div class="search-bar">
-        <mat-form-field appearance="outline" class="search">
-          <mat-label>Select Race</mat-label>
+       <a matFab extended class="entry-button"  [routerLink]="['/entry', 'enter']">
+          Enter Races
+        </a>
+        <mat-form-field class=search>
+          <mat-label>View</mat-label>
           <mat-select [formControl]="raceSelector">
             <mat-option [value]="'all'">All Races</mat-option>
             @for (race of currentRaces.selectedRaces(); track race.id) {
@@ -49,11 +51,6 @@ import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
             }
           </mat-select>
         </mat-form-field>
-
-        <a matButton="tonal" class="right-justify"  [routerLink]="['/entry', 'enter']">
-          Enter
-        </a>
-      </div>
 
       @if (competitorStore.loading()) {
         <app-loading-centered/>
@@ -92,7 +89,12 @@ import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
 
     @include mix.centered-column-page(".content", 400px);
 
-    mat-form-field {
+    .entry-button {
+      margin-top: 16px;
+      align-self: center;
+    }
+
+    .search {
       margin-top: 16px;
       width: 300px;
     }

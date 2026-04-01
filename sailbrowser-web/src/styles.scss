@@ -39,14 +39,20 @@ body {
   // Reset the user agent margin.
   margin: 0;
   height: 100%;
+
+  // Default meterial theming
+  @include mat.form-field-density(-3);
 }
 
+.filled-form-density {
+  @include mat.form-field-density(-1);
+}
 .dense-form-field {
-  @include mat.form-field-density(-2);
+  @include mat.form-field-density(-3);
 }
 
 .dense-list {
-  @include mat.list-density(-5);
+  @include mat.list-density(-2);
 }
 
 .dense-button {

@@ -6,7 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { PublishedSeason } from 'app/published-results';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { normaliseString } from 'app/shared/utils/string-utils';
@@ -27,6 +27,7 @@ import { endOfDay, subDays } from 'date-fns';
     MatInputModule,
     MatListModule,
     RouterLink,
+    RouterLinkActive,
   ],
   templateUrl: './season-list.html',
   styles: `
@@ -46,6 +47,15 @@ import { endOfDay, subDays } from 'date-fns';
 
    .align-right {
     margin-left: auto;
+   }
+
+   mat-list-item.season-list-item--active {
+     background-color: color-mix(in srgb, var(--mat-sys-primary) 18%, transparent);
+     border-radius: var(--mat-sys-corner-medium, 8px);
+   }
+
+   mat-list-item.season-list-item--active .mdc-list-item__primary-text {
+     font-weight: 500;
    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

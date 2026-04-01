@@ -28,7 +28,7 @@
       <ng-template matStepLabel>Details</ng-template>
 
       <div class="boat-selection">
-        <mat-form-field appearance="outline" class="search-field">
+        <mat-form-field appearance="fill" class="search-field filled-form-density">
           <mat-label>Search For Boat</mat-label>
           <input matInput [formControl]="boatSearchControl" [matAutocomplete]="auto"
             placeholder="Class, Helm or Sail No">
@@ -58,6 +58,7 @@
       <mat-form-field>
         <mat-label>Helm Name</mat-label>
         <input matInput formControlName="helm" placeholder="Helm Name">
+        <mat-error>Helm name required</mat-error>
       </mat-form-field>
 
       <mat-form-field>
@@ -65,7 +66,8 @@
         <input matInput formControlName="crew" placeholder="Crew Name (Optional)">
       </mat-form-field>
 
-      <mat-form-field>
+      <div class="class-row"> 
+      <mat-form-field appearance="outline" class="dense-form-field">
         <mat-label>Class</mat-label>
         <mat-select formControlName="boatClass">
           @for (c of cs.club().classes; track c.name) {
@@ -78,12 +80,9 @@
       <mat-form-field>
         <mat-label>Sail Number</mat-label>
         <input matInput type="number" formControlName="sailNumber" placeholder="e.g. 12345">
+        <mat-error>Numeric sail number required</mat-error>
       </mat-form-field>
-
-      <mat-form-field>
-        <mat-label>Handicap</mat-label>
-        <input matInput type="number" formControlName="handicap" placeholder="Handicap (Optional)">
-      </mat-form-field>
+      </div>
 
       @if (isNewBoat()) {
         <mat-checkbox formControlName="saveBoat" class="save-boat-cb">Save boat details to club

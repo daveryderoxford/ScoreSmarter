@@ -8,6 +8,7 @@ import { environment } from '../environments/environment';
 import { APP_ROUTES } from './app.routes';
 import { ClubTenant } from './club-tenant/services/club-tenant';
 import { firebaseConfig } from './firebase-config';
+import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 
 if (isDevMode()) {
   (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
@@ -42,5 +43,11 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(),
       //  withDebugTracing(),
     ),
+    {
+      provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
+      useValue: {
+        appearance: 'outline',
+      }
+    },
   ],
 };
