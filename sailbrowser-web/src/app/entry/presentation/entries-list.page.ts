@@ -17,6 +17,8 @@ import { RaceCompetitorStore } from '../../results-input/services/race-competito
 import { CenteredText } from "app/shared/components/centered-text";
 import { BoatEntrySummaryComponent } from "./entry-summary";
 import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
+import { getHandicapValue } from 'app/scoring/model/handicap';
+import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 
 @Component({
   selector: 'app-entries-list-page',
@@ -66,7 +68,7 @@ import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
                 <span matListItemTitle>{{ comp.boatClass }} {{ comp.sailNumber }}</span>
                 <span matListItemLine>
                   <span class=gap>{{ comp.helmCrew }}</span>
-                    Handicap: {{comp.handicap.toString()}}
+                    Handicap: {{displayHandicap(comp)}}
                 </span>
                 <span matListItemLine>
                   @if (comp.resultCode !== 'NOT FINISHED') { Finished }
@@ -122,6 +124,8 @@ export class EntriesListPage {
 
   raceSelector = new FormControl<string>('all');
 
+  private readonly displayScheme: HandicapScheme = 'PY';
+
   raceFilter = toSignal(this.raceSelector.valueChanges, { initialValue: 'all' });
 
   competitors = this.competitorStore.selectedCompetitors;
@@ -129,6 +133,10 @@ export class EntriesListPage {
   filtered = computed(() =>
     this.competitors().filter(c => filter(c, this.raceFilter()!))
   );
+
+  displayHandicap(comp: RaceCompetitor): number | undefined {
+    return getHandicapValue(comp.handicaps, this.displayScheme);
+  }
 
   async delete(comp: RaceCompetitor) {
     if (comp.manualFinishTime || comp.recordedFinishTime) {

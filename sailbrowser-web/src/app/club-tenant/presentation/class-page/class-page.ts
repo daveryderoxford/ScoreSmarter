@@ -15,6 +15,8 @@ import { LoadingCentered } from "app/shared/components/loading-centered";
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BoatClass } from '../../model/boat-class';
+import { getHandicapValue } from 'app/scoring/model/handicap';
+import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 
 @Component({
   selector: 'app-class-page',
@@ -51,6 +53,10 @@ export class ClassPage {
       boatClass.name.toLowerCase().includes(filter)
     ).sort((a, b) => a.name.localeCompare(b.name));
   });
+
+  pyHandicap(boatClass: BoatClass): number | undefined {
+    return getHandicapValue(boatClass.handicaps, 'PY' as HandicapScheme);
+  }
 
   async deleteClass(boatClass: BoatClass) {
     if (await this.ds.confirm('Delete Class', `Are you sure you want to delete ${boatClass.name}?`)) {

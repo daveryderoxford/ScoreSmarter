@@ -4,8 +4,9 @@ import { RaceCompetitor, SeriesEntry } from '../../results-input';
 import { HandicapScheme } from '../model/handicap-scheme';
 import { getLongAlgorithm, getShortAlgorithm, isFinishedComp, isRedress, isStartAreaComp, ResultCodeAlgorithm } from '../model/result-code-scoring';
 import { ScoreSmarterError } from '../../shared/utils/scoresmarter-error';
-import { differenceInSeconds } from 'date-fns';
 import { SeriesScoringScheme } from '../model/scoring-algotirhm';
+import { getHandicapValue } from '../model/handicap';
+import { getCorrectedTime, getElapsedSeconds } from './scorer-times';
 
 /**
  * Uses competitor start, finish. lap and status to calculate results for a single race. 
@@ -131,7 +132,8 @@ function validateFinishersHaveData(finishers: RaceResult[], property: keyof Race
  */
 export function buildRaceResults(
   competitors: RaceCompetitor[],
-  seriesEntries: SeriesEntry[]
+  seriesEntries: SeriesEntry[],
+  scheme: HandicapScheme
 ): RaceResult[] {
   const entryMap = new Map(seriesEntries.map(e => [e.id, e]));
 
@@ -150,7 +152,7 @@ export function buildRaceResults(
       crew: comp.crew || entry.crew,
       club: entry.club,
       laps: comp.numLaps,
-      handicap: comp.handicap || entry.handicap,
+      handicap: getHandicapValue(comp.handicaps, scheme) ?? getHandicapValue(entry.handicaps, scheme) ?? 0,
       startTime: comp.startTime!,
       finishTime: comp.finishTime!,
       elapsedTime: 0,
@@ -168,52 +170,15 @@ function calculateTimes(results: RaceResult[], isAverageLap: boolean, scheme: Ha
   const maxLaps = results.reduce((max, res) => (res.laps > max) ? res.laps : max, 0);
 
   for (const result of results) {
-    result.elapsedTime = getElapsedTime(result, isAverageLap, maxLaps);
-    result.correctedTime = calculateCorrectedTime(result.elapsedTime, result.handicap, scheme);
-  }
-}
-
-/**
- * Calculates the elapsed time. For average lap races, 
- * the average lap time is scaled to the maximun number of laps completed
- * by any competitor 
-*/
-function getElapsedTime(result: RaceResult, isAverageLap: boolean, maxLaps: number): number {
-  const finishTime = result.finishTime;
-  const compStartTime = result.startTime;
-
-  if (finishTime && compStartTime) {
-    const diff = differenceInSeconds(finishTime.getTime(), compStartTime.getTime());
-
-    if (diff < 0) {
-      // Consider logging this error
-      return 0;
-    }
-
-    const numLaps = result.laps;
-    if (isAverageLap && numLaps === 0) {
-      // Consider logging this error
-      return 0;
-    }
-
-    const elapsedTime = isAverageLap ? (diff / numLaps) * maxLaps : diff;
-    return Math.round(elapsedTime);
-  }
-  return 0;
-}
-
-function calculateCorrectedTime(elapsedTime: number, handicap: number, scheme: HandicapScheme): number {
-  if (elapsedTime === 0) {
-    return 0;
-  }
-  switch (scheme) {
-    case 'PY':
-      return Math.round((elapsedTime * 1000.0) / handicap);
-    case 'Level Rating':
-      return elapsedTime; // No handicap correction
-    case 'IRC':
-    case 'Personal':
-      throw new ScoreSmarterError(`${scheme} Not implemented`);
+    result.elapsedTime = getElapsedSeconds({
+      startTime: result.startTime,
+      finishTime: result.finishTime,
+      resultCode: result.resultCode,
+      isAverageLap,
+      laps: result.laps,
+      maxLaps,
+    });
+    result.correctedTime = getCorrectedTime(result.elapsedTime, result.handicap, scheme);
   }
 }
 

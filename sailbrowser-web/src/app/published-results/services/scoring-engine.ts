@@ -7,6 +7,7 @@ import { RaceCompetitorStore } from 'app/results-input/services/race-competitor-
 import { score } from 'app/scoring';
 import { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import { isInFleet } from 'app/scoring/services/fleet-scoring';
+import { getHandicapValue } from 'app/scoring/model/handicap';
 import { PublishedRace } from '../model/published-race';
 import { PublishedSeason, SeriesInfo } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
@@ -176,7 +177,11 @@ export class ScoringEngine {
   ): Promise<void> {
     if (allRaces.length === 0) return;
 
-    const filteredSeriesEntries = seriesEntries.filter(e => isInFleet(e, config.fleet));
+    const handicapScheme = config.handicapScheme;
+
+    const filteredSeriesEntries = seriesEntries.filter(e =>
+      isInFleet(e, config.fleet) && getHandicapValue(e.handicaps, handicapScheme) != null
+    );
 
     let existingPublishedRaces: PublishedRace[] = [];
     let currentSeriesResults: any[] = [];
@@ -187,7 +192,11 @@ export class ScoringEngine {
       const filteredCompetitors = allSeriesCompetitors.filter(c => {
         if (c.raceId !== race.id) return false;
         const entry = seriesEntries.find(e => e.id === c.seriesEntryId);
-        return entry ? isInFleet(entry, config.fleet) : false;
+        if (!entry) return false;
+        return (
+          isInFleet(entry, config.fleet) &&
+          getHandicapValue(c.handicaps, handicapScheme) != null
+        );
       });
 
       const raceCount = i + 1;

@@ -20,7 +20,8 @@ service cloud.firestore {
     //   - name: string (required)
     //   - ownerUid: string (required) - UID of the boat owner
     //   - class: string
-    //   - handicap: number
+    //   - handicap: number (legacy, optional)
+    //   - handicaps: list of { scheme: string, value: number } (optional)
     //
     // Collection: clubs/{clubId}/race-results
     // Document ID: {resultId}
@@ -101,6 +102,24 @@ service cloud.firestore {
       return request.resource.data.keys().hasAll(fields);
     }
 
+    function isValidHandicapScheme(scheme) {
+      return scheme == 'Level Rating' ||
+             scheme == 'PY' ||
+             scheme == 'IRC' ||
+             scheme == 'Personal';
+    }
+
+    function isValidHandicaps(handicaps) {
+      // Firestore Rules has limited expressiveness for deep list validation.
+      // We validate the list itself and (at least) the first element's shape.
+      return handicaps is list &&
+             handicaps.size() > 0 &&
+             handicaps[0] is map &&
+             handicaps[0].scheme is string &&
+             isValidHandicapScheme(handicaps[0].scheme) &&
+             handicaps[0].value is number;
+    }
+
     // ===============================================================
     // Domain Validators
     // ===============================================================
@@ -116,27 +135,32 @@ service cloud.firestore {
 
     function isValidBoat(data) {
       return hasRequiredFields(['name', 'ownerUid']) &&
-             hasOnlyAllowedFields(['name', 'ownerUid', 'class', 'handicap']) &&
+             hasOnlyAllowedFields(['name', 'ownerUid', 'class', 'handicap', 'handicaps']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.ownerUid is string &&
              (!('class' in data) || (data.class is string && data.class.size() < 50)) &&
-             (!('handicap' in data) || data.handicap is number);
+             (!('handicap' in data) || data.handicap is number) &&
+             (!('handicaps' in data) || isValidHandicaps(data.handicaps));
     }
 
     function isValidRaceResult(data) {
       return hasRequiredFields(['raceId', 'boatId']) &&
-             hasOnlyAllowedFields(['raceId', 'boatId', 'position', 'points']) &&
+             hasOnlyAllowedFields(['raceId', 'boatId', 'position', 'points', 'handicaps', 'handicap']) &&
              data.raceId is string && data.raceId.size() > 0 && data.raceId.size() < 100 &&
              data.boatId is string && data.boatId.size() > 0 && data.boatId.size() < 100 &&
              (!('position' in data) || data.position is int) &&
-             (!('points' in data) || data.points is number);
+             (!('points' in data) || data.points is number) &&
+             (!('handicap' in data) || data.handicap is number) &&
+             (!('handicaps' in data) || isValidHandicaps(data.handicaps));
     }
 
     function isValidSeriesEntry(data) {
       return hasRequiredFields(['seriesId', 'boatId']) &&
-             hasOnlyAllowedFields(['seriesId', 'boatId']) &&
+             hasOnlyAllowedFields(['seriesId', 'boatId', 'handicaps', 'handicap']) &&
              data.seriesId is string && data.seriesId.size() > 0 && data.seriesId.size() < 100 &&
-             data.boatId is string && data.boatId.size() > 0 && data.boatId.size() < 100;
+             data.boatId is string && data.boatId.size() > 0 && data.boatId.size() < 100 &&
+             (!('handicap' in data) || data.handicap is number) &&
+             (!('handicaps' in data) || isValidHandicaps(data.handicaps));
     }
 
     function isValidRace(data) {

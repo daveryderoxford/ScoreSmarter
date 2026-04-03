@@ -59,7 +59,7 @@ function createMockCompetitors(raceId: string, competitors: Partial<RaceCompetit
       sailNumber: c.sailNumber,
       helm: c.helm,
       crew: '',
-      handicap: 1000,
+      handicaps: [{ scheme: 'PY', value: 1000 }],
       manualFinishTime: c.finishTime,
       startTime: new Date(),
       resultCode: 'OK',
@@ -81,7 +81,7 @@ function generateMockSeriesEntries(competitors: RaceCompetitor[], existingRaces:
       helm,
       boatClass,
       sailNumber: parseInt(sailNumber, 10),
-      handicap: 1000,
+        handicaps: [{ scheme: 'PY', value: 1000 }],
     };
   });
 }

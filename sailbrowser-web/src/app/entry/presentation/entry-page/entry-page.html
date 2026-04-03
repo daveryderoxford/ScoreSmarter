@@ -84,6 +84,8 @@
       </mat-form-field>
       </div>
 
+      <app-handicap-scheme-inputs [form]="competitorDetailsGroup" [schemes]="boatSchemes()" />
+
       @if (isNewBoat()) {
         <mat-checkbox formControlName="saveBoat" class="save-boat-cb">Save boat details to club
           repository</mat-checkbox>

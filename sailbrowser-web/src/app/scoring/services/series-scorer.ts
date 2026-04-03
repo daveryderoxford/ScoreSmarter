@@ -3,6 +3,8 @@ import { SeriesScoringScheme } from '../model/scoring-algotirhm';
 import { PublishedRace } from '../../published-results/model/published-race';
 import { getShortAlgorithm, includeInAveragePool, isDiscardable as isResultCodeDiscardable, ResultCodeAlgorithm, isStartAreaComp, isFinishedComp } from '../model/result-code-scoring';
 import { SeriesEntry } from '../../results-input';
+import { getHandicapValue } from '../model/handicap';
+import { HandicapScheme } from '../model/handicap-scheme';
 
 export interface ScoringConfig {
   seriesType: SeriesScoringScheme;
@@ -24,15 +26,24 @@ export interface IntermediateSeriesResult extends PublishedSeriesResult {
  * @param config - The scoring configuration for the series.
  * @returns An array of SeriesCompetitorResult, sorted by rank.
  */
-export function scoreSeries(races: PublishedRace[], seriesEntries: SeriesEntry[], config: ScoringConfig): IntermediateSeriesResult[] {
-  const competitorMap = aggregateCompetitorResults(races, seriesEntries);
+export function scoreSeries(
+  races: PublishedRace[],
+  seriesEntries: SeriesEntry[],
+  config: ScoringConfig,
+  handicapScheme: HandicapScheme
+): IntermediateSeriesResult[] {
+  const competitorMap = aggregateCompetitorResults(races, seriesEntries, handicapScheme);
   const resultsWithTotals = calculateTotalsAndDiscards(Array.from(competitorMap.values()), config);
   const rankedResults = rankCompetitors(resultsWithTotals);
 
   return rankedResults;
 }
 
-function aggregateCompetitorResults(races: PublishedRace[], seriesEntries: SeriesEntry[]): Map<string, IntermediateSeriesResult> {
+function aggregateCompetitorResults(
+  races: PublishedRace[],
+  seriesEntries: SeriesEntry[],
+  handicapScheme: HandicapScheme
+): Map<string, IntermediateSeriesResult> {
   const competitorMap = new Map<string, IntermediateSeriesResult>();
   const dncPoints = seriesEntries.length + 1;
   
@@ -43,7 +54,8 @@ function aggregateCompetitorResults(races: PublishedRace[], seriesEntries: Serie
       crew: entry.crew,
       sailNumber: entry.sailNumber,
       club: entry.club || '',
-      handicap: entry.handicap,
+      handicap: getHandicapValue(entry.handicaps, handicapScheme) ?? 0,
+      handicapScheme,
       boatClass: entry.boatClass,
       raceScores: [],
       totalPoints: 0,

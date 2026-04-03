@@ -45,7 +45,7 @@ function createMockEntries(keys: string[]): SeriesEntry[] {
       helm,
       boatClass,
       sailNumber: parseInt(sailNumber, 10),
-      handicap: 1000,
+      handicaps: [{ scheme: 'PY', value: 1000 }],
     };
   });
 }
@@ -71,7 +71,7 @@ describe('scoreSeries', () => {
     ];
 
     const config: ScoringConfig = { seriesType: 'short', discards: 1 };
-    const seriesResults = scoreSeries(races, allEntries, config);
+    const seriesResults = scoreSeries(races, allEntries, config, 'PY');
 
     const helm101 = seriesResults.find(r => r.sailNumber === 101)!;
     const helm102 = seriesResults.find(r => r.sailNumber === 102)!;
@@ -108,7 +108,7 @@ describe('scoreSeries', () => {
     ];
 
     const config: ScoringConfig = { seriesType: 'short', discards: 1 };
-    const seriesResults = scoreSeries(races, allEntries, config);
+    const seriesResults = scoreSeries(races, allEntries, config, 'PY');
 
     const helm101 = seriesResults.find(r => r.sailNumber === 101)!;
 
@@ -138,7 +138,7 @@ describe('scoreSeries', () => {
     ];
 
     const config: ScoringConfig = { seriesType: 'short', discards: 1 };
-    const seriesResults = scoreSeries(races, tieBreakEntries, config);
+    const seriesResults = scoreSeries(races, tieBreakEntries, config, 'PY');
 
     const helm101 = seriesResults.find(r => r.sailNumber === 101)!;
     const helm102 = seriesResults.find(r => r.sailNumber === 102)!;
@@ -162,7 +162,7 @@ describe('scoreSeries', () => {
 
     const tiedResults = [helm101, helm102];
     // Re-run just the ranking part
-    const finalRanked = scoreSeries(races, tieBreakEntries, config);
+    const finalRanked = scoreSeries(races, tieBreakEntries, config, 'PY');
     const final101 = finalRanked.find(r => r.sailNumber === 101)!;
     const final102 = finalRanked.find(r => r.sailNumber === 102)!;
 
@@ -209,7 +209,7 @@ describe('scoreSeries', () => {
     ];
 
     const config: ScoringConfig = { seriesType: 'short', discards: 1 };
-    const seriesResults = scoreSeries(races, rdgEntries, config);
+    const seriesResults = scoreSeries(races, rdgEntries, config, 'PY');
     const helm101 = seriesResults.find(r => r.sailNumber === 101)!;
 
     it('should calculate RDGB points based on the average of prior races', () => {
@@ -237,7 +237,7 @@ describe('scoreSeries', () => {
       const raceWithOnlyRdg: PublishedRace[] = [
         createMockRace(0, [{ seriesEntryId: 'entry101', helm: 'Helm 101', sailNumber: 101, points: 99, resultCode: 'RDGB' }]),
       ];
-      const results = scoreSeries(raceWithOnlyRdg, createMockEntries(['Helm 101-101-TestClass']), { seriesType: 'short', discards: 0 });
+      const results = scoreSeries(raceWithOnlyRdg, createMockEntries(['Helm 101-101-TestClass']), { seriesType: 'short', discards: 0 }, 'PY');
       const dncPoints = 1 + 1; // 1 competitor in series + 1
       expect(results[0].raceScores[0].points).toBe(dncPoints);
     });
@@ -263,7 +263,7 @@ describe('scoreSeries', () => {
 
     it('should calculate OOD points based on the finished pool and cap at maxOodPerSeries', () => {
       const config: ScoringConfig = { seriesType: 'short', discards: 0, maxOodPerSeries: 2, oodAveragePool: 'finished' };
-      const seriesResults = scoreSeries(races, oodEntries, config);
+      const seriesResults = scoreSeries(races, oodEntries, config, 'PY');
       const helm101 = seriesResults.find(r => r.sailNumber === 101)!;
 
       // OOD Pool (finished): Race 0 (2 points) and Race 4 (4 points). DNC (Race 2) is excluded.
@@ -285,12 +285,12 @@ describe('scoreSeries', () => {
       const racesWithDnf = [...races, createMockRace(6, [{ seriesEntryId: 'entry101', helm: 'Helm 101', sailNumber: 101, points: 3, resultCode: 'DNF' }])];
       
       const configFinished: ScoringConfig = { seriesType: 'short', discards: 0, maxOodPerSeries: 2, oodAveragePool: 'finished' };
-      const resultsFinished = scoreSeries(racesWithDnf, oodEntries, configFinished).find(r => r.sailNumber === 101)!;
+      const resultsFinished = scoreSeries(racesWithDnf, oodEntries, configFinished, 'PY').find(r => r.sailNumber === 101)!;
       // Finished pool: 2, 4. Avg = 3.
       expect(resultsFinished.raceScores.find(rs => rs.resultCode === 'OOD')!.points).toBe(3);
 
       const configStarted: ScoringConfig = { seriesType: 'short', discards: 0, maxOodPerSeries: 2, oodAveragePool: 'started' };
-      const resultsStarted = scoreSeries(racesWithDnf, oodEntries, configStarted).find(r => r.sailNumber === 101)!;
+      const resultsStarted = scoreSeries(racesWithDnf, oodEntries, configStarted, 'PY').find(r => r.sailNumber === 101)!;
       // Started pool: 2, 4, 3 (DNF). Avg = (2+4+3)/3 = 3.
       expect(resultsStarted.raceScores.find(rs => rs.resultCode === 'OOD')!.points).toBe(3);
     });

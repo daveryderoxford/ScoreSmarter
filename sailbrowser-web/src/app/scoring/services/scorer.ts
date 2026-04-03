@@ -33,7 +33,7 @@ export function score(
 
   // 2. Score the current race and update it in the grid.
   if (raceToScore) {
-    const initialResults = buildRaceResults(competitorsInRace, seriesEntries);
+    const initialResults = buildRaceResults(competitorsInRace, seriesEntries, handicapScheme);
     const scoredResults = scoreRace(raceToScore, initialResults, handicapScheme, config.seriesType, seriesCompetitorCount);
     updateGridWithRace(scoringGrid, raceToScore, scoredResults);
   }
@@ -45,7 +45,7 @@ export function score(
   }
 
   // 3. Final series scoring with the fully updated grid.
-  const finalSeriesResults = scoreSeries(scoringGrid, seriesEntries, config);
+  const finalSeriesResults = scoreSeries(scoringGrid, seriesEntries, config, handicapScheme);
 
   // 4. Update the scoring grid with points calculated during series scoring (e.g., RDG).
   for (const seriesResult of finalSeriesResults) {

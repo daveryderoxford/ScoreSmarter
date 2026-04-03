@@ -6,6 +6,9 @@ import { ClubStore } from '../../club-tenant';
 import { Race } from '../../race-calender/model/race';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
+import { Handicap } from 'app/scoring/model/handicap';
+import { getHandicapValue } from 'app/scoring/model/handicap';
+import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 
 export interface EntryDetails {
   races: Race[];
@@ -13,7 +16,7 @@ export interface EntryDetails {
   crew?: string;
   boatClass: string;
   sailNumber: number;
-  handicap?: number;
+  handicaps?: Handicap[];
 }
 
 @Injectable({
@@ -35,17 +38,32 @@ export class EntryService {
       throw new ScoreSmarterError("Duplicate entry");
     }
 
-    // Populate handicap based on the classes handicap if not provided
-    let handicap = details.handicap;
-    if (!handicap) {
-      const boatClass = this.clubStore.club().classes.find(c => c.name === details.boatClass);
-      handicap = boatClass?.handicap ?? 1;
-    }
-
     for (const race of details.races) {
+      const series = this.raceCalanderStore.allSeries().find(s => s.id === race.seriesId);
+      if (!series) {
+        const msg = 'EntryService: Series not found for race: ' + race.toString();
+        console.error(msg);
+        throw new ScoreSmarterError(msg);
+      }
+
+      const boatClass = this.clubStore.club().classes.find(c => c.name === details.boatClass);
+
+      const schemes = new Set<HandicapScheme>([
+        series.primaryScoringConfiguration.handicapScheme,
+        ...(series.secondaryScoringConfigurations ?? []).map(c => c.handicapScheme),
+      ]);
+
+      const pyFallback = getHandicapValue(boatClass?.handicaps, 'PY' as HandicapScheme) ?? 1;
+
+      const handicapsForEntry: Handicap[] = Array.from(schemes).map(scheme => {
+        const override = details.handicaps?.find(h => h.scheme === scheme)?.value;
+        const defaultValue = getHandicapValue(boatClass?.handicaps, scheme);
+        const value = override ?? defaultValue ?? pyFallback;
+        return { scheme, value: value > 0 ? value : 1 };
+      });
 
       const seriesEntryId = 
-        await this.createSeriesEntryIfRequired(race, details, handicap);
+        await this.createSeriesEntryIfRequired(race, details, handicapsForEntry);
 
       const competitor: Partial<RaceCompetitor> = {
         raceId: race.id,
@@ -55,7 +73,7 @@ export class EntryService {
         crew: details.crew,
         boatClass: details.boatClass,
         sailNumber: details.sailNumber,
-        handicap: handicap,
+        handicaps: handicapsForEntry,
         resultCode: 'NOT FINISHED'
       };
 
@@ -85,11 +103,11 @@ export class EntryService {
 
   /** Finds a series entry if it exists or not 
    */
-  async createSeriesEntryIfRequired(race: Race, details: EntryDetails, handicap: number): Promise<string> {
+  async createSeriesEntryIfRequired(race: Race, details: EntryDetails, handicaps: Handicap[]): Promise<string> {
     const seriesEntries = this.seriesEntryStore.selectedEntries()
       .filter(seriesEntry => seriesEntry.seriesId === race.seriesId);
 
-    const series = this.raceCalanderStore.allSeries().find(s => s.id = race.seriesId);
+    const series = this.raceCalanderStore.allSeries().find(s => s.id === race.seriesId);
     if (!series) {
       const msg = 'EntryService:  Series not found for race: ' + race.toString();
       console.error(msg);
@@ -116,6 +134,8 @@ export class EntryService {
         throw new ScoreSmarterError('invalid entry algorithm');
     }
     if (entry) {
+      // Keep entry handicaps in sync with scoring scheme set for this series.
+      await this.seriesEntryStore.updateEntry(entry.id, { handicaps });
       return entry.id;
     }
 
@@ -127,7 +147,7 @@ export class EntryService {
       crew: details.crew,
       boatClass: details.boatClass,
       sailNumber: details.sailNumber,
-      handicap: handicap,
+      handicaps,
       tags: [],
     });
 

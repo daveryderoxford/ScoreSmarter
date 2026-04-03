@@ -1,3 +1,5 @@
+import { Handicap } from 'app/scoring/model/handicap';
+
 export interface SeriesEntry {
    id: string;
    seriesId: string;
@@ -10,7 +12,7 @@ export interface SeriesEntry {
    // Default Boat Details
    boatClass: string;
    sailNumber: number;
-   handicap: number;
+   handicaps: Handicap[];
    fleetId?: string;
 
    // For subset scoring

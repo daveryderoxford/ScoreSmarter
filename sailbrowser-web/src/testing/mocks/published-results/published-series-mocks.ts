@@ -14,6 +14,7 @@ export const PUBLIC_SERIES_MOCK : PublishedSeries = {
          sailNumber: 12345,
          club: 'SBSC',
          handicap: 1000,
+         handicapScheme: 'PY',
          totalPoints: 5,
          netPoints: 3,
          raceScores: [
@@ -35,6 +36,7 @@ export const PUBLIC_SERIES_MOCK : PublishedSeries = {
          sailNumber: 987,
          club: 'SBSC',
          handicap: 950,
+         handicapScheme: 'PY',
          totalPoints: 7,
          netPoints: 4,
          raceScores: [

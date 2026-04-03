@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -22,6 +22,14 @@ import { CenteredText } from "app/shared/components/centered-text";
 import { Toolbar } from "app/shared/components/toolbar";
 import { debounceTime, map, startWith } from 'rxjs';
 import { EntryService } from '../../services/entry.service';
+import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { getHandicapValue, type Handicap } from 'app/scoring/model/handicap';
+import {
+  getHandicapSchemeMetadata,
+  getSchemesForTarget,
+  handicapControlName,
+} from 'app/scoring/model/handicap-scheme-metadata';
+import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inputs';
 
 @Component({
   selector: 'app-entry',
@@ -39,7 +47,8 @@ import { EntryService } from '../../services/entry.service';
     MatCheckboxModule,
     MatIcon,
     BusyButton,
-    CenteredText
+    CenteredText,
+    HandicapSchemeInputs,
 ],
   templateUrl: 'entry-page.html',
   styles: [`
@@ -100,8 +109,13 @@ export class EntryPage {
   busy = signal(false);
 
   showForm = computed(() => !!this.selectedBoat() || this.isNewBoat());
+  readonly boatSchemes = computed(() =>
+    getSchemesForTarget(this.cs.club().supportedHandicapSchemes, 'boat')
+  );
 
   constructor() {
+    this.initialiseHandicapControls();
+
     effect(() => {
       const boat = this.selectedBoat();
       const isNew = this.isNewBoat();
@@ -111,22 +125,29 @@ export class EntryPage {
         this.competitorDetailsGroup.reset();
         this.boatSearchControl.setValue('');
       } else if (boat) {
-        this.competitorDetailsGroup.patchValue({
+        const bc = this.cs.club().classes.find((c: any) => c.name === boat.boatClass);
+        const patch: Record<string, unknown> = {
           boatClass: boat.boatClass,
           sailNumber: boat.sailNumber,
           helm: boat.helm,
           crew: boat.crew,
-          handicap: boat.handicap
-        });
+        };
+        for (const scheme of this.boatSchemes()) {
+          const meta = getHandicapSchemeMetadata(scheme);
+          patch[handicapControlName(scheme)] = getHandicapValue(bc?.handicaps, scheme) ?? meta.defaultValue;
+        }
+        this.competitorDetailsGroup.patchValue(patch);
 
-        this.competitorDetailsGroup.controls.boatClass.disable();
-        this.competitorDetailsGroup.controls.sailNumber.disable();
-        this.competitorDetailsGroup.controls.handicap.disable();
+        this.competitorDetailsGroup.get('boatClass')?.disable();
+        this.competitorDetailsGroup.get('sailNumber')?.disable();
+        for (const scheme of this.boatSchemes()) {
+          this.competitorDetailsGroup.get(handicapControlName(scheme))?.disable();
+        }
 
         if (boat.isClub) {
-          this.competitorDetailsGroup.controls.helm.enable();
+          this.competitorDetailsGroup.get('helm')?.enable();
         } else {
-          this.competitorDetailsGroup.controls.helm.disable();
+          this.competitorDetailsGroup.get('helm')?.disable();
         }
       }
     });
@@ -152,14 +173,23 @@ export class EntryPage {
     enteredRaces: [[] as Race[], Validators.required],
   });
 
-  readonly competitorDetailsGroup = this.formBuilder.group({
+  readonly competitorDetailsGroup: FormGroup = this.formBuilder.group({
     boatClass: ['', Validators.required],
     sailNumber: [null as number | null, Validators.required],
     helm: ['', Validators.required],
     crew: [''],
-    handicap: [null as number | null],
     saveBoat: [false],
   });
+
+  private initialiseHandicapControls(): void {
+    for (const scheme of HANDICAP_SCHEMES) {
+      const meta = getHandicapSchemeMetadata(scheme);
+      this.competitorDetailsGroup.addControl(
+        handicapControlName(scheme),
+        this.formBuilder.control<number | null>(meta.defaultValue, [Validators.min(meta.min), Validators.max(meta.max)])
+      );
+    }
+  }
 
   displayBoatFn(boat: any): string {
     if (!boat) {
@@ -192,13 +222,20 @@ export class EntryPage {
       await this.saveNewBoat(details as Partial<Boat>)
     }
 
+    const handicaps: Handicap[] = this.boatSchemes().map((scheme: HandicapScheme) => {
+      const meta = getHandicapSchemeMetadata(scheme);
+      const rawValue = details[handicapControlName(scheme) as keyof typeof details];
+      const value = Number(rawValue ?? meta.defaultValue);
+      return { scheme, value: Number.isFinite(value) && value > 0 ? value : meta.defaultValue };
+    });
+
     const entryData = {
       races,
       boatClass: details.boatClass!,
       sailNumber: details.sailNumber!,
       helm: details.helm!,
       crew: details.crew || undefined,
-      handicap: details.handicap || undefined,
+      handicaps: handicaps.length > 0 ? handicaps : undefined,
     };
 
     if (this._entryService.isDuplicateEntry(entryData)) {
