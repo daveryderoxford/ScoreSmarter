@@ -42,7 +42,7 @@ export const HANDICAP_SCHEME_METADATA: Record<HandicapScheme, HandicapSchemeMeta
   },
   Personal: {
     scheme: 'Personal',
-    label: 'Personal',
+    label: 'Personal handicap',
     appliesTo: 'boat',
     min: 400,
     max: 1500,

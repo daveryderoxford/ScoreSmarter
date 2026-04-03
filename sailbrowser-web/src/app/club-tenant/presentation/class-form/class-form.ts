@@ -57,11 +57,12 @@ export class ClassForm {
   );
 
   constructor() {
-    for (const scheme of HANDICAP_SCHEMES) {
+    const clubSchemes = this.clubStore.club().supportedHandicapSchemes;
+    for (const scheme of getSchemesForTarget(clubSchemes, 'boatClass')) {
       const meta = getHandicapSchemeMetadata(scheme);
       this.form.addControl(
         handicapControlName(scheme),
-        new FormControl<number>(meta.defaultValue, {
+        new FormControl<number | null>(meta.defaultValue, {
           validators: [Validators.required, Validators.min(meta.min), Validators.max(meta.max)],
         })
       );

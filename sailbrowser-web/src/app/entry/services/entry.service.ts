@@ -7,8 +7,7 @@ import { Race } from '../../race-calender/model/race';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
 import { Handicap } from 'app/scoring/model/handicap';
-import { getHandicapValue } from 'app/scoring/model/handicap';
-import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { buildHandicapsForSeriesEntry } from './entry-handicaps-for-series';
 
 export interface EntryDetails {
   races: Race[];
@@ -28,9 +27,8 @@ export class EntryService {
   private seriesEntryStore = inject(SeriesEntryStore);
   private raceCalanderStore = inject(RaceCalendarStore);
 
-  /** Enter a race 
-   * throws a ScoreSmarterError exception if the entry is a duplicate. 
-   * @
+  /** Enter a race
+   * throws a ScoreSmarterError exception if the entry is a duplicate.
    */
   async enterRaces(details: EntryDetails): Promise<void> {
 
@@ -46,21 +44,10 @@ export class EntryService {
         throw new ScoreSmarterError(msg);
       }
 
-      const boatClass = this.clubStore.club().classes.find(c => c.name === details.boatClass);
-
-      const schemes = new Set<HandicapScheme>([
-        series.primaryScoringConfiguration.handicapScheme,
-        ...(series.secondaryScoringConfigurations ?? []).map(c => c.handicapScheme),
-      ]);
-
-      const pyFallback = getHandicapValue(boatClass?.handicaps, 'PY' as HandicapScheme) ?? 1;
-
-      const handicapsForEntry: Handicap[] = Array.from(schemes).map(scheme => {
-        const override = details.handicaps?.find(h => h.scheme === scheme)?.value;
-        const defaultValue = getHandicapValue(boatClass?.handicaps, scheme);
-        const value = override ?? defaultValue ?? pyFallback;
-        return { scheme, value: value > 0 ? value : 1 };
-      });
+      const handicapsForEntry = buildHandicapsForSeriesEntry(series, {
+        boatClassName: details.boatClass,
+        handicaps: details.handicaps,
+      }, this.clubStore.club().classes);
 
       const seriesEntryId = 
         await this.createSeriesEntryIfRequired(race, details, handicapsForEntry);

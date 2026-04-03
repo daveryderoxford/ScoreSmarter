@@ -14,7 +14,7 @@
   <mat-form-field>
     <mat-label>Sail number</mat-label>
     <input matInput type="number" inputmode="numeric" pattern="[0-9]*" formControlName="sailNumber">
-    <mat-error>Sail number must be a number greater than zero</mat-error>
+    <mat-error>Sail number required</mat-error>
   </mat-form-field>
 
   <mat-form-field>
@@ -25,12 +25,17 @@
   <mat-form-field>
     <mat-label>Normal helm</mat-label>
     <input matInput formControlName="helm">
+    <mat-error>Helm name required</mat-error>
   </mat-form-field>
 
   <mat-form-field>
     <mat-label>Normal crew</mat-label>
     <input matInput formControlName="crew">
   </mat-form-field>
+
+  @if (boatLevelSchemes().length > 0) {
+    <app-handicap-scheme-inputs [form]="form" [schemes]="boatLevelSchemes()" />
+  }
 
   <mat-checkbox formControlName="isClub">Club boat</mat-checkbox>
 

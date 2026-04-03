@@ -1,5 +1,5 @@
 import { HandicapScheme } from './handicap-scheme';
-import { Fleet } from 'app/club-tenant/model/fleet';
+import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 
 export type ScoringConfiguration = LevelRatingConfiguration | HandicapConfiguration;
 
@@ -18,3 +18,18 @@ export interface HandicapConfiguration extends BaseScoringConfiguration {
    type: 'Handicap';
    handicapScheme: Exclude<HandicapScheme, 'Level Rating'>;
 }
+
+export function getConfigName(fleet: Fleet, hcapScheme: HandicapScheme) {
+   switch (fleet.type) {
+      case 'BoatClass':
+         return getFleetName(fleet);
+      case 'Tag':
+         return getFleetName(fleet);
+      case 'All':
+      case 'HandicapRange':
+         return hcapScheme;
+   }
+
+}
+
+

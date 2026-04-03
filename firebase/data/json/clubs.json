@@ -1,0 +1,642 @@
+[
+  {
+    "id": "demo",
+    "seasons": [
+      {
+        "status": "current",
+        "id": "2425",
+        "name": "2025-26"
+      }
+    ],
+    "name": "Demo Club",
+    "fleets": [
+      {
+        "max": 1000,
+        "name": "Fast handicap",
+        "min": 0,
+        "id": "fasthandicap",
+        "type": "HandicapRange"
+      },
+      {
+        "id": "slowhandicap",
+        "type": "HandicapRange",
+        "max": 9999,
+        "name": "Slow handicap",
+        "min": 1000
+      },
+      {
+        "boatClassId": "Topper",
+        "id": "topper",
+        "type": "BoatClass"
+      },
+      {
+        "type": "BoatClass",
+        "boatClassId": "ILCA 7",
+        "id": "ilca7"
+      },
+      {
+        "boatClassId": "ILCA 6",
+        "id": "ilca-6-LkHVOd01U",
+        "type": "BoatClass"
+      },
+      {
+        "id": "ilca-4-7n5GXfmmh",
+        "boatClassId": "ILCA 4",
+        "type": "BoatClass"
+      }
+    ],
+    "classes": [
+      {
+        "name": "29er",
+        "handicap": 900,
+        "id": "29er"
+      },
+      {
+        "handicap": 1030,
+        "id": "Blaze",
+        "name": "Blaze"
+      },
+      {
+        "name": "Enterprise",
+        "handicap": 1137,
+        "id": "Enterprise"
+      },
+      {
+        "name": "Hartley 12",
+        "handicap": 1250,
+        "id": "Hartley 12"
+      },
+      {
+        "name": "ILCA 4",
+        "handicap": 1216,
+        "id": "ILCA 4"
+      },
+      {
+        "id": "ILCA 6",
+        "handicap": 1154,
+        "name": "ILCA 6"
+      },
+      {
+        "id": "ILCA 7",
+        "handicap": 1104,
+        "name": "ILCA 7"
+      },
+      {
+        "name": "Phantom",
+        "id": "Phantom",
+        "handicap": 998
+      },
+      {
+        "name": "ROOSTER 8.1",
+        "id": "ROOSTER 8.1",
+        "handicap": 1021
+      },
+      {
+        "id": "Aero 5",
+        "handicap": 1139,
+        "name": "Aero 5"
+      },
+      {
+        "id": "Aero 6",
+        "handicap": 1099,
+        "name": "Aero 6"
+      },
+      {
+        "id": "Aero 7",
+        "handicap": 1063,
+        "name": "Aero 7"
+      },
+      {
+        "handicap": 1005,
+        "id": "Aero 9",
+        "name": "Aero 9"
+      },
+      {
+        "name": "RS Feva",
+        "id": "RS Feva",
+        "handicap": 1280
+      },
+      {
+        "handicap": 1244,
+        "id": "RS Feva XL",
+        "name": "RS Feva XL"
+      },
+      {
+        "name": "RS Vaero",
+        "id": "RS Vaero",
+        "handicap": 1095
+      },
+      {
+        "name": "RS300",
+        "id": "RS300",
+        "handicap": 965
+      },
+      {
+        "name": "RS200",
+        "handicap": 1050,
+        "id": "RS200"
+      },
+      {
+        "name": "RS400",
+        "handicap": 942,
+        "id": "RS400"
+      },
+      {
+        "name": "RS600",
+        "id": "RS600",
+        "handicap": 921
+      },
+      {
+        "name": "Rooster 8.1",
+        "handicap": 1021,
+        "id": "Rooster 8.1"
+      },
+      {
+        "name": "Solo",
+        "handicap": 1139,
+        "id": "Solo"
+      },
+      {
+        "name": "Streaker",
+        "handicap": 1124,
+        "id": "Streaker"
+      },
+      {
+        "handicap": 1363,
+        "id": "Topper",
+        "name": "Topper"
+      },
+      {
+        "name": "Topper 4.2",
+        "id": "Topper 4.2",
+        "handicap": 1440
+      }
+    ]
+  },
+  {
+    "id": "ibrsc",
+    "classes": [
+      {
+        "handicap": 900,
+        "id": "29er",
+        "name": "29er"
+      },
+      {
+        "handicap": 1030,
+        "id": "Blaze",
+        "name": "Blaze"
+      },
+      {
+        "name": "Enterprise",
+        "id": "Enterprise",
+        "handicap": 1137
+      },
+      {
+        "handicap": 1250,
+        "id": "Hartley 12",
+        "name": "Hartley 12"
+      },
+      {
+        "name": "ILCA 4",
+        "id": "ILCA 4",
+        "handicap": 1216
+      },
+      {
+        "name": "ILCA 6",
+        "handicap": 1154,
+        "id": "ILCA 6"
+      },
+      {
+        "handicap": 1104,
+        "id": "ILCA 7",
+        "name": "ILCA 7"
+      },
+      {
+        "id": "Phantom",
+        "handicap": 998,
+        "name": "Phantom"
+      },
+      {
+        "id": "ROOSTER 8.1",
+        "handicap": 1021,
+        "name": "ROOSTER 8.1"
+      },
+      {
+        "id": "Aero 5",
+        "handicap": 1139,
+        "name": "Aero 5"
+      },
+      {
+        "name": "Aero 6",
+        "handicap": 1099,
+        "id": "Aero 6"
+      },
+      {
+        "handicap": 1063,
+        "id": "Aero 7",
+        "name": "Aero 7"
+      },
+      {
+        "id": "Aero 9",
+        "handicap": 1005,
+        "name": "Aero 9"
+      },
+      {
+        "name": "RS Feva",
+        "id": "RS Feva",
+        "handicap": 1280
+      },
+      {
+        "name": "RS Feva XL",
+        "handicap": 1244,
+        "id": "RS Feva XL"
+      },
+      {
+        "name": "RS Vaero",
+        "id": "RS Vaero",
+        "handicap": 1095
+      },
+      {
+        "id": "RS300",
+        "handicap": 965,
+        "name": "RS300"
+      },
+      {
+        "name": "RS200",
+        "id": "RS200",
+        "handicap": 1050
+      },
+      {
+        "handicap": 942,
+        "id": "RS400",
+        "name": "RS400"
+      },
+      {
+        "name": "RS600",
+        "id": "RS600",
+        "handicap": 921
+      },
+      {
+        "name": "Rooster 8.1",
+        "handicap": 1021,
+        "id": "Rooster 8.1"
+      },
+      {
+        "name": "Solo",
+        "handicap": 1139,
+        "id": "Solo"
+      },
+      {
+        "handicap": 1124,
+        "id": "Streaker",
+        "name": "Streaker"
+      },
+      {
+        "name": "Topper",
+        "handicap": 1363,
+        "id": "Topper"
+      },
+      {
+        "name": "Topper 4.2",
+        "handicap": 1440,
+        "id": "Topper 4.2"
+      }
+    ],
+    "seasons": [
+      {
+        "status": "current",
+        "id": "2526",
+        "name": "2025-26"
+      }
+    ],
+    "fleets": [
+      {
+        "name": "Fast handicap",
+        "max": 1000,
+        "min": 0,
+        "id": "fasthandicap",
+        "type": "HandicapRange"
+      },
+      {
+        "name": "Slow handicap",
+        "max": 9999,
+        "min": 1000,
+        "id": "slowhandicap",
+        "type": "HandicapRange"
+      },
+      {
+        "type": "BoatClass",
+        "boatClassId": "Topper",
+        "id": "topper"
+      },
+      {
+        "boatClassId": "ILCA 7",
+        "id": "ilca7",
+        "type": "BoatClass"
+      }
+    ],
+    "name": "Island Barn Sailing Club"
+  },
+  {
+    "id": "test",
+    "name": "Test Club",
+    "shortName": "TEST",
+    "contactEmail": "contact@testclub.org",
+    "contactName": "Test Contact",
+    "logoUrl": null,
+    "seasons": [
+      {
+        "id": "2526",
+        "name": "2025-26",
+        "status": "current"
+      }
+    ],
+    "fleets": [
+      {
+        "type": "HandicapRange",
+        "id": "fasthandicap",
+        "name": "Fast handicap",
+        "min": 0,
+        "max": 1000
+      },
+      {
+        "type": "HandicapRange",
+        "id": "slowhandicap",
+        "name": "Slow handicap",
+        "min": 1000,
+        "max": 9999
+      },
+      {
+        "type": "BoatClass",
+        "id": "topper",
+        "boatClassId": "Topper"
+      },
+      {
+        "type": "BoatClass",
+        "id": "ilca7",
+        "boatClassId": "ILCA 7"
+      },
+      {
+        "type": "All",
+        "id": "all",
+        "name": "All competitors"
+      }
+    ],
+    "classes": [
+      {
+        "id": "29er",
+        "name": "29er",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 900
+          }
+        ]
+      },
+      {
+        "id": "Blaze",
+        "name": "Blaze",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1030
+          }
+        ]
+      },
+      {
+        "id": "Enterprise",
+        "name": "Enterprise",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1137
+          }
+        ]
+      },
+      {
+        "id": "Hartley 12",
+        "name": "Hartley 12",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1250
+          }
+        ]
+      },
+      {
+        "id": "ILCA 4",
+        "name": "ILCA 4",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1216
+          }
+        ]
+      },
+      {
+        "id": "ILCA 6",
+        "name": "ILCA 6",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1154
+          }
+        ]
+      },
+      {
+        "id": "ILCA 7",
+        "name": "ILCA 7",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1104
+          }
+        ]
+      },
+      {
+        "id": "Phantom",
+        "name": "Phantom",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 998
+          }
+        ]
+      },
+      {
+        "id": "ROOSTER 8.1",
+        "name": "ROOSTER 8.1",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1021
+          }
+        ]
+      },
+      {
+        "id": "Aero 5",
+        "name": "Aero 5",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1139
+          }
+        ]
+      },
+      {
+        "id": "Aero 6",
+        "name": "Aero 6",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1099
+          }
+        ]
+      },
+      {
+        "id": "Aero 7",
+        "name": "Aero 7",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1063
+          }
+        ]
+      },
+      {
+        "id": "Aero 9",
+        "name": "Aero 9",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1005
+          }
+        ]
+      },
+      {
+        "id": "RS Feva",
+        "name": "RS Feva",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1280
+          }
+        ]
+      },
+      {
+        "id": "RS Feva XL",
+        "name": "RS Feva XL",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1244
+          }
+        ]
+      },
+      {
+        "id": "RS Vaero",
+        "name": "RS Vaero",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1095
+          }
+        ]
+      },
+      {
+        "id": "RS300",
+        "name": "RS300",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 965
+          }
+        ]
+      },
+      {
+        "id": "RS200",
+        "name": "RS200",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1050
+          }
+        ]
+      },
+      {
+        "id": "RS400",
+        "name": "RS400",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 942
+          }
+        ]
+      },
+      {
+        "id": "RS600",
+        "name": "RS600",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 921
+          }
+        ]
+      },
+      {
+        "id": "Rooster 8.1",
+        "name": "Rooster 8.1",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1021
+          }
+        ]
+      },
+      {
+        "id": "Solo",
+        "name": "Solo",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1139
+          }
+        ]
+      },
+      {
+        "id": "Streaker",
+        "name": "Streaker",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1124
+          }
+        ]
+      },
+      {
+        "id": "Topper",
+        "name": "Topper",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1363
+          }
+        ]
+      },
+      {
+        "id": "Topper 4.2",
+        "name": "Topper 4.2",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1440
+          }
+        ]
+      }
+    ],
+    "supportedHandicapSchemes": [
+      "PY",
+      "Personal"
+    ]
+  }
+]

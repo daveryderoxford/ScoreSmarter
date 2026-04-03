@@ -27,16 +27,18 @@
         </mat-panel-title>
       </mat-expansion-panel-header>
 
-      <mat-nav-list>
-        @for (series of season.series; track series.id) {
-        <mat-list-item
-          [routerLink]="['/results/viewer', series.id]"
-          routerLinkActive="season-list-item--active"
-          [routerLinkActiveOptions]="{ exact: true }">
-          <span matListItemTitle>{{ series.name }}</span>
-        </mat-list-item>
-        }
-      </mat-nav-list>
+      <div class="season-list-panel-body">
+        <mat-nav-list>
+          @for (series of season.series; track series.id) {
+          <mat-list-item
+            [routerLink]="['/results/viewer', series.id]"
+            routerLinkActive="season-list-item--active"
+            [routerLinkActiveOptions]="{ exact: true }">
+            <span matListItemTitle>{{ series.name }}</span>
+          </mat-list-item>
+          }
+        </mat-nav-list>
+      </div>
     </mat-expansion-panel>
     }
   </mat-accordion>

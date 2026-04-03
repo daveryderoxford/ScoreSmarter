@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
 import { ClubStore } from 'app/club-tenant';
 import { Series } from '../model/series';
 import { SeriesScoringScheme, seriesScoringSchemeDetails } from 'app/scoring/model/scoring-algotirhm';
-import { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
+import { getConfigName, ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import { seriesEntryGroupingDetails } from 'app/scoring';
 import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
@@ -330,10 +330,10 @@ export class SeriesForm {
          
          const primaryFleet = this.fleets().find(f => f.id === formValue.fleetId);
          if (!primaryFleet) return;
-
+         
          const primaryScoringConfiguration: ScoringConfiguration = {
             id: formValue.id || 'overall',
-            name: getFleetName(primaryFleet) || 'Overall',
+            name: getConfigName(primaryFleet, formValue.primaryHandicapScheme),
             type: primaryFleet.type === 'BoatClass' ? 'LevelRating' : 'Handicap',
             fleet: primaryFleet,
             handicapScheme: formValue.primaryHandicapScheme as any
@@ -343,7 +343,7 @@ export class SeriesForm {
             const fleet = this.fleets().find(f => f.id === config.fleetId);
             return {
                id: config.id,
-               name: fleet ? getFleetName(fleet) : 'Secondary',
+              name: fleet ? getConfigName(fleet, config.handicapScheme) : 'Secondary',
                type: fleet?.type === 'BoatClass' ? 'LevelRating' : 'Handicap',
                fleet: fleet!,
                handicapScheme: config.handicapScheme as any

@@ -89,8 +89,9 @@ import { getCorrectedTime } from 'app/scoring/services/scorer-times';
       width: 100%;
     }
     tr.processed {
-      background-color: #f5f5f5;
-      color: rgba(0,0,0,0.38);
+      /* Finished competitors shouldn't look disabled; keep text readable. */
+      background-color: color-mix(in srgb, var(--mat-sys-primary) 3%, transparent);
+      color: var(--mat-sys-on-surface);
       
       td {
         color: inherit;
