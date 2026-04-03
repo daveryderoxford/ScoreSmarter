@@ -345,7 +345,7 @@
         "handicaps": [ { "scheme": "PY", "value": 1440 } ]
       }
     ],
-    "supportedHandicapSchemes": ["PY"]
+    "supportedHandicapSchemes": ["PY", "Personal"]
   },
   {
     "id": "test",
@@ -519,6 +519,6 @@
         "handicaps": [ { "scheme": "PY", "value": 1440 } ]
       }
     ],
-    "supportedHandicapSchemes": ["PY", "NHC", "IRC"]
+    "supportedHandicapSchemes": ["PY", "Personal"]
   }
 ]
