@@ -1,4 +1,6 @@
 import { ResultCode } from 'app/scoring';
+import { Handicap, getHandicapValue } from '../../scoring/model/handicap';
+import { HandicapScheme } from '../../scoring/model/handicap-scheme';
 import { differenceInSeconds } from 'date-fns';
 
 export const RESULTS_UNSET_VALUE = 9999;
@@ -14,7 +16,7 @@ export class RaceCompetitor {
   crew?: string;
   boatClass: string;
   sailNumber: number;
-  handicap: number;
+  handicaps: Handicap[];
   fleetId?: string;
 
   /**
@@ -60,7 +62,7 @@ export class RaceCompetitor {
     this.crew = data.crew;
     this.boatClass = data.boatClass || '';
     this.sailNumber = data.sailNumber || 0;
-    this.handicap = data.handicap || 0;   
+    this.handicaps = data.handicaps || [];
     // Scoring data
     this.recordedFinishTime = data.recordedFinishTime;
     this.manualFinishTime = data.manualFinishTime;
@@ -69,6 +71,14 @@ export class RaceCompetitor {
     this.manualLaps = data.manualLaps || 0;
     this.lapTimes = data.lapTimes || [];
     this.manualPosition = data.manualPosition;
+  }
+
+  /**
+   * Returns the numeric handicap for `scheme`, or undefined if missing.
+   * Note: corrected-time calculations in scoring use scheme-specific handicaps.
+   */
+  handicapForScheme(scheme: HandicapScheme): number | undefined {
+    return getHandicapValue(this.handicaps, scheme);
   }
 
   /**

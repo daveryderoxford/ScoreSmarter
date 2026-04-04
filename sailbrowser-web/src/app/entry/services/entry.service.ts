@@ -6,6 +6,8 @@ import { ClubStore } from '../../club-tenant';
 import { Race } from '../../race-calender/model/race';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
+import { Handicap } from 'app/scoring/model/handicap';
+import { buildHandicapsForSeriesEntry } from './entry-handicaps-for-series';
 
 export interface EntryDetails {
   races: Race[];
@@ -13,7 +15,7 @@ export interface EntryDetails {
   crew?: string;
   boatClass: string;
   sailNumber: number;
-  handicap?: number;
+  handicaps?: Handicap[];
 }
 
 @Injectable({
@@ -25,9 +27,8 @@ export class EntryService {
   private seriesEntryStore = inject(SeriesEntryStore);
   private raceCalanderStore = inject(RaceCalendarStore);
 
-  /** Enter a race 
-   * throws a ScoreSmarterError exception if the entry is a duplicate. 
-   * @
+  /** Enter a race
+   * throws a ScoreSmarterError exception if the entry is a duplicate.
    */
   async enterRaces(details: EntryDetails): Promise<void> {
 
@@ -35,17 +36,21 @@ export class EntryService {
       throw new ScoreSmarterError("Duplicate entry");
     }
 
-    // Populate handicap based on the classes handicap if not provided
-    let handicap = details.handicap;
-    if (!handicap) {
-      const boatClass = this.clubStore.club().classes.find(c => c.name === details.boatClass);
-      handicap = boatClass?.handicap ?? 1;
-    }
-
     for (const race of details.races) {
+      const series = this.raceCalanderStore.allSeries().find(s => s.id === race.seriesId);
+      if (!series) {
+        const msg = 'EntryService: Series not found for race: ' + race.toString();
+        console.error(msg);
+        throw new ScoreSmarterError(msg);
+      }
+
+      const handicapsForEntry = buildHandicapsForSeriesEntry(series, {
+        boatClassName: details.boatClass,
+        handicaps: details.handicaps,
+      }, this.clubStore.club().classes);
 
       const seriesEntryId = 
-        await this.createSeriesEntryIfRequired(race, details, handicap);
+        await this.createSeriesEntryIfRequired(race, details, handicapsForEntry);
 
       const competitor: Partial<RaceCompetitor> = {
         raceId: race.id,
@@ -55,7 +60,7 @@ export class EntryService {
         crew: details.crew,
         boatClass: details.boatClass,
         sailNumber: details.sailNumber,
-        handicap: handicap,
+        handicaps: handicapsForEntry,
         resultCode: 'NOT FINISHED'
       };
 
@@ -85,11 +90,11 @@ export class EntryService {
 
   /** Finds a series entry if it exists or not 
    */
-  async createSeriesEntryIfRequired(race: Race, details: EntryDetails, handicap: number): Promise<string> {
+  async createSeriesEntryIfRequired(race: Race, details: EntryDetails, handicaps: Handicap[]): Promise<string> {
     const seriesEntries = this.seriesEntryStore.selectedEntries()
       .filter(seriesEntry => seriesEntry.seriesId === race.seriesId);
 
-    const series = this.raceCalanderStore.allSeries().find(s => s.id = race.seriesId);
+    const series = this.raceCalanderStore.allSeries().find(s => s.id === race.seriesId);
     if (!series) {
       const msg = 'EntryService:  Series not found for race: ' + race.toString();
       console.error(msg);
@@ -116,6 +121,8 @@ export class EntryService {
         throw new ScoreSmarterError('invalid entry algorithm');
     }
     if (entry) {
+      // Keep entry handicaps in sync with scoring scheme set for this series.
+      await this.seriesEntryStore.updateEntry(entry.id, { handicaps });
       return entry.id;
     }
 
@@ -127,7 +134,7 @@ export class EntryService {
       crew: details.crew,
       boatClass: details.boatClass,
       sailNumber: details.sailNumber,
-      handicap: handicap,
+      handicaps,
       tags: [],
     });
 

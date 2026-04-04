@@ -49,6 +49,18 @@ import { endOfDay, subDays } from 'date-fns';
     margin-left: auto;
    }
 
+   /* Insets list rows so the active “pill” never hugs the expansion panel edges.
+      Wrapper lives in this template so layout is stable on first open (grid 0fr→1fr animation). */
+   .season-list-panel-body {
+     box-sizing: border-box;
+     padding-inline: 25px;
+     padding-bottom: 20px;
+   }
+
+   .season-list-panel-body mat-nav-list {
+     padding-block: 0;
+   }
+
    mat-list-item.season-list-item--active {
      background-color: color-mix(in srgb, var(--mat-sys-primary) 18%, transparent);
      border-radius: var(--mat-sys-corner-medium, 8px);

@@ -7,7 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectChange, MatSelectModule } from '@angular/material/select';
 import { ScoringEngine } from 'app/published-results';
-import { Race } from 'app/race-calender';
+import { Race, RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces, RaceCompetitor, RaceCompetitorStore } from 'app/results-input';
 import { BusyButton } from 'app/shared/components/busy-button';
 import { Toolbar } from 'app/shared/components/toolbar';
@@ -20,6 +20,7 @@ import { ManualResultsTable } from '../manual-results-table';
 import { MoreRacesDialog } from '../more-races-dialog';
 import { PositionBasedInputPanel } from '../position-based-input-panel/position-based-input-panel';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-time-dialog';
+import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 
 @Component({
   selector: 'app-manual-results-page',
@@ -45,6 +46,7 @@ export class ManualResultsPage {
   private readonly store = inject(RaceCompetitorStore);
   private readonly dialog = inject(MatDialog);
   protected readonly currentRacesStore = inject(CurrentRaces);
+  private readonly raceCalendarStore = inject(RaceCalendarStore);
   private readonly publishService = inject(ScoringEngine);
   private readonly manualResultsService = inject(ManualResultsService);
   private message = inject(DialogsService);
@@ -70,6 +72,13 @@ export class ManualResultsPage {
   });
 
   readonly handicapPanel = viewChild(HandicapInputPanel);
+
+  readonly handicapScheme = computed<HandicapScheme>(() => {
+    const race = this.selectedRace();
+    if (!race) return 'PY' as HandicapScheme;
+    const series = this.raceCalendarStore.allSeries().find(s => s.id === race.seriesId);
+    return series?.primaryScoringConfiguration.handicapScheme ?? ('PY' as HandicapScheme);
+  });
 
   constructor() {
     effect(() => {

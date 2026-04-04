@@ -38,7 +38,7 @@ export class ClassAdd {
       const newClass: BoatClass = {
         id,
         name: data.name!,
-        handicap: data.handicap!,
+        handicaps: data.handicaps!,
       };
       await this.cs.addClass(newClass);
       this.router.navigate(["/club/classes"]);

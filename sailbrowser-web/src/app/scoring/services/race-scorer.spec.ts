@@ -26,7 +26,7 @@ function createCompetitor(
     helm: `Helm ${id}`,
     sailNumber: 100 + parseInt(id, 10),
     boatClass: 'Test Class',
-    handicap: 1000,
+    handicaps: [{ scheme: 'PY', value: 1000 }],
     startTime,
     finishTime,
     numLaps: 1,
@@ -46,7 +46,7 @@ function scoreRaceHelper(
   seriesType: SeriesScoringScheme,
   seriesCompetitorCount: number,
 ): RaceResult[] {
-  const results = buildRaceResults(competitors, seriesEntries);
+  const results = buildRaceResults(competitors, seriesEntries, scheme);
   return scoreRace(race, results, scheme, seriesType, seriesCompetitorCount);
 }
 
@@ -58,7 +58,7 @@ function generateSeriesEntries(competitors: RaceCompetitor[]): SeriesEntry[] {
     crew: c.crew,
     boatClass: c.boatClass || 'Test Class',
     sailNumber: parseInt((c.sailNumber || 0).toString(), 10),
-    handicap: c.handicap || 1000,
+    handicaps: c.handicaps,
   }));
 }
 
@@ -150,8 +150,8 @@ describe('RaceScorer', () => {
   it('should handle a 3-way tie for 2nd place in a handicap race with 5 competitors', () => {
     const competitors = [
       createCompetitor('1', 600, 'OK'), // 1st, corrected 600
-      createCompetitor('2', 840, 'OK', { handicap: 1200 }), // Corrected: 700. Ties for 2nd
-      createCompetitor('3', 630, 'OK', { handicap: 900 }),  // Corrected: 700. Ties for 2nd
+      createCompetitor('2', 840, 'OK', { handicaps: [{ scheme: 'PY', value: 1200 }] }), // Corrected: 700. Ties for 2nd
+      createCompetitor('3', 630, 'OK', { handicaps: [{ scheme: 'PY', value: 900 }] }),  // Corrected: 700. Ties for 2nd
       createCompetitor('4', 700, 'OK'), // Corrected: 700. Ties for 2nd
       createCompetitor('5', 900, 'OK'), // 5th, corrected 900
     ];
@@ -463,7 +463,7 @@ describe('RaceScorer', () => {
       createCompetitor('2', 700, 'SCP'),
     ];
     const seriesEntries = generateSeriesEntries(competitors);
-    const results = buildRaceResults(competitors, seriesEntries);
+    const results = buildRaceResults(competitors, seriesEntries, 'PY');
 
     // Manually set times to simulate they were already calculated
     results[0].elapsedTime = 600;

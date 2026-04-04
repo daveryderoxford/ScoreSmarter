@@ -1,4 +1,5 @@
 import { ResultCode } from 'app/scoring/model/result-code';
+import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 
 export interface PublishedSeriesResult {
    seriesEntryId: string;
@@ -9,6 +10,7 @@ export interface PublishedSeriesResult {
    sailNumber: number;
    club: string;
    handicap: number;
+   handicapScheme: HandicapScheme;
    totalPoints: number;
    netPoints: number;
    raceScores: {

@@ -6,11 +6,7 @@
     <mat-error>Class name is required</mat-error>
   </mat-form-field>
 
-  <mat-form-field>
-    <mat-label>Handicap</mat-label>
-    <input matInput type="number" formControlName="handicap">
-    <mat-error>Handicap is required</mat-error>
-  </mat-form-field>
+  <app-handicap-scheme-inputs [form]="form" [schemes]="classSchemes()" />
 
   <div class="button-row">
     <app-submit-button [disabled]="form.invalid || !form.dirty" [busy]="busy()">

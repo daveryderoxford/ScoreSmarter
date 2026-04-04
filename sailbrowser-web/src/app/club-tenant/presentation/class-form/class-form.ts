@@ -1,10 +1,19 @@
-import { ChangeDetectionStrategy, Component, effect, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { BoatClass } from '../../model/boat-class';
+import { getHandicapValue } from 'app/scoring/model/handicap';
+import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import {
+  getHandicapSchemeMetadata,
+  getSchemesForTarget,
+  handicapControlName,
+} from 'app/scoring/model/handicap-scheme-metadata';
+import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inputs';
+import { ClubStore } from 'app/club-tenant';
 
 @Component({
   selector: 'app-class-form',
@@ -21,32 +30,67 @@ import { BoatClass } from '../../model/boat-class';
       margin-top: 16px;
     }
   `,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule,
-    MatButtonModule, SubmitButton],
+  imports: [
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    SubmitButton,
+    HandicapSchemeInputs,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClassForm {
+  protected readonly clubStore = inject(ClubStore);
 
   boatClass = input<BoatClass | undefined>();
 
   busy = input<boolean>(false);
   submitted = output<Partial<BoatClass>>();
 
-  form = new FormGroup({
+  form: FormGroup = new FormGroup({
     name: new FormControl('', { validators: [Validators.required] }),
-    handicap: new FormControl<number>(1000, { validators: [Validators.required] }),
   });
 
+  readonly classSchemes = computed(() =>
+    getSchemesForTarget(this.clubStore.club().supportedHandicapSchemes, 'boatClass')
+  );
+
   constructor() {
+    const clubSchemes = this.clubStore.club().supportedHandicapSchemes;
+    for (const scheme of getSchemesForTarget(clubSchemes, 'boatClass')) {
+      const meta = getHandicapSchemeMetadata(scheme);
+      this.form.addControl(
+        handicapControlName(scheme),
+        new FormControl<number | null>(meta.defaultValue, {
+          validators: [Validators.required, Validators.min(meta.min), Validators.max(meta.max)],
+        })
+      );
+    }
+
     effect(() => {
-      if (this.boatClass()) {
-        this.form.patchValue(this.boatClass()!);
+      const bc = this.boatClass();
+      if (!bc) return;
+      const patch: Record<string, unknown> = { name: bc.name };
+      for (const scheme of HANDICAP_SCHEMES) {
+        const meta = getHandicapSchemeMetadata(scheme);
+        patch[handicapControlName(scheme)] = getHandicapValue(bc.handicaps, scheme) ?? meta.defaultValue;
       }
+      this.form.patchValue(patch);
     });
   }
 
   submit() {
-    const output: Partial<BoatClass> = this.form.getRawValue() as Partial<BoatClass>;
+    const raw = this.form.getRawValue() as Record<string, number | string | null>;
+    const handicaps = this.classSchemes().map((scheme: HandicapScheme) => {
+      const meta = getHandicapSchemeMetadata(scheme);
+      const value = Number(raw[handicapControlName(scheme)] ?? meta.defaultValue);
+      return { scheme, value: Number.isFinite(value) && value > 0 ? value : meta.defaultValue };
+    });
+    const output: Partial<BoatClass> = {
+      name: (raw['name'] as string) ?? '',
+      handicaps,
+    };
     this.submitted.emit(output);
     this.form.reset();
   }

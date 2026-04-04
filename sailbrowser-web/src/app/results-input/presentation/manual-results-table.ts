@@ -6,6 +6,9 @@ import { MatSortModule, Sort } from '@angular/material/sort';
 import { ExtendedRaceCompetitor, manualRaceTableSort } from '../services/manual-results.service';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { RaceType } from 'app/race-calender';
+import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { getHandicapValue } from 'app/scoring/model/handicap';
+import { getCorrectedTime } from 'app/scoring/services/scorer-times';
 
 @Component({
   selector: 'app-manual-results-table',
@@ -25,7 +28,7 @@ import { RaceType } from 'app/race-calender';
         <th mat-header-cell mat-sort-header *matHeaderCellDef>Class<br>H'Cap</th>
         <td mat-cell *matCellDef="let element">
           {{element.boatClass}}<br>
-          {{element.handicap}}
+          {{displayHandicap(element)}}
         </td>
       </ng-container>
 
@@ -86,8 +89,9 @@ import { RaceType } from 'app/race-calender';
       width: 100%;
     }
     tr.processed {
-      background-color: #f5f5f5;
-      color: rgba(0,0,0,0.38);
+      /* Finished competitors shouldn't look disabled; keep text readable. */
+      background-color: color-mix(in srgb, var(--mat-sys-primary) 3%, transparent);
+      color: var(--mat-sys-on-surface);
       
       td {
         color: inherit;
@@ -104,6 +108,7 @@ import { RaceType } from 'app/race-calender';
 export class ManualResultsTable {
   competitors = input.required<RaceCompetitor[]>();
   type = input<RaceType>('Handicap');
+  handicapScheme = input<HandicapScheme>('PY');
 
   rowClicked = output<RaceCompetitor>();
 
@@ -126,10 +131,25 @@ export class ManualResultsTable {
   }
 
   corrected(comp: RaceCompetitor, maxLaps: number): number | undefined {
-    if (comp.finishTime && comp.numLaps > 0 && comp.handicap > 0) {
-      return comp.elapsedTime! * maxLaps / comp.numLaps * 1000 / comp.handicap;
+    if (!comp.finishTime || comp.numLaps <= 0 || !comp.elapsedTime) {
+      return undefined;
     }
-    return undefined;
+
+    const elapsedSeconds = comp.elapsedTime * maxLaps / comp.numLaps;
+
+    const scheme = this.handicapScheme();
+    const handicap = getHandicapValue(comp.handicaps, scheme);
+
+    // For Level Rating, handicap is not used for corrected time.
+    if (scheme !== 'Level Rating' && !handicap) {
+      return undefined;
+    }
+
+    return getCorrectedTime(elapsedSeconds, handicap ?? 1, scheme);
+  }
+
+  displayHandicap(comp: RaceCompetitor): number | undefined {
+    return getHandicapValue(comp.handicaps, this.handicapScheme());
   }
 
   tabledata = computed(() => {

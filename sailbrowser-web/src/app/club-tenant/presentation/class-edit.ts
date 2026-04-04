@@ -37,7 +37,7 @@ export class ClassEdit {
         const newClass: BoatClass = {
           ...oldClass,
           name: data.name!,
-          handicap: data.handicap!,
+        handicaps: data.handicaps!,
         };
         await this.cs.updateClass(oldClass, newClass);
         this.router.navigate(["/club/classes"]);

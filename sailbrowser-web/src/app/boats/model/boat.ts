@@ -1,3 +1,4 @@
+import type { Handicap } from 'app/scoring/model/handicap';
 
 export interface Boat {
   id: string;
@@ -7,4 +8,6 @@ export interface Boat {
   helm: string;
   crew: string;
   isClub: boolean;
+  /** Boat-level handicaps (e.g. IRC, Personal) when the club supports them */
+  handicaps?: Handicap[];
 }

@@ -31,7 +31,7 @@
     <div class="container-handicap">
       <div class="table-section">
         <app-manual-results-table [competitors]="sortedCompetitors()"
-          [type]="race.type" (rowClicked)="onTableRowClick($event)"/>
+          [type]="race.type" [handicapScheme]="handicapScheme()" (rowClicked)="onTableRowClick($event)"/>
       </div>
       <div class="input-section mat-elevation-z2">
         <h3>Record Result</h3>

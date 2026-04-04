@@ -21,7 +21,9 @@
       @for (boatClass of filteredClasses(); track boatClass.id) {
         <mat-list-item [routerLink]="['edit', boatClass.id]">
           <span matListItemTitle>{{ boatClass.name }}</span>
-          <span matListItemLine>Handicap: {{ boatClass.handicap }}</span>
+          <span matListItemLine>
+            Handicap(PY): {{ pyHandicap(boatClass) }}
+          </span>
           <span matListItemMeta>
             <button matIconButton [routerLink]="['edit', boatClass.id]" (click)="$event.stopPropagation()">
               <mat-icon class="green">edit</mat-icon>
