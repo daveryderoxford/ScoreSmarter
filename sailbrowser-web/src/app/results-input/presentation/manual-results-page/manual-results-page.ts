@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, linkedSignal, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,18 +9,18 @@ import { MatSelectChange, MatSelectModule } from '@angular/material/select';
 import { ScoringEngine } from 'app/published-results';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces, RaceCompetitor, RaceCompetitorStore } from 'app/results-input';
+import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { BusyButton } from 'app/shared/components/busy-button';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { firstValueFrom, startWith } from 'rxjs';
 import { RaceTitlePipe } from '../../../shared/pipes/race-title-pipe';
 import { manualRaceTableSort, ManualResultsService } from '../../services/manual-results.service';
-import { HandicapInputPanel } from '../handicap-input-panel/handicap-input-panel';
-import { ManualResultsTable } from '../manual-results-table';
-import { MoreRacesDialog } from '../more-races-dialog';
-import { PositionBasedInputPanel } from '../position-based-input-panel/position-based-input-panel';
-import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-time-dialog';
-import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { HandicapInputPanel } from '../handicap/handicap-input-panel/handicap-input-panel';
+import { HandicapResultsTable } from '../handicap/handicap-results-table/handicap-results-table';
+import { RaceStartTimeDialog, type RaceStartTimeResult } from '../handicap/race-start-time-dialog';
+import { PositionBasedInputPanel } from '../position-based/position-based-input-panel/position-based-input-panel';
+import { MoreRacesDialog } from './more-races-dialog';
 
 @Component({
   selector: 'app-manual-results-page',
@@ -34,7 +34,7 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
     MatIconModule,
     MatSelectModule,
     MatDialogModule,
-    ManualResultsTable,
+    HandicapResultsTable,
     BusyButton,
     RaceTitlePipe,
     HandicapInputPanel,
@@ -71,7 +71,10 @@ export class ManualResultsPage {
     return [...comps].sort((a, b) => manualRaceTableSort(a, b, 'elapsedTime', 'asc'));
   });
 
-  readonly handicapPanel = viewChild(HandicapInputPanel);
+  readonly handicapSelectedCompetitor = linkedSignal<RaceCompetitor | undefined>(() => {
+    this.selectedRace()?.id;
+    return undefined;
+  });
 
   readonly handicapScheme = computed<HandicapScheme>(() => {
     const race = this.selectedRace();
@@ -110,7 +113,7 @@ export class ManualResultsPage {
 
   onTableRowClick(row: RaceCompetitor) {
     if (this.selectedRace()?.type !== 'Handicap') return;
-    this.handicapPanel()?.onTableRowClick(row);
+    this.handicapSelectedCompetitor.set(row);
   }
 
   async setStartTime(race: Race): Promise<RaceStartTimeResult | undefined> {

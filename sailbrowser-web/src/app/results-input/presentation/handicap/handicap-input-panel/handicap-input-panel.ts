@@ -7,7 +7,7 @@ import {
   ElementRef,
   inject,
   input,
-  linkedSignal,
+  model,
   signal,
   untracked,
   viewChild,
@@ -27,10 +27,10 @@ import { requiresTime } from 'app/scoring/model/result-code-scoring';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { firstValueFrom, map, startWith } from 'rxjs';
-import { manualRaceTableSort, ManualResultsService } from '../../services/manual-results.service';
+import { manualRaceTableSort, ManualResultsService } from '../../../services/manual-results.service';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-time-dialog';
 import { RaceTimeInput } from '../race-time-input';
-import { ResultCodeSelector } from '../result-code-selector';
+import { ResultCodeSelect } from '../../result-code-select';
 
 @Component({
   selector: 'app-handicap-input-panel',
@@ -46,7 +46,7 @@ import { ResultCodeSelector } from '../result-code-selector';
     MatIconModule,
     MatDialogModule,
     RaceTimeInput,
-    ResultCodeSelector,
+    ResultCodeSelect,
     DurationPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,7 +59,13 @@ export class HandicapInputPanel {
   race = input.required<Race>();
   competitors = input.required<RaceCompetitor[]>();
 
+  /** Two-way bound from parent so the results table can highlight the selected row. */
+  selectedCompetitor = model<RaceCompetitor | undefined>(undefined);
+
   readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
+
+  /** Tracks selection across effect runs (auto-save before switching competitor). */
+  private lastSelectedCompetitorId: string | undefined;
 
   readonly form = this.fb.group({
     finishTime: this.fb.control<Date | null>(null, { updateOn: 'blur' }),
@@ -80,10 +86,7 @@ export class HandicapInputPanel {
     return requiresTime(code) || code === 'NOT FINISHED';
   });
 
-  readonly selectedCompetitor = linkedSignal<RaceCompetitor | undefined>(() => {
-    this.race();
-    return undefined;
-  });
+  readonly hasSelectedCompetitor = computed(() => this.selectedCompetitor() != null);
 
   readonly searchControl = new FormControl<string | RaceCompetitor | null>('');
   private readonly searchTerm = toSignal(
@@ -152,11 +155,37 @@ export class HandicapInputPanel {
     effect(() => {
       const comp = this.selectedCompetitor();
       untracked(() => {
+        const prevId = this.lastSelectedCompetitorId;
+        const nextId = comp?.id;
+
+        if (prevId != null && nextId != null && prevId !== nextId) {
+          const prevComp = this.competitors().find(c => c.id === prevId);
+          if (prevComp) {
+            const raw = this.form.getRawValue() as {
+              finishTime: Date | null;
+              laps: number;
+              resultCode: ResultCode;
+            };
+            void this.persistIfNeededForPreviousCompetitor(prevComp, raw);
+          }
+        }
+
+        this.lastSelectedCompetitorId = nextId;
+
         if (!comp) {
           this.searchControl.setValue(null, { emitEvent: false });
+          // Reset while controls are still enabled so values/CVAs update cleanly, then disable.
           this.resetFormDefaults();
+          const syncOpts = { emitEvent: true } as const;
+          this.form.controls.finishTime.disable(syncOpts);
+          this.form.controls.laps.disable(syncOpts);
+          this.form.controls.resultCode.disable(syncOpts);
           return;
         }
+        const opts = { emitEvent: true } as const;
+        this.form.controls.finishTime.enable(opts);
+        this.form.controls.laps.enable(opts);
+        this.form.controls.resultCode.enable(opts);
         this.searchControl.setValue(comp, { emitEvent: false });
         if (comp.resultCode === 'NOT FINISHED') {
           this.resetFormDefaults();
@@ -203,11 +232,54 @@ export class HandicapInputPanel {
   }
 
   onCompetitorSelected(event: MatAutocompleteSelectedEvent): void {
-    this.selectedCompetitor.set(event.option.value);
+    this.selectedCompetitor.set(event.option.value as RaceCompetitor);
   }
 
-  onTableRowClick(row: RaceCompetitor): void {
-    this.selectedCompetitor.set(row);
+  onFormKeydown(ev: KeyboardEvent): void {
+    if (ev.key !== 'Enter') return;
+    const target = ev.target as HTMLElement | null;
+    if (!target) return;
+    const searchEl = this.searchInput()?.nativeElement;
+    if (searchEl && (target === searchEl || searchEl.contains(target))) return;
+    if (target.closest('mat-select') || target.closest('.mat-mdc-select-panel')) return;
+    ev.preventDefault();
+    void this.save();
+  }
+
+  private shouldAutoSaveBeforeSwitch(comp: RaceCompetitor, raw: {
+    finishTime: Date | null;
+    laps: number;
+    resultCode: ResultCode;
+  }): boolean {
+    const laps = raw.laps ?? 1;
+    const storedLaps = comp.manualLaps > 0 ? comp.manualLaps : 1;
+    if (raw.finishTime != null) return true;
+    if (laps !== storedLaps) return true;
+    if (raw.resultCode !== comp.resultCode) return true;
+    return false;
+  }
+
+  private async persistIfNeededForPreviousCompetitor(
+    comp: RaceCompetitor,
+    raw: { finishTime: Date | null; laps: number; resultCode: ResultCode },
+  ): Promise<void> {
+    if (!this.shouldAutoSaveBeforeSwitch(comp, raw)) return;
+    const race = this.race();
+    if (!race.actualStart) return;
+
+    const laps = raw.laps ?? 1;
+    const { finishTime, resultCode } = raw;
+    const needTime = requiresTime(resultCode) || resultCode === 'NOT FINISHED';
+    if (needTime && !finishTime) return;
+
+    if (this.form.controls.laps.invalid || this.form.controls.finishTime.invalid) return;
+
+    await this.manualResultsService.recordResult(comp, race, {
+      finishTime,
+      laps,
+      resultCode,
+    });
+    if (laps) this.lastEnteredLaps.set(laps);
   }
 
   async setStartTime(race: Race): Promise<RaceStartTimeResult | undefined> {
@@ -222,7 +294,7 @@ export class HandicapInputPanel {
   }
 
   async save(): Promise<void> {
-    if (this.form.invalid) return;
+    if (!this.hasSelectedCompetitor() || this.form.invalid) return;
     const { finishTime, laps, resultCode } = this.form.getRawValue();
     const competitor = this.selectedCompetitor();
     if (!competitor) return;

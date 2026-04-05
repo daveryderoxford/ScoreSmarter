@@ -1,15 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, forwardRef, signal } from '@angular/core';
+import { coerceBooleanProperty } from '@angular/cdk/coercion';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { RESULT_CODE_DEFINITIONS, ResultCode, getResultCodeDefinition } from 'app/scoring/model/result-code';
 
 @Component({
-  selector: 'app-result-code-selector',
+  selector: 'app-result-code-select',
   template: `
     <mat-form-field appearance="outline" class="w-full">
       <mat-label>Result Code</mat-label>
-      <mat-select [value]="value()" (selectionChange)="onSelectionChange($event.value)">
+      <mat-select [value]="value()" [disabled]="disabled()" (selectionChange)="onSelectionChange($event.value)">
         @for (code of resultCodes; track code.id) {
           <mat-option [value]="code.id">{{ code.id }}</mat-option>
         }
@@ -24,16 +25,17 @@ import { RESULT_CODE_DEFINITIONS, ResultCode, getResultCodeDefinition } from 'ap
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => ResultCodeSelector),
+      useExisting: forwardRef(() => ResultCodeSelect),
       multi: true,
     },
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ResultCodeSelector implements ControlValueAccessor {
+export class ResultCodeSelect implements ControlValueAccessor {
   readonly resultCodes = RESULT_CODE_DEFINITIONS.filter(c => c.id !== 'NOT FINISHED');
   
   readonly value = signal<ResultCode>('OK');
+  readonly disabled = signal(false);
   readonly description = computed(() => getResultCodeDefinition(this.value())?.description);
 
   private onChange: (value: ResultCode) => void = () => {};
@@ -49,6 +51,10 @@ export class ResultCodeSelector implements ControlValueAccessor {
 
   registerOnTouched(fn: any): void {
     this.onTouched = fn;
+  }
+
+  setDisabledState(isDisabled: boolean): void {
+    this.disabled.set(coerceBooleanProperty(isDisabled));
   }
 
   onSelectionChange(value: ResultCode) {

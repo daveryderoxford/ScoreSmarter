@@ -7,7 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { format } from 'date-fns';
-import { TimeRecordingMode } from '../services/manual-results.service';
+import { TimeRecordingMode } from '../../services/manual-results.service';
 import { Race } from 'app/race-calender';
 
 export interface RaceStartTimeResult {

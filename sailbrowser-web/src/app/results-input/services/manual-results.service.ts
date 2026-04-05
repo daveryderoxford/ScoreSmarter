@@ -117,10 +117,13 @@ export class ManualResultsService {
       timeInputMode: mode
     });
 
-    // Update any competitors for the race that have already been saved 
-    // TODO needs update to support multiple start times/race
-    const comps = this.competitorStore.selectedCompetitors()
-      .filter(comp => comp.raceId == raceId && comp.startTime);
+    const comps = this.competitorStore.selectedCompetitors().filter(comp => {
+      if (comp.raceId !== raceId) return false;
+      const hasTime = comp.manualFinishTime != null || comp.recordedFinishTime != null;
+      const started = comp.startTime != null;
+      const finishedOrScored = isFinishedComp(comp.resultCode) || hasTime;
+      return started || finishedOrScored;
+    });
 
     for (const comp of comps) {
       await this.competitorStore.updateResult(comp.id, { startTime: startTime });

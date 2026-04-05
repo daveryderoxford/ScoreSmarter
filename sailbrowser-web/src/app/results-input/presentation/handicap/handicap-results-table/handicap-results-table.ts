@@ -1,18 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, output, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { MatTableModule } from '@angular/material/table';
-import { RaceCompetitor } from '../model/race-competitor';
+import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, output } from '@angular/core';
 import { MatSortModule, Sort } from '@angular/material/sort';
-import { ExtendedRaceCompetitor, manualRaceTableSort } from '../services/manual-results.service';
-import { DurationPipe } from 'app/shared/pipes/duration.pipe';
+import { MatTableModule } from '@angular/material/table';
 import { RaceType } from 'app/race-calender';
-import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getHandicapValue } from 'app/scoring/model/handicap';
+import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getCorrectedTime } from 'app/scoring/services/scorer-times';
+import { DurationPipe } from 'app/shared/pipes/duration.pipe';
+import { RaceCompetitor } from '../../../model/race-competitor';
+import { ExtendedRaceCompetitor, manualRaceTableSort } from 'app/results-input/services/manual-results.service';
 
 @Component({
-  selector: 'app-manual-results-table',
+  selector: 'app-handicap-results-table',
   imports: [MatTableModule, DatePipe, DurationPipe, MatSortModule],
+  styleUrl: './handicap-results-table.scss',
   template: `
     <table mat-table matSort [dataSource]="tabledata()"
     (matSortChange)="this.sortState.set($event)" class="mat-elevation-z0">
@@ -76,39 +77,20 @@ import { getCorrectedTime } from 'app/scoring/services/scorer-times';
 
       <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns();" 
-          [class.processed]="!(row.resultCode === 'NOT FINISHED')"
+          [class.row-has-result]="row.resultCode !== 'NOT FINISHED'"
+          [class.row-selected]="row.id === selectedCompetitorId()"
           (click)="onRowClick(row)">
       </tr>
     </table>
   `,
-  styles: [`
-    :host {
-      display: block;
-    }
-    table {
-      width: 100%;
-    }
-    tr.processed {
-      /* Finished competitors shouldn't look disabled; keep text readable. */
-      background-color: color-mix(in srgb, var(--mat-sys-primary) 3%, transparent);
-      color: var(--mat-sys-on-surface);
-      
-      td {
-        color: inherit;
-      }
-    }
-
-    tr.mat-mdc-row:hover {
-      background-color: rgba(0,0,0,0.04);
-      cursor: pointer;
-    }
-  `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ManualResultsTable {
+export class HandicapResultsTable {
   competitors = input.required<RaceCompetitor[]>();
   type = input<RaceType>('Handicap');
   handicapScheme = input<HandicapScheme>('PY');
+  /** Highlight row matching handicap input panel selection (handicap results entry). */
+  selectedCompetitorId = input<string | null>(null);
 
   rowClicked = output<RaceCompetitor>();
 

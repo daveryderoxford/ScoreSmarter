@@ -16,7 +16,7 @@
   </div>
 </div>
 
-<form [formGroup]="form" (ngSubmit)="save()">
+<form [formGroup]="form" (ngSubmit)="save()" (keydown)="onFormKeydown($event)">
   <mat-form-field appearance="outline">
     <mat-label>Competitor</mat-label>
     <input #searchInput matInput [formControl]="searchControl" [matAutocomplete]="auto" placeholder="Class, Sail No or Helm">
@@ -33,7 +33,7 @@
       }
     </mat-autocomplete>
     @if (searchControl.value) {
-      <button mat-icon-button matSuffix type="button" (click)="searchControl.setValue('')" aria-label="Clear search">
+      <button mat-icon-button matSuffix type="button" tabindex="-1" (click)="selectedCompetitor.set(undefined)" aria-label="Clear search">
         <mat-icon>close</mat-icon>
       </button>
     }
@@ -60,10 +60,10 @@
     <input matInput type="number" formControlName="laps">
   </mat-form-field>
 
-  <app-result-code-selector formControlName="resultCode"></app-result-code-selector>
+  <app-result-code-select formControlName="resultCode"></app-result-code-select>
 
   <div class="actions">
-    <button mat-button type="button" (click)="selectedCompetitor.set(undefined)">Clear</button>
-    <button mat-flat-button color="primary" type="submit">Record</button>
+    <button matButton type="button" [disabled]="!hasSelectedCompetitor()" (click)="selectedCompetitor.set(undefined)">Clear</button>
+    <button matButton="filled" type="submit" [disabled]="!hasSelectedCompetitor() || form.invalid">Record</button>
   </div>
 </form>

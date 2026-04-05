@@ -1,0 +1,27 @@
+@use 'sass:color';
+
+/// Shared row states for handicap manual results table and manual order entry.
+/// Accent aligns with Material primary (~#1976d2); hovers are the base tint darkened via mix.
+
+$accent: rgb(25, 118, 210);
+
+// —— Selected (current competitor / highlighted source row) ——
+$selected-bg: color.change($accent, $alpha: 0.18);
+$selected-hover-bg: color.mix(black, $selected-bg, 2%);
+$selected-border: color.change($accent, $alpha: 0.45);
+
+// —— Search match (order entry source list) ——
+$search-match-bg: color.change($accent, $alpha: 0.12);
+$search-match-hover-bg: color.mix(black, $search-match-bg, 2%);
+$search-match-border: color.change($accent, $alpha: 0.35);
+
+// —— Selected + search match combined ——
+$selected-with-search-bg: color.change($accent, $alpha: 0.22);
+$selected-with-search-hover-bg: color.mix(black, $selected-with-search-bg, 1%);
+
+// —— Finished / has result (table row already scored) ——
+$finished-bg: #fbf9e7;
+$finished-hover-bg: color.mix(black, $finished-bg, 6%);
+
+// —— Default row on a light surface (no selected / finished tint) ——
+$neutral-hover-bg: color.mix(black, white, 6%);
