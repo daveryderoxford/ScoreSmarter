@@ -6,9 +6,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Race } from 'app/race-calender';
 import { ResultCode } from 'app/scoring/model/result-code';
-import { RaceTimeInput } from './race-time-input';
-import { ResultCodeSelector } from './result-code-selector';
+import { RaceTimeInput } from '../handicap/race-time-input';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
+import { ResultCodeSelect } from '../result-code-select';
 
 export interface ManualResultCodeDialogData {
   race: Race;
@@ -28,10 +28,10 @@ export interface ManualResultCodeDialogResult {
 
     <mat-dialog-content>
       <form [formGroup]="form" class="dialog-form">
-        <app-result-code-selector formControlName="resultCode" />
+        <app-result-code-select formControlName="resultCode" />
 
         @if (data.race.type === 'Level Rating') {
-          <mat-form-field appearance="outline">
+          <mat-form-field>
             <mat-label>Finish time (optional)</mat-label>
             <app-race-time-input
               formControlName="finishTime"
@@ -46,8 +46,7 @@ export interface ManualResultCodeDialogResult {
     <mat-dialog-actions align="end">
       <button mat-button mat-dialog-close type="button">Cancel</button>
       <button
-        mat-flat-button
-        color="primary"
+        matButton="filled"
         type="button"
         (click)="save()"
         [disabled]="form.controls.resultCode.value === data.initialResultCode && form.controls.finishTime.value === data.initialFinishTime"
@@ -72,7 +71,7 @@ export interface ManualResultCodeDialogResult {
     MatDialogModule,
     MatButtonModule,
     MatFormFieldModule,
-    ResultCodeSelector,
+    ResultCodeSelect,
     RaceTimeInput,
   ],
 })

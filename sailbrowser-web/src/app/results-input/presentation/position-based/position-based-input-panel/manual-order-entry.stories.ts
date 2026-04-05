@@ -2,9 +2,9 @@ import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { applicationConfig, Meta, StoryObj } from '@storybook/angular';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { Race } from 'app/race-calender';
-import { RaceCompetitor } from '../../model/race-competitor';
-import { ManualResultsService, OrderEntryPersistInput } from '../../services/manual-results.service';
-import { ManualOrderEntry } from './manual-order-entry';
+import { ManualResultsService, OrderEntryPersistInput } from 'app/results-input/services/manual-results.service';
+import { RaceCompetitor } from 'app/results-input';
+import { PositionBasedInputPanel } from './position-based-input-panel';
 
 /** Captured across stories / play for assertions */
 const persistCalls: OrderEntryPersistInput[] = [];
@@ -68,9 +68,9 @@ function storyProviders() {
   });
 }
 
-const meta: Meta<ManualOrderEntry> = {
+const meta: Meta<PositionBasedInputPanel> = {
   title: 'Results Input/ManualOrderEntry',
-  component: ManualOrderEntry,
+  component: PositionBasedInputPanel,
   tags: ['autodocs'],
   decorators: [storyProviders()],
   parameters: {
@@ -84,7 +84,7 @@ const meta: Meta<ManualOrderEntry> = {
 };
 
 export default meta;
-type Story = StoryObj<ManualOrderEntry>;
+type Story = StoryObj<PositionBasedInputPanel>;
 
 export const PursuitFresh: Story = {
   args: {

@@ -30,7 +30,7 @@
   @if (race.type === 'Handicap') {
     <div class="container-handicap">
       <div class="table-section">
-        <app-manual-results-table [competitors]="sortedCompetitors()"
+        <app-handicap-results-table [competitors]="sortedCompetitors()"
           [type]="race.type" [handicapScheme]="handicapScheme()"
           [selectedCompetitorId]="handicapSelectedCompetitor()?.id ?? null"
           (rowClicked)="onTableRowClick($event)"/>

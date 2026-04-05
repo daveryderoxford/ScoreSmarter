@@ -7,13 +7,13 @@ import { getHandicapValue } from 'app/scoring/model/handicap';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getCorrectedTime } from 'app/scoring/services/scorer-times';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
-import { RaceCompetitor } from '../model/race-competitor';
-import { ExtendedRaceCompetitor, manualRaceTableSort } from '../services/manual-results.service';
+import { RaceCompetitor } from '../../../model/race-competitor';
+import { ExtendedRaceCompetitor, manualRaceTableSort } from 'app/results-input/services/manual-results.service';
 
 @Component({
-  selector: 'app-manual-results-table',
+  selector: 'app-handicap-results-table',
   imports: [MatTableModule, DatePipe, DurationPipe, MatSortModule],
-  styleUrl: './manual-results-table.scss',
+  styleUrl: './handicap-results-table.scss',
   template: `
     <table mat-table matSort [dataSource]="tabledata()"
     (matSortChange)="this.sortState.set($event)" class="mat-elevation-z0">
@@ -85,7 +85,7 @@ import { ExtendedRaceCompetitor, manualRaceTableSort } from '../services/manual-
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ManualResultsTable {
+export class HandicapResultsTable {
   competitors = input.required<RaceCompetitor[]>();
   type = input<RaceType>('Handicap');
   handicapScheme = input<HandicapScheme>('PY');

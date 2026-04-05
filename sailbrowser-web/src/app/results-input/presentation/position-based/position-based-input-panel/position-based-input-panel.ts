@@ -31,17 +31,16 @@ import { Race } from 'app/race-calender';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { firstValueFrom, map, startWith } from 'rxjs';
-import { RaceCompetitor } from '../../model/race-competitor';
 import {
   computeManualPositionsForOrderEntry,
   ManualResultsService,
   OrderEntryRowState,
-} from '../../services/manual-results.service';
-import { sortEntries } from '../../services/race-competitor-store';
-import { ManualResultCodeDialog } from '../manual-result-code-dialog';
+} from '../../../services/manual-results.service';
+import { ResultCodeDialog } from '../result-code-dialog';
+import { RaceCompetitor, sortEntries } from 'app/results-input';
 
 @Component({
-  selector: 'app-manual-order-entry',
+  selector: 'app-position-based-input-panel',
   imports: [
     DragDropModule,
     MatFormFieldModule,
@@ -52,11 +51,11 @@ import { ManualResultCodeDialog } from '../manual-result-code-dialog';
     MatMenuModule,
     ReactiveFormsModule,
   ],
-  templateUrl: './manual-order-entry.html',
-  styleUrl: './manual-order-entry.scss',
+  templateUrl: './position-based-input-panel.html',
+  styleUrl: './position-based-input-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ManualOrderEntry implements AfterViewInit {
+export class PositionBasedInputPanel implements AfterViewInit {
   private readonly fb = inject(FormBuilder);
   private readonly manualResults = inject(ManualResultsService);
   private readonly breakpoint = inject(BreakpointObserver);
@@ -297,7 +296,7 @@ export class ManualOrderEntry implements AfterViewInit {
   async setRemainingResultCode(id: string): Promise<void> {
     if (!this.remainingIds().includes(id)) return;
     const pending = this.pendingDefaults().get(id);
-    const dialogRef = this.dialog.open(ManualResultCodeDialog, {
+    const dialogRef = this.dialog.open(ResultCodeDialog, {
       data: {
         race: this.race(),
         initialResultCode: pending?.resultCode ?? 'OK',
@@ -336,7 +335,7 @@ export class ManualOrderEntry implements AfterViewInit {
     const row = this.rowState().get(id);
     if (!row) return;
 
-    const dialogRef = this.dialog.open(ManualResultCodeDialog, {
+    const dialogRef = this.dialog.open(ResultCodeDialog, {
       data: {
         race: this.race(),
         initialResultCode: row.resultCode,

@@ -1,9 +1,11 @@
-import { Component, computed, ElementRef, forwardRef, inject, input, OnInit } from '@angular/core';
+import { Component, computed, DestroyRef, ElementRef, forwardRef, inject, input, OnInit, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormControl, NG_VALIDATORS, NG_VALUE_ACCESSOR, ReactiveFormsModule, ValidationErrors, Validator } from '@angular/forms';
 import { MatFormFieldControl, MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { FormFieldBase } from 'app/shared/components/form-field.base';
 import { format, isValid, parse } from 'date-fns';
+import { merge, of } from 'rxjs';
 
 @Component({
   selector: 'app-race-time-input',
@@ -27,6 +29,7 @@ import { format, isValid, parse } from 'date-fns';
   ],
   template: `
     <input
+      #nativeInput
       matInput
       type="time"
       step="1"
@@ -46,6 +49,8 @@ import { format, isValid, parse } from 'date-fns';
   }
 })
 export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+
   // --- Component-specific properties ---
   mode = input.required<'tod' | 'elapsed' | undefined>();
   baseTime = input.required<Date>(); // Reference time: Race Date (TOD) or Start Time (Elapsed)
@@ -53,8 +58,25 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
   inputPlaceholder = computed(() => this.mode() === 'elapsed' ? 'mm:ss' : 'hh:mm:ss');
   inputControl = new FormControl<string>('', { nonNullable: true });
 
+  private readonly nativeInput = viewChild<ElementRef<HTMLInputElement>>('nativeInput');
+
+  /** Move focus to the time field (e.g. Tab from competitor search). */
+  focusInput(): void {
+    if (this.disabled) return;
+    this.nativeInput()?.nativeElement?.focus();
+  }
+
   // --- Overrides for FormFieldBase ---
   override controlType = 'app-race-time-input';
+
+  /**
+   * MatFormField applies `mat-form-field-disabled` from MatFormFieldControl.disabled, not from the
+   * reactive FormControl alone. Delegate to the bound control when present so the outline grays out.
+   */
+  override get disabled(): boolean {
+    const c = this.ngControl?.control;
+    return c ? c.disabled : super.disabled;
+  }
 
   override get empty(): boolean {
     return !this.inputControl.value;
@@ -71,11 +93,34 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
 
   override ngOnInit(): void {
     super.ngOnInit();
+    const ctrl = this.ngControl?.control;
+    if (!ctrl) return;
+
+    // Parent FormControl.disable({ emitEvent: false }) does not notify the CVA; keep the inner
+    // input and MatFormFieldControl.disabled aligned with the real control state.
+    merge(of(undefined), ctrl.statusChanges)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        // Compare inner FormControl — host `disabled` getter follows `ctrl.disabled`, so use inputControl here.
+        if (ctrl.disabled !== this.inputControl.disabled) {
+          this.applyDisabledFromParent(ctrl.disabled);
+        }
+      });
+  }
+
+  /** Sets host + inner input disabled without re-entering FormControl APIs. */
+  private applyDisabledFromParent(disabled: boolean): void {
+    super.disabled = disabled;
+    if (disabled) {
+      this.inputControl.disable({ emitEvent: false });
+    } else {
+      this.inputControl.enable({ emitEvent: false });
+    }
+    this.stateChanges.next();
   }
 
   override set disabled(value: boolean) {
-    super.disabled = value;
-    this.disabled ? this.inputControl.disable() : this.inputControl.enable();
+    this.applyDisabledFromParent(value);
   }
 
   override writeValue(value: Date | null): void {

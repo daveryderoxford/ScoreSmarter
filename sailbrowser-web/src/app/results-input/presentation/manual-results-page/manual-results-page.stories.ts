@@ -1,14 +1,14 @@
 import { signal } from '@angular/core';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { applicationConfig, Meta, StoryObj } from '@storybook/angular';
-import { ScoringEngine } from 'app/published-results';
 import { Race } from 'app/race-calender';
 import { Series } from 'app/race-calender/model/series';
 import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
+import { ScoringEngine } from 'app/published-results';
 import { CurrentRaces, RaceCompetitor, RaceCompetitorStore } from 'app/results-input';
-import type { HandicapConfiguration, LevelRatingConfiguration } from 'app/scoring/model/scoring-configuration';
-import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { ManualResultsService, OrderEntryPersistInput } from '../../services/manual-results.service';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import type { HandicapConfiguration, LevelRatingConfiguration } from 'app/scoring/model/scoring-configuration';
 import { ManualResultsPage } from './manual-results-page';
 
 const RACE_H_ID = 'story-race-handicap';

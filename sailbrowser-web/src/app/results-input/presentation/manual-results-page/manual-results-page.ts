@@ -16,11 +16,11 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { firstValueFrom, startWith } from 'rxjs';
 import { RaceTitlePipe } from '../../../shared/pipes/race-title-pipe';
 import { manualRaceTableSort, ManualResultsService } from '../../services/manual-results.service';
-import { HandicapInputPanel } from '../handicap-input-panel/handicap-input-panel';
-import { ManualResultsTable } from '../manual-results-table';
-import { MoreRacesDialog } from '../more-races-dialog';
-import { PositionBasedInputPanel } from '../position-based-input-panel/position-based-input-panel';
-import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-time-dialog';
+import { HandicapInputPanel } from '../handicap/handicap-input-panel/handicap-input-panel';
+import { HandicapResultsTable } from '../handicap/handicap-results-table/handicap-results-table';
+import { RaceStartTimeDialog, type RaceStartTimeResult } from '../handicap/race-start-time-dialog';
+import { PositionBasedInputPanel } from '../position-based/position-based-input-panel/position-based-input-panel';
+import { MoreRacesDialog } from './more-races-dialog';
 
 @Component({
   selector: 'app-manual-results-page',
@@ -34,7 +34,7 @@ import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-tim
     MatIconModule,
     MatSelectModule,
     MatDialogModule,
-    ManualResultsTable,
+    HandicapResultsTable,
     BusyButton,
     RaceTitlePipe,
     HandicapInputPanel,

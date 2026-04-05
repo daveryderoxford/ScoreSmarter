@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatListModule } from '@angular/material/list';
-import { DatePipe } from '@angular/common';
 import { RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces } from 'app/results-input';
 import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
