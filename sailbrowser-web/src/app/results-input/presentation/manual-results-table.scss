@@ -1,0 +1,43 @@
+@use './results-entry-row-tokens' as row;
+
+:host {
+  display: block;
+}
+
+table {
+  width: 100%;
+}
+
+tr.row-has-result:not(.row-selected) {
+  background-color: row.$finished-bg;
+  color: var(--mat-sys-on-surface);
+
+  &:hover {
+    background-color: row.$finished-hover-bg;
+  }
+}
+
+tr.row-selected {
+  background-color: row.$selected-bg;
+  color: var(--mat-sys-on-surface);
+  box-shadow: inset 4px 0 0 var(--mat-sys-primary, #1976d2);
+  outline: 1px solid row.$selected-border;
+  outline-offset: -1px;
+
+  &:hover {
+    background-color: row.$selected-hover-bg;
+  }
+}
+
+tr.row-selected td {
+  color: inherit;
+  font-weight: 700;
+}
+
+tr.mat-mdc-row {
+  cursor: pointer;
+}
+
+tr.mat-mdc-row:hover:not(.row-selected):not(.row-has-result) {
+  background-color: row.$neutral-hover-bg;
+}

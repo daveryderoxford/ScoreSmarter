@@ -5,8 +5,6 @@ export type { SeriesEntry } from './model/series-entry';
 
 export {SeriesEntryStore} from './services/series-entry-store';
 
-export { RESULTS_ENTRY_ROUTES } from './race-results.routes';
-
 export { CurrentRaces } from './services/current-races-store';
 
 export { RaceCompetitorStore, sortEntries } from './services/race-competitor-store';

@@ -1,3 +1,5 @@
+@use '../results-entry-row-tokens' as row;
+
 :host {
   display: flex;
   flex: 1;
@@ -95,7 +97,7 @@
   grid-template-columns: auto auto 1fr auto;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: row.$neutral-hover-bg;
   }
 
   &.dim {
@@ -106,15 +108,23 @@
 
   &.search-match {
     font-weight: 700;
-    background: rgba(25, 118, 210, 0.12);
-    border: 1px solid rgba(25, 118, 210, 0.35);
+    background: row.$search-match-bg;
+    border: 1px solid row.$search-match-border;
+
+    &:hover {
+      background: row.$search-match-hover-bg;
+    }
   }
 
   &.selected {
     font-weight: 700;
-    background: rgba(25, 118, 210, 0.18);
+    background: row.$selected-bg;
     box-shadow: inset 4px 0 0 var(--mat-sys-primary, #1976d2);
-    border: 1px solid rgba(25, 118, 210, 0.45);
+    border: 1px solid row.$selected-border;
+
+    &:hover {
+      background: row.$selected-hover-bg;
+    }
   }
 
   &.exact-sail {
@@ -123,7 +133,11 @@
   }
 
   &.selected.search-match {
-    background: rgba(25, 118, 210, 0.22);
+    background: row.$selected-with-search-bg;
+
+    &:hover {
+      background: row.$selected-with-search-hover-bg;
+    }
   }
 }
 
@@ -132,7 +146,7 @@
   grid-template-columns: auto 2rem auto 1fr auto auto;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.04);
+    background: row.$neutral-hover-bg;
   }
 }
 

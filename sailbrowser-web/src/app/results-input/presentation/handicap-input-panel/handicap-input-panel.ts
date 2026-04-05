@@ -7,7 +7,7 @@ import {
   ElementRef,
   inject,
   input,
-  linkedSignal,
+  model,
   signal,
   untracked,
   viewChild,
@@ -59,6 +59,9 @@ export class HandicapInputPanel {
   race = input.required<Race>();
   competitors = input.required<RaceCompetitor[]>();
 
+  /** Two-way bound from parent so the results table can highlight the selected row. */
+  selectedCompetitor = model<RaceCompetitor | undefined>(undefined);
+
   readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
 
   readonly form = this.fb.group({
@@ -80,10 +83,7 @@ export class HandicapInputPanel {
     return requiresTime(code) || code === 'NOT FINISHED';
   });
 
-  readonly selectedCompetitor = linkedSignal<RaceCompetitor | undefined>(() => {
-    this.race();
-    return undefined;
-  });
+  readonly hasSelectedCompetitor = computed(() => this.selectedCompetitor() != null);
 
   readonly searchControl = new FormControl<string | RaceCompetitor | null>('');
   private readonly searchTerm = toSignal(
@@ -152,11 +152,18 @@ export class HandicapInputPanel {
     effect(() => {
       const comp = this.selectedCompetitor();
       untracked(() => {
+        const opts = { emitEvent: false } as const;
         if (!comp) {
+          this.form.controls.finishTime.disable(opts);
+          this.form.controls.laps.disable(opts);
+          this.form.controls.resultCode.disable(opts);
           this.searchControl.setValue(null, { emitEvent: false });
           this.resetFormDefaults();
           return;
         }
+        this.form.controls.finishTime.enable(opts);
+        this.form.controls.laps.enable(opts);
+        this.form.controls.resultCode.enable(opts);
         this.searchControl.setValue(comp, { emitEvent: false });
         if (comp.resultCode === 'NOT FINISHED') {
           this.resetFormDefaults();
@@ -203,11 +210,7 @@ export class HandicapInputPanel {
   }
 
   onCompetitorSelected(event: MatAutocompleteSelectedEvent): void {
-    this.selectedCompetitor.set(event.option.value);
-  }
-
-  onTableRowClick(row: RaceCompetitor): void {
-    this.selectedCompetitor.set(row);
+    this.selectedCompetitor.set(event.option.value as RaceCompetitor);
   }
 
   async setStartTime(race: Race): Promise<RaceStartTimeResult | undefined> {

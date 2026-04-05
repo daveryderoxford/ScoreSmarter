@@ -13,15 +13,15 @@
     </mat-form-field>
   </div>
 
-  <app-busy-button [busy]="publishing()" (click)="publish()">
-    Publish race
-  </app-busy-button>
-
   @if (selectedRace(); as sr) {
     @if (sr.type === 'Handicap') {
-      <button matButton="outlined" (click)="setStartTime(sr)">Set Start Time</button>
+      <button matButton="text" (click)="setStartTime(sr)">Start</button>
     }
   }
+
+  <app-busy-button [busy]="publishing()" (click)="publish()">
+    Publish
+  </app-busy-button>
 
 </app-toolbar>
 
@@ -31,11 +31,14 @@
     <div class="container-handicap">
       <div class="table-section">
         <app-manual-results-table [competitors]="sortedCompetitors()"
-          [type]="race.type" [handicapScheme]="handicapScheme()" (rowClicked)="onTableRowClick($event)"/>
+          [type]="race.type" [handicapScheme]="handicapScheme()"
+          [selectedCompetitorId]="handicapSelectedCompetitor()?.id ?? null"
+          (rowClicked)="onTableRowClick($event)"/>
       </div>
       <div class="input-section mat-elevation-z2">
         <h3>Record Result</h3>
-        <app-handicap-input-panel [race]="race" [competitors]="sortedCompetitors()" />
+        <app-handicap-input-panel [race]="race" [competitors]="sortedCompetitors()"
+          [(selectedCompetitor)]="handicapSelectedCompetitor" />
       </div>
     </div>
   } @else {

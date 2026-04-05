@@ -63,7 +63,7 @@
   <app-result-code-selector formControlName="resultCode"></app-result-code-selector>
 
   <div class="actions">
-    <button mat-button type="button" (click)="selectedCompetitor.set(undefined)">Clear</button>
-    <button mat-flat-button color="primary" type="submit">Record</button>
+    <button matButton type="button" [disabled]="!hasSelectedCompetitor()" (click)="selectedCompetitor.set(undefined)">Clear</button>
+    <button matButton="filled" type="submit" [disabled]="!hasSelectedCompetitor()">Record</button>
   </div>
 </form>
