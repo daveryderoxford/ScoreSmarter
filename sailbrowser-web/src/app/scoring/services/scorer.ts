@@ -44,6 +44,12 @@ export function score(
     calculateRacePoints(race.results, race.type, handicapScheme, config.seriesType, seriesCompetitorCount);
   }
 
+  // 2.6 Sort by calendar race index before series scoring. Publish/score order may follow
+  // actualStart/scheduledStart, so the grid can be [race index 3, race index 2] until here.
+  // scoreSeries() builds raceScores in forEach order; series table columns align with raceTitles
+  // (orderBy index). Without this sort, column headers and points columns disagree.
+  scoringGrid.sort((a, b) => a.index - b.index);
+
   // 3. Final series scoring with the fully updated grid.
   const finalSeriesResults = scoreSeries(scoringGrid, seriesEntries, config, handicapScheme);
 
@@ -57,8 +63,6 @@ export function score(
       }
     }
   }
-
-  scoringGrid.sort((a, b) => a.index - b.index);
 
   return { scoredRaces: scoringGrid, seriesResults: finalSeriesResults };
 }
