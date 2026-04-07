@@ -16,7 +16,7 @@
   </div>
 </div>
 
-<form [formGroup]="form" (ngSubmit)="save()" (keydown)="onFormKeydown($event)">
+<form [formGroup]="form" (ngSubmit)="save()">
   <mat-form-field appearance="outline">
     <mat-label>Competitor</mat-label>
     <input #searchInput matInput [formControl]="searchControl" [matAutocomplete]="auto" placeholder="Class, Sail No or Helm">
@@ -42,7 +42,7 @@
   <mat-form-field appearance="outline">
     <mat-label>Finish Time</mat-label>
     <app-race-time-input formControlName="finishTime" [mode]="timeInputContext().mode"
-      [baseTime]="timeInputContext().baseTime">
+      [baseTime]="timeInputContext().baseTime" (keydown.enter)="save(); $event.preventDefault()">
     </app-race-time-input>
     @if (form.controls.finishTime.hasError('timeGreaterThan')) {
       <mat-error>Finish time must be after start time</mat-error>
@@ -57,13 +57,13 @@
 
   <mat-form-field appearance="outline">
     <mat-label>Laps</mat-label>
-    <input matInput type="number" formControlName="laps">
+    <input matInput type="number" formControlName="laps" (keydown.enter)="save(); $event.preventDefault()">
   </mat-form-field>
 
   <app-result-code-select formControlName="resultCode"></app-result-code-select>
 
   <div class="actions">
     <button matButton type="button" [disabled]="!hasSelectedCompetitor()" (click)="selectedCompetitor.set(undefined)">Clear</button>
-    <button matButton="filled" type="submit" [disabled]="!hasSelectedCompetitor() || form.invalid">Record</button>
+    <button matButton="filled" type="submit" [disabled]="!hasSelectedCompetitor()">Record</button>
   </div>
 </form>

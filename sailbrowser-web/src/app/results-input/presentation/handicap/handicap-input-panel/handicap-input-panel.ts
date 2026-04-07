@@ -68,7 +68,7 @@ export class HandicapInputPanel {
   private lastSelectedCompetitorId: string | undefined;
 
   readonly form = this.fb.group({
-    finishTime: this.fb.control<Date | null>(null, { updateOn: 'blur' }),
+    finishTime: this.fb.control<Date | null>(null),
     laps: this.fb.nonNullable.control(1, [Validators.required, Validators.min(1)]),
     resultCode: this.fb.nonNullable.control<ResultCode>('OK'),
   });
@@ -233,17 +233,6 @@ export class HandicapInputPanel {
 
   onCompetitorSelected(event: MatAutocompleteSelectedEvent): void {
     this.selectedCompetitor.set(event.option.value as RaceCompetitor);
-  }
-
-  onFormKeydown(ev: KeyboardEvent): void {
-    if (ev.key !== 'Enter') return;
-    const target = ev.target as HTMLElement | null;
-    if (!target) return;
-    const searchEl = this.searchInput()?.nativeElement;
-    if (searchEl && (target === searchEl || searchEl.contains(target))) return;
-    if (target.closest('mat-select') || target.closest('.mat-mdc-select-panel')) return;
-    ev.preventDefault();
-    void this.save();
   }
 
   private shouldAutoSaveBeforeSwitch(comp: RaceCompetitor, raw: {
