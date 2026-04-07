@@ -35,7 +35,7 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
     CenteredText,
     BoatEntrySummaryComponent,
     RaceTitlePipe
-],
+  ],
   template: `
     <app-toolbar title="Entries"></app-toolbar>
     <div class="content">
@@ -62,16 +62,18 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
         @if (raceFilter() === 'all') {
           <app-boat-entry-summary [competitors]="competitorStore.selectedCompetitors()" [races]="currentRaces.selectedRaces()"/>
         } @else {
-          <mat-list>
+          <mat-list class="dense-list">
             @for (comp of filtered(); track comp.id) {
               <mat-list-item>
-                <span matListItemTitle>{{ comp.boatClass }} {{ comp.sailNumber }}</span>
+                 <span matListItemTitle>
+                      <span class=gap>{{ comp.boatClass }} {{ comp.sailNumber }}</span>
+                        <span>{{ comp.helm }}</span>
+                  </span>
                 <span matListItemLine>
-                  <span class=gap>{{ comp.helmCrew }}</span>
-                    Handicap: {{displayHandicap(comp)}}
-                </span>
-                <span matListItemLine>
-                  @if (comp.resultCode !== 'NOT FINISHED') { Finished }
+                    <span class=gap>Handicap: {{displayHandicap(comp)}}</span>
+                  @if (comp.resultCode !== 'NOT FINISHED') { 
+                     Finished
+                  }
               </span>
                 <span matListItemMeta>
                   <button matIconButton (click)="delete(comp)">
@@ -111,7 +113,7 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
     }
 
     .gap {
-      margin-right: 10px;
+      margin-right: 12px;
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,

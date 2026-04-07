@@ -25,10 +25,10 @@
       </div>
 
       <div class="races-section">
-        @if (currentRacesStore.selectedRaces().length > 0) {
+        @if (currentRacesStore.todaysRaces().length > 0) {
           <h2 class="races-title">Races Today</h2>
           <mat-list>
-            @for (race of currentRacesStore.selectedRaces(); track race.id) {
+            @for (race of currentRacesStore.todaysRaces(); track race.id) {
               <mat-list-item>
                 <span matListItemTitle>{{ race.seriesName }} - Race {{ race.raceOfDay }}</span>
                 <span matListItemLine>{{ race.scheduledStart | date:'shortTime' }}</span>

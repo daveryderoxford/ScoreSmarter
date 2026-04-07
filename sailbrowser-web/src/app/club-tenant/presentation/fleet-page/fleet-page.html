@@ -3,7 +3,7 @@
 <div class="content">
 
   @if (cs.isLoading()) {
-    <app-loading-centered />
+  <app-loading-centered />
   } @else {
     <div class="search-bar">
       <mat-form-field class="search" appearance="outline">
@@ -17,35 +17,27 @@
       </a>
     </div>
 
-    <mat-list>
+    <mat-list class="dense-list">
       @for (fleet of filteredFleets(); track fleet.id) {
-        <mat-list-item [routerLink]="['edit', fleet.id]">
-          <span matListItemTitle>{{ getFleetName(fleet) }} ({{ fleet.type | titlecase }})</span>
-          @if (fleet.type === 'BoatClass') {
-            <ng-container>
-              <span matListItemLine>Handicap: {{ fleet.boatClassId }}</span>
-            </ng-container>
-          }
-          @if (fleet.type === 'HandicapRange') {
-            <ng-container>
-              <span matListItemLine>Range: {{ fleet.min }} - {{ fleet.max }} ({{ fleet.scheme }})</span>
-            </ng-container>
-          }
-          @if (fleet.type === 'Tag') {
-            <ng-container>
-              <span matListItemLine>Tag Value: {{ fleet.value }}</span>
-            </ng-container>
-          }
-          <span matListItemMeta>
-            <button matIconButton [routerLink]="['edit', fleet.id]" (click)="$event.stopPropagation()">
-              <mat-icon class="green">edit</mat-icon>
-            </button>
-            <button matIconButton (click)="deleteFleet(fleet); $event.stopPropagation()">
-              <mat-icon class="warning">delete</mat-icon>
-            </button>
-          </span>
-        </mat-list-item>
-        <mat-divider></mat-divider>
+      <mat-list-item [routerLink]="['edit', fleet.id]">
+        <span matListItemTitle>{{ getFleetName(fleet) }}</span>
+        @if (fleet.type === 'BoatClass') {
+          <span matListItemLine>Class: {{ fleet.boatClassId }}</span>
+        } @else if (fleet.type === 'HandicapRange') {
+          <span matListItemLine>Handicap range: {{ fleet.min }} to {{ fleet.max }} ({{ fleet.scheme }})</span>
+        } @else if (fleet.type === 'Tag') {
+          <span matListItemLine>Tag Value: {{ fleet.value }}</span>
+        }
+        <span matListItemMeta>
+          <button matIconButton [routerLink]="['edit', fleet.id]" (click)="$event.stopPropagation()">
+            <mat-icon class="green">edit</mat-icon>
+          </button>
+          <button matIconButton (click)="deleteFleet(fleet); $event.stopPropagation()">
+            <mat-icon class="warning">delete</mat-icon>
+          </button>
+        </span>
+      </mat-list-item>
+      <mat-divider></mat-divider>
       } @empty {
         <mat-list-item>
           <span matListItemTitle>No fleets found</span>

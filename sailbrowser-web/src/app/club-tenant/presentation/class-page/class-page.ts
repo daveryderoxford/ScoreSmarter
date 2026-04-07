@@ -29,7 +29,7 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
   styles: `
     @use "mixins" as mix;
 
-    @include mix.centered-column-page(".content", 600px);
+    @include mix.centered-column-page(".content", 450px);
 
   `
 })

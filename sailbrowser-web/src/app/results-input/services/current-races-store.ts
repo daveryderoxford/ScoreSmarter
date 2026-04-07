@@ -12,26 +12,55 @@ export class CurrentRaces {
   private readonly raceStore = inject(RaceCalendarStore);
 
   /** Races opened explicitly (e.g. historical race from results viewer), not part of "today" auto-selection. */
-  private readonly manuallyAddedRaceIds = signal<string[]>([]);
+  private readonly manuallyAddedRaceIds = signal<Set<string>>(new Set<string>());
+
+  /** Fast lookups for races currently present in calendar cache (`allRaces` ids are unique). */
+  private readonly allRacesById = computed(
+    () => new Map(this.raceStore.allRaces().map(race => [race.id, race] as const)),
+  );
+
+  /** Today's race ids from calendar (set for uniqueness + quick union). */
+  private readonly todaysRaceIds = computed(() => {
+    const ids = new Set<string>();
+    for (const race of this.allRacesById().values()) {
+      if (isScheduledToday(race)) ids.add(race.id);
+    }
+    return ids;
+  });
+
+  /** Stable ordered list of today's races (time/index), no manual extras. */
+  readonly todaysRaces = computed(() => {
+    return [...this.allRacesById().values()]
+      .filter(isScheduledToday)
+      .sort(sortRacesByTimeThenIndex);
+  });
 
   /** Today's races (from calendar) plus any manual extras still present in `allRaces`. */
   readonly selectedRaceIds = computed(() => {
-    const allRaces = this.raceStore.allRaces();
-    const todayIds = raceIdsScheduledToday(allRaces);
-    const manual = this.manuallyAddedRaceIds();
-    const selected: string[] = [...todayIds];
-    for (const id of manual) {
-      if (!allRaces.some(r => r.id === id)) continue;
-      if (todayIds.includes(id)) continue;
-      if (!selected.includes(id)) selected.push(id);
+    const racesById = this.allRacesById();
+    const todayIds = this.todaysRaceIds();
+    const selected = new Set<string>(todayIds);
+    for (const id of this.manuallyAddedRaceIds()) {
+      if (!racesById.has(id)) continue; // ignore stale ids
+      selected.add(id);
     }
-    return selected;
+    // Preserve deterministic order: today's races first, then manual extras by race time/index.
+    const orderedToday = this.todaysRaces().map(race => race.id);
+    const manualExtras = [...selected]
+      .filter(id => !todayIds.has(id))
+      .map(id => racesById.get(id))
+      .filter((race): race is Race => race != null)
+      .sort(sortRacesByTimeThenIndex)
+      .map(race => race.id);
+
+    return [...orderedToday, ...manualExtras];
   });
 
   readonly selectedRaces = computed(() => {
-    const races = this.raceStore.allRaces();
-    const selectedIds = this.selectedRaceIds();
-    return races.filter(race => selectedIds.includes(race.id));
+    const racesById = this.allRacesById();
+    return this.selectedRaceIds()
+      .map(id => racesById.get(id))
+      .filter((race): race is Race => race != null);
   });
 
   readonly selectedSeries = computed(() => {
@@ -42,15 +71,24 @@ export class CurrentRaces {
   });
 
   addRaceId = (raceId: string) =>
-    this.manuallyAddedRaceIds.update(ids => (ids.includes(raceId) ? ids : [...ids, raceId]));
+    this.manuallyAddedRaceIds.update(ids => {
+      const next = new Set(ids);
+      next.add(raceId);
+      return next;
+    });
 
   removeRaceId = (raceId: string) =>
-    this.manuallyAddedRaceIds.update(ids => ids.filter(id => id !== raceId));
+    this.manuallyAddedRaceIds.update(ids => {
+      const next = new Set(ids);
+      next.delete(raceId);
+      return next;
+    });
 }
 
-function raceIdsScheduledToday(allRaces: Race[]): string[] {
-  const todayStr = new Date().toDateString();
-  return allRaces
-    .filter(race => new Date(race.scheduledStart).toDateString() === todayStr)
-    .map(race => race.id);
+function isScheduledToday(race: Race): boolean {
+  return new Date(race.scheduledStart).toDateString() === new Date().toDateString();
+}
+
+function sortRacesByTimeThenIndex(a: Race, b: Race): number {
+  return a.scheduledStart.getTime() - b.scheduledStart.getTime() || a.index - b.index;
 }

@@ -17,7 +17,7 @@
       </a>
     </div>
 
-    <mat-list>
+    <mat-list class="dense-list">
       @for (boatClass of filteredClasses(); track boatClass.id) {
         <mat-list-item [routerLink]="['edit', boatClass.id]">
           <span matListItemTitle>{{ boatClass.name }}</span>

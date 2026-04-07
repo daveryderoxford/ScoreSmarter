@@ -3,7 +3,6 @@ import { FirebaseError } from '@angular/fire/app';
 import {
   Auth,
   FacebookAuthProvider, GoogleAuthProvider, UserCredential,
-  getRedirectResult,
   signInWithEmailAndPassword, signInWithPopup, signInWithRedirect
 } from '@angular/fire/auth';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -54,13 +53,7 @@ export class LoginComponent {
 
    returnUrl = input('/'); //Route parameter
 
-   constructor() {
-      getRedirectResult(this.afAuth).then((result) => {
-         if (result) {
-            this._handleSignInSuccess();
-         }
-      }).catch((err: unknown) => this._handleSigninError(err));
-   }
+   /** OAuth redirect completion runs in `ClubTenant.initialize()` (before this component exists). */
 
   async loginFormSubmit() {
     if (this.loginForm.valid) {
@@ -87,11 +80,17 @@ export class LoginComponent {
           break;
 
         case "Google":
-          await this._thirdPartySignIn(googleAuthProvider);
+          userDetails = await this._thirdPartySignIn(googleAuthProvider);
+          if (userDetails) {
+            this._handleSignInSuccess();
+          }
           break;
 
         case "Facebook":
-          await this._thirdPartySignIn(facebookAuthProvider);
+          userDetails = await this._thirdPartySignIn(facebookAuthProvider);
+          if (userDetails) {
+            this._handleSignInSuccess();
+          }
           break;
       }
 

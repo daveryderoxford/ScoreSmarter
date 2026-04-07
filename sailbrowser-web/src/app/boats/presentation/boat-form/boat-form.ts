@@ -18,6 +18,7 @@ import {
   HANDICAP_SCHEME_METADATA,
 } from 'app/scoring/model/handicap-scheme-metadata';
 import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inputs';
+import { startWith } from 'rxjs';
 
 @Component({
   selector: 'app-boat-form',
@@ -106,10 +107,15 @@ export class BoatForm {
         this.form.patchValue(patch as object);
       }
     });
+
+    this.form.controls['isClub'].valueChanges
+      .pipe(startWith(this.form.controls['isClub'].value))
+      .subscribe(isClub => this.applyClubBoatState(!!isClub));
   }
 
   submit() {
     const v = this.form.getRawValue() as Record<string, unknown>;
+    const helm = ((v['helm'] as string | undefined) ?? '').trim();
     const boatHandicaps: Handicap[] = this.boatLevelSchemes().map(scheme => {
       const meta = getHandicapSchemeMetadata(scheme);
       const raw = v[handicapControlName(scheme)];
@@ -124,7 +130,7 @@ export class BoatForm {
       boatClass: (v['boatClass'] as string) ?? '',
       sailNumber: Number(v['sailNumber']),
       name: (v['name'] as string) ?? '',
-      helm: (v['helm'] as string) ?? '',
+      helm: helm || '',
       crew: (v['crew'] as string) ?? '',
       isClub: !!v['isClub'],
       handicaps: boatHandicaps.length ? boatHandicaps : undefined,
@@ -135,5 +141,24 @@ export class BoatForm {
 
   public canDeactivate(): boolean {
     return !this.form.dirty;
+  }
+
+  private applyClubBoatState(isClub: boolean): void {
+    const helmControl = this.form.controls['helm'];
+    const crewControl = this.form.controls['crew'];
+
+    if (isClub) {
+      helmControl.setValue('', { emitEvent: false });
+      crewControl.setValue('', { emitEvent: false });
+      helmControl.clearValidators();
+      helmControl.disable({ emitEvent: false });
+      crewControl.disable({ emitEvent: false });
+    } else {
+      helmControl.setValidators([Validators.required]);
+      helmControl.enable({ emitEvent: false });
+      crewControl.enable({ emitEvent: false });
+    }
+    helmControl.updateValueAndValidity({ emitEvent: false });
+    crewControl.updateValueAndValidity({ emitEvent: false });
   }
 }
