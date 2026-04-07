@@ -17,27 +17,32 @@
 </div>
 
 <form [formGroup]="form" (ngSubmit)="save()">
-  <mat-form-field appearance="outline">
-    <mat-label>Competitor</mat-label>
-    <input #searchInput matInput [formControl]="searchControl" [matAutocomplete]="auto" placeholder="Class, Sail No or Helm">
-    <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn"
-      (optionSelected)="onCompetitorSelected($event)">
-      @for (group of autoCompleteGroups(); track group.name) {
-        <mat-optgroup [label]="group.name">
-          @for (comp of group.competitors; track comp.id) {
-            <mat-option [value]="comp">
-              {{comp.boatClass}} {{comp.sailNumber}} - {{comp.helm}}
-            </mat-option>
-          }
-        </mat-optgroup>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <mat-form-field appearance="outline" style="flex: 1;">
+      <mat-label>Competitor</mat-label>
+      <input #searchInput matInput [formControl]="searchControl" [matAutocomplete]="auto" placeholder="Class, Sail No or Helm">
+      <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn"
+        (optionSelected)="onCompetitorSelected($event)">
+        @for (group of autoCompleteGroups(); track group.name) {
+          <mat-optgroup [label]="group.name">
+            @for (comp of group.competitors; track comp.id) {
+              <mat-option [value]="comp">
+                {{comp.boatClass}} {{comp.sailNumber}} - {{comp.helm}}
+              </mat-option>
+            }
+          </mat-optgroup>
+        }
+      </mat-autocomplete>
+      @if (searchControl.value) {
+        <button mat-icon-button matSuffix type="button" tabindex="-1" (click)="selectedCompetitor.set(undefined)" aria-label="Clear search">
+          <mat-icon>close</mat-icon>
+        </button>
       }
-    </mat-autocomplete>
-    @if (searchControl.value) {
-      <button mat-icon-button matSuffix type="button" tabindex="-1" (click)="selectedCompetitor.set(undefined)" aria-label="Clear search">
-        <mat-icon>close</mat-icon>
-      </button>
-    }
-  </mat-form-field>
+    </mat-form-field>
+    <button mat-icon-button type="button" aria-label="Add entry" style="margin-top: -12px;">
+      <mat-icon>add</mat-icon>
+    </button>
+  </div>
 
   <mat-form-field appearance="outline">
     <mat-label>Finish Time</mat-label>
@@ -62,7 +67,9 @@
 
   <app-result-code-select formControlName="resultCode"></app-result-code-select>
 
-  <div class="actions">
+  <div class="actions" style="display: flex; align-items: center; gap: 8px; justify-content: flex-start;">
+    <button matButton type="button" [disabled]="!hasSelectedCompetitor()">Detail</button>
+    <span style="flex: 1;"></span>
     <button matButton type="button" [disabled]="!hasSelectedCompetitor()" (click)="selectedCompetitor.set(undefined)">Clear</button>
     <button matButton="filled" type="submit" [disabled]="!hasSelectedCompetitor()">Record</button>
   </div>
