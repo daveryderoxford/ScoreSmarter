@@ -21,14 +21,16 @@ interface BoatEntry {
    selector: 'app-boat-entry-summary',
    imports: [MatListModule],
    template: `
-    <mat-list>
+    <mat-list class="dense-list">
       @for (boat of boatEntries(); track boat.boatId) {
          <mat-list-item>
-            <h3 matListItemTitle>{{ boat.boatClass }} {{ boat.sailNumber }}</h3>
-            <span matListItemLine>{{ boat.helm }}</span>
+            <span matListItemTitle>
+              <span class=gap>{{ boat.boatClass }} {{ boat.sailNumber }}</span>
+               <span>{{ boat.helm }}</span>
+            </span>
             <span matListItemLine>
          @for (summary of boat.seriesSummaries; track summary.seriesName) {
-            <span class=gap >{{ summary.seriesName}} {{ summary.raceCount }} race(s)</span>
+            <span class=gap>{{ summary.seriesName}} {{ summary.raceCount }} race(s)</span>
          }
       </span>
       </mat-list-item>
@@ -37,7 +39,7 @@ interface BoatEntry {
   `,
    styles: [`
       .gap {
-         margin-right: 10px;
+         margin-right: 12px;
       }
   `],
    changeDetection: ChangeDetectionStrategy.OnPush,

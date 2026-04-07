@@ -15,7 +15,10 @@ import { ExtendedRaceCompetitor, manualRaceTableSort } from 'app/results-input/s
   imports: [MatTableModule, DatePipe, DurationPipe, MatSortModule],
   styleUrl: './handicap-results-table.scss',
   template: `
-    <table mat-table matSort [dataSource]="tabledata()"
+    <table mat-table matSort
+    [matSortActive]="sortState().active"
+    [matSortDirection]="sortState().direction"
+    [dataSource]="tabledata()"
     (matSortChange)="this.sortState.set($event)" class="mat-elevation-z0">
 
       <ng-container matColumnDef="position">

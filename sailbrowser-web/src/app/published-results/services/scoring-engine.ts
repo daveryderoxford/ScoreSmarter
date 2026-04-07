@@ -6,14 +6,15 @@ import { RaceCompetitor, SeriesEntry, SeriesEntryStore } from 'app/results-input
 import { RaceCompetitorStore } from 'app/results-input/services/race-competitor-store';
 import { score } from 'app/scoring';
 import { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
-import { isInFleet } from 'app/scoring/services/fleet-scoring';
 import { getHandicapValue } from 'app/scoring/model/handicap';
+import { isInFleet } from 'app/scoring/services/fleet-scoring';
 import { PublishedRace } from '../model/published-race';
 import { PublishedSeason, SeriesInfo } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
 import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH } from './published-results-store';
 
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
+import { competitorsForConfigRace, isRaceScorable } from './scoring-publish-filters';
 
 @Injectable({ providedIn: 'root' })
 export class ScoringEngine {
@@ -131,7 +132,6 @@ export class ScoringEngine {
     const seriesEntries = await this.seriesEntryStore.getSeriesEntries(seriesId);
 
     // Include races that have *any* competitor row in the race-results collection.
-    // This includes the case where everyone is still NOT_FINISHED (we still want feedback/visibility).
     const racesWithCompetitorRows = new Set(allSeriesCompetitors.map(c => c.raceId));
     const allRaces = candidateRaces.filter(r => racesWithCompetitorRows.has(r.id) || additionalRaceIds.includes(r.id));
 
@@ -144,12 +144,18 @@ export class ScoringEngine {
       const publishedSeriesId = isPrimary ? series.id : `${series.id}_${config.id}`;
       const publishedSeriesName = isPrimary ? series.name : `${series.name} - ${config.name}`;
 
-      await this.rescoreAllRacesForConfig(batch, seasonUpdates, series, config, publishedSeriesId, publishedSeriesName, allRaces, allSeriesCompetitors, seriesEntries);
+      const scorableRaces = allRaces.filter(race =>
+        isRaceScorable(race, config, allSeriesCompetitors, seriesEntries),
+      );
+
+      await this.rescoreAllRacesForConfig(batch, seasonUpdates, series, config, publishedSeriesId, publishedSeriesName, scorableRaces, allSeriesCompetitors, seriesEntries);
     }
 
     this.cleanupStaleSeries(batch, seasonUpdates, series, configsToScore);
 
-    // 4. Clear dirty flags for all races we just published
+    // 4. Clear dirty for every race in this publish pass (including all–NOT FINISHED), so the series
+    // does not stay perpetually "needs publish" for those races. New edits (e.g. fixing a result or
+    // moving someone back to NOT FINISHED to unscore) will set dirty again via the results workflow.
     for (const race of allRaces) {
       if (race.dirty) {
         const raceDoc = this.tenant.docRef<Race>('races', race.id);
@@ -171,11 +177,17 @@ export class ScoringEngine {
     config: ScoringConfiguration,
     publishedSeriesId: string,
     publishedSeriesName: string,
-    allRaces: Race[],
+    racesToScore: Race[],
     allSeriesCompetitors: RaceCompetitor[],
     seriesEntries: SeriesEntry[]
   ): Promise<void> {
-    if (allRaces.length === 0) return;
+    if (racesToScore.length === 0) {
+      this.batchSavePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, []);
+      const existingRaces = await this.readPublishedRaces(publishedSeriesId);
+      this.batchSavePublishedRaces(batch, publishedSeriesId, [], existingRaces);
+      await this.prepareSeasonUpdate(seasonUpdates, series, publishedSeriesId, publishedSeriesName, config.fleet.id, 0);
+      return;
+    }
 
     const handicapScheme = config.handicapScheme;
 
@@ -186,18 +198,10 @@ export class ScoringEngine {
     let existingPublishedRaces: PublishedRace[] = [];
     let currentSeriesResults: any[] = [];
 
-    for (let i = 0; i < allRaces.length; i++) {
-      const race = allRaces[i];
+    for (let i = 0; i < racesToScore.length; i++) {
+      const race = racesToScore[i];
 
-      const filteredCompetitors = allSeriesCompetitors.filter(c => {
-        if (c.raceId !== race.id) return false;
-        const entry = seriesEntries.find(e => e.id === c.seriesEntryId);
-        if (!entry) return false;
-        return (
-          isInFleet(entry, config.fleet) &&
-          getHandicapValue(c.handicaps, handicapScheme) != null
-        );
-      });
+      const filteredCompetitors = competitorsForConfigRace(race, config, allSeriesCompetitors, seriesEntries);
 
       const raceCount = i + 1;
 
@@ -218,7 +222,7 @@ export class ScoringEngine {
     this.batchSavePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, currentSeriesResults);
     const existingRaces = await this.readPublishedRaces(publishedSeriesId);
     this.batchSavePublishedRaces(batch, publishedSeriesId, existingPublishedRaces, existingRaces);
-    await this.prepareSeasonUpdate(seasonUpdates, series, publishedSeriesId, publishedSeriesName, config.fleet.id, allRaces.length);
+    await this.prepareSeasonUpdate(seasonUpdates, series, publishedSeriesId, publishedSeriesName, config.fleet.id, racesToScore.length);
   }
 
   private async readPublishedRaces(publishedSeriesId: string): Promise<PublishedRace[]> {

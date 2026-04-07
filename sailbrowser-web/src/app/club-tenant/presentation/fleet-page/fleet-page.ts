@@ -30,7 +30,7 @@ import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
   styles: `
     @use "mixins" as mix;
 
-    @include mix.centered-column-page(".content", 600px);
+    @include mix.centered-column-page(".content", 450px);
 
     .system-fleet {
       cursor: default;

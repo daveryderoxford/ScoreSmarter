@@ -125,15 +125,20 @@
       Enter sail numbers in Finish Order<br>
       Press Enter to select
      </h3>
-    <mat-form-field appearance="outline" class="search-field">
-      <mat-label>Next sail number or helm</mat-label>
-      <input
-        #entrySearch
-        matInput
-        [formControl]="searchControl"
-        (keydown)="onSearchKeydown($event)"
-        autocomplete="off" />
-    </mat-form-field>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <mat-form-field appearance="outline" class="search-field" style="flex: 1;">
+        <mat-label>Next sail number or helm</mat-label>
+        <input
+          #entrySearch
+          matInput
+          [formControl]="searchControl"
+          (keydown)="onSearchKeydown($event)"
+          autocomplete="off" />
+      </mat-form-field>
+      <button mat-icon-button type="button" aria-label="Add entry" style="margin-top: -12px;">
+        <mat-icon>add</mat-icon>
+      </button>
+    </div>
 
     @if (previewCompetitor(); as p) {
       <div class="preview">
@@ -146,16 +151,16 @@
     }
 
     <div class="center-actions">
+      <button mat-button type="button" [disabled]="!previewCompetitor()">Detail</button>
+      <button mat-button type="button" (click)="undoLast()">Undo</button>
       <button
-        mat-flat-button
-        color="primary"
+        matButton="filled"
         class="commit-btn"
         type="button"
         [disabled]="!canCommitEnter()"
         (click)="commitFromEntry()">
         Add to order (Enter)
       </button>
-      <button mat-button type="button" (click)="undoLast()">Undo last</button>
     </div>
   </div>
 </div>

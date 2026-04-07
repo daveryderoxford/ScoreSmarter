@@ -23,7 +23,7 @@
   @if (bs.isLoading()) {
     <app-loading-centered />
   } @else {
-  <mat-list>
+  <mat-list class="dense-list">
     @for (boat of filteredBoats(); track boat.id) {
     <mat-list-item>
       @if (boat.isClub) {

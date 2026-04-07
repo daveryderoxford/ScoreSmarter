@@ -50,7 +50,7 @@ import { getFleetName } from 'app/club-tenant/model/fleet';
       @if (rcs.isLoading()) {
         <app-loading-centered/>
       } @else {
-        <mat-list class="content">
+        <mat-list class="content dense-list">
             @for (series of filteredSeries(); track series.id) {
             <mat-list-item>
               <span matListItemTitle>{{series.name}} ({{this.getSeasonName(series.seasonId)}})</span>

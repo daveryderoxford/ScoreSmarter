@@ -1,4 +1,6 @@
 import { Injectable, inject } from '@angular/core';
+import { Auth, getRedirectResult } from '@angular/fire/auth';
+import { Router } from '@angular/router';
 import { ClubStore } from './club-store';
 
 @Injectable({ 
@@ -10,12 +12,14 @@ export class ClubTenant {
   get clubId() { return this._clubId; }
 
   private clubStore = inject(ClubStore);
+  private auth = inject(Auth);
+  private router = inject(Router);
 
   /** Called when the application initialises to
    * handle the extracting the clubId from the subdomain and
    * valifdating it. 
    * 
-   * This is called before the Angualar router is avaliable
+   * Runs during bootstrap before routed components exist, so OAuth redirect must be finished here (not in LoginComponent).
    */
   async initialize(): Promise<void> {
     console.log('ClubContextService: Initializing...');
@@ -41,6 +45,20 @@ export class ClubTenant {
       console.log('ClubContextService: Resolved club ID from subdomain:', this._clubId);
     }
 
+    // OAuth redirect: complete handoff before anything else. LoginComponent is not created yet,
+    // and a later full-page redirect (e.g. club init failure → /clubs) would skip the handoff on localhost.
+    try {
+      const cred = await getRedirectResult(this.auth);
+      if (cred) {
+        const returnUrl =
+          new URLSearchParams(window.location.search).get('returnUrl') ??
+          '/';
+        await this.router.navigateByUrl(returnUrl);
+      }
+    } catch (e: unknown) {
+      console.error('ClubTenant: getRedirectResult failed', e);
+    }
+
     // Read club data and verify that the clubid corresponds
     // If read fails redirect to home site
     try {
@@ -59,6 +77,13 @@ export class ClubTenant {
         originalError: e,
         clubId: this._clubId
       });
+      if (isTrustedTestDomain) {
+        console.warn(
+          'ClubTenant: Club init failed on dev/trusted host; not redirecting offsite. Check Firestore rules and clubs/',
+          this._clubId,
+        );
+        return;
+      }
       window.location.href = 'https://scoresmarter.app/clubs';
     }
   }

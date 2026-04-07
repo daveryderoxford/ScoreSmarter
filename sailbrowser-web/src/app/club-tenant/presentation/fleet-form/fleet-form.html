@@ -30,15 +30,6 @@
 
   @if (form.get('type')?.value === 'HandicapRange') {
 
-        <mat-form-field style="width: 100%;">
-          <mat-label>Handicap scheme</mat-label>
-          <mat-select formControlName="scheme">
-            @for (h of handicapSchemes; track h) {
-              <mat-option [value]="h">{{h}}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
     <div style="display: flex; gap: 1rem;">
       <mat-form-field style="flex: 1;">
         <mat-label>Min Handicap</mat-label>
@@ -49,6 +40,15 @@
         <input matInput type="number" formControlName="max">
       </mat-form-field>
     </div>
+
+      <mat-form-field style="width: 100%;">
+        <mat-label>In handicap scheme</mat-label>
+        <mat-select formControlName="scheme">
+          @for (h of handicapSchemes; track h) {
+          <mat-option [value]="h">{{h}}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
   }
 
   @if (form.get('type')?.value === 'Tag') {

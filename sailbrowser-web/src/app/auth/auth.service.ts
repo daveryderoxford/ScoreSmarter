@@ -1,7 +1,6 @@
-import { Injectable, computed, inject } from '@angular/core';
+import { computed, inject, Injectable } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Auth, authState, getRedirectResult, signOut, UserCredential } from '@angular/fire/auth';
-import { Router } from '@angular/router';
+import { Auth, authState, signOut } from '@angular/fire/auth';
 import { ClubTenant } from 'app/club-tenant';
 import { from, map, of, switchMap } from 'rxjs';
 
