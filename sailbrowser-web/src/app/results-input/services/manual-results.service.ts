@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { ClubStore } from 'app/club-tenant';
+import type { RaceStatus } from 'app/race-calender/model/race-status';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { differenceInSeconds } from 'date-fns';
@@ -90,6 +91,14 @@ export class ManualResultsService {
   private readonly raceStore = inject(RaceCalendarStore);
   private readonly seriesEntryStore = inject(SeriesEntryStore);
   private readonly clubStore = inject(ClubStore);
+
+  private statusFromResultCodes(codes: ResultCode[]): RaceStatus | undefined {
+    if (codes.length === 0) return undefined;
+    const anyStarted = codes.some(code => code !== 'NOT FINISHED');
+    if (!anyStarted) return undefined;
+    const allCompleted = codes.every(code => code !== 'NOT FINISHED');
+    return allCompleted ? 'Completed' : 'In progress';
+  }
 
   /**
    * Calculates derived statistics for a result entry without persisting them.
@@ -185,6 +194,13 @@ export class ManualResultsService {
     }
 
     await this.competitorStore.updateResult(competitor.id, update);
+
+    const raceCompetitors = this.competitorStore.selectedCompetitors().filter(c => c.raceId === race.id);
+    const nextCodes = raceCompetitors.map(c => c.id === competitor.id ? resultCode : c.resultCode);
+    const nextStatus = this.statusFromResultCodes(nextCodes);
+    if (nextStatus && race.status !== nextStatus) {
+      await this.raceStore.updateRace(race.id, { status: nextStatus });
+    }
   }
 
   /**
@@ -251,7 +267,17 @@ export class ManualResultsService {
       }
     }
 
+    const nextCodes: ResultCode[] = competitors.map(comp => {
+      const inProcessed = processedSet.has(comp.id);
+      const row = rowState.get(comp.id);
+      return inProcessed && row ? row.resultCode : 'NOT FINISHED';
+    });
+    const nextStatus = this.statusFromResultCodes(nextCodes);
+
     if (updates.length === 0) {
+      if (nextStatus && race.status !== nextStatus) {
+        await this.raceStore.updateRace(race.id, { status: nextStatus });
+      }
       return;
     }
 
@@ -261,6 +287,10 @@ export class ManualResultsService {
 
     for (const { id, patch } of updates) {
       await this.competitorStore.updateResult(id, patch as Partial<RaceCompetitor>);
+    }
+
+    if (nextStatus && race.status !== nextStatus) {
+      await this.raceStore.updateRace(race.id, { status: nextStatus });
     }
   }
 }

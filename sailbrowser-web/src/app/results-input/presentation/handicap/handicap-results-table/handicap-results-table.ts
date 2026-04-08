@@ -2,7 +2,6 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, output } from '@angular/core';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
-import { RaceType } from 'app/race-calender';
 import { ExtendedRaceCompetitor, manualRaceTableSort } from 'app/results-input/services/manual-results.service';
 import { getHandicapValue } from 'app/scoring/model/handicap';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
@@ -19,7 +18,7 @@ import { RaceCompetitor } from '../../../model/race-competitor';
 })
 export class HandicapResultsTable {
   competitors = input.required<RaceCompetitor[]>();
-  handicapScheme = input<HandicapScheme>('PY');
+  handicapScheme = input.required<HandicapScheme>();
   /** Highlight row matching handicap input panel selection (handicap results entry). */
   selectedCompetitorId = input<string | null>(null);
 
@@ -29,11 +28,8 @@ export class HandicapResultsTable {
     ({ active: 'correctedTime', direction: 'asc' })
   );
 
-  private baseColumns = ['boatClass', 'sailNumber', 'helm', 'finishTime', 'elapsedTime'];
-
-  displayedColumns = computed(() => 
-    ([...this.baseColumns, 'correctedTime', 'averageLapTime'])
-);  
+  displayedColumns = 
+    ['boatClass', 'sailNumber', 'helm', 'finishTime', 'elapsedTime', 'correctedTime', 'averageLapTime'];  
 
   maxLaps = computed(() => this.competitors().reduce((max, comp) => {
     return (comp.numLaps > max) ? comp.numLaps : max;

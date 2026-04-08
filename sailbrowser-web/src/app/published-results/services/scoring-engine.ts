@@ -16,6 +16,13 @@ import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH } from './published-resul
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
 import { competitorsForConfigRace, isRaceScorable } from './scoring-publish-filters';
 
+const SCORING_CANDIDATE_STATUSES = new Set<Race['status']>([
+  'In progress',
+  'Completed',
+  'Published',
+  'Verified',
+]);
+
 @Injectable({ providedIn: 'root' })
 export class ScoringEngine {
   private firestore = inject(Firestore);
@@ -96,21 +103,17 @@ export class ScoringEngine {
       throw new Error('Series not found');
     }
 
-    // 1. Fetch all races for this series.
-    //    We do *not* rely on race status being correct (Published/Verified/Completed),
-    //    because the manual results workflow can mark races dirty and publish immediately.
-    //    Instead we include races that have results-entered competitor rows for that race id.
-    //    Constraint: never include cancelled races.
+    // 1. Races to score are chosen by race status. Manual results entry sets status to
+    //    In progress / Completed as competitors are recorded, so we do not also require
+    //    "has competitor rows" or other heuristics here.
     const racesForSeries = await this.raceCalendarStore.getSeriesRacesById(seriesId);
 
-    // We'll filter further after we fetch competitors (so we can detect "results entered").
-    let candidateRaces = racesForSeries.filter(r => r.status !== 'Canceled');
+    let candidateRaces = racesForSeries.filter(r => SCORING_CANDIDATE_STATUSES.has(r.status));
 
-    // Ensure the race being published is included even if it doesn't appear in the initial candidate list.
-    // (But still never include cancelled races.)
+    // Ensure explicitly published race ids are included when they match the same status rules.
     for (const raceId of additionalRaceIds) {
       const race = racesForSeries.find(r => r.id === raceId);
-      if (race && race.status !== 'Canceled' && !candidateRaces.some(r => r.id === raceId)) {
+      if (race && SCORING_CANDIDATE_STATUSES.has(race.status) && !candidateRaces.some(r => r.id === raceId)) {
         candidateRaces = [...candidateRaces, race];
       }
     }
@@ -127,13 +130,11 @@ export class ScoringEngine {
       return timeA - timeB;
     });
 
-    // 3. Fetch all competitors and entries
+    // 3. Fetch all competitors and entries (needed for scoring and per-fleet filters).
     const allSeriesCompetitors = await this.rcs.getSeriesCompetitors(seriesId);
     const seriesEntries = await this.seriesEntryStore.getSeriesEntries(seriesId);
 
-    // Include races that have *any* competitor row in the race-results collection.
-    const racesWithCompetitorRows = new Set(allSeriesCompetitors.map(c => c.raceId));
-    const allRaces = candidateRaces.filter(r => racesWithCompetitorRows.has(r.id) || additionalRaceIds.includes(r.id));
+    const allRaces = candidateRaces;
 
     console.log(`ScoringEngine: Series ${seriesId} - Races: ${allRaces.length}, Competitors: ${allSeriesCompetitors.length}, Entries: ${seriesEntries.length}`);
 
@@ -153,7 +154,7 @@ export class ScoringEngine {
 
     this.cleanupStaleSeries(batch, seasonUpdates, series, configsToScore);
 
-    // 4. Clear dirty for every race in this publish pass (including all–NOT FINISHED), so the series
+    // 4. Clear dirty for every race in this publish pass, so the series
     // does not stay perpetually "needs publish" for those races. New edits (e.g. fixing a result or
     // moving someone back to NOT FINISHED to unscore) will set dirty again via the results workflow.
     for (const race of allRaces) {

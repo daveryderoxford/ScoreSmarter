@@ -58,10 +58,10 @@ function minimalRace(id: string): Race {
   };
 }
 
-describe('scoring-publish-filters (all–NOT FINISHED race exclusion)', () => {
+describe('scoring-publish-filters', () => {
   const race1 = minimalRace('race-1');
 
-  it('returns false when every in-fleet competitor is NOT FINISHED', () => {
+  it('All fleet: scorable whenever there are in-fleet rows (race status is enforced in ScoringEngine)', () => {
     const entries = [entry({ id: 'e1' }), entry({ id: 'e2', sailNumber: 101 })];
     const comps = [
       new RaceCompetitor({
@@ -82,7 +82,7 @@ describe('scoring-publish-filters (all–NOT FINISHED race exclusion)', () => {
       }),
     ];
 
-    expect(isRaceScorable(race1, pyConfig, comps, entries)).toBe(false);
+    expect(isRaceScorable(race1, pyConfig, comps, entries)).toBe(true);
   });
 
   it('returns true when at least one competitor has a non–NOT FINISHED code', () => {
