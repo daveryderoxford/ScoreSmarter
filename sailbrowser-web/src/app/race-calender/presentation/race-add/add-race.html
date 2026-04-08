@@ -10,9 +10,14 @@
 
       <mat-form-field>
         <mat-label>First race date</mat-label>
-        <input matInput [matDatepicker]="startPicker" formControlName="scheduledStart">
+        <input matInput [matDatepicker]="startPicker" formControlName="firstRaceDate">
         <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
         <mat-datepicker #startPicker></mat-datepicker>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>First scheduled start time</mat-label>
+        <input matInput type="time" step="1" formControlName="firstStartTime">
       </mat-form-field>
 
       <mat-form-field>
@@ -33,10 +38,11 @@
 
       @if (schedForm.value.repeatInterval?.increment) {
         <mat-form-field>
-          <mat-label>Number of repeats</mat-label>
-          <input matInput type="number" inputmode="numeric" pattern="[0-9]*" formControlName="repeatNumber">
-          <mat-error>Number of repeats required</mat-error>
-          <mat-hint>Number of days to </mat-hint>
+          <mat-label>Last race date</mat-label>
+          <input matInput [matDatepicker]="endPicker" formControlName="lastRaceDate">
+          <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
+          <mat-datepicker #endPicker></mat-datepicker>
+          <mat-hint>Races are generated inclusively from first to last date</mat-hint>
         </mat-form-field>
       }
 

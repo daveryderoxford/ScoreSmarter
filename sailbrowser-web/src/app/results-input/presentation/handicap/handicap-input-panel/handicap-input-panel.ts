@@ -100,9 +100,13 @@ export class HandicapInputPanel {
   readonly timeInputContext = computed(() => {
     const race = this.race();
     const mode = race.timeInputMode || 'tod';
-    const baseTime = race.actualStart || new Date();
+    const baseTime = this.selectedCompetitor()?.startTime || race.actualStart || new Date();
     return { mode, baseTime: new Date(baseTime) };
   });
+
+  readonly displayedStartTime = computed(() =>
+    this.selectedCompetitor()?.startTime || this.race().actualStart
+  );
 
   readonly enteredFinishTime = toSignal(
     this.form.controls.finishTime.valueChanges.pipe(startWith(this.form.controls.finishTime.value)),
@@ -115,10 +119,11 @@ export class HandicapInputPanel {
   );
 
   readonly calculatedStats = computed(() => {
+    const startTime = this.selectedCompetitor()?.startTime || this.race().actualStart;
     const stats = this.manualResultsService.calculateStats(
       this.enteredFinishTime(),
       this.enteredLapsValue() || 1,
-      this.race()
+      startTime
     );
     if (!stats) return null;
     const isSuspicious = stats.avgLapTime < 120 || stats.avgLapTime > 3600;
@@ -277,7 +282,7 @@ export class HandicapInputPanel {
     });
     const result = await firstValueFrom(dialog.afterClosed());
     if (result) {
-      await this.manualResultsService.setStartTime(race.id, result.startTime, result.mode);
+      await this.manualResultsService.setStartTime(race.id, result.starts, result.mode);
     }
     return result;
   }

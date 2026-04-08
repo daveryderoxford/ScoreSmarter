@@ -1,11 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { Race, RaceCalendarStore } from 'app/race-calender';
+import { ClubStore } from 'app/club-tenant';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { differenceInSeconds } from 'date-fns';
 import { deleteField } from 'firebase/firestore';
 import { RaceCompetitorStore, sortEntries } from './race-competitor-store';
 import { RaceCompetitor } from '../model/race-competitor';
+import { SeriesEntryStore } from './series-entry-store';
+import { resolveStartTimeForEntry } from './race-start-resolver';
+import type { RaceStart } from 'app/race-calender/model/race-start';
 
 export class ExtendedRaceCompetitor extends RaceCompetitor {
   correctedTime?: number;
@@ -84,18 +88,20 @@ export type TimeRecordingMode = 'tod' | 'elapsed';
 export class ManualResultsService {
   private readonly competitorStore = inject(RaceCompetitorStore);
   private readonly raceStore = inject(RaceCalendarStore);
+  private readonly seriesEntryStore = inject(SeriesEntryStore);
+  private readonly clubStore = inject(ClubStore);
 
   /**
    * Calculates derived statistics for a result entry without persisting them.
    * This is useful for providing immediate feedback to the user in the UI.
    * @returns CalculatedStats or null if inputs are invalid.
    */
-  calculateStats(finishTime: Date | null, laps: number, race: Race | undefined): CalculatedStats | null {
-    if (!finishTime || !race?.actualStart || laps <= 0) {
+  calculateStats(finishTime: Date | null, laps: number, startTime: Date | undefined): CalculatedStats | null {
+    if (!finishTime || !startTime || laps <= 0) {
       return null;
     }
 
-    const elapsedSeconds = differenceInSeconds(finishTime, race.actualStart);
+    const elapsedSeconds = differenceInSeconds(finishTime, startTime);
 
     if (elapsedSeconds <= 0) {
       return null;
@@ -106,27 +112,34 @@ export class ManualResultsService {
     return { elapsedSeconds, avgLapTime };
   }
 
-  /** Set Start time 
+  /** Set start configuration
    * Sets the race start time, updating any results 
    * where the start time has already been set. 
   */
-  async setStartTime(raceId: string, startTime: Date, mode: TimeRecordingMode) {
+  async setStartTime(raceId: string, starts: RaceStart[], mode: TimeRecordingMode) {
+    const primaryStart = starts[0]?.timeOfDay;
 
     await this.raceStore.updateRace(raceId, {
-      actualStart: startTime,
+      actualStart: primaryStart,
+      starts,
       timeInputMode: mode
     });
 
-    const comps = this.competitorStore.selectedCompetitors().filter(comp => {
-      if (comp.raceId !== raceId) return false;
-      const hasTime = comp.manualFinishTime != null || comp.recordedFinishTime != null;
-      const started = comp.startTime != null;
-      const finishedOrScored = isFinishedComp(comp.resultCode) || hasTime;
-      return started || finishedOrScored;
-    });
+    const race = this.raceStore.allRaces().find(r => r.id === raceId);
+    if (!race) return;
+
+    const entries = await this.seriesEntryStore.getSeriesEntries(race.seriesId);
+    const entryById = new Map(entries.map(e => [e.id, e] as const));
+    const fleetsById = new Map(this.clubStore.club().fleets.map(f => [f.id, f] as const));
+
+    const comps = this.competitorStore.selectedCompetitors().filter(comp => comp.raceId === raceId);
 
     for (const comp of comps) {
-      await this.competitorStore.updateResult(comp.id, { startTime: startTime });
+      const entry = entryById.get(comp.seriesEntryId);
+      if (!entry) continue;
+      const resolvedStart = resolveStartTimeForEntry(entry, starts, fleetsById, primaryStart);
+      if (!resolvedStart) continue;
+      await this.competitorStore.updateResult(comp.id, { startTime: resolvedStart });
     }
 
   }
@@ -142,8 +155,15 @@ export class ManualResultsService {
       resultCode: resultCode,
     };
 
-    if (race.actualStart) {
-      update.startTime = race.actualStart;
+    const starts = race.starts;
+    const primaryStart = starts?.[0]?.timeOfDay ?? race.actualStart;
+    if (primaryStart) {
+      const entries = await this.seriesEntryStore.getSeriesEntries(race.seriesId);
+      const entry = entries.find(e => e.id === competitor.seriesEntryId);
+      const fleetsById = new Map(this.clubStore.club().fleets.map(f => [f.id, f] as const));
+      update.startTime = entry
+        ? (resolveStartTimeForEntry(entry, starts, fleetsById, primaryStart) ?? primaryStart)
+        : primaryStart;
     }
 
     if (finishTime) {

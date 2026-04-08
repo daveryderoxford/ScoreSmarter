@@ -1,30 +1,29 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
-import { CommonModule, TitleCasePipe } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
-import { Toolbar } from 'app/shared/components/toolbar';
-import { ClubStore } from '../../services/club-store';
-import { LoadingCentered } from "app/shared/components/loading-centered";
-import { DialogsService } from 'app/shared/dialogs/dialogs.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
+import { LoadingCentered } from "app/shared/components/loading-centered";
+import { Toolbar } from 'app/shared/components/toolbar';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
+import { ClubStore } from '../../services/club-store';
 
 @Component({
   selector: 'app-fleet-page',
   imports: [Toolbar, MatListModule, MatMenuModule,
     MatButtonModule, MatIconModule, RouterModule, MatDividerModule,
     MatTooltipModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, LoadingCentered,
-    MatDividerModule, TitleCasePipe],
+    MatDividerModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './fleet-page.html',
   styles: `

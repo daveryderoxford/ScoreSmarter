@@ -124,7 +124,7 @@ export class ManualResultsPage {
     const result = await firstValueFrom(dialog.afterClosed());
 
     if (result) {
-      await this.manualResultsService.setStartTime(race.id, result.startTime, result.mode);
+      await this.manualResultsService.setStartTime(race.id, result.starts, result.mode);
     }
 
     return result;

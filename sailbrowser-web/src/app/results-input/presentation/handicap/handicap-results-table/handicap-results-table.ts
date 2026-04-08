@@ -3,109 +3,37 @@ import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, outp
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { RaceType } from 'app/race-calender';
+import { ExtendedRaceCompetitor, manualRaceTableSort } from 'app/results-input/services/manual-results.service';
 import { getHandicapValue } from 'app/scoring/model/handicap';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getCorrectedTime } from 'app/scoring/services/scorer-times';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { RaceCompetitor } from '../../../model/race-competitor';
-import { ExtendedRaceCompetitor, manualRaceTableSort } from 'app/results-input/services/manual-results.service';
 
 @Component({
   selector: 'app-handicap-results-table',
   imports: [MatTableModule, DatePipe, DurationPipe, MatSortModule],
   styleUrl: './handicap-results-table.scss',
-  template: `
-    <table mat-table matSort
-    [matSortActive]="sortState().active"
-    [matSortDirection]="sortState().direction"
-    [dataSource]="tabledata()"
-    (matSortChange)="this.sortState.set($event)" class="mat-elevation-z0">
-
-      <ng-container matColumnDef="position">
-        <th mat-header-cell mat-sort-header="manualPosition" *matHeaderCellDef>Pos</th>
-        <td mat-cell *matCellDef="let element">
-          {{element.manualPosition}}
-        </td>
-      </ng-container>
-      
-      <ng-container matColumnDef="boatClass">
-        <th mat-header-cell mat-sort-header *matHeaderCellDef>Class<br>H'Cap</th>
-        <td mat-cell *matCellDef="let element">
-          {{element.boatClass}}<br>
-          {{displayHandicap(element)}}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="sailNumber">
-        <th mat-header-cell mat-sort-header *matHeaderCellDef>Sail No</th>
-        <td mat-cell *matCellDef="let element"> <b>{{element.sailNumber}} </b></td>
-      </ng-container>
-
-      <ng-container matColumnDef="helm">
-        <th mat-header-cell mat-sort-header *matHeaderCellDef>Helm</th>
-        <td mat-cell *matCellDef="let element"> {{element.helm}} </td>
-      </ng-container>
-
-      <ng-container matColumnDef="finishTime">
-        <th mat-header-cell mat-sort-header="manualFinishTime" *matHeaderCellDef>Finish Time</th>
-        <td mat-cell *matCellDef="let element"> {{element.manualFinishTime | date:'HH:mm:ss'}} </td>
-      </ng-container>
-
-      <ng-container matColumnDef="elapsedTime">
-        <th mat-header-cell mat-sort-header *matHeaderCellDef>Elapsed</th>
-        <td mat-cell *matCellDef="let element"> 
-          {{element.elapsedTime | duration}}
-          @if (element.resultCode !== 'OK' && element.resultCode !== 'NOT FINISHED') {
-            <br>{{ element.resultCode }}
-          }
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="correctedTime">
-        <th mat-header-cell mat-sort-header *matHeaderCellDef>Corrected</th>
-        <td mat-cell *matCellDef="let element">
-          {{element.correctedTime | duration}}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="averageLapTime">
-        <th mat-header-cell *matHeaderCellDef>Avg Lap</th>
-        <td mat-cell *matCellDef="let element"> 
-          @if (element.finishTime) {
-            {{element.averageLapTime | duration}} <br>
-            {{element.numLaps}} {{element.numLaps == 1 ? 'lap' : 'laps'}}
-          }
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="displayedColumns()"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns();" 
-          [class.row-has-result]="row.resultCode !== 'NOT FINISHED'"
-          [class.row-selected]="row.id === selectedCompetitorId()"
-          (click)="onRowClick(row)">
-      </tr>
-    </table>
-  `,
+  templateUrl: './handicap-results-table.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HandicapResultsTable {
   competitors = input.required<RaceCompetitor[]>();
-  type = input<RaceType>('Handicap');
   handicapScheme = input<HandicapScheme>('PY');
   /** Highlight row matching handicap input panel selection (handicap results entry). */
   selectedCompetitorId = input<string | null>(null);
 
   rowClicked = output<RaceCompetitor>();
 
-  sortState = linkedSignal<Sort>(() => (this.type() === 'Handicap') ?
-    { active: 'correctedTime', direction: 'asc'} :
-    { active: 'manualPosition', direction: 'asc' });
+  sortState = linkedSignal<Sort>(() => 
+    ({ active: 'correctedTime', direction: 'asc' })
+  );
 
   private baseColumns = ['boatClass', 'sailNumber', 'helm', 'finishTime', 'elapsedTime'];
- 
-  displayedColumns = computed(() => (this.type() ==='Handicap') ?
-        [...this.baseColumns, 'correctedTime', 'averageLapTime'] :
-        ['position', ...this.baseColumns]);
+
+  displayedColumns = computed(() => 
+    ([...this.baseColumns, 'correctedTime', 'averageLapTime'])
+);  
 
   maxLaps = computed(() => this.competitors().reduce((max, comp) => {
     return (comp.numLaps > max) ? comp.numLaps : max;

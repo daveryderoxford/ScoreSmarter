@@ -11,7 +11,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatStepperModule } from '@angular/material/stepper';
 import { Toolbar } from "app/shared/components/toolbar";
 import { Router } from '@angular/router';
-import { addDays } from 'date-fns';
+import { addDays, isAfter, startOfDay } from 'date-fns';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Race, RACE_TYPES, RaceCalendarStore } from 'app/race-calender';
 
@@ -83,10 +83,11 @@ export class RaceAdd {
   ];
 
   schedForm = this.fb.group({
-    scheduledStart: [new Date(), Validators.required],
-    racesPerDay: [1, [Validators.required, Validators.min(0)]],
+    firstRaceDate: [new Date(), Validators.required],
+    firstStartTime: ['10:30:00', Validators.required],
+    lastRaceDate: [new Date(), Validators.required],
+    racesPerDay: [1, [Validators.required, Validators.min(1)]],
     repeatInterval: [this.intervals[0], Validators.required],
-    repeatNumber: [1, [Validators.required, Validators.min(0)]],
   });
 
   async onSave() {
@@ -94,15 +95,31 @@ export class RaceAdd {
       const schedData = this.schedForm.getRawValue();
       const details = this.detailsForm.getRawValue() as Partial<Race>;
 
-      let start = schedData.scheduledStart!;
+      const firstRaceDate = schedData.firstRaceDate!;
+      const lastRaceDate = schedData.repeatInterval!.increment
+        ? schedData.lastRaceDate!
+        : firstRaceDate;
+      const firstStartTime = schedData.firstStartTime || '00:00:00';
+      const firstStart = this.mergeDateAndTime(firstRaceDate, firstStartTime);
+
+      const repeatIncrement = schedData.repeatInterval!.increment;
+      const dayStarts: Date[] = [];
+      let cursor = firstStart;
+      const lastDay = startOfDay(lastRaceDate);
+
+      while (!isAfter(startOfDay(cursor), lastDay)) {
+        dayStarts.push(cursor);
+        if (repeatIncrement === 0) break;
+        cursor = addDays(cursor, repeatIncrement);
+      }
+
       const races: Partial<Race>[] = [];
 
-      for (let repeat = 0; repeat < schedData.repeatNumber!; repeat++) {
+      for (const start of dayStarts) {
         for (let perDay = 0; perDay < schedData.racesPerDay!; perDay++) {
           const race: Partial<Race> = { ...details, scheduledStart: start };
           races.push(race);
         }
-        start = addDays(start, schedData.repeatInterval!.increment);
       }
 
       try {
@@ -128,5 +145,12 @@ export class RaceAdd {
   }
 
   canDeactivate = () => !this.detailsForm.dirty && !this.schedForm.dirty;
+
+  private mergeDateAndTime(date: Date, hhmmss: string): Date {
+    const [h, m, s] = hhmmss.split(':').map(v => Number(v || 0));
+    const merged = new Date(date);
+    merged.setHours(h || 0, m || 0, s || 0, 0);
+    return merged;
+  }
 
 }

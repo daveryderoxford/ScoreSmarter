@@ -3,8 +3,8 @@
     <mat-icon>{{ race().timeInputMode === 'elapsed' ? 'timer' : 'schedule' }}</mat-icon>
     <span>{{ race().timeInputMode === 'elapsed' ? 'Stopwatch' : 'Time of Day' }}</span>
   </div>
-  @if (race().actualStart) {
-    <span class="start-time">Start: {{ race().actualStart | date:'HH:mm:ss' }}</span>
+  @if (displayedStartTime()) {
+    <span class="start-time">Start: {{ displayedStartTime() | date:'HH:mm:ss' }}</span>
   }
 </div>
 
