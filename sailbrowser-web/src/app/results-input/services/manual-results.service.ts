@@ -76,6 +76,135 @@ export function computeManualPositionsForOrderEntry(
   return out;
 }
 
+/** One placing group: boats sharing the same rank (ties). */
+export interface TieGroupRow {
+  /** Hint from last compute — canonical rank comes from group order after normalize. */
+  rank: number;
+  ids: string[];
+}
+
+/** Split processed queue into placed finishers vs penalties / DNF (order preserved). */
+export function segmentProcessedPlacedAndNonPlaced(
+  processedIds: string[],
+  rowState: Map<string, OrderEntryRowState>
+): { placed: string[]; nonPlaced: string[] } {
+  const placed: string[] = [];
+  const nonPlaced: string[] = [];
+  for (const id of processedIds) {
+    const row = rowState.get(id);
+    const code = row?.resultCode ?? 'NOT FINISHED';
+    if (isFinishedComp(code)) {
+      placed.push(id);
+    } else {
+      nonPlaced.push(id);
+    }
+  }
+  return { placed, nonPlaced };
+}
+
+export function mergePlacedAndNonPlacedSegments(placed: string[], nonPlaced: string[]): string[] {
+  return [...placed, ...nonPlaced];
+}
+
+/** Enforce placed segment first, then non-placed. */
+export function enforceProcessedSegmentOrder(
+  processedIds: string[],
+  rowState: Map<string, OrderEntryRowState>
+): string[] {
+  const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(processedIds, rowState);
+  return mergePlacedAndNonPlacedSegments(placed, nonPlaced);
+}
+
+/**
+ * Consecutive placed finishers with the same effective rank form one tie group.
+ */
+export function buildTieGroupsFromPlaced(
+  placedIds: string[],
+  rowState: Map<string, OrderEntryRowState>
+): TieGroupRow[] {
+  if (placedIds.length === 0) return [];
+  const positions = computeManualPositionsForOrderEntry(placedIds, rowState);
+  const groups: TieGroupRow[] = [];
+  let i = 0;
+  while (i < placedIds.length) {
+    const id = placedIds[i];
+    const row = rowState.get(id);
+    if (!row || !isFinishedComp(row.resultCode)) {
+      i++;
+      continue;
+    }
+    const p = positions.get(id);
+    if (typeof p !== 'number') {
+      i++;
+      continue;
+    }
+    const block: string[] = [id];
+    let j = i + 1;
+    while (j < placedIds.length) {
+      const nid = placedIds[j];
+      const nrow = rowState.get(nid);
+      if (!nrow || !isFinishedComp(nrow.resultCode)) break;
+      const np = positions.get(nid);
+      if (np !== p) break;
+      block.push(nid);
+      j++;
+    }
+    groups.push({ rank: p, ids: block });
+    i = j;
+  }
+  return groups;
+}
+
+export function flattenTieGroups(groups: TieGroupRow[]): string[] {
+  return groups.flatMap(g => g.ids);
+}
+
+/**
+ * After reordering tie groups, assign rank 1..n; ties share rankOverride.
+ */
+export function normalizeRowStateFromOrderedTieGroups(
+  orderedGroups: { ids: string[] }[],
+  rowState: Map<string, OrderEntryRowState>
+): Map<string, OrderEntryRowState> {
+  const next = new Map(rowState);
+  for (let i = 0; i < orderedGroups.length; i++) {
+    const rank = i + 1;
+    const ids = orderedGroups[i].ids;
+    const shared = ids.length > 1;
+    for (const id of ids) {
+      const row = next.get(id);
+      if (!row) continue;
+      next.set(id, { ...row, rankOverride: shared ? rank : null });
+    }
+  }
+  return next;
+}
+
+/**
+ * Clear tie: clear rankOverride on id, then clear rankOverride on every following row that still has an override.
+ */
+export function clearTieRankOverrideChain(
+  processedIds: string[],
+  id: string,
+  rowState: Map<string, OrderEntryRowState>
+): Map<string, OrderEntryRowState> {
+  const idx = processedIds.indexOf(id);
+  if (idx < 0) return new Map(rowState);
+  const next = new Map(rowState);
+  const row = next.get(id);
+  if (row) {
+    next.set(id, { ...row, rankOverride: null });
+  }
+  for (let j = idx + 1; j < processedIds.length; j++) {
+    const pid = processedIds[j];
+    const r = next.get(pid);
+    if (r?.rankOverride != null) {
+      next.set(pid, { ...r, rankOverride: null });
+    }
+  }
+  return next;
+}
+
 export interface CalculatedStats {
   elapsedSeconds: number;
   avgLapTime: number;

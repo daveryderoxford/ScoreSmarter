@@ -2,13 +2,14 @@
   <div class="pane source">
     <div class="pane-header">
       <span class="pane-title">Remaining ({{ remainingCount() }} / {{ totalCount() }})</span>
-      <span class="pane-hint">Drag rows to finish order</span>
+      <span class="pane-hint">Drag rows to placings or penalties</span>
     </div>
     <div
       cdkDropList
       #remainingList="cdkDropList"
+      data-zone="remaining"
       [cdkDropListData]="remainingIds()"
-      [cdkDropListConnectedTo]="[queueList]"
+      [cdkDropListConnectedTo]="[placingGroupsList, nonPlacedList]"
       (cdkDropListDropped)="drop($event)"
       class="drop-list">
       @for (id of remainingIds(); track id) {
@@ -59,64 +60,131 @@
   <div class="pane queue">
     <div class="pane-header">
       <span class="pane-title">Finish order</span>
-      <span class="pane-hint">Drag to reorder or return to remaining</span>
+      <span class="pane-hint">Placings: drag tie groups. Penalties: reorder or return to remaining.</span>
     </div>
-    <div
-      cdkDropList
-      #queueList="cdkDropList"
-      [cdkDropListData]="processedIds()"
-      [cdkDropListConnectedTo]="[remainingList]"
-      (cdkDropListDropped)="drop($event)"
-      class="drop-list">
-      @for (id of processedIds(); track id) {
-        <div cdkDrag class="row queue-row">
-          <span class="drag-handle" aria-hidden="true">
-            <mat-icon>drag_indicator</mat-icon>
-          </span>
-          <span class="rank">{{ queueRankLabel(id) }}</span>
-          <span
-            class="mono"
-            [class.long-number]="(compById().get(id)?.sailNumber?.toString()?.length || 0) > 5">
-            {{ compById().get(id)?.sailNumber }}
-          </span>
-          <span class="person-lines">
-            <span class="helm">{{ compById().get(id)?.helm }}</span>
-            <span class="boat-class">{{ compById().get(id)?.boatClass }}</span>
-          </span>
-          <span class="code">{{ rowFor(id)?.resultCode }}</span>
-          <ng-container>
-            <mat-menu #rowMenu="matMenu">
-              <button mat-menu-item type="button" (click)="setRowResultCode(id)">
-                <mat-icon>edit</mat-icon>
-                <span>Set result code</span>
-              </button>
-              <button mat-menu-item type="button" (click)="tieWithAbove(id)" [disabled]="!canTieWithAbove(id)">
-                <mat-icon>call_split</mat-icon>
-                <span>Tie with above</span>
-              </button>
-              <button mat-menu-item type="button" (click)="clearTie(id)" [disabled]="!canClearTie(id)">
-                <mat-icon>link_off</mat-icon>
-                <span>Clear tie</span>
-              </button>
-              <button mat-menu-item type="button" (click)="removeFromQueue(id)">
-                <mat-icon>close</mat-icon>
-                <span>Unfinish</span>
-              </button>
-            </mat-menu>
-          </ng-container>
-          <button
-            mat-icon-button
-            type="button"
-            [matMenuTriggerFor]="rowMenu"
-            (click)="$event.stopPropagation()"
-            (pointerdown)="$event.stopPropagation()"
-            aria-label="Row actions">
-            <mat-icon>more_vert</mat-icon>
-          </button>
+
+    <div class="queue-sections">
+      <div class="queue-section">
+        <div class="queue-section-label">Placings</div>
+        <div
+          cdkDropList
+          #placingGroupsList="cdkDropList"
+          data-zone="placing"
+          [cdkDropListData]="placingGroupDropKeys()"
+          [cdkDropListConnectedTo]="[remainingList]"
+          (cdkDropListDropped)="drop($event)"
+          class="drop-list drop-list-placing">
+          @for (group of placingTieGroups(); track group.ids[0]) {
+            <div cdkDrag class="tie-group" [cdkDragData]="group">
+              <span class="drag-handle" aria-hidden="true">
+                <mat-icon>drag_indicator</mat-icon>
+              </span>
+              <span class="tie-group-rank">{{ groupRankLabel($index) }}</span>
+              <div class="tie-group-members">
+                @for (id of group.ids; track id) {
+                  <div class="row queue-row-inner">
+                    <span
+                      class="mono"
+                      [class.long-number]="(compById().get(id)?.sailNumber?.toString()?.length || 0) > 5">
+                      {{ compById().get(id)?.sailNumber }}
+                    </span>
+                    <span class="person-lines">
+                      <span class="helm">{{ compById().get(id)?.helm }}</span>
+                      <span class="boat-class">{{ compById().get(id)?.boatClass }}</span>
+                    </span>
+                    <span class="code">{{ rowFor(id)?.resultCode }}</span>
+                    <ng-container>
+                      <mat-menu #rowMenu="matMenu">
+                        <button mat-menu-item type="button" (click)="setRowResultCode(id)">
+                          <mat-icon>edit</mat-icon>
+                          <span>Set result code</span>
+                        </button>
+                        <button mat-menu-item type="button" (click)="tieWithAbove(id)" [disabled]="!canTieWithAbove(id)">
+                          <mat-icon>call_split</mat-icon>
+                          <span>Tie with above</span>
+                        </button>
+                        <button mat-menu-item type="button" (click)="clearTie(id)" [disabled]="!canClearTie(id)">
+                          <mat-icon>link_off</mat-icon>
+                          <span>Clear tie</span>
+                        </button>
+                        <button mat-menu-item type="button" (click)="removeFromQueue(id)">
+                          <mat-icon>close</mat-icon>
+                          <span>Unfinish</span>
+                        </button>
+                      </mat-menu>
+                    </ng-container>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      [matMenuTriggerFor]="rowMenu"
+                      (click)="$event.stopPropagation()"
+                      (pointerdown)="$event.stopPropagation()"
+                      aria-label="Row actions">
+                      <mat-icon>more_vert</mat-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          } @empty {
+            <div class="empty">None — drag from remaining or use search</div>
+          }
         </div>
-      } @empty {
-        <div class="empty">Empty — add from search or drag</div>
-      }
+      </div>
+
+      <div class="queue-section">
+        <div class="queue-section-label">Did not finish / penalties</div>
+        <div
+          cdkDropList
+          #nonPlacedList="cdkDropList"
+          data-zone="non-placed"
+          [cdkDropListData]="nonPlacedSegmentIds()"
+          [cdkDropListConnectedTo]="[remainingList]"
+          (cdkDropListDropped)="drop($event)"
+          class="drop-list drop-list-penalties">
+          @for (id of nonPlacedSegmentIds(); track id) {
+            <div cdkDrag class="row queue-row">
+              <span class="drag-handle" aria-hidden="true">
+                <mat-icon>drag_indicator</mat-icon>
+              </span>
+              <span class="rank">—</span>
+              <span
+                class="mono"
+                [class.long-number]="(compById().get(id)?.sailNumber?.toString()?.length || 0) > 5">
+                {{ compById().get(id)?.sailNumber }}
+              </span>
+              <span class="person-lines">
+                <span class="helm">{{ compById().get(id)?.helm }}</span>
+                <span class="boat-class">{{ compById().get(id)?.boatClass }}</span>
+              </span>
+              <span class="code">{{ rowFor(id)?.resultCode }}</span>
+              <ng-container>
+                <mat-menu #penMenu="matMenu">
+                  <button mat-menu-item type="button" (click)="setRowResultCode(id)">
+                    <mat-icon>edit</mat-icon>
+                    <span>Set result code</span>
+                  </button>
+                  <button mat-menu-item type="button" (click)="removeFromQueue(id)">
+                    <mat-icon>close</mat-icon>
+                    <span>Unfinish</span>
+                  </button>
+                </mat-menu>
+              </ng-container>
+              <button
+                mat-icon-button
+                type="button"
+                [matMenuTriggerFor]="penMenu"
+                (click)="$event.stopPropagation()"
+                (pointerdown)="$event.stopPropagation()"
+                aria-label="Row actions">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+            </div>
+          } @empty {
+            <div class="empty">None</div>
+          }
+        </div>
+      </div>
     </div>
   </div>
 
