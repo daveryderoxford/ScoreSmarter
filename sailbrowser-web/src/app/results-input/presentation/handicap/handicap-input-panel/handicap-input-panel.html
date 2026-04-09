@@ -34,7 +34,7 @@
         }
       </mat-autocomplete>
       @if (searchControl.value) {
-        <button mat-icon-button matSuffix type="button" tabindex="-1" (click)="selectedCompetitor.set(undefined)" aria-label="Clear search">
+        <button mat-icon-button matSuffix type="button" tabindex="-1" (click)="setSelectedCompetitor(undefined)" aria-label="Clear search">
           <mat-icon>close</mat-icon>
         </button>
       }
@@ -70,7 +70,7 @@
   <div class="actions" style="display: flex; align-items: center; gap: 8px; justify-content: flex-start;">
     <button matButton type="button" [disabled]="!hasSelectedCompetitor()">Detail</button>
     <span style="flex: 1;"></span>
-    <button matButton type="button" [disabled]="!hasSelectedCompetitor()" (click)="selectedCompetitor.set(undefined)">Clear</button>
+    <button matButton type="button" [disabled]="!hasSelectedCompetitor()" (click)="setSelectedCompetitor(undefined)">Clear</button>
     <button matButton="filled" type="submit" [disabled]="!hasSelectedCompetitor()">Record</button>
   </div>
 </form>
