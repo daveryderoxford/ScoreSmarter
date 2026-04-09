@@ -2,6 +2,7 @@ import { MatDialog as MatDialog, MatDialogRef as MatDialogRef } from '@angular/m
 
 import { ConfirmDialog } from './confirm-dialog';
 import { MessageDialog } from "./message-dialog";
+import { UnsavedChangesChoice, UnsavedChangesDialog } from './unsaved-changes-dialog';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom, lastValueFrom } from 'rxjs';
 
@@ -33,5 +34,17 @@ export class DialogsService {
         dialogRef.componentInstance.message = message;
 
         return firstValueFrom(dialogRef.afterClosed());
+    }
+
+    public async promptUnsavedChanges(
+        title = 'Unsaved changes',
+        message = 'Save your edits before switching?'
+    ): Promise<UnsavedChangesChoice> {
+        let dialogRef: MatDialogRef<UnsavedChangesDialog, UnsavedChangesChoice>;
+        dialogRef = this.dialog.open(UnsavedChangesDialog);
+        dialogRef.componentInstance.title = title;
+        dialogRef.componentInstance.message = message;
+        const result = await firstValueFrom(dialogRef.afterClosed());
+        return result ?? 'cancel';
     }
 }

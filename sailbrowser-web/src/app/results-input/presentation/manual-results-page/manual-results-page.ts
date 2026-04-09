@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, linkedSignal, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, linkedSignal, signal, untracked, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -82,6 +82,7 @@ export class ManualResultsPage {
     const series = this.raceCalendarStore.allSeries().find(s => s.id === race.seriesId);
     return series?.primaryScoringConfiguration.handicapScheme ?? ('PY' as HandicapScheme);
   });
+  readonly handicapInputPanel = viewChild(HandicapInputPanel);
 
   constructor() {
     effect(() => {
@@ -111,8 +112,13 @@ export class ManualResultsPage {
     }
   }
 
-  onTableRowClick(row: RaceCompetitor) {
+  async onTableRowClick(row: RaceCompetitor) {
     if (this.selectedRace()?.type !== 'Handicap') return;
+    const panel = this.handicapInputPanel();
+    if (panel) {
+      await panel.setSelectedCompetitor(row);
+      return;
+    }
     this.handicapSelectedCompetitor.set(row);
   }
 
@@ -124,7 +130,7 @@ export class ManualResultsPage {
     const result = await firstValueFrom(dialog.afterClosed());
 
     if (result) {
-      await this.manualResultsService.setStartTime(race.id, result.startTime, result.mode);
+      await this.manualResultsService.setStartTime(race.id, result.starts, result.mode);
     }
 
     return result;

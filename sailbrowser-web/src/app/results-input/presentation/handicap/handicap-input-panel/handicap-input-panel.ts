@@ -24,6 +24,7 @@ import { Race } from 'app/race-calender';
 import { RaceCompetitor } from 'app/results-input';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { requiresTime } from 'app/scoring/model/result-code-scoring';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { firstValueFrom, map, startWith } from 'rxjs';
@@ -54,6 +55,7 @@ import { ResultCodeSelect } from '../../result-code-select';
 export class HandicapInputPanel {
   private readonly manualResultsService = inject(ManualResultsService);
   private readonly dialog = inject(MatDialog);
+  private readonly dialogs = inject(DialogsService);
   private readonly fb = inject(FormBuilder);
 
   race = input.required<Race>();
@@ -64,8 +66,7 @@ export class HandicapInputPanel {
 
   readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
 
-  /** Tracks selection across effect runs (auto-save before switching competitor). */
-  private lastSelectedCompetitorId: string | undefined;
+  private readonly switchingSelection = signal(false);
 
   readonly form = this.fb.group({
     finishTime: this.fb.control<Date | null>(null),
@@ -100,9 +101,13 @@ export class HandicapInputPanel {
   readonly timeInputContext = computed(() => {
     const race = this.race();
     const mode = race.timeInputMode || 'tod';
-    const baseTime = race.actualStart || new Date();
+    const baseTime = this.selectedCompetitor()?.startTime || race.actualStart || new Date();
     return { mode, baseTime: new Date(baseTime) };
   });
+
+  readonly displayedStartTime = computed(() =>
+    this.selectedCompetitor()?.startTime || this.race().actualStart
+  );
 
   readonly enteredFinishTime = toSignal(
     this.form.controls.finishTime.valueChanges.pipe(startWith(this.form.controls.finishTime.value)),
@@ -115,10 +120,11 @@ export class HandicapInputPanel {
   );
 
   readonly calculatedStats = computed(() => {
+    const startTime = this.selectedCompetitor()?.startTime || this.race().actualStart;
     const stats = this.manualResultsService.calculateStats(
       this.enteredFinishTime(),
       this.enteredLapsValue() || 1,
-      this.race()
+      startTime
     );
     if (!stats) return null;
     const isSuspicious = stats.avgLapTime < 120 || stats.avgLapTime > 3600;
@@ -155,23 +161,6 @@ export class HandicapInputPanel {
     effect(() => {
       const comp = this.selectedCompetitor();
       untracked(() => {
-        const prevId = this.lastSelectedCompetitorId;
-        const nextId = comp?.id;
-
-        if (prevId != null && nextId != null && prevId !== nextId) {
-          const prevComp = this.competitors().find(c => c.id === prevId);
-          if (prevComp) {
-            const raw = this.form.getRawValue() as {
-              finishTime: Date | null;
-              laps: number;
-              resultCode: ResultCode;
-            };
-            void this.persistIfNeededForPreviousCompetitor(prevComp, raw);
-          }
-        }
-
-        this.lastSelectedCompetitorId = nextId;
-
         if (!comp) {
           this.searchControl.setValue(null, { emitEvent: false });
           // Reset while controls are still enabled so values/CVAs update cleanly, then disable.
@@ -232,43 +221,31 @@ export class HandicapInputPanel {
   }
 
   onCompetitorSelected(event: MatAutocompleteSelectedEvent): void {
-    this.selectedCompetitor.set(event.option.value as RaceCompetitor);
+    void this.setSelectedCompetitor(event.option.value as RaceCompetitor);
   }
 
-  private shouldAutoSaveBeforeSwitch(comp: RaceCompetitor, raw: {
-    finishTime: Date | null;
-    laps: number;
-    resultCode: ResultCode;
-  }): boolean {
-    const laps = raw.laps ?? 1;
-    const storedLaps = comp.manualLaps > 0 ? comp.manualLaps : 1;
-    if (raw.finishTime != null) return true;
-    if (laps !== storedLaps) return true;
-    if (raw.resultCode !== comp.resultCode) return true;
-    return false;
-  }
+  async setSelectedCompetitor(next: RaceCompetitor | undefined): Promise<void> {
+    if (this.switchingSelection()) return;
+    const current = this.selectedCompetitor();
+    if (current?.id === next?.id) return;
 
-  private async persistIfNeededForPreviousCompetitor(
-    comp: RaceCompetitor,
-    raw: { finishTime: Date | null; laps: number; resultCode: ResultCode },
-  ): Promise<void> {
-    if (!this.shouldAutoSaveBeforeSwitch(comp, raw)) return;
-    const race = this.race();
-    if (!race.actualStart) return;
-
-    const laps = raw.laps ?? 1;
-    const { finishTime, resultCode } = raw;
-    const needTime = requiresTime(resultCode) || resultCode === 'NOT FINISHED';
-    if (needTime && !finishTime) return;
-
-    if (this.form.controls.laps.invalid || this.form.controls.finishTime.invalid) return;
-
-    await this.manualResultsService.recordResult(comp, race, {
-      finishTime,
-      laps,
-      resultCode,
-    });
-    if (laps) this.lastEnteredLaps.set(laps);
+    this.switchingSelection.set(true);
+    try {
+      if (current && this.form.dirty) {
+        const choice = await this.dialogs.promptUnsavedChanges(
+          'Unsaved edits',
+          'Save your edits before switching competitor?'
+        );
+        if (choice === 'cancel') return;
+        if (choice === 'save') {
+          const saved = await this.saveCurrentSelection(false);
+          if (!saved) return;
+        }
+      }
+      this.selectedCompetitor.set(next);
+    } finally {
+      this.switchingSelection.set(false);
+    }
   }
 
   async setStartTime(race: Race): Promise<RaceStartTimeResult | undefined> {
@@ -277,22 +254,26 @@ export class HandicapInputPanel {
     });
     const result = await firstValueFrom(dialog.afterClosed());
     if (result) {
-      await this.manualResultsService.setStartTime(race.id, result.startTime, result.mode);
+      await this.manualResultsService.setStartTime(race.id, result.starts, result.mode);
     }
     return result;
   }
 
   async save(): Promise<void> {
-    if (!this.hasSelectedCompetitor() || this.form.invalid) return;
+    await this.saveCurrentSelection(true);
+  }
+
+  private async saveCurrentSelection(clearAfterSave: boolean): Promise<boolean> {
+    if (!this.hasSelectedCompetitor() || this.form.invalid) return false;
     const { finishTime, laps, resultCode } = this.form.getRawValue();
     const competitor = this.selectedCompetitor();
-    if (!competitor) return;
+    if (!competitor) return false;
 
     const race = this.race();
     if (!race.actualStart) {
       console.error('HandicapInputPanel: save before start time set');
       await this.setStartTime(race);
-      return;
+      return false;
     }
 
     await this.manualResultsService.recordResult(competitor, race, {
@@ -302,7 +283,10 @@ export class HandicapInputPanel {
     });
 
     if (laps) this.lastEnteredLaps.set(laps);
-    this.selectedCompetitor.set(undefined);
-    this.searchInput()?.nativeElement.focus();
+    if (clearAfterSave) {
+      this.selectedCompetitor.set(undefined);
+      this.searchInput()?.nativeElement.focus();
+    }
+    return true;
   }
 }

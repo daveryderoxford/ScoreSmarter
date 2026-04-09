@@ -32,11 +32,18 @@ export function competitorsForConfigRace(
   });
 }
 
-/** 
- * Should the race be scored. 
- * Races with no entries or where everyone has a result code of 
- * NOT_FINISHED are excluded from scoring. 
- * */
+/**
+ * Whether this race should be scored for the given fleet configuration.
+ *
+ * ScoringEngine already restricts by race status (In progress, Completed, Published, Verified).
+ * For the primary **All** fleet, that is enough: the race only becomes In progress once someone has a
+ * real result, and Completed means no row is still NOT_FINISHED.
+ *
+ * With **secondary scoring** (separate configs per fleet), the same race can be In progress because
+ * another fleet has results while **every** competitor in *this* fleet is still NOT_FINISHED. Race
+ * status does not distinguish fleets, so we still require at least one non–NOT FINISHED row in
+ * `filtered` for non-All fleets.
+ */
 export function isRaceScorable(
   race: Race,
   config: ScoringConfiguration,
@@ -45,5 +52,9 @@ export function isRaceScorable(
 ): boolean {
   const filtered = competitorsForConfigRace(race, config, allSeriesCompetitors, seriesEntries);
   if (filtered.length === 0) return true;
+  if (config.fleet.type === 'All') {
+    return true;
+  }
+  // Secondary (or any non-All) fleet: see JSDoc — status alone cannot tell if this fleet has started.
   return filtered.some(c => c.resultCode !== NOT_FINISHED);
 }

@@ -1,10 +1,4 @@
-import {
-  CdkDragDrop,
-  CdkDropList,
-  DragDropModule,
-  moveItemInArray,
-  transferArrayItem,
-} from '@angular/cdk/drag-drop';
+import { CdkDragDrop, CdkDropList, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import {
   AfterViewInit,
@@ -32,9 +26,16 @@ import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { firstValueFrom, map, startWith } from 'rxjs';
 import {
-  computeManualPositionsForOrderEntry,
+  buildTieGroupsFromPlaced,
+  clearTieRankOverrideChain,
+  enforceProcessedSegmentOrder,
+  flattenTieGroups,
   ManualResultsService,
+  mergePlacedAndNonPlacedSegments,
+  normalizeRowStateFromOrderedTieGroups,
   OrderEntryRowState,
+  segmentProcessedPlacedAndNonPlaced,
+  TieGroupRow,
 } from '../../../services/manual-results.service';
 import { ResultCodeDialog } from '../result-code-dialog';
 import { RaceCompetitor, sortEntries } from 'app/results-input';
@@ -70,7 +71,6 @@ export class PositionBasedInputPanel implements AfterViewInit {
   );
 
   readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('entrySearch');
-  private readonly remainingListRef = viewChild<CdkDropList<string[]>>('remainingList');
 
   readonly searchControl = this.fb.nonNullable.control('');
   readonly searchTerm = toSignal(
@@ -96,6 +96,22 @@ export class PositionBasedInputPanel implements AfterViewInit {
       m.set(c.id, c);
     }
     return m;
+  });
+
+  /** Tie groups for placings (drag one card per group). */
+  readonly placingTieGroups = computed(() => {
+    const proc = this.processedIds();
+    const state = this.rowState();
+    const { placed } = segmentProcessedPlacedAndNonPlaced(proc, state);
+    return buildTieGroupsFromPlaced(placed, state);
+  });
+
+  /** First competitor id per tie group — CDK list data keys. */
+  readonly placingGroupDropKeys = computed(() => this.placingTieGroups().map(g => g.ids[0]));
+
+  readonly nonPlacedSegmentIds = computed(() => {
+    const { nonPlaced } = segmentProcessedPlacedAndNonPlaced(this.processedIds(), this.rowState());
+    return nonPlaced;
   });
 
   /** Keyword match for dimming / selection (full list remains in remainingIds for CDK) */
@@ -140,7 +156,6 @@ export class PositionBasedInputPanel implements AfterViewInit {
     const sel = this.selectedMatchId();
     if (sel && this.remainingIds().includes(sel)) return true;
     const f = this.filteredRemaining();
-    // One row in the current list (no search, or search narrowed to one): Enter adds it.
     if (f.length === 1) return true;
     return false;
   });
@@ -164,11 +179,6 @@ export class PositionBasedInputPanel implements AfterViewInit {
   readonly remainingCount = computed(() => this.remainingIds().length);
   readonly totalCount = computed(() => this.competitors().length);
 
-  /** Effective manual position per row (ties share the same number). */
-  readonly manualPositions = computed(() =>
-    computeManualPositionsForOrderEntry(this.processedIds(), this.rowState())
-  );
-
   constructor() {
     effect(() => {
       const r = this.race();
@@ -180,7 +190,6 @@ export class PositionBasedInputPanel implements AfterViewInit {
       }
     });
 
-    /** No single target: drop row selection so preview / Enter don't follow stale picks. */
     effect(() => {
       const term = normaliseString(this.searchTerm());
       const f = this.filteredRemaining();
@@ -203,6 +212,10 @@ export class PositionBasedInputPanel implements AfterViewInit {
     this.searchInput()?.nativeElement?.focus();
   }
 
+  private zoneFromContainer(container: CdkDropList<string[]>): string {
+    return (container.element.nativeElement as HTMLElement).dataset['zone'] ?? '';
+  }
+
   private initFromCompetitors(comps: RaceCompetitor[]): void {
     const sorted = [...comps].sort(sortEntries);
 
@@ -215,7 +228,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
       c => !withPosIds.has(c.id) && c.resultCode !== 'NOT FINISHED'
     );
 
-    const processed = [...withPos.map(c => c.id), ...processedNoPos.map(c => c.id)];
+    let processed = [...withPos.map(c => c.id), ...processedNoPos.map(c => c.id)];
     const processedSet = new Set(processed);
     const remaining = sorted.filter(c => !processedSet.has(c.id)).map(c => c.id);
 
@@ -230,9 +243,14 @@ export class PositionBasedInputPanel implements AfterViewInit {
       });
     }
 
-    this.processedIds.set(processed);
+    processed = enforceProcessedSegmentOrder(processed, state);
+    const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(processed, state);
+    const groups = buildTieGroupsFromPlaced(placed, state);
+    const stateNorm = normalizeRowStateFromOrderedTieGroups(groups, state);
+
+    this.processedIds.set(mergePlacedAndNonPlacedSegments(placed, nonPlaced));
     this.remainingIds.set(remaining);
-    this.rowState.set(state);
+    this.rowState.set(stateNorm);
     this.pendingDefaults.set(new Map());
     this.selectedMatchId.set(undefined);
     this.searchControl.setValue('');
@@ -266,8 +284,6 @@ export class PositionBasedInputPanel implements AfterViewInit {
 
   private async addToProcessed(competitorId: string): Promise<void> {
     const rem = this.remainingIds().filter(id => id !== competitorId);
-    const proc = [...this.processedIds(), competitorId];
-    const state = new Map(this.rowState());
     const pending = new Map(this.pendingDefaults());
     const preset = pending.get(competitorId);
     const base: OrderEntryRowState = preset ?? {
@@ -278,12 +294,26 @@ export class PositionBasedInputPanel implements AfterViewInit {
     pending.delete(competitorId);
     this.pendingDefaults.set(pending);
 
+    let state = new Map(this.rowState());
     const nextRankOverride = isFinishedComp(base.resultCode) ? base.rankOverride ?? null : null;
     state.set(competitorId, {
       resultCode: base.resultCode,
       manualFinishTime: this.race().type === 'Level Rating' ? base.manualFinishTime ?? null : null,
       rankOverride: nextRankOverride,
     });
+
+    const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(this.processedIds(), state);
+    if (isFinishedComp(base.resultCode)) {
+      placed.push(competitorId);
+    } else {
+      nonPlaced.push(competitorId);
+    }
+    let proc = mergePlacedAndNonPlacedSegments(placed, nonPlaced);
+    proc = enforceProcessedSegmentOrder(proc, state);
+    const seg = segmentProcessedPlacedAndNonPlaced(proc, state);
+    const groups = buildTieGroupsFromPlaced(seg.placed, state);
+    state = normalizeRowStateFromOrderedTieGroups(groups, state);
+
     this.remainingIds.set(rem);
     this.processedIds.set(proc);
     this.rowState.set(state);
@@ -355,98 +385,156 @@ export class PositionBasedInputPanel implements AfterViewInit {
       rankOverride: isFinishedComp(result.resultCode) ? row.rankOverride ?? null : null,
     };
 
-    const state = new Map(this.rowState());
+    let state = new Map(this.rowState());
     state.set(id, next);
+    let proc = enforceProcessedSegmentOrder(this.processedIds(), state);
+    const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(proc, state);
+    const groups = buildTieGroupsFromPlaced(placed, state);
+    state = normalizeRowStateFromOrderedTieGroups(groups, state);
+    proc = mergePlacedAndNonPlacedSegments(placed, nonPlaced);
+
+    this.processedIds.set(proc);
     this.rowState.set(state);
 
     await this.persist();
   }
 
   canTieWithAbove(id: string): boolean {
-    const proc = this.processedIds();
-    const idx = proc.indexOf(id);
-    if (idx <= 0) return false;
-    const aboveId = proc[idx - 1];
-    const row = this.rowState().get(id);
-    const aboveRow = this.rowState().get(aboveId);
-    if (!row || !aboveRow) return false;
-    return isFinishedComp(row.resultCode) && isFinishedComp(aboveRow.resultCode);
-  }
-
-  /**
-   * True when this row is in a tie with any finished boat further up the list (same effective rank).
-   * Uses an upward scan so clearing a middle boat of a multi-way tie still leaves "Clear tie" on the rest.
-   */
-  canClearTie(id: string): boolean {
-    const proc = this.processedIds();
-    const idx = proc.indexOf(id);
-    if (idx <= 0) return false;
     const row = this.rowState().get(id);
     if (!row || !isFinishedComp(row.resultCode)) return false;
-    const positions = computeManualPositionsForOrderEntry(proc, this.rowState());
-    const p = positions.get(id);
-    if (typeof p !== 'number') return false;
-    for (let j = idx - 1; j >= 0; j--) {
-      const upId = proc[j];
-      const upRow = this.rowState().get(upId);
-      if (!upRow || !isFinishedComp(upRow.resultCode)) continue;
-      const pu = positions.get(upId);
-      if (typeof pu === 'number' && pu === p) return true;
-    }
-    return false;
+    const { placed } = segmentProcessedPlacedAndNonPlaced(this.processedIds(), this.rowState());
+    const groups = buildTieGroupsFromPlaced(placed, this.rowState());
+    const gi = groups.findIndex(g => g.ids.includes(id));
+    return gi > 0;
+  }
+
+  canClearTie(id: string): boolean {
+    const row = this.rowState().get(id);
+    if (!row || !isFinishedComp(row.resultCode)) return false;
+    const { placed } = segmentProcessedPlacedAndNonPlaced(this.processedIds(), this.rowState());
+    const groups = buildTieGroupsFromPlaced(placed, this.rowState());
+    const g = groups.find(gr => gr.ids.includes(id));
+    return g != null && g.ids.length > 1;
   }
 
   async tieWithAbove(id: string): Promise<void> {
-    const proc = this.processedIds();
-    const idx = proc.indexOf(id);
-    if (idx <= 0) return;
-    const aboveId = proc[idx - 1];
-    const row = this.rowState().get(id);
-    const aboveRow = this.rowState().get(aboveId);
-    if (!row || !aboveRow) return;
-    if (!isFinishedComp(row.resultCode) || !isFinishedComp(aboveRow.resultCode)) return;
+    if (!this.canTieWithAbove(id)) return;
+    const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(this.processedIds(), this.rowState());
+    let groups = buildTieGroupsFromPlaced(placed, this.rowState());
+    const gi = groups.findIndex(g => g.ids.includes(id));
+    if (gi <= 0) return;
 
-    const positions = computeManualPositionsForOrderEntry(proc, this.rowState());
-    const aboveRank = positions.get(aboveId);
-    if (typeof aboveRank !== 'number') return;
-
-    const state = new Map(this.rowState());
-    state.set(id, { ...row, rankOverride: aboveRank });
+    const merged: TieGroupRow = {
+      rank: 0,
+      ids: [...groups[gi - 1].ids, ...groups[gi].ids],
+    };
+    groups = [...groups.slice(0, gi - 1), merged, ...groups.slice(gi + 1)];
+    const newPlaced = flattenTieGroups(groups);
+    let state = new Map(this.rowState());
+    state = normalizeRowStateFromOrderedTieGroups(groups, state);
+    this.processedIds.set(mergePlacedAndNonPlacedSegments(newPlaced, nonPlaced));
     this.rowState.set(state);
     await this.persist();
   }
 
   async clearTie(id: string): Promise<void> {
     if (!this.canClearTie(id)) return;
-    const row = this.rowState().get(id);
-    if (!row) return;
-    const state = new Map(this.rowState());
-    state.set(id, { ...row, rankOverride: null });
+    const processed = [...this.processedIds()];
+    let state = new Map(this.rowState());
+    state = clearTieRankOverrideChain(processed, id, state);
+    const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(processed, state);
+    const groups = buildTieGroupsFromPlaced(placed, state);
+    state = normalizeRowStateFromOrderedTieGroups(groups, state);
+    this.processedIds.set(mergePlacedAndNonPlacedSegments(placed, nonPlaced));
     this.rowState.set(state);
     await this.persist();
   }
 
   drop(event: CdkDragDrop<string[]>): void {
+    const prevZone = this.zoneFromContainer(event.previousContainer);
+    const zone = this.zoneFromContainer(event.container);
     const rem = [...this.remainingIds()];
-    const proc = [...this.processedIds()];
-    const remainingList = this.remainingListRef();
-    const prev = event.previousContainer;
-    const cont = event.container;
+    let proc = [...this.processedIds()];
+    let state = new Map(this.rowState());
+    const pending = new Map(this.pendingDefaults());
 
-    if (prev === cont) {
-      if (remainingList && prev === remainingList) {
+    if (prevZone === zone) {
+      if (zone === 'remaining') {
         moveItemInArray(rem, event.previousIndex, event.currentIndex);
-      } else {
-        moveItemInArray(proc, event.previousIndex, event.currentIndex);
+      } else if (zone === 'placing') {
+        const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(proc, state);
+        let groups = buildTieGroupsFromPlaced(placed, state);
+        moveItemInArray(groups, event.previousIndex, event.currentIndex);
+        const newPlaced = flattenTieGroups(groups);
+        state = normalizeRowStateFromOrderedTieGroups(groups, state);
+        proc = mergePlacedAndNonPlacedSegments(newPlaced, nonPlaced);
+      } else if (zone === 'non-placed') {
+        const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(proc, state);
+        const np = [...nonPlaced];
+        moveItemInArray(np, event.previousIndex, event.currentIndex);
+        proc = mergePlacedAndNonPlacedSegments(placed, np);
       }
-    } else if (remainingList && prev === remainingList) {
-      transferArrayItem(rem, proc, event.previousIndex, event.currentIndex);
-    } else {
-      transferArrayItem(proc, rem, event.previousIndex, event.currentIndex);
+    } else if (prevZone === 'remaining' && (zone === 'placing' || zone === 'non-placed')) {
+      const id = rem[event.previousIndex];
+      rem.splice(event.previousIndex, 1);
+      const preset = pending.get(id);
+      const base: OrderEntryRowState = preset ?? {
+        resultCode: 'OK',
+        manualFinishTime: null,
+        rankOverride: null,
+      };
+      pending.delete(id);
+      state.set(id, {
+        resultCode: base.resultCode,
+        manualFinishTime: this.race().type === 'Level Rating' ? base.manualFinishTime ?? null : null,
+        rankOverride: isFinishedComp(base.resultCode) ? base.rankOverride ?? null : null,
+      });
+
+      if (zone === 'placing') {
+        const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(proc, state);
+        let groups = buildTieGroupsFromPlaced(placed, state);
+        const newGroup: TieGroupRow = { rank: 0, ids: [id] };
+        groups.splice(event.currentIndex, 0, newGroup);
+        const newPlaced = flattenTieGroups(groups);
+        state = normalizeRowStateFromOrderedTieGroups(groups, state);
+        proc = mergePlacedAndNonPlacedSegments(newPlaced, nonPlaced);
+      } else {
+        const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(proc, state);
+        const np = [...nonPlaced];
+        np.splice(event.currentIndex, 0, id);
+        proc = mergePlacedAndNonPlacedSegments(placed, np);
+      }
+    } else if (zone === 'remaining') {
+      if (prevZone === 'placing') {
+        const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(proc, state);
+        let groups = buildTieGroupsFromPlaced(placed, state);
+        const group = groups[event.previousIndex];
+        groups.splice(event.previousIndex, 1);
+        for (const gid of group.ids) {
+          state.delete(gid);
+        }
+        rem.push(...group.ids);
+        rem.sort((a, b) => sortEntries(this.compById().get(a)!, this.compById().get(b)!));
+        const newPlaced = flattenTieGroups(groups);
+        const g2 = buildTieGroupsFromPlaced(newPlaced, state);
+        state = normalizeRowStateFromOrderedTieGroups(g2, state);
+        proc = mergePlacedAndNonPlacedSegments(newPlaced, nonPlaced);
+      } else if (prevZone === 'non-placed') {
+        const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(proc, state);
+        const id = nonPlaced[event.previousIndex];
+        const np = [...nonPlaced];
+        np.splice(event.previousIndex, 1);
+        state.delete(id);
+        rem.push(id);
+        rem.sort((a, b) => sortEntries(this.compById().get(a)!, this.compById().get(b)!));
+        proc = mergePlacedAndNonPlacedSegments(placed, np);
+      }
     }
 
     this.remainingIds.set(rem);
     this.processedIds.set(proc);
+    this.rowState.set(state);
+    this.pendingDefaults.set(pending);
     this.syncRowStateAfterLists(rem, proc);
     void this.persist();
     this.focusSearch();
@@ -522,10 +610,8 @@ export class PositionBasedInputPanel implements AfterViewInit {
     return this.rowState().get(id);
   }
 
-  /** Shown in the finish-order column; reflects ties, not list index. */
-  queueRankLabel(id: string): string {
-    const p = this.manualPositions().get(id);
-    if (p === undefined) return '—';
-    return `${p}.`;
+  /** Rank label for a tie group card (1-based position in placings). */
+  groupRankLabel(groupIndex: number): string {
+    return `${groupIndex + 1}.`;
   }
 }

@@ -31,7 +31,7 @@
     <div class="container-handicap">
       <div class="table-section">
         <app-handicap-results-table [competitors]="sortedCompetitors()"
-          [type]="race.type" [handicapScheme]="handicapScheme()"
+          [handicapScheme]="handicapScheme()"
           [selectedCompetitorId]="handicapSelectedCompetitor()?.id ?? null"
           (rowClicked)="onTableRowClick($event)"/>
       </div>

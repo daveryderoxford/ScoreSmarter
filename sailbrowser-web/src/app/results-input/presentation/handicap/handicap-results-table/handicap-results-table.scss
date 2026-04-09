@@ -8,6 +8,11 @@ table {
   width: 100%;
 }
 
+.second-row-text {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
 tr.row-has-result:not(.row-selected) {
   background-color: row.$finished-bg;
   color: var(--mat-sys-on-surface);
