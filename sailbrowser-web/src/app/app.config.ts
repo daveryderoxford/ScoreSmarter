@@ -1,7 +1,14 @@
 import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideZonelessChangeDetection } from '@angular/core';
-import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
+import { getApp, initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { connectAuthEmulator, getAuth, provideAuth } from '@angular/fire/auth';
-import { connectFirestoreEmulator, getFirestore, provideFirestore } from '@angular/fire/firestore';
+import {
+  connectFirestoreEmulator,
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  provideFirestore
+} from '@angular/fire/firestore';
 import { getFunctions, provideFunctions } from '@angular/fire/functions';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { environment } from '../environments/environment';
@@ -29,7 +36,17 @@ export const appConfig: ApplicationConfig = {
     }),
     provideFunctions(() => getFunctions()),
     provideFirestore(() => {
-      const firestore = getFirestore();
+      let firestore = getFirestore();
+      try {
+        firestore = initializeFirestore(getApp(), {
+          localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager(),
+          }),
+        });
+      } catch (err) {
+        // Fallback for unsupported environments or repeated initialization.
+        console.warn('Firestore persistent cache unavailable, using default settings.', err);
+      }
       if (environment.useEmulators) {
         connectFirestoreEmulator(firestore, 'localhost', 8080);
       }
