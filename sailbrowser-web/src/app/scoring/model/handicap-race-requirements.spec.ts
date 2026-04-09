@@ -9,7 +9,7 @@ import {
   schemesRequiredAndSupportedByClub,
 } from './handicap-race-requirements';
 
-const testFleet: Fleet = { type: 'All', id: 'f-all', name: 'All competitors' };
+const testFleet: Fleet = { type: 'GeneralHandicap', id: 'f-general', name: 'General Handicap' };
 
 function levelRatingPrimary(): LevelRatingConfiguration {
   return {

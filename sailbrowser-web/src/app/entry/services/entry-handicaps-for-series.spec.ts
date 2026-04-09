@@ -6,7 +6,7 @@ import type { HandicapConfiguration, LevelRatingConfiguration } from '../../scor
 import { getHandicapSchemeMetadata } from '../../scoring/model/handicap-scheme-metadata';
 import { buildHandicapsForSeriesEntry } from './entry-handicaps-for-series';
 
-const testFleet: Fleet = { type: 'All', id: 'f-all', name: 'All competitors' };
+const testFleet: Fleet = { type: 'GeneralHandicap', id: 'f-general', name: 'General Handicap' };
 
 function pyPrimary(): HandicapConfiguration {
   return {

@@ -1,9 +1,9 @@
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 
-export interface AllFleet {
-   type: 'All';
+export interface GeneralHandicapFleet {
+   type: 'GeneralHandicap';
    id: string;
-   name: 'All competitors';
+   name: 'General Handicap';
 }
 
 export interface BoatClassFleet {
@@ -28,12 +28,12 @@ export interface TagFleet {
    value: string; // The tag string to match, e.g. "Novice"
 }
 
-export type Fleet = AllFleet | BoatClassFleet | HandicapRangeFleet | TagFleet;
+export type Fleet = GeneralHandicapFleet | BoatClassFleet | HandicapRangeFleet | TagFleet;
 
 export function getFleetName(fleet: Fleet): string {
    switch (fleet.type) {
-      case 'All':
-         return 'All competitors';
+      case 'GeneralHandicap':
+         return 'General Handicap';
       case 'BoatClass':
          return fleet.boatClassId;
       case 'HandicapRange':

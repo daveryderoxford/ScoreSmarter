@@ -63,7 +63,7 @@ export class FleetPage {
   filteredFleets = computed(() => {
     const filter = this.searchTerm()?.toLowerCase() || '';
     return this.cs.club().fleets.filter((fleet: Fleet) => {
-      if (fleet.type === 'All') return false; // Hide 'All competitors' fleet from the UI
+      if (fleet.type === 'GeneralHandicap') return false; // Hide system General Handicap fleet from the UI
       const name = getFleetName(fleet).toLowerCase();
       return name.includes(filter);
     }).sort((a, b) => getFleetName(a).localeCompare(getFleetName(b)));

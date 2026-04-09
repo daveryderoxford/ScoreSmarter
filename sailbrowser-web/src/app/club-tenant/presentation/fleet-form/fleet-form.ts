@@ -72,7 +72,7 @@ export class FleetForm {
 
     effect(() => {
       const f = this.fleet();
-      if (f && f.type !== 'All') {
+      if (f && f.type !== 'GeneralHandicap') {
         this.form.patchValue({
           type: f.type,
           name: 'name' in f ? f.name : '',

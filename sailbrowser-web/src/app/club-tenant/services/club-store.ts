@@ -52,9 +52,9 @@ export class ClubStore {
 
     const systemFleets: Fleet[] = [
       { 
-        id: 'all', 
-        type: 'All',
-        name: 'All competitors'
+        id: 'general-handicap', 
+        type: 'GeneralHandicap',
+        name: 'General Handicap'
       }
     ];
 

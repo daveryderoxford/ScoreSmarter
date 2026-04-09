@@ -25,7 +25,7 @@ export function getConfigName(fleet: Fleet, hcapScheme: HandicapScheme) {
          return getFleetName(fleet);
       case 'Tag':
          return getFleetName(fleet);
-      case 'All':
+      case 'GeneralHandicap':
       case 'HandicapRange':
          return hcapScheme;
    }

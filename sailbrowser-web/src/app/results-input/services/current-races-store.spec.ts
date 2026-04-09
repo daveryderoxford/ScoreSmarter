@@ -34,7 +34,7 @@ function minimalSeries(overrides: Partial<Series> = {}): Series {
     primaryScoringConfiguration: {
       id: 'cfg-py',
       name: 'PY',
-      fleet: { type: 'All', id: 'f-all', name: 'All' },
+      fleet: { type: 'GeneralHandicap', id: 'f-general', name: 'General Handicap' },
       type: 'Handicap',
       handicapScheme: 'PY',
     },
