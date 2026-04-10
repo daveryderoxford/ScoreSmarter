@@ -14,7 +14,7 @@ The **Fleet Definition** of a series dictates its **Primary Scoring Mode** and t
 | **Mixed-Fleet** | **Handicap Range** or **General Handicap** | **Corrected Time** (Scheme) | Handicap (Time), Pursuit (Position) |
 
 ### Key Rules:
-*   **General Handicap:** Replaces the ambiguous "All competitors" fleet. It explicitly links a mixed fleet to a scoring scheme (e.g., "All boats with a PY rating").
+*   **General Handicap:** Replaces the ambiguous "All competitors" fleet. It explicitly links a mixed fleet to a scoring scheme (e.g., "General Handicap").
 *   **Tag-based Fleets:** Restricted to **Secondary Scoring** only (e.g., a "Junior" or "Novice" prize within a larger series). They cannot be the primary fleet for a series.
 *   **Scoring Mode Locking:** Selecting a fleet type automatically locks or defaults the series' scoring mode to prevent mismatches (e.g., a Boat Class fleet cannot be scored using a handicap scheme).
 

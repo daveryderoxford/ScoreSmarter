@@ -1,46 +1,13 @@
 <form (ngSubmit)="submit()" [formGroup]="form" novalidate fxLayout="column" fxLayoutAlign="space-around"
   fxLayoutGap=10px>
 
-  <mat-form-field>
-    <mat-label>Class</mat-label>
-    <mat-select formControlName="boatClass">
-      @for (c of cs.club().classes; track c.id) {
-        <mat-option [value]="c.name">{{c.name}}</mat-option>
-      }
-    </mat-select>
-    <mat-error>Boat class required</mat-error>
-  </mat-form-field>
+  <app-boat-core-fields [form]="form" [boatLevelSchemes]="boatLevelSchemes()" />
 
-  <mat-form-field>
-    <mat-label>Sail number</mat-label>
-    <input matInput type="number" inputmode="numeric" pattern="[0-9]*" formControlName="sailNumber">
-    <mat-error>Sail number required</mat-error>
-  </mat-form-field>
-
-  <mat-form-field>
-    <mat-label>Name</mat-label>
-    <input matInput formControlName="name">
-  </mat-form-field>
-
-  <mat-form-field>
-    <mat-label>Normal helm</mat-label>
-    <input matInput formControlName="helm">
-    <mat-error>Helm name required</mat-error>
-  </mat-form-field>
-
-  <mat-form-field>
-    <mat-label>Normal crew</mat-label>
-    <input matInput formControlName="crew">
-  </mat-form-field>
-
-  @if (boatLevelSchemes().length > 0) {
-    <app-handicap-scheme-inputs [form]="form" [schemes]="boatLevelSchemes()" />
+  @if (mode() !== 'entryDialog') {
+    <mat-checkbox formControlName="isClub">Club boat</mat-checkbox>
   }
 
-  <mat-checkbox formControlName="isClub">Club boat</mat-checkbox>
-
   <div fxLayout="row" fxLayoutAlign="space-between center">
-
     <app-submit-button [disabled]="form.invalid || !form.dirty" [busy]="busy()">
       Save
     </app-submit-button>

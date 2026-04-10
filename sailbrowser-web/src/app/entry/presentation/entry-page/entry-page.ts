@@ -4,12 +4,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
-import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatStepperModule } from '@angular/material/stepper';
 import { Router } from '@angular/router';
@@ -17,24 +16,17 @@ import { Boat, boatFilter, BoatsStore } from 'app/boats';
 import { ClubStore } from 'app/club-tenant';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces } from 'app/results-input';
-import {
-  handicapSchemesRequiredForRaces,
-  schemesRequiredAndSupportedByClub,
-} from 'app/scoring/model/handicap-race-requirements';
+import { type Handicap } from 'app/scoring/model/handicap';
+import { handicapSchemesRequiredForRaces } from 'app/scoring/model/handicap-race-requirements';
+import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { BusyButton } from 'app/shared/components/busy-button';
 import { CenteredText } from 'app/shared/components/centered-text';
 import { Toolbar } from 'app/shared/components/toolbar';
-import { debounceTime, map, startWith } from 'rxjs';
+import { firstValueFrom, debounceTime, map, startWith } from 'rxjs';
+import { resolveHandicapsForSeries } from '../../services/entry-helpers';
+import { meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
 import { EntryService } from '../../services/entry.service';
-import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-scheme';
-import { getHandicapValue, type Handicap } from 'app/scoring/model/handicap';
-import {
-  getHandicapSchemeMetadata,
-  getSchemesForTarget,
-  handicapControlName,
-  HANDICAP_SCHEME_METADATA,
-} from 'app/scoring/model/handicap-scheme-metadata';
-import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inputs';
+import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
 
 @Component({
   selector: 'app-entry',
@@ -48,12 +40,9 @@ import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inpu
     DatePipe,
     MatAutocompleteModule,
     Toolbar,
-    MatSelectModule,
-    MatCheckboxModule,
     MatIcon,
     BusyButton,
     CenteredText,
-    HandicapSchemeInputs,
   ],
   templateUrl: 'entry-page.html',
   styles: [
@@ -63,7 +52,7 @@ import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inpu
     @include mix.centered-column-page(".content", 480px);
 
     .actions {
-      margin-top: 5px;
+      margin-top: 10px;
       margin-right: 10px;
       display: flex;
       justify-content: end;
@@ -76,7 +65,7 @@ import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inpu
     .boat-selection {
       display: flex;
       align-items: baseline;
-      gap: 5px;
+      gap: 8px;
       margin-top: 10px;
     }
     .search-field {
@@ -88,14 +77,40 @@ import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inpu
       text-align: center;
       font: var(--mat-sys-body-large);
     }
-    .class-row {
-      display: flex;
-      flex-direction: row;
-      gap: 20px;
+    .boat-panel {
+      border: 2px solid var(--mat-sys-outline);
+      border-radius: 10px;
+      padding: 14px;
+      margin: 10px 0;
+      background: var(--mat-sys-surface-container-low);
+      box-shadow: var(--mat-sys-level1);
     }
-    .save-boat-cb {
-      display: block;
-      margin-bottom: 15px;
+    .boat-panel h4 {
+      margin: 0 0 8px 0;
+      font: var(--mat-sys-title-medium);
+    }
+    .boat-table {
+      display: grid;
+      grid-template-columns: minmax(120px, 180px) 1fr;
+      gap: 6px 12px;
+      align-items: baseline;
+      margin-bottom: 12px;
+      font-size: 15px;
+    }
+    .boat-key {
+      font-weight: 600;
+    }
+    .boat-value {
+      overflow-wrap: anywhere;
+    }
+    .handicap-table {
+      display: grid;
+      grid-template-columns: minmax(120px, 180px) 1fr;
+      gap: 6px 12px;
+      font-size: 15px;
+    }
+    .muted {
+      color: var(--mat-sys-on-surface-variant);
     }
   `,
   ],
@@ -110,13 +125,70 @@ export class EntryPage {
   protected readonly currentRacesStore = inject(CurrentRaces);
   private readonly router = inject(Router);
   private readonly snackbar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
 
   selectedBoat = signal<Boat | null>(null);
-  isNewBoat = signal(false);
-
   busy = signal(false);
 
-  showForm = computed(() => !!this.selectedBoat() || this.isNewBoat());
+  showForm = computed(() => !!this.selectedBoat());
+
+  readonly competitorDetailsGroup: FormGroup = this.formBuilder.group({
+    helm: [''],
+  });
+
+  private readonly helmControl = this.competitorDetailsGroup.get('helm')!;
+
+  readonly canProceedToRaces = computed(() => {
+    const boat = this.selectedBoat();
+    if (!boat) return false;
+    return boat.isClub ? this.helmControl.valid : true;
+  });
+
+  readonly classHandicaps = computed<Handicap[]>(() => {
+    const boat = this.selectedBoat();
+    if (!boat) return [];
+    return this.cs.club().classes.find(c => c.name === boat.boatClass)?.handicaps ?? [];
+  });
+
+  readonly boatHandicaps = computed<Handicap[]>(() => this.selectedBoat()?.handicaps ?? []);
+  readonly displayHandicaps = computed<Handicap[]>(() => {
+    const byScheme = new Map<HandicapScheme, number>();
+    for (const h of this.classHandicaps()) {
+      if (h.value > 0) byScheme.set(h.scheme, h.value);
+    }
+    for (const h of this.boatHandicaps()) {
+      if (h.value > 0) byScheme.set(h.scheme, h.value);
+    }
+    return [...byScheme.entries()].map(([scheme, value]) => ({ scheme, value }));
+  });
+
+  readonly candidateBoat = computed(() => {
+    const boat = this.selectedBoat();
+    if (!boat) return undefined;
+
+    const handicapByScheme = new Map<HandicapScheme, number>();
+    for (const h of this.classHandicaps()) {
+      if (h.value > 0) handicapByScheme.set(h.scheme, h.value);
+    }
+    for (const h of this.boatHandicaps()) {
+      if (h.value > 0) handicapByScheme.set(h.scheme, h.value);
+    }
+
+    const helm = boat.isClub
+      ? String(this.helmControl.value ?? '').trim()
+      : boat.helm;
+
+    if (!helm) return undefined;
+
+    return {
+      boatClassName: boat.boatClass,
+      sailNumber: boat.sailNumber,
+      helm,
+      crew: boat.crew,
+      handicaps: [...handicapByScheme.entries()].map(([scheme, value]) => ({ scheme, value })),
+      tags: [] as string[],
+    };
+  });
 
   readonly raceSelectionGroup = this.formBuilder.group({
     enteredRaces: [[] as Race[], Validators.required],
@@ -129,115 +201,32 @@ export class EntryPage {
     { initialValue: [] as Race[] }
   );
 
+  readonly eligibleRaces = computed(() => {
+    const candidate = this.candidateBoat();
+    if (!candidate) return [];
+    const seriesById = new Map(this.rc.allSeries().map(s => [s.id, s]));
+    return this.todaysRaces().filter(race => {
+      const series = seriesById.get(race.seriesId);
+      if (!series) return false;
+
+      const handicaps = resolveHandicapsForSeries(
+        series,
+        { boatClassName: candidate.boatClassName, handicaps: candidate.handicaps },
+        this.cs.club().classes
+      );
+      return meetsPrimaryFleetEligibility(series, {
+        boatClass: candidate.boatClassName,
+        handicaps,
+      });
+    });
+  });
+
   readonly entryHandicapSchemes = computed(() => {
     const races = this.enteredRacesSig() ?? [];
-    const required = handicapSchemesRequiredForRaces(races, this.rc.allSeries());
-    return schemesRequiredAndSupportedByClub(required, this.cs.club().supportedHandicapSchemes);
+    return handicapSchemesRequiredForRaces(races, this.rc.allSeries());
   });
 
-  readonly competitorDetailsGroup: FormGroup = this.formBuilder.group({
-    boatClass: ['', Validators.required],
-    sailNumber: [null as number | null, Validators.required],
-    helm: ['', Validators.required],
-    crew: [''],
-    saveBoat: [false],
-  });
-
-  /** Reacts to class changes while entering a new boat (handicap effect reads this). */
-  private readonly newEntryBoatClassSig = toSignal(
-    this.competitorDetailsGroup.get('boatClass')!.valueChanges.pipe(
-      startWith(this.competitorDetailsGroup.get('boatClass')!.value)
-    ),
-    { initialValue: '' }
-  );
-
-  constructor() {
-    this.initialiseHandicapControls();
-
-    effect(() => {
-      const boat = this.selectedBoat();
-      const isNew = this.isNewBoat();
-
-      if (isNew) {
-        this.competitorDetailsGroup.enable();
-        this.competitorDetailsGroup.reset();
-        this.boatSearchControl.setValue('');
-      } else if (boat) {
-        this.competitorDetailsGroup.patchValue({
-          boatClass: boat.boatClass,
-          sailNumber: boat.sailNumber,
-          helm: boat.helm,
-          crew: boat.crew,
-        });
-
-        this.competitorDetailsGroup.get('boatClass')?.disable();
-        this.competitorDetailsGroup.get('sailNumber')?.disable();
-
-        if (boat.isClub) {
-          this.competitorDetailsGroup.get('helm')?.enable();
-        } else {
-          this.competitorDetailsGroup.get('helm')?.disable();
-        }
-      }
-    });
-
-    effect(() => {
-      const boat = this.selectedBoat();
-      const entrySchemes = new Set(this.entryHandicapSchemes());
-      const club = this.cs.club();
-      const rawClass = this.newEntryBoatClassSig();
-      const classNameFromForm = typeof rawClass === 'string' ? rawClass : '';
-      const classNameForHandicaps = boat?.boatClass ?? classNameFromForm;
-      const bc = club.classes.find(x => x.name === classNameForHandicaps);
-
-      for (const scheme of HANDICAP_SCHEMES) {
-        const name = handicapControlName(scheme);
-        const c = this.competitorDetailsGroup.get(name);
-        if (!c) continue;
-        const meta = getHandicapSchemeMetadata(scheme);
-        const applies = HANDICAP_SCHEME_METADATA[scheme].appliesTo;
-
-        if (!entrySchemes.has(scheme)) {
-          c.clearValidators();
-          c.disable({ emitEvent: false });
-          c.updateValueAndValidity({ emitEvent: false });
-          continue;
-        }
-
-        const fromClass = getHandicapValue(bc?.handicaps, scheme);
-        const fromBoat = boat ? getHandicapValue(boat.handicaps, scheme) : undefined;
-
-        if (applies === 'boatClass') {
-          if (fromClass !== undefined) {
-            c.patchValue(fromClass, { emitEvent: false });
-            c.clearValidators();
-            c.disable({ emitEvent: false });
-          } else {
-            c.patchValue(meta.defaultValue, { emitEvent: false });
-            c.setValidators([Validators.required, Validators.min(meta.min), Validators.max(meta.max)]);
-            c.enable({ emitEvent: false });
-          }
-          c.updateValueAndValidity({ emitEvent: false });
-          continue;
-        }
-
-        // Boat-level schemes (IRC, Personal): lock if set on boat or on class
-        const resolvedBoatScheme = fromBoat ?? fromClass;
-        if (resolvedBoatScheme !== undefined) {
-          c.patchValue(resolvedBoatScheme, { emitEvent: false });
-          c.clearValidators();
-          c.disable({ emitEvent: false });
-        } else {
-          c.patchValue(meta.defaultValue, { emitEvent: false });
-          c.setValidators([Validators.required, Validators.min(meta.min), Validators.max(meta.max)]);
-          c.enable({ emitEvent: false });
-        }
-        c.updateValueAndValidity({ emitEvent: false });
-      }
-    });
-  }
-
-  readonly boatSearchControl = new FormControl('');
+  readonly boatSearchControl = new FormControl<string | Boat>('');
 
   private readonly searchTerm = toSignal(
     this.boatSearchControl.valueChanges.pipe(
@@ -254,64 +243,129 @@ export class EntryPage {
 
   todaysRaces = this.currentRacesStore.selectedRaces;
 
-  private initialiseHandicapControls(): void {
-    for (const scheme of HANDICAP_SCHEMES) {
-      const meta = getHandicapSchemeMetadata(scheme);
-      this.competitorDetailsGroup.addControl(
-        handicapControlName(scheme),
-        this.formBuilder.control<number | null>(meta.defaultValue, [
-          Validators.min(meta.min),
-          Validators.max(meta.max),
-        ])
+  constructor() {
+    effect(() => {
+      const boat = this.selectedBoat();
+      if (!boat) {
+        this.helmControl.setValue('', { emitEvent: false });
+        this.helmControl.clearValidators();
+        this.helmControl.disable({ emitEvent: false });
+        this.helmControl.updateValueAndValidity({ emitEvent: false });
+        return;
+      }
+
+      if (boat.isClub) {
+        this.helmControl.enable({ emitEvent: false });
+        this.helmControl.setValidators([Validators.required]);
+        this.helmControl.setValue('', { emitEvent: false });
+      } else {
+        this.helmControl.setValue(boat.helm ?? '', { emitEvent: false });
+        this.helmControl.clearValidators();
+        this.helmControl.disable({ emitEvent: false });
+      }
+      this.helmControl.updateValueAndValidity({ emitEvent: false });
+    });
+
+    effect(() => {
+      const allowed = new Set(this.eligibleRaces().map(r => r.id));
+      const selected = this.enteredRacesSig() ?? [];
+      const next = selected.filter(r => allowed.has(r.id));
+      if (next.length !== selected.length) {
+        this.raceSelectionGroup.get('enteredRaces')?.setValue(next);
+      }
+    });
+
+    // Replace temporary locally-selected new boat with the persisted store record once loaded.
+    effect(() => {
+      const boat = this.selectedBoat();
+      if (!boat || !boat.id.startsWith('new-')) return;
+      const persisted = this.bs.boats().find(
+        b => b.boatClass === boat.boatClass && b.sailNumber === boat.sailNumber && b.helm === boat.helm
       );
-    }
+      if (!persisted) return;
+      this.selectedBoat.set(persisted);
+      this.boatSearchControl.setValue(persisted, { emitEvent: false });
+    });
   }
 
-  displayBoatFn(boat: Boat | null): string {
-    if (!boat) {
-      return '';
+  displayBoatFn(boat: Boat | string | null): string {
+    if (!boat || typeof boat === 'string') {
+      return typeof boat === 'string' ? boat : '';
     } else if (boat.isClub) {
-      return `Club ${boat.boatClass}  ${boat.sailNumber}`;
+      return `Club ${boat.boatClass} ${boat.sailNumber}`;
     } else {
-      return `${boat.boatClass}  ${boat.sailNumber}  (${boat.helm})`;
+      return `${boat.boatClass} ${boat.sailNumber} (${boat.helm})`;
     }
   }
 
   onBoatSelected(event: MatAutocompleteSelectedEvent) {
-    this.isNewBoat.set(false);
     this.selectedBoat.set(event.option.value as Boat);
   }
 
-  createNewBoat() {
-    this.selectedBoat.set(null);
-    this.isNewBoat.set(true);
+  async createNewBoat() {
+    const dialogRef = this.dialog.open(NewBoatDialog, {
+      width: '400px',
+      disableClose: true,
+    });
+
+    const created = await firstValueFrom(dialogRef.afterClosed()) as NewBoatDialogResult | undefined;
+    if (!created) return;
+
+    if (created.saveToRepository) {
+      try {
+        this.busy.set(true);
+        await this.bs.add(created.boat);
+      } catch (error: unknown) {
+        this.snackbar.open('Error encountered adding new boat', 'Dismiss', { duration: 3000 });
+        console.log('EntryPage. Error adding new boat: ' + String(error));
+        return;
+      } finally {
+        this.busy.set(false);
+      }
+
+      const persisted = this.bs.boats().find(
+        b =>
+          b.boatClass === created.boat.boatClass &&
+          b.sailNumber === Number(created.boat.sailNumber ?? 0) &&
+          b.helm === (created.boat.helm ?? '')
+      );
+      if (persisted) {
+        this.selectedBoat.set(persisted);
+        this.boatSearchControl.setValue(persisted, { emitEvent: false });
+        return;
+      }
+    }
+
+    const newBoat: Boat = {
+      id: `new-${Date.now()}`,
+      boatClass: created.boat.boatClass ?? '',
+      sailNumber: Number(created.boat.sailNumber ?? 0),
+      helm: created.boat.helm ?? '',
+      crew: created.boat.crew ?? '',
+      name: created.boat.name ?? '',
+      isClub: false,
+      handicaps: created.boat.handicaps,
+    };
+    this.selectedBoat.set(newBoat);
+    this.boatSearchControl.setValue(newBoat, { emitEvent: false });
   }
 
   async onSubmit() {
-    if (this.raceSelectionGroup.invalid || this.competitorDetailsGroup.invalid) return;
+    const selected = this.selectedBoat();
+    const candidate = this.candidateBoat();
+    if (!selected || !candidate || this.raceSelectionGroup.invalid) return;
 
     const races = this.raceSelectionGroup.value.enteredRaces as Race[];
-    const details = this.competitorDetailsGroup.getRawValue() as Record<string, unknown>;
-
-    if (this.isNewBoat() && details['saveBoat']) {
-      await this.saveNewBoat(details);
-    }
-
-    const active = this.entryHandicapSchemes();
-    const handicaps: Handicap[] = active.map((scheme: HandicapScheme) => {
-      const meta = getHandicapSchemeMetadata(scheme);
-      const rawValue = details[handicapControlName(scheme)];
-      const value = Number(rawValue ?? meta.defaultValue);
-      return { scheme, value: Number.isFinite(value) && value > 0 ? value : meta.defaultValue };
-    });
+    const active = new Set(this.entryHandicapSchemes());
+    const activeHandicaps = candidate.handicaps.filter(h => active.has(h.scheme));
 
     const entryData = {
       races,
-      boatClass: details['boatClass'] as string,
-      sailNumber: details['sailNumber'] as number,
-      helm: details['helm'] as string,
-      crew: (details['crew'] as string) || undefined,
-      handicaps: active.length > 0 ? handicaps : undefined,
+      boatClass: selected.boatClass,
+      sailNumber: selected.sailNumber,
+      helm: candidate.helm,
+      crew: selected.crew || undefined,
+      handicaps: active.size > 0 ? activeHandicaps : undefined,
     };
 
     if (this._entryService.isDuplicateEntry(entryData)) {
@@ -324,7 +378,7 @@ export class EntryPage {
       await this._entryService.enterRaces(entryData);
     } catch (error: unknown) {
       this.snackbar.open('Error encountered adding entries', 'Dismiss', { duration: 3000 });
-      console.log('EntryPage:  Error adding entries: ' + String(error));
+      console.log('EntryPage: Error adding entries: ' + String(error));
     } finally {
       this.busy.set(false);
     }
@@ -332,43 +386,12 @@ export class EntryPage {
     this.raceSelectionGroup.reset();
     this.competitorDetailsGroup.reset();
     this.selectedBoat.set(null);
+    this.boatSearchControl.setValue('', { emitEvent: false });
 
     this.router.navigate(['entry', 'entries']);
   }
 
   public canDeactivate(): boolean {
     return !this.raceSelectionGroup.dirty && !this.competitorDetailsGroup.dirty;
-  }
-
-  async saveNewBoat(details: Record<string, unknown>) {
-    const boatSchemes = getSchemesForTarget(this.cs.club().supportedHandicapSchemes, 'boat');
-    const handicaps: Handicap[] = boatSchemes.map(scheme => {
-      const meta = getHandicapSchemeMetadata(scheme);
-      const value = Number(details[handicapControlName(scheme)] ?? meta.defaultValue);
-      return {
-        scheme,
-        value: Number.isFinite(value) && value > 0 ? value : meta.defaultValue,
-      };
-    });
-
-    const newBoat: Partial<Boat> = {
-      boatClass: details['boatClass'] as string,
-      sailNumber: details['sailNumber'] as number,
-      helm: details['helm'] as string,
-      crew: (details['crew'] as string) || '',
-      name: '',
-      isClub: false,
-      handicaps: handicaps.length > 0 ? handicaps : undefined,
-    };
-
-    try {
-      this.busy.set(true);
-      await this.bs.add(newBoat);
-    } catch (error: unknown) {
-      this.snackbar.open('Error encountered adding new boat', 'Dismiss', { duration: 3000 });
-      console.log('EntryPage.  Error adding new boat: ' + String(error));
-    } finally {
-      this.busy.set(false);
-    }
   }
 }

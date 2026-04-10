@@ -30,14 +30,6 @@ import { ClubStore } from '../../services/club-store';
     @use "mixins" as mix;
 
     @include mix.centered-column-page(".content", 450px);
-
-    .system-fleet {
-      cursor: default;
-    }
-
-    .system-lock-icon {
-      color: #9e9e9e;
-    }
   `
 })
 export class FleetPage {

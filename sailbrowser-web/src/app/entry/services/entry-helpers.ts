@@ -11,11 +11,18 @@ export interface EntryHandicapSource {
   handicaps?: Handicap[];
 }
 
+export interface PrimaryFleetEligibilityEntry {
+  boatClass: string;
+  handicaps: Handicap[];
+}
+
 /**
- * Builds the `Handicap[]` stored on a series entry / race competitor for a given series,
- * using form overrides, then club class defaults, then per-scheme metadata defaults.
+ * Resolves the `Handicap[]` for a given series using:
+ * 1) source overrides,
+ * 2) club class defaults,
+ * 3) per-scheme metadata defaults.
  */
-export function buildHandicapsForSeriesEntry(
+export function resolveHandicapsForSeries(
   series: Series,
   source: EntryHandicapSource,
   clubClasses: BoatClass[]
@@ -42,4 +49,28 @@ export function buildHandicapsForSeriesEntry(
     const value = typeof chosen === 'number' && chosen > 0 ? chosen : meta.defaultValue;
     return { scheme, value };
   });
+}
+
+/**
+ * Returns true when an entry satisfies a series' primary fleet rule.
+ */
+export function meetsPrimaryFleetEligibility(
+  series: Series,
+  entry: PrimaryFleetEligibilityEntry
+): boolean {
+  const config = series.primaryScoringConfiguration;
+  const fleet = config.fleet;
+
+  switch (fleet.type) {
+    case 'GeneralHandicap':
+      return getHandicapValue(entry.handicaps, config.handicapScheme) != null;
+    case 'BoatClass':
+      return entry.boatClass === fleet.boatClassId;
+    case 'HandicapRange': {
+      const value = getHandicapValue(entry.handicaps, fleet.scheme);
+      return value != null && value >= fleet.min && value <= fleet.max;
+    }
+    case 'Tag':
+      return false;
+  }
 }
