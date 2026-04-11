@@ -78,7 +78,7 @@ import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
       font: var(--mat-sys-body-large);
     }
     .boat-panel {
-      border: 2px solid var(--mat-sys-outline);
+      border: 1px solid var(--mat-sys-outline);
       border-radius: 10px;
       padding: 14px;
       margin: 10px 0;
@@ -91,23 +91,23 @@ import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
     }
     .boat-table {
       display: grid;
-      grid-template-columns: minmax(120px, 180px) 1fr;
+      grid-template-columns: minmax(100px, 120px) 1fr;
       gap: 6px 12px;
       align-items: baseline;
       margin-bottom: 12px;
-      font-size: 15px;
+      font-size: 17px;
     }
     .boat-key {
-      font-weight: 600;
+      font-weight: 500;
     }
     .boat-value {
       overflow-wrap: anywhere;
     }
     .handicap-table {
       display: grid;
-      grid-template-columns: minmax(120px, 180px) 1fr;
+      grid-template-columns: minmax(100px, 120px) 1fr;
       gap: 6px 12px;
-      font-size: 15px;
+      font-size: 17px;
     }
     .muted {
       color: var(--mat-sys-on-surface-variant);

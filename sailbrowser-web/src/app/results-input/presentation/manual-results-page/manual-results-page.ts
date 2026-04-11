@@ -1,11 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, linkedSignal, signal, untracked, viewChild } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { afterNextRender, ChangeDetectionStrategy, Component, computed, effect, inject, input, linkedSignal, signal, untracked, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectChange, MatSelectModule } from '@angular/material/select';
 import { ScoringEngine } from 'app/published-results';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces, RaceCompetitor, RaceCompetitorStore } from 'app/results-input';
@@ -13,14 +10,14 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { BusyButton } from 'app/shared/components/busy-button';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
-import { firstValueFrom, startWith } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { RaceTitlePipe } from '../../../shared/pipes/race-title-pipe';
 import { manualRaceTableSort, ManualResultsService } from '../../services/manual-results.service';
 import { HandicapInputPanel } from '../handicap/handicap-input-panel/handicap-input-panel';
 import { HandicapResultsTable } from '../handicap/handicap-results-table/handicap-results-table';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../handicap/race-start-time-dialog';
 import { PositionBasedInputPanel } from '../position-based/position-based-input-panel/position-based-input-panel';
-import { MoreRacesDialog } from './more-races-dialog';
+import { ScoringSheetRacePickerDialog, type ScoringSheetRacePickerDialogData } from './scoring-sheet-race-picker-dialog';
 
 @Component({
   selector: 'app-manual-results-page',
@@ -28,11 +25,9 @@ import { MoreRacesDialog } from './more-races-dialog';
   styleUrls: ['./manual-results-page.scss'],
   imports: [
     Toolbar,
-    MatFormFieldModule,
     MatButtonModule,
-    ReactiveFormsModule,
+    MatChipsModule,
     MatIconModule,
-    MatSelectModule,
     MatDialogModule,
     HandicapResultsTable,
     BusyButton,
@@ -55,15 +50,14 @@ export class ManualResultsPage {
 
   readonly raceId = input<string>();
 
-  readonly raceFilterControl = new FormControl<string | null>(null);
+  /** Scoring sheet race selection (MVP: at most one id). */
+  private readonly scoringSheetRaceIds = signal<string[]>([]);
 
-  readonly selectedRaceId = toSignal(this.raceFilterControl.valueChanges.pipe(
-    startWith(this.raceFilterControl.value),
-  ),
-  { initialValue: this.raceFilterControl.value });
-
-  readonly selectedRace = computed(() =>
-    this.currentRacesStore.selectedRaces().find(r => this.selectedRaceId() == r.id));
+  readonly selectedRace = computed((): Race | undefined => {
+    const id = this.scoringSheetRaceIds()[0];
+    if (!id) return undefined;
+    return this.raceCalendarStore.allRaces().find(r => r.id === id);
+  });
 
   readonly sortedCompetitors = computed(() => {
     const raceId = this.selectedRace()?.id;
@@ -87,29 +81,44 @@ export class ManualResultsPage {
   constructor() {
     effect(() => {
       const id = this.raceId();
-      if (id && this.raceFilterControl.value !== id) {
-        untracked(() => this.raceFilterControl.setValue(id));
-      }
+      if (!id) return;
+      untracked(() => {
+        if (this.scoringSheetRaceIds()[0] !== id) {
+          this.scoringSheetRaceIds.set([id]);
+          this.currentRacesStore.addRaceId(id);
+        }
+      });
+    });
+
+    afterNextRender(() => {
+      setTimeout(() => {
+        if (!this.raceId() && this.scoringSheetRaceIds().length === 0) {
+          void this.openScoringSheetRacePicker();
+        }
+      }, 0);
     });
   }
 
-  onRaceSelectionChange(event: MatSelectChange) {
-    if (event.value === 'MORE') {
-      this.openMoreRacesDialog();
-      this.raceFilterControl.setValue(null);
-    }
-  }
-
-  async openMoreRacesDialog() {
-    const dialogRef = this.dialog.open(MoreRacesDialog, {
-      width: '400px',
-      maxHeight: '80vh'
-    });
+  async openScoringSheetRacePicker(): Promise<void> {
+    const preselected = this.scoringSheetRaceIds()[0] ?? null;
+    const dialogRef = this.dialog.open<ScoringSheetRacePickerDialog, ScoringSheetRacePickerDialogData, string | undefined>(
+      ScoringSheetRacePickerDialog,
+      {
+        width: 'min(92vw, 440px)',
+        maxHeight: '90vh',
+        data: { preselectedRaceId: preselected },
+      },
+    );
 
     const result = await firstValueFrom(dialogRef.afterClosed());
     if (result) {
-      this.raceFilterControl.setValue(result);
+      this.currentRacesStore.addRaceId(result);
+      this.scoringSheetRaceIds.set([result]);
     }
+  }
+
+  clearScoringSheetRace(): void {
+    this.scoringSheetRaceIds.set([]);
   }
 
   async onTableRowClick(row: RaceCompetitor) {
