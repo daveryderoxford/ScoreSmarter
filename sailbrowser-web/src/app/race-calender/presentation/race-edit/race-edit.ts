@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -9,7 +9,7 @@ import { Toolbar } from "app/shared/components/toolbar";
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { SubmitButton } from "app/shared/components/submit-button";
-import { Race, RACE_TYPES, RaceCalendarStore } from 'app/race-calender';
+import { Race, RaceCalendarStore } from 'app/race-calender';
 
 @Component({
   selector: 'app-race-edit',
@@ -40,27 +40,53 @@ export class RaceEdit {
 
   raceId = input.required<string>();
   race = this.rcs.getRace(this.raceId);
+  readonly series = computed(() => {
+    const race = this.race();
+    if (!race) return undefined;
+    return this.rcs.allSeries().find(s => s.id === race.seriesId);
+  });
 
-  raceTypes = RACE_TYPES;
+  readonly isPrimaryLevelRatingSeries = computed(() =>
+    this.series()?.primaryScoringConfiguration.type === 'LevelRating'
+  );
+  readonly derivedRaceTypeLabel = computed(() =>
+    this.isPrimaryLevelRatingSeries()
+      ? 'Level Rating'
+      : (this.form.controls.isPursuit.value ? 'Pursuit' : 'Handicap')
+  );
 
   busy = signal(false);
 
   form = this.fb.group({
-    type: ['Convertional', Validators.required],
+    isPursuit: [false, Validators.required],
     isDiscardable: [true, Validators.required],
     isAverageLap: [true, Validators.required],
   });
 
   constructor() {
     effect(() => {
-      if (this.race()) this.form.patchValue(this.race()!);
+      const race = this.race();
+      if (!race) return;
+      this.form.patchValue({
+        isPursuit: race.type === 'Pursuit',
+        isDiscardable: race.isDiscardable,
+        isAverageLap: race.isAverageLap,
+      });
     });
   }
 
   async submit() {
     if (this.form.valid) {
       const race = this.race()!;
-      const update = this.form.getRawValue() as Partial<Race>;
+      const value = this.form.getRawValue();
+      const type: Race['type'] = this.isPrimaryLevelRatingSeries()
+        ? 'Level Rating'
+        : (value.isPursuit ? 'Pursuit' : 'Handicap');
+      const update: Partial<Race> = {
+        type,
+        isDiscardable: value.isDiscardable ?? true,
+        isAverageLap: value.isAverageLap ?? true,
+      };
 
       try {
         this.busy.set(true);

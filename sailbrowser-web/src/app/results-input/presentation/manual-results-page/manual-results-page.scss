@@ -2,8 +2,43 @@
   display: block;
 }
 
-.race-selector {
-  width: 250px;
+.sheet-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  max-width: min(100%, 720px);
+}
+
+.sheet-chips {
+  min-height: 32px;
+}
+
+.select-races-btn {
+  flex-shrink: 0;
+}
+
+.manual-results-empty {
+  margin: 24px auto;
+  max-width: 480px;
+  padding: 28px 24px 32px;
+  text-align: center;
+  border-radius: 8px;
+  background: white;
+  box-sizing: border-box;
+}
+
+.manual-results-empty-title {
+  margin: 0 0 8px;
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.manual-results-empty-hint {
+  margin: 0 0 20px;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.9375rem;
 }
 
 .container-handicap {

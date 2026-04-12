@@ -1,4 +1,11 @@
-import { ApplicationConfig, inject, isDevMode, provideAppInitializer, provideZonelessChangeDetection } from '@angular/core';
+import {
+  ApplicationConfig,
+  inject,
+  isDevMode,
+  LOCALE_ID,
+  provideAppInitializer,
+  provideZonelessChangeDetection,
+} from '@angular/core';
 import { getApp, initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { connectAuthEmulator, getAuth, provideAuth } from '@angular/fire/auth';
 import {
@@ -22,9 +29,14 @@ if (isDevMode()) {
   console.log('AppCheck configured in debug mode');
 }
 
+function browserLocaleId(): string {
+  return typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en-GB';
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideAppInitializer(() => inject(ClubTenant).initialize()),    
+    { provide: LOCALE_ID, useFactory: browserLocaleId },
+    provideAppInitializer(() => inject(ClubTenant).initialize()),
     provideZonelessChangeDetection(),
     provideFirebaseApp(() => initializeApp(firebaseConfig)),
     provideAuth(() => {

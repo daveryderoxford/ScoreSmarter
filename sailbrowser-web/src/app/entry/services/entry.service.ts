@@ -7,7 +7,7 @@ import { Race } from '../../race-calender/model/race';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
 import { Handicap } from 'app/scoring/model/handicap';
-import { buildHandicapsForSeriesEntry } from './entry-handicaps-for-series';
+import { resolveHandicapsForSeries } from './entry-helpers';
 
 export interface EntryDetails {
   races: Race[];
@@ -44,7 +44,7 @@ export class EntryService {
         throw new ScoreSmarterError(msg);
       }
 
-      const handicapsForEntry = buildHandicapsForSeriesEntry(series, {
+      const handicapsForEntry = resolveHandicapsForSeries(series, {
         boatClassName: details.boatClass,
         handicaps: details.handicaps,
       }, this.clubStore.club().classes);

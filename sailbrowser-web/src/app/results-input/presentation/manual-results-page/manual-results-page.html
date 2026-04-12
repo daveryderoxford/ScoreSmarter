@@ -1,16 +1,19 @@
 <app-toolbar title="Results Entry">
 
-  <div center>
-    <mat-form-field appearance="outline" class="race-selector dense-form-field" subscriptSizing="dynamic">
-      <mat-select [formControl]="raceFilterControl" placeholder="Select Race" (selectionChange)="onRaceSelectionChange($event)">
-        @for (race of currentRacesStore.selectedRaces(); track race.id) {
-        <mat-option [value]="race.id">
-          {{race | racetitle}}
-          </mat-option>
-        }
-        <mat-option value="MORE">...more races</mat-option>
-      </mat-select>
-    </mat-form-field>
+  <div center class="sheet-toolbar">
+    <mat-chip-set class="sheet-chips" aria-label="Races on scoring sheet">
+      @if (selectedRace(); as sr) {
+        <mat-chip-row removable (removed)="clearScoringSheetRace()">
+          <span matChipContent>{{ sr | racetitle }}</span>
+          <button matChipRemove type="button" aria-label="Remove race from scoring sheet">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip-row>
+      }
+    </mat-chip-set>
+    <button matButton="outlined" type="button" class="select-races-btn" (click)="openScoringSheetRacePicker()">
+      Select races
+    </button>
   </div>
 
   @if (selectedRace(); as sr) {
@@ -19,7 +22,7 @@
     }
   }
 
-  <app-busy-button [busy]="publishing()" (click)="publish()">
+  <app-busy-button [style]="'text'" [busy]="publishing()" (click)="publish()">
     Publish
   </app-busy-button>
 
@@ -49,4 +52,12 @@
       </div>
     </div>
   }
+} @else {
+  <div class="manual-results-empty mat-elevation-z1">
+    <p class="manual-results-empty-title">No race on the scoring sheet yet.</p>
+    <p class="manual-results-empty-hint">Choose which race you are entering results for.</p>
+    <button mat-flat-button color="primary" type="button" (click)="openScoringSheetRacePicker()">
+      Select races on Scoring Sheet
+    </button>
+  </div>
 }

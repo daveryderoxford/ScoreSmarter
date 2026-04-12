@@ -9,12 +9,13 @@ import {
   ElementRef,
   inject,
   input,
+  linkedSignal,
   signal,
   untracked,
   viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -24,7 +25,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { Race } from 'app/race-calender';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { normaliseString } from 'app/shared/utils/string-utils';
-import { firstValueFrom, map, startWith } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
 import {
   buildTieGroupsFromPlaced,
   clearTieRankOverrideChain,
@@ -40,6 +41,58 @@ import {
 import { ResultCodeDialog } from '../result-code-dialog';
 import { RaceCompetitor, sortEntries } from 'app/results-input';
 
+/** Placing / penalty queue derived from `RaceCompetitor[]`; overwritten when race or row-id set changes. */
+interface OrderQueueModel {
+  processedIds: string[];
+  remainingIds: string[];
+  rowState: Map<string, OrderEntryRowState>;
+}
+
+function emptyOrderQueue(): OrderQueueModel {
+  return { processedIds: [], remainingIds: [], rowState: new Map() };
+}
+
+function buildOrderQueueFromCompetitors(comps: RaceCompetitor[]): OrderQueueModel {
+  const sorted = [...comps].sort(sortEntries);
+
+  const withPos = comps
+    .filter(c => c.manualPosition != null && c.manualPosition !== undefined)
+    .sort((a, b) => (a.manualPosition ?? 0) - (b.manualPosition ?? 0));
+  const withPosIds = new Set(withPos.map(c => c.id));
+
+  const processedNoPos = sorted.filter(
+    c => !withPosIds.has(c.id) && c.resultCode !== 'NOT FINISHED',
+  );
+
+  let processed = [...withPos.map(c => c.id), ...processedNoPos.map(c => c.id)];
+  const processedSet = new Set(processed);
+  const remaining = sorted.filter(c => !processedSet.has(c.id)).map(c => c.id);
+
+  const state = new Map<string, OrderEntryRowState>();
+  for (const id of processed) {
+    const c = comps.find(x => x.id === id)!;
+    state.set(id, {
+      resultCode: c.resultCode,
+      manualFinishTime: c.manualFinishTime ?? null,
+      rankOverride:
+        isFinishedComp(c.resultCode) && c.manualPosition != null ? c.manualPosition : null,
+    });
+  }
+
+  processed = enforceProcessedSegmentOrder(processed, state);
+  const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(processed, state);
+  const groups = buildTieGroupsFromPlaced(placed, state);
+  const stateNorm = normalizeRowStateFromOrderedTieGroups(groups, state);
+
+  return {
+    processedIds: mergePlacedAndNonPlacedSegments(placed, nonPlaced),
+    remainingIds: remaining,
+    rowState: stateNorm,
+  };
+}
+
+type OrderEntryInput = { key: string; raceId: string; comps: RaceCompetitor[] };
+
 @Component({
   selector: 'app-position-based-input-panel',
   imports: [
@@ -50,14 +103,13 @@ import { RaceCompetitor, sortEntries } from 'app/results-input';
     MatIconModule,
     MatDialogModule,
     MatMenuModule,
-    ReactiveFormsModule,
+    FormsModule,
   ],
   templateUrl: './position-based-input-panel.html',
   styleUrl: './position-based-input-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PositionBasedInputPanel implements AfterViewInit {
-  private readonly fb = inject(FormBuilder);
   private readonly manualResults = inject(ManualResultsService);
   private readonly breakpoint = inject(BreakpointObserver);
   private readonly dialog = inject(MatDialog);
@@ -72,23 +124,59 @@ export class PositionBasedInputPanel implements AfterViewInit {
 
   readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('entrySearch');
 
-  readonly searchControl = this.fb.nonNullable.control('');
-  readonly searchTerm = toSignal(
-    this.searchControl.valueChanges.pipe(startWith(this.searchControl.value)),
-    { initialValue: '' }
+  /**
+   * Stable key: new value only when the race changes or the set of competitor row ids changes.
+   * Drag/drop edits do not change the key, so `orderQueue` stays writable until the next server snapshot.
+   */
+  private readonly orderEntryInput = computed<OrderEntryInput>(
+    () => {
+      const r = this.race();
+      const comps = this.competitors();
+      const raceId = r?.id ?? '';
+      const key = raceId
+        ? `${raceId}\u0001${[...comps].map(c => c.id).sort().join('\u0001')}`
+        : '';
+      return { key, raceId, comps };
+    },
+    { equal: (a, b) => a.key === b.key },
   );
 
-  /** Pre-add defaults for competitors still in the left list (not yet in processed queue). */
-  readonly pendingDefaults = signal<Map<string, OrderEntryRowState>>(new Map());
+  /**
+   * Linked to `orderEntryInput`: recomputes from `competitors()` when the key changes (including
+   * `[]` → first rows). User actions call `orderQueue.update` until the next key change.
+   */
+  readonly orderQueue = linkedSignal<OrderEntryInput, OrderQueueModel>({
+    source: () => this.orderEntryInput(),
+    computation: (input): OrderQueueModel => {
+      if (!input.raceId) {
+        return emptyOrderQueue();
+      }
+      return buildOrderQueueFromCompetitors(input.comps);
+    },
+  });
 
-  readonly processedIds = signal<string[]>([]);
-  readonly remainingIds = signal<string[]>([]);
-  readonly rowState = signal<Map<string, OrderEntryRowState>>(new Map());
-  readonly selectedMatchId = signal<string | undefined>(undefined);
+  /**
+   * Search text, cleared whenever `orderEntryInput().key` changes (same as queue reset).
+   * Writable between key changes for typing.
+   */
+  readonly searchText = linkedSignal<string, string>({
+    source: () => this.orderEntryInput().key,
+    computation: () => '',
+  });
+
+  /** Pre-add defaults for competitors still in the left list (not yet in processed queue). */
+  readonly pendingDefaults = linkedSignal<string, Map<string, OrderEntryRowState>>({
+    source: () => this.orderEntryInput().key,
+    computation: () => new Map(),
+  });
+
+  /** Row the user last clicked in the remaining list; reset when the entry key changes. */
+  readonly selectedMatchId = linkedSignal<string, string | undefined>({
+    source: () => this.orderEntryInput().key,
+    computation: () => undefined,
+  });
 
   readonly pendingPersist = signal(false);
-
-  private lastInitRaceId = '';
 
   readonly compById = computed(() => {
     const m = new Map<string, RaceCompetitor>();
@@ -100,23 +188,23 @@ export class PositionBasedInputPanel implements AfterViewInit {
 
   /** Tie groups for placings (drag one card per group). */
   readonly placingTieGroups = computed(() => {
-    const proc = this.processedIds();
-    const state = this.rowState();
-    const { placed } = segmentProcessedPlacedAndNonPlaced(proc, state);
-    return buildTieGroupsFromPlaced(placed, state);
+    const q = this.orderQueue();
+    const { placed } = segmentProcessedPlacedAndNonPlaced(q.processedIds, q.rowState);
+    return buildTieGroupsFromPlaced(placed, q.rowState);
   });
 
   /** First competitor id per tie group — CDK list data keys. */
   readonly placingGroupDropKeys = computed(() => this.placingTieGroups().map(g => g.ids[0]));
 
   readonly nonPlacedSegmentIds = computed(() => {
-    const { nonPlaced } = segmentProcessedPlacedAndNonPlaced(this.processedIds(), this.rowState());
+    const q = this.orderQueue();
+    const { nonPlaced } = segmentProcessedPlacedAndNonPlaced(q.processedIds, q.rowState);
     return nonPlaced;
   });
 
   /** Keyword match for dimming / selection (full list remains in remainingIds for CDK) */
   matchesSearch(id: string): boolean {
-    const term = normaliseString(this.searchTerm());
+    const term = normaliseString(this.searchText());
     if (!term) return true;
     const c = this.compById().get(id);
     if (!c) return false;
@@ -125,8 +213,8 @@ export class PositionBasedInputPanel implements AfterViewInit {
   }
 
   readonly filteredRemaining = computed(() => {
-    const term = normaliseString(this.searchTerm());
-    const ids = this.remainingIds();
+    const term = normaliseString(this.searchText());
+    const ids = this.orderQueue().remainingIds;
     const byId = this.compById();
     const list = term
       ? ids.filter(id => {
@@ -139,14 +227,31 @@ export class PositionBasedInputPanel implements AfterViewInit {
     return list.sort((a, b) => sortEntries(byId.get(a)!, byId.get(b)!));
   });
 
+  /**
+   * Click selection is only meaningful when it matches the current filter (same rules as the old
+   * “clear selection” effect, but derived).
+   */
+  readonly effectiveSelectedMatchId = computed(() => {
+    const sel = this.selectedMatchId();
+    const term = normaliseString(this.searchText());
+    const f = this.filteredRemaining();
+    if (term && f.length > 1) {
+      return undefined;
+    }
+    if (sel !== undefined && term && !f.includes(sel)) {
+      return undefined;
+    }
+    return sel;
+  });
+
   /** Unique sail number among remaining (Enter commits even if keyword also matches others) */
   readonly exactSailMatchId = computed(() => {
-    const raw = this.searchTerm().trim();
+    const raw = this.searchText().trim();
     if (!raw || !/^\d+$/.test(raw)) {
       return undefined;
     }
     const n = Number(raw);
-    const matches = this.remainingIds().filter(id => this.compById().get(id)?.sailNumber === n);
+    const matches = this.orderQueue().remainingIds.filter(id => this.compById().get(id)?.sailNumber === n);
     return matches.length === 1 ? matches[0] : undefined;
   });
 
@@ -154,7 +259,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
     const exact = this.exactSailMatchId();
     if (exact) return true;
     const sel = this.selectedMatchId();
-    if (sel && this.remainingIds().includes(sel)) return true;
+    if (sel && this.orderQueue().remainingIds.includes(sel)) return true;
     const f = this.filteredRemaining();
     if (f.length === 1) return true;
     return false;
@@ -163,7 +268,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
   readonly previewCompetitor = computed(() => {
     const exact = this.exactSailMatchId();
     if (exact) return this.compById().get(exact);
-    const sel = this.selectedMatchId();
+    const sel = this.effectiveSelectedMatchId();
     if (sel) return this.compById().get(sel);
     const f = this.filteredRemaining();
     if (f.length === 1) return this.compById().get(f[0]);
@@ -176,31 +281,14 @@ export class PositionBasedInputPanel implements AfterViewInit {
     return this.pendingDefaults().get(m.id);
   });
 
-  readonly remainingCount = computed(() => this.remainingIds().length);
+  readonly remainingCount = computed(() => this.orderQueue().remainingIds.length);
   readonly totalCount = computed(() => this.competitors().length);
 
   constructor() {
+    // DOM focus cannot be expressed as a computed; keep this narrow side effect.
     effect(() => {
-      const r = this.race();
-      const comps = this.competitors();
-      if (!r?.id) return;
-      if (r.id !== this.lastInitRaceId) {
-        this.lastInitRaceId = r.id;
-        untracked(() => this.initFromCompetitors(comps));
-      }
-    });
-
-    effect(() => {
-      const term = normaliseString(this.searchTerm());
-      const f = this.filteredRemaining();
-      const sel = this.selectedMatchId();
-      untracked(() => {
-        if (term && f.length > 1) {
-          this.selectedMatchId.set(undefined);
-        } else if (term && sel !== undefined && !f.includes(sel)) {
-          this.selectedMatchId.set(undefined);
-        }
-      });
+      this.orderEntryInput().key;
+      untracked(() => queueMicrotask(() => this.focusSearch()));
     });
   }
 
@@ -216,52 +304,11 @@ export class PositionBasedInputPanel implements AfterViewInit {
     return (container.element.nativeElement as HTMLElement).dataset['zone'] ?? '';
   }
 
-  private initFromCompetitors(comps: RaceCompetitor[]): void {
-    const sorted = [...comps].sort(sortEntries);
-
-    const withPos = comps
-      .filter(c => c.manualPosition != null && c.manualPosition !== undefined)
-      .sort((a, b) => (a.manualPosition ?? 0) - (b.manualPosition ?? 0));
-    const withPosIds = new Set(withPos.map(c => c.id));
-
-    const processedNoPos = sorted.filter(
-      c => !withPosIds.has(c.id) && c.resultCode !== 'NOT FINISHED'
-    );
-
-    let processed = [...withPos.map(c => c.id), ...processedNoPos.map(c => c.id)];
-    const processedSet = new Set(processed);
-    const remaining = sorted.filter(c => !processedSet.has(c.id)).map(c => c.id);
-
-    const state = new Map<string, OrderEntryRowState>();
-    for (const id of processed) {
-      const c = comps.find(x => x.id === id)!;
-      state.set(id, {
-        resultCode: c.resultCode,
-        manualFinishTime: c.manualFinishTime ?? null,
-        rankOverride:
-          isFinishedComp(c.resultCode) && c.manualPosition != null ? c.manualPosition : null,
-      });
-    }
-
-    processed = enforceProcessedSegmentOrder(processed, state);
-    const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(processed, state);
-    const groups = buildTieGroupsFromPlaced(placed, state);
-    const stateNorm = normalizeRowStateFromOrderedTieGroups(groups, state);
-
-    this.processedIds.set(mergePlacedAndNonPlacedSegments(placed, nonPlaced));
-    this.remainingIds.set(remaining);
-    this.rowState.set(stateNorm);
-    this.pendingDefaults.set(new Map());
-    this.selectedMatchId.set(undefined);
-    this.searchControl.setValue('');
-    setTimeout(() => this.focusSearch(), 0);
-  }
-
   selectMatch(id: string): void {
-    if (this.searchTerm().trim() && !this.matchesSearch(id)) {
+    if (this.searchText().trim() && !this.matchesSearch(id)) {
       return;
     }
-    this.searchControl.setValue('');
+    this.searchText.set('');
     this.selectedMatchId.set(id);
   }
 
@@ -272,7 +319,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
       return;
     }
     const sel = this.selectedMatchId();
-    if (sel && this.remainingIds().includes(sel)) {
+    if (sel && this.orderQueue().remainingIds.includes(sel)) {
       await this.addToProcessed(sel);
       return;
     }
@@ -283,7 +330,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
   }
 
   private async addToProcessed(competitorId: string): Promise<void> {
-    const rem = this.remainingIds().filter(id => id !== competitorId);
+    const rem = this.orderQueue().remainingIds.filter(id => id !== competitorId);
     const pending = new Map(this.pendingDefaults());
     const preset = pending.get(competitorId);
     const base: OrderEntryRowState = preset ?? {
@@ -294,7 +341,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
     pending.delete(competitorId);
     this.pendingDefaults.set(pending);
 
-    let state = new Map(this.rowState());
+    let state = new Map(this.orderQueue().rowState);
     const nextRankOverride = isFinishedComp(base.resultCode) ? base.rankOverride ?? null : null;
     state.set(competitorId, {
       resultCode: base.resultCode,
@@ -302,7 +349,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
       rankOverride: nextRankOverride,
     });
 
-    const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(this.processedIds(), state);
+    const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(this.orderQueue().processedIds, state);
     if (isFinishedComp(base.resultCode)) {
       placed.push(competitorId);
     } else {
@@ -314,17 +361,20 @@ export class PositionBasedInputPanel implements AfterViewInit {
     const groups = buildTieGroupsFromPlaced(seg.placed, state);
     state = normalizeRowStateFromOrderedTieGroups(groups, state);
 
-    this.remainingIds.set(rem);
-    this.processedIds.set(proc);
-    this.rowState.set(state);
+    this.orderQueue.update(q => ({
+      ...q,
+      remainingIds: rem,
+      processedIds: proc,
+      rowState: state,
+    }));
     this.selectedMatchId.set(undefined);
-    this.searchControl.setValue('');
+    this.searchText.set('');
     await this.persist();
     this.focusSearch();
   }
 
   async setRemainingResultCode(id: string): Promise<void> {
-    if (!this.remainingIds().includes(id)) return;
+    if (!this.orderQueue().remainingIds.includes(id)) return;
     const pending = this.pendingDefaults().get(id);
     const dialogRef = this.dialog.open(ResultCodeDialog, {
       data: {
@@ -348,21 +398,24 @@ export class PositionBasedInputPanel implements AfterViewInit {
   }
 
   async removeFromQueue(competitorId: string): Promise<void> {
-    const proc = this.processedIds().filter(id => id !== competitorId);
-    const rem = [...this.remainingIds(), competitorId].sort((a, b) =>
+    const proc = this.orderQueue().processedIds.filter(id => id !== competitorId);
+    const rem = [...this.orderQueue().remainingIds, competitorId].sort((a, b) =>
       sortEntries(this.compById().get(a)!, this.compById().get(b)!)
     );
-    const state = new Map(this.rowState());
+    const state = new Map(this.orderQueue().rowState);
     state.delete(competitorId);
-    this.processedIds.set(proc);
-    this.remainingIds.set(rem);
-    this.rowState.set(state);
+    this.orderQueue.update(q => ({
+      ...q,
+      processedIds: proc,
+      remainingIds: rem,
+      rowState: state,
+    }));
     await this.persist();
     this.focusSearch();
   }
 
   async setRowResultCode(id: string): Promise<void> {
-    const row = this.rowState().get(id);
+    const row = this.orderQueue().rowState.get(id);
     if (!row) return;
 
     const dialogRef = this.dialog.open(ResultCodeDialog, {
@@ -385,42 +438,41 @@ export class PositionBasedInputPanel implements AfterViewInit {
       rankOverride: isFinishedComp(result.resultCode) ? row.rankOverride ?? null : null,
     };
 
-    let state = new Map(this.rowState());
+    let state = new Map(this.orderQueue().rowState);
     state.set(id, next);
-    let proc = enforceProcessedSegmentOrder(this.processedIds(), state);
+    let proc = enforceProcessedSegmentOrder(this.orderQueue().processedIds, state);
     const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(proc, state);
     const groups = buildTieGroupsFromPlaced(placed, state);
     state = normalizeRowStateFromOrderedTieGroups(groups, state);
     proc = mergePlacedAndNonPlacedSegments(placed, nonPlaced);
 
-    this.processedIds.set(proc);
-    this.rowState.set(state);
+    this.orderQueue.update(q => ({ ...q, processedIds: proc, rowState: state }));
 
     await this.persist();
   }
 
   canTieWithAbove(id: string): boolean {
-    const row = this.rowState().get(id);
+    const row = this.orderQueue().rowState.get(id);
     if (!row || !isFinishedComp(row.resultCode)) return false;
-    const { placed } = segmentProcessedPlacedAndNonPlaced(this.processedIds(), this.rowState());
-    const groups = buildTieGroupsFromPlaced(placed, this.rowState());
+    const { placed } = segmentProcessedPlacedAndNonPlaced(this.orderQueue().processedIds, this.orderQueue().rowState);
+    const groups = buildTieGroupsFromPlaced(placed, this.orderQueue().rowState);
     const gi = groups.findIndex(g => g.ids.includes(id));
     return gi > 0;
   }
 
   canClearTie(id: string): boolean {
-    const row = this.rowState().get(id);
+    const row = this.orderQueue().rowState.get(id);
     if (!row || !isFinishedComp(row.resultCode)) return false;
-    const { placed } = segmentProcessedPlacedAndNonPlaced(this.processedIds(), this.rowState());
-    const groups = buildTieGroupsFromPlaced(placed, this.rowState());
+    const { placed } = segmentProcessedPlacedAndNonPlaced(this.orderQueue().processedIds, this.orderQueue().rowState);
+    const groups = buildTieGroupsFromPlaced(placed, this.orderQueue().rowState);
     const g = groups.find(gr => gr.ids.includes(id));
     return g != null && g.ids.length > 1;
   }
 
   async tieWithAbove(id: string): Promise<void> {
     if (!this.canTieWithAbove(id)) return;
-    const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(this.processedIds(), this.rowState());
-    let groups = buildTieGroupsFromPlaced(placed, this.rowState());
+    const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(this.orderQueue().processedIds, this.orderQueue().rowState);
+    let groups = buildTieGroupsFromPlaced(placed, this.orderQueue().rowState);
     const gi = groups.findIndex(g => g.ids.includes(id));
     if (gi <= 0) return;
 
@@ -430,32 +482,38 @@ export class PositionBasedInputPanel implements AfterViewInit {
     };
     groups = [...groups.slice(0, gi - 1), merged, ...groups.slice(gi + 1)];
     const newPlaced = flattenTieGroups(groups);
-    let state = new Map(this.rowState());
+    let state = new Map(this.orderQueue().rowState);
     state = normalizeRowStateFromOrderedTieGroups(groups, state);
-    this.processedIds.set(mergePlacedAndNonPlacedSegments(newPlaced, nonPlaced));
-    this.rowState.set(state);
+    this.orderQueue.update(q => ({
+      ...q,
+      processedIds: mergePlacedAndNonPlacedSegments(newPlaced, nonPlaced),
+      rowState: state,
+    }));
     await this.persist();
   }
 
   async clearTie(id: string): Promise<void> {
     if (!this.canClearTie(id)) return;
-    const processed = [...this.processedIds()];
-    let state = new Map(this.rowState());
+    const processed = [...this.orderQueue().processedIds];
+    let state = new Map(this.orderQueue().rowState);
     state = clearTieRankOverrideChain(processed, id, state);
     const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(processed, state);
     const groups = buildTieGroupsFromPlaced(placed, state);
     state = normalizeRowStateFromOrderedTieGroups(groups, state);
-    this.processedIds.set(mergePlacedAndNonPlacedSegments(placed, nonPlaced));
-    this.rowState.set(state);
+    this.orderQueue.update(q => ({
+      ...q,
+      processedIds: mergePlacedAndNonPlacedSegments(placed, nonPlaced),
+      rowState: state,
+    }));
     await this.persist();
   }
 
   drop(event: CdkDragDrop<string[]>): void {
     const prevZone = this.zoneFromContainer(event.previousContainer);
     const zone = this.zoneFromContainer(event.container);
-    const rem = [...this.remainingIds()];
-    let proc = [...this.processedIds()];
-    let state = new Map(this.rowState());
+    const rem = [...this.orderQueue().remainingIds];
+    let proc = [...this.orderQueue().processedIds];
+    let state = new Map(this.orderQueue().rowState);
     const pending = new Map(this.pendingDefaults());
 
     if (prevZone === zone) {
@@ -531,9 +589,12 @@ export class PositionBasedInputPanel implements AfterViewInit {
       }
     }
 
-    this.remainingIds.set(rem);
-    this.processedIds.set(proc);
-    this.rowState.set(state);
+    this.orderQueue.update(q => ({
+      ...q,
+      remainingIds: rem,
+      processedIds: proc,
+      rowState: state,
+    }));
     this.pendingDefaults.set(pending);
     this.syncRowStateAfterLists(rem, proc);
     void this.persist();
@@ -541,7 +602,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
   }
 
   private syncRowStateAfterLists(rem: string[], proc: string[]): void {
-    const state = new Map(this.rowState());
+    const state = new Map(this.orderQueue().rowState);
     const pending = new Map(this.pendingDefaults());
     for (const id of proc) {
       if (!state.has(id)) {
@@ -564,12 +625,12 @@ export class PositionBasedInputPanel implements AfterViewInit {
         state.delete(id);
       }
     }
-    this.rowState.set(state);
+    this.orderQueue.update(q => ({ ...q, rowState: state }));
     this.pendingDefaults.set(pending);
   }
 
   async undoLast(): Promise<void> {
-    const proc = this.processedIds();
+    const proc = this.orderQueue().processedIds;
     if (proc.length === 0) return;
     const last = proc[proc.length - 1];
     await this.removeFromQueue(last);
@@ -581,7 +642,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
       void this.commitFromEntry();
     }
     if (ev.key === 'Escape') {
-      this.searchControl.setValue('');
+      this.searchText.set('');
       this.selectedMatchId.set(undefined);
     }
     if ((ev.metaKey || ev.ctrlKey) && ev.key === 'z') {
@@ -596,8 +657,8 @@ export class PositionBasedInputPanel implements AfterViewInit {
       await this.manualResults.persistOrderEntryState({
         race: this.race(),
         competitors: this.competitors(),
-        processedIds: this.processedIds(),
-        rowState: this.rowState(),
+        processedIds: this.orderQueue().processedIds,
+        rowState: this.orderQueue().rowState,
       });
     } finally {
       this.pendingPersist.set(false);
@@ -607,7 +668,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
   trackById = (_: number, id: string) => id;
 
   rowFor(id: string): OrderEntryRowState | undefined {
-    return this.rowState().get(id);
+    return this.orderQueue().rowState.get(id);
   }
 
   /** Rank label for a tie group card (1-based position in placings). */

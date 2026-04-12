@@ -8,7 +8,7 @@ import { competitorsForConfigRace, isRaceScorable } from './scoring-publish-filt
 const pyConfig: HandicapConfiguration = {
   id: 'cfg-py',
   name: 'PY',
-  fleet: { type: 'All', id: 'f-all', name: 'All competitors' },
+  fleet: { type: 'GeneralHandicap', id: 'f-general', name: 'General Handicap' },
   type: 'Handicap',
   handicapScheme: 'PY',
 };
@@ -61,7 +61,7 @@ function minimalRace(id: string): Race {
 describe('scoring-publish-filters', () => {
   const race1 = minimalRace('race-1');
 
-  it('All fleet: scorable whenever there are in-fleet rows (race status is enforced in ScoringEngine)', () => {
+  it('GeneralHandicap fleet: scorable whenever there are in-fleet rows (race status is enforced in ScoringEngine)', () => {
     const entries = [entry({ id: 'e1' }), entry({ id: 'e2', sailNumber: 101 })];
     const comps = [
       new RaceCompetitor({

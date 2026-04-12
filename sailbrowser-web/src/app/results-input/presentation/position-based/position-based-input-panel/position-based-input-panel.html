@@ -8,17 +8,17 @@
       cdkDropList
       #remainingList="cdkDropList"
       data-zone="remaining"
-      [cdkDropListData]="remainingIds()"
+      [cdkDropListData]="orderQueue().remainingIds"
       [cdkDropListConnectedTo]="[placingGroupsList, nonPlacedList]"
       (cdkDropListDropped)="drop($event)"
       class="drop-list">
-      @for (id of remainingIds(); track id) {
+      @for (id of orderQueue().remainingIds; track id) {
         <div
           cdkDrag
           class="row source-row"
-          [class.dim]="searchTerm().trim() && !matchesSearch(id)"
-          [class.search-match]="searchTerm().trim() && matchesSearch(id)"
-          [class.selected]="selectedMatchId() === id"
+          [class.dim]="searchText().trim() && !matchesSearch(id)"
+          [class.search-match]="searchText().trim() && matchesSearch(id)"
+          [class.selected]="effectiveSelectedMatchId() === id"
           [class.exact-sail]="exactSailMatchId() === id"
           (click)="selectMatch(id)">
           <span class="drag-handle" aria-hidden="true">
@@ -199,7 +199,8 @@
         <input
           #entrySearch
           matInput
-          [formControl]="searchControl"
+          [ngModel]="searchText()"
+          (ngModelChange)="searchText.set($event)"
           (keydown)="onSearchKeydown($event)"
           autocomplete="off" />
       </mat-form-field>

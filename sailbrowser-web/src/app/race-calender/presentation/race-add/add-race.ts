@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -6,14 +6,13 @@ import { MatNativeDateModule, MatOption, provideNativeDateAdapter } from '@angul
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { MatStepperModule } from '@angular/material/stepper';
 import { Toolbar } from "app/shared/components/toolbar";
 import { Router } from '@angular/router';
 import { addDays, isAfter, startOfDay } from 'date-fns';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Race, RACE_TYPES, RaceCalendarStore } from 'app/race-calender';
+import { Race, RaceCalendarStore } from 'app/race-calender';
 
 @Component({
   selector: 'app-add-race',
@@ -48,7 +47,6 @@ import { Race, RACE_TYPES, RaceCalendarStore } from 'app/race-calender';
     MatInputModule,
     MatCheckboxModule,
     MatButtonModule,
-    MatRadioModule,
     MatDatepickerModule,
     MatNativeDateModule,
     MatOption,
@@ -68,10 +66,18 @@ export class RaceAdd {
 
   busy = signal(false);
 
-  raceTypes = RACE_TYPES;
+  readonly isPrimaryLevelRatingSeries = computed(() =>
+    this.series()?.primaryScoringConfiguration.type === 'LevelRating'
+  );
+
+  readonly derivedRaceTypeLabel = computed(() =>
+    this.isPrimaryLevelRatingSeries()
+      ? 'Level Rating'
+      : (this.detailsForm.controls.isPursuit.value ? 'Pursuit' : 'Handicap')
+  );
 
   detailsForm = this.fb.group({
-    type: ['Handicap', Validators.required],
+    isPursuit: [false, Validators.required],
     isDiscardable: [true, Validators.required],
     isAverageLap: [true, Validators.required],
   });
@@ -93,7 +99,10 @@ export class RaceAdd {
   async onSave() {
     if (this.detailsForm.valid && this.schedForm.valid) {
       const schedData = this.schedForm.getRawValue();
-      const details = this.detailsForm.getRawValue() as Partial<Race>;
+      const details = this.detailsForm.getRawValue();
+      const raceType: Race['type'] = this.isPrimaryLevelRatingSeries()
+        ? 'Level Rating'
+        : (details.isPursuit ? 'Pursuit' : 'Handicap');
 
       const firstRaceDate = schedData.firstRaceDate!;
       const lastRaceDate = schedData.repeatInterval!.increment
@@ -117,7 +126,12 @@ export class RaceAdd {
 
       for (const start of dayStarts) {
         for (let perDay = 0; perDay < schedData.racesPerDay!; perDay++) {
-          const race: Partial<Race> = { ...details, scheduledStart: start };
+          const race: Partial<Race> = {
+            type: raceType,
+            isDiscardable: details.isDiscardable ?? true,
+            isAverageLap: details.isAverageLap ?? true,
+            scheduledStart: start
+          };
           races.push(race);
         }
       }

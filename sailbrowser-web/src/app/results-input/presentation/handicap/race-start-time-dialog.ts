@@ -83,7 +83,7 @@ export class RaceStartTimeDialog {
   private clubStore = inject(ClubStore);
 
   readonly fleetOptions = this.clubStore.club().fleets
-    .filter(f => f.type !== 'All')
+    .filter(f => f.type !== 'GeneralHandicap')
     .map(f => ({ id: f.id, name: getFleetName(f) }));
 
   readonly form = new FormGroup({

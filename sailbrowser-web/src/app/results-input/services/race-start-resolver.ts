@@ -7,7 +7,7 @@ const priority: Record<Fleet['type'], number> = {
   Tag: 0,
   BoatClass: 1,
   HandicapRange: 2,
-  All: 3,
+  GeneralHandicap: 3,
 };
 
 export function resolveStartTimeForEntry(

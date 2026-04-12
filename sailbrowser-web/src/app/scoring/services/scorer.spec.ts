@@ -42,7 +42,7 @@ function createMockSeries(): Series {
       id: 'overall',
       name: 'Overall',
       type: 'Handicap',
-      fleet: { id: 'fleet1', type: 'All', name:'All competitors' },
+      fleet: { id: 'fleet1', type: 'GeneralHandicap', name:'General Handicap' },
       handicapScheme: 'PY'
     }
   };

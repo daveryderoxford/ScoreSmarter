@@ -3,9 +3,6 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, ou
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { Boat } from 'app/boats';
 import { ClubStore } from 'app/club-tenant';
@@ -17,8 +14,8 @@ import {
   handicapControlName,
   HANDICAP_SCHEME_METADATA,
 } from 'app/scoring/model/handicap-scheme-metadata';
-import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inputs';
 import { startWith } from 'rxjs';
+import { BoatCoreFields } from './boat-core-fields';
 
 @Component({
   selector: 'app-boat-form',
@@ -27,13 +24,10 @@ import { startWith } from 'rxjs';
   standalone: true,
   imports: [
     ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
     MatButtonModule,
     MatCheckboxModule,
     SubmitButton,
-    HandicapSchemeInputs,
+    BoatCoreFields,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -43,6 +37,7 @@ export class BoatForm {
 
   boat = input<Boat | undefined>();
   busy = input<boolean>(false);
+  mode = input<'full' | 'entryDialog'>('full');
   submitted = output<Partial<Boat>>();
 
   readonly boatLevelSchemes = computed(() =>
@@ -111,6 +106,17 @@ export class BoatForm {
     this.form.controls['isClub'].valueChanges
       .pipe(startWith(this.form.controls['isClub'].value))
       .subscribe(isClub => this.applyClubBoatState(!!isClub));
+
+    effect(() => {
+      if (this.mode() !== 'entryDialog') {
+        this.form.controls['isClub'].enable({ emitEvent: false });
+        return;
+      }
+      // Entry dialog always creates private boats.
+      this.form.controls['isClub'].setValue(false, { emitEvent: false });
+      this.form.controls['isClub'].disable({ emitEvent: false });
+      this.applyClubBoatState(false);
+    });
   }
 
   submit() {

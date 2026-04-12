@@ -10,7 +10,7 @@ import { getHandicapValue } from 'app/scoring/model/handicap';
  */
 export function isInFleet(entry: SeriesEntry, fleet: Fleet): boolean {
    switch (fleet.type) {
-      case 'All':
+      case 'GeneralHandicap':
          return true;
       case 'BoatClass':
          return entry.boatClass === fleet.boatClassId;
