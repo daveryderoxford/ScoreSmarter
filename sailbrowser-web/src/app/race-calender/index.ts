@@ -9,6 +9,8 @@ export type { Series } from './model/series';
 
 export { RACE_CALENDER_ROUTES } from './race-calender.routes';
 
+export { RacePickerDialog, type RacePickerDialogData } from './presentation/race-picker-dialog/race-picker-dialog';
+
 export { RaceCalendarStore } from './services/full-race-calander';
 export { RaceCalendarStoreBase, seriesSort, sortRaces } from './services/race-calendar-store-base';
 export type { RaceSeriesDetails } from './services/race-calendar-store-base';

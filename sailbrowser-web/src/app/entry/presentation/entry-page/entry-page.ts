@@ -14,7 +14,7 @@ import { MatStepperModule } from '@angular/material/stepper';
 import { Router } from '@angular/router';
 import { Boat, boatFilter, BoatsStore } from 'app/boats';
 import { ClubStore } from 'app/club-tenant';
-import { Race, RaceCalendarStore } from 'app/race-calender';
+import { Race, RaceCalendarStore, RacePickerDialog, type RacePickerDialogData } from 'app/race-calender';
 import { CurrentRaces } from 'app/results-input';
 import { type Handicap } from 'app/scoring/model/handicap';
 import { handicapSchemesRequiredForRaces } from 'app/scoring/model/handicap-race-requirements';
@@ -27,6 +27,25 @@ import { resolveHandicapsForSeries } from '../../services/entry-helpers';
 import { meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
 import { EntryService } from '../../services/entry.service';
 import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
+
+interface EntryRaceDayGroup {
+  readonly dateKey: string;
+  readonly heading: string;
+  readonly races: Race[];
+}
+
+function sortRacesByTimeThenIndex(a: Race, b: Race): number {
+  return a.scheduledStart.getTime() - b.scheduledStart.getTime() || a.index - b.index;
+}
+
+function raceEntryDayHeading(d: Date): string {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(d);
+}
 
 @Component({
   selector: 'app-entry',
@@ -58,56 +77,83 @@ import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
       justify-content: end;
       gap: 12px;
     }
-    mat-form-field {
-      display: block;
-      margin-bottom: 8px;
+    .race-step-actions {
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .race-step-actions-end {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .more-races-btn {
+      margin-left: 0;
+    }
+
+    .race-day-heading {
+      margin: 12px 0 4px;
+      padding-inline: 16px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    mat-selection-list .race-day-heading:first-child {
+      margin-top: 10px;
+    }
+
+    .helm-crew-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin: 5px 0;
+    }
+
+    .helm-crew-row mat-form-field {
+      flex: 1;
+      min-width: 0;
+      margin-bottom: 0;
+    }
+
+    .handicap-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 6px 10px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      font-size: 0.875rem;
+      line-height: 1.35;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .handicap-line-title {
+      font-weight: 500;
+      margin-right: 2px;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .handicap-chip {
+      color: var(--mat-sys-on-surface-variant);
+      font-weight: 400;
+    }
+    .handicap-chip--empty {
+      font-style: italic;
     }
     .boat-selection {
       display: flex;
       align-items: baseline;
       gap: 8px;
-      margin-top: 10px;
+      margin-top: 15px;
     }
     .search-field {
       flex-grow: 1;
-      font-size: 15px;
+      font-size: 16px;
     }
     .placeholder {
       padding: 15px;
       text-align: center;
       font: var(--mat-sys-body-large);
-    }
-    .boat-panel {
-      border: 1px solid var(--mat-sys-outline);
-      border-radius: 10px;
-      padding: 14px;
-      margin: 10px 0;
-      background: var(--mat-sys-surface-container-low);
-      box-shadow: var(--mat-sys-level1);
-    }
-    .boat-panel h4 {
-      margin: 0 0 8px 0;
-      font: var(--mat-sys-title-medium);
-    }
-    .boat-table {
-      display: grid;
-      grid-template-columns: minmax(100px, 120px) 1fr;
-      gap: 6px 12px;
-      align-items: baseline;
-      margin-bottom: 12px;
-      font-size: 17px;
-    }
-    .boat-key {
-      font-weight: 500;
-    }
-    .boat-value {
-      overflow-wrap: anywhere;
-    }
-    .handicap-table {
-      display: grid;
-      grid-template-columns: minmax(100px, 120px) 1fr;
-      gap: 6px 12px;
-      font-size: 17px;
     }
     .muted {
       color: var(--mat-sys-on-surface-variant);
@@ -134,9 +180,11 @@ export class EntryPage {
 
   readonly competitorDetailsGroup: FormGroup = this.formBuilder.group({
     helm: [''],
+    crew: [''],
   });
 
   private readonly helmControl = this.competitorDetailsGroup.get('helm')!;
+  private readonly crewControl = this.competitorDetailsGroup.get('crew')!;
 
   readonly canProceedToRaces = computed(() => {
     const boat = this.selectedBoat();
@@ -176,15 +224,18 @@ export class EntryPage {
 
     const helm = boat.isClub
       ? String(this.helmControl.value ?? '').trim()
-      : boat.helm;
+      : String(boat.helm ?? '').trim();
 
     if (!helm) return undefined;
+
+    const crewTrim = String(this.crewControl.value ?? '').trim();
+    const crew = crewTrim || undefined;
 
     return {
       boatClassName: boat.boatClass,
       sailNumber: boat.sailNumber,
       helm,
-      crew: boat.crew,
+      crew,
       handicaps: [...handicapByScheme.entries()].map(([scheme, value]) => ({ scheme, value })),
       tags: [] as string[],
     };
@@ -205,7 +256,7 @@ export class EntryPage {
     const candidate = this.candidateBoat();
     if (!candidate) return [];
     const seriesById = new Map(this.rc.allSeries().map(s => [s.id, s]));
-    return this.todaysRaces().filter(race => {
+    return this.selectedRacesForEntry().filter(race => {
       const series = seriesById.get(race.seriesId);
       if (!series) return false;
 
@@ -220,6 +271,32 @@ export class EntryPage {
       });
     });
   });
+
+  /** Eligible races grouped by calendar day (heading + ordered races). */
+  readonly eligibleRacesByDay = computed((): EntryRaceDayGroup[] => {
+    const races = [...this.eligibleRaces()].sort(sortRacesByTimeThenIndex);
+    const byDay = new Map<string, Race[]>();
+    for (const race of races) {
+      const key = new Date(race.scheduledStart).toDateString();
+      const list = byDay.get(key);
+      if (list) {
+        list.push(race);
+      } else {
+        byDay.set(key, [race]);
+      }
+    }
+    return [...byDay.entries()]
+      .sort((a, b) => new Date(a[1][0].scheduledStart).getTime() - new Date(b[1][0].scheduledStart).getTime())
+      .map(([dateKey, dayRaces]) => ({
+        dateKey,
+        heading: raceEntryDayHeading(dayRaces[0].scheduledStart),
+        races: dayRaces,
+      }));
+  });
+
+  raceEntryLineTitle(race: Race): string {
+    return `${race.seriesName}. race ${race.index} / ${race.raceOfDay}`;
+  }
 
   readonly entryHandicapSchemes = computed(() => {
     const races = this.enteredRacesSig() ?? [];
@@ -241,7 +318,25 @@ export class EntryPage {
     this.bs.boats().filter(boat => boatFilter(boat, this.searchTerm()))
   );
 
-  todaysRaces = this.currentRacesStore.selectedRaces;
+  readonly selectedRacesForEntry = this.currentRacesStore.selectedRaces;
+
+  async openAddRacesDialog(): Promise<void> {
+    const dialogRef = this.dialog.open<RacePickerDialog, RacePickerDialogData, string[] | undefined>(RacePickerDialog, {
+      width: 'min(92vw, 440px)',
+      maxHeight: '90vh',
+      data: {
+        title: 'Add races to enter',
+        requireSelection: false,
+      },
+    });
+    const result = await firstValueFrom(dialogRef.afterClosed());
+    if (!result?.length) {
+      return;
+    }
+    for (const id of result) {
+      this.currentRacesStore.addRaceId(id);
+    }
+  }
 
   constructor() {
     effect(() => {
@@ -251,15 +346,20 @@ export class EntryPage {
         this.helmControl.clearValidators();
         this.helmControl.disable({ emitEvent: false });
         this.helmControl.updateValueAndValidity({ emitEvent: false });
+        this.crewControl.setValue('', { emitEvent: false });
+        this.crewControl.enable({ emitEvent: false });
         return;
       }
+
+      this.crewControl.setValue(boat.crew ?? '', { emitEvent: false });
+      this.crewControl.enable({ emitEvent: false });
 
       if (boat.isClub) {
         this.helmControl.enable({ emitEvent: false });
         this.helmControl.setValidators([Validators.required]);
         this.helmControl.setValue('', { emitEvent: false });
       } else {
-        this.helmControl.setValue(boat.helm ?? '', { emitEvent: false });
+        this.helmControl.setValue('', { emitEvent: false });
         this.helmControl.clearValidators();
         this.helmControl.disable({ emitEvent: false });
       }
@@ -364,7 +464,7 @@ export class EntryPage {
       boatClass: selected.boatClass,
       sailNumber: selected.sailNumber,
       helm: candidate.helm,
-      crew: selected.crew || undefined,
+      crew: candidate.crew,
       handicaps: active.size > 0 ? activeHandicaps : undefined,
     };
 
