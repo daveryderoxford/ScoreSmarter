@@ -3,8 +3,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { Router } from '@angular/router';
 import { ScoringEngine } from 'app/published-results';
-import { Race, RaceCalendarStore } from 'app/race-calender';
+import { Race, RaceCalendarStore, RacePickerDialog, type RacePickerDialogData } from 'app/race-calender';
 import { CurrentRaces, RaceCompetitor, RaceCompetitorStore } from 'app/results-input';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { BusyButton } from 'app/shared/components/busy-button';
@@ -17,8 +18,6 @@ import { HandicapInputPanel } from '../handicap/handicap-input-panel/handicap-in
 import { HandicapResultsTable } from '../handicap/handicap-results-table/handicap-results-table';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../handicap/race-start-time-dialog';
 import { PositionBasedInputPanel } from '../position-based/position-based-input-panel/position-based-input-panel';
-import { ScoringSheetRacePickerDialog, type ScoringSheetRacePickerDialogData } from './scoring-sheet-race-picker-dialog';
-
 @Component({
   selector: 'app-manual-results-page',
   templateUrl: './manual-results-page.html',
@@ -44,6 +43,7 @@ export class ManualResultsPage {
   private readonly raceCalendarStore = inject(RaceCalendarStore);
   private readonly publishService = inject(ScoringEngine);
   private readonly manualResultsService = inject(ManualResultsService);
+  private readonly router = inject(Router);
   private message = inject(DialogsService);
 
   publishing = signal(false);
@@ -100,25 +100,40 @@ export class ManualResultsPage {
   }
 
   async openScoringSheetRacePicker(): Promise<void> {
-    const preselected = this.scoringSheetRaceIds()[0] ?? null;
-    const dialogRef = this.dialog.open<ScoringSheetRacePickerDialog, ScoringSheetRacePickerDialogData, string | undefined>(
-      ScoringSheetRacePickerDialog,
-      {
-        width: 'min(92vw, 440px)',
-        maxHeight: '90vh',
-        data: { preselectedRaceId: preselected },
+    const preselected = this.scoringSheetRaceIds()[0];
+    const dialogRef = this.dialog.open<RacePickerDialog, RacePickerDialogData, string[] | undefined>(RacePickerDialog, {
+      width: 'min(92vw, 440px)',
+      maxHeight: '90vh',
+      data: {
+        title: 'Select race on scoring sheet',
+        preselectedRaceIds: preselected ? [preselected] : [],
+        maxSelections: 1,
+        requireSelection: true,
       },
-    );
+    });
 
     const result = await firstValueFrom(dialogRef.afterClosed());
-    if (result) {
-      this.currentRacesStore.addRaceId(result);
-      this.scoringSheetRaceIds.set([result]);
+    const id = result?.[0];
+    if (id) {
+      this.currentRacesStore.addRaceId(id);
+      this.scoringSheetRaceIds.set([id]);
     }
   }
 
   clearScoringSheetRace(): void {
     this.scoringSheetRaceIds.set([]);
+  }
+
+  async addEntryForSelectedRace(): Promise<void> {
+    const race = this.selectedRace();
+    if (!race) return;
+    this.currentRacesStore.addRaceId(race.id);
+    await this.router.navigate(['entry', 'enter'], {
+      queryParams: {
+        raceId: race.id,
+        returnTo: 'results-input',
+      },
+    });
   }
 
   async onTableRowClick(row: RaceCompetitor) {

@@ -20,7 +20,7 @@
     @if (sr.type === 'Handicap') {
       <button matButton="text" (click)="setStartTime(sr)">Start</button>
     }
-  }
+      }
 
   <app-busy-button [style]="'text'" [busy]="publishing()" (click)="publish()">
     Publish
@@ -41,14 +41,16 @@
       <div class="input-section mat-elevation-z2">
         <h3>Record Result</h3>
         <app-handicap-input-panel [race]="race" [competitors]="sortedCompetitors()"
-          [(selectedCompetitor)]="handicapSelectedCompetitor" />
+          [(selectedCompetitor)]="handicapSelectedCompetitor"
+          (addEntryRequested)="addEntryForSelectedRace()" />
       </div>
     </div>
   } @else {
     <div class="container-position">
       <div class="position-workspace mat-elevation-z1">
         <h3 class="position-workspace-title">Record result (finish order)</h3>
-        <app-position-based-input-panel [race]="race" [competitors]="sortedCompetitors()" />
+        <app-position-based-input-panel [race]="race" [competitors]="sortedCompetitors()"
+          (addEntryRequested)="addEntryForSelectedRace()" />
       </div>
     </div>
   }

@@ -10,6 +10,7 @@ import {
   inject,
   input,
   linkedSignal,
+  output,
   signal,
   untracked,
   viewChild,
@@ -116,6 +117,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
 
   race = input.required<Race>();
   competitors = input.required<RaceCompetitor[]>();
+  readonly addEntryRequested = output<void>();
 
   readonly isMobile = toSignal(
     this.breakpoint.observe('(max-width: 1023px)').pipe(map(r => r.matches)),
@@ -298,6 +300,10 @@ export class PositionBasedInputPanel implements AfterViewInit {
 
   focusSearch(): void {
     this.searchInput()?.nativeElement?.focus();
+  }
+
+  requestAddEntry(): void {
+    this.addEntryRequested.emit();
   }
 
   private zoneFromContainer(container: CdkDropList<string[]>): string {

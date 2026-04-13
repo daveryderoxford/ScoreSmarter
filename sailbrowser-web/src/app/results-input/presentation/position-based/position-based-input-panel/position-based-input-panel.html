@@ -204,7 +204,7 @@
           (keydown)="onSearchKeydown($event)"
           autocomplete="off" />
       </mat-form-field>
-      <button mat-icon-button type="button" aria-label="Add entry" style="margin-top: -12px;">
+      <button mat-icon-button type="button" aria-label="Add entry" style="margin-top: -12px;" (click)="requestAddEntry()">
         <mat-icon>add</mat-icon>
       </button>
     </div>
