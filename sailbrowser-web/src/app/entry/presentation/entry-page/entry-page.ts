@@ -11,7 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatStepperModule } from '@angular/material/stepper';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Boat, boatFilter, BoatsStore } from 'app/boats';
 import { ClubStore } from 'app/club-tenant';
 import { Race, RaceCalendarStore, RacePickerDialog, type RacePickerDialogData } from 'app/race-calender';
@@ -170,6 +170,7 @@ export class EntryPage {
   protected readonly cs = inject(ClubStore);
   protected readonly currentRacesStore = inject(CurrentRaces);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly snackbar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
 
@@ -256,7 +257,9 @@ export class EntryPage {
     const candidate = this.candidateBoat();
     if (!candidate) return [];
     const seriesById = new Map(this.rc.allSeries().map(s => [s.id, s]));
+    const scopedRaceId = this.scopedRaceId;
     return this.selectedRacesForEntry().filter(race => {
+      if (scopedRaceId && race.id !== scopedRaceId) return false;
       const series = seriesById.get(race.seriesId);
       if (!series) return false;
 
@@ -319,6 +322,8 @@ export class EntryPage {
   );
 
   readonly selectedRacesForEntry = this.currentRacesStore.selectedRaces;
+  private readonly scopedRaceId = this.route.snapshot.queryParamMap.get('raceId') ?? undefined;
+  private readonly returnTo = this.route.snapshot.queryParamMap.get('returnTo');
 
   async openAddRacesDialog(): Promise<void> {
     const dialogRef = this.dialog.open<RacePickerDialog, RacePickerDialogData, string[] | undefined>(RacePickerDialog, {
@@ -339,6 +344,10 @@ export class EntryPage {
   }
 
   constructor() {
+    if (this.scopedRaceId) {
+      this.currentRacesStore.addRaceId(this.scopedRaceId);
+    }
+
     effect(() => {
       const boat = this.selectedBoat();
       if (!boat) {
@@ -373,6 +382,16 @@ export class EntryPage {
       if (next.length !== selected.length) {
         this.raceSelectionGroup.get('enteredRaces')?.setValue(next);
       }
+    });
+
+    effect(() => {
+      const scopedRaceId = this.scopedRaceId;
+      if (!scopedRaceId) return;
+      const scopedRace = this.eligibleRaces().find(r => r.id === scopedRaceId);
+      if (!scopedRace) return;
+      const selected = this.enteredRacesSig() ?? [];
+      if (selected.length === 1 && selected[0].id === scopedRaceId) return;
+      this.raceSelectionGroup.get('enteredRaces')?.setValue([scopedRace]);
     });
 
     // Replace temporary locally-selected new boat with the persisted store record once loaded.
@@ -487,6 +506,13 @@ export class EntryPage {
     this.competitorDetailsGroup.reset();
     this.selectedBoat.set(null);
     this.boatSearchControl.setValue('', { emitEvent: false });
+
+    if (this.returnTo === 'results-input' && this.scopedRaceId) {
+      this.router.navigate(['results-input', 'manual'], {
+        queryParams: { raceId: this.scopedRaceId },
+      });
+      return;
+    }
 
     this.router.navigate(['entry', 'entries']);
   }

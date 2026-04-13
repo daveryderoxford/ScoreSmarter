@@ -3,6 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { Router } from '@angular/router';
 import { ScoringEngine } from 'app/published-results';
 import { Race, RaceCalendarStore, RacePickerDialog, type RacePickerDialogData } from 'app/race-calender';
 import { CurrentRaces, RaceCompetitor, RaceCompetitorStore } from 'app/results-input';
@@ -42,6 +43,7 @@ export class ManualResultsPage {
   private readonly raceCalendarStore = inject(RaceCalendarStore);
   private readonly publishService = inject(ScoringEngine);
   private readonly manualResultsService = inject(ManualResultsService);
+  private readonly router = inject(Router);
   private message = inject(DialogsService);
 
   publishing = signal(false);
@@ -120,6 +122,18 @@ export class ManualResultsPage {
 
   clearScoringSheetRace(): void {
     this.scoringSheetRaceIds.set([]);
+  }
+
+  async addEntryForSelectedRace(): Promise<void> {
+    const race = this.selectedRace();
+    if (!race) return;
+    this.currentRacesStore.addRaceId(race.id);
+    await this.router.navigate(['entry', 'enter'], {
+      queryParams: {
+        raceId: race.id,
+        returnTo: 'results-input',
+      },
+    });
   }
 
   async onTableRowClick(row: RaceCompetitor) {
