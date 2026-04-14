@@ -39,6 +39,10 @@
                 <mat-icon>edit</mat-icon>
                 <span>Set result code</span>
               </button>
+              <button mat-menu-item type="button" (click)="editCompetitor(id)">
+                <mat-icon>person</mat-icon>
+                <span>Edit competitor</span>
+              </button>
             </mat-menu>
           </ng-container>
           <button
@@ -98,6 +102,10 @@
                         <button mat-menu-item type="button" (click)="setRowResultCode(id)">
                           <mat-icon>edit</mat-icon>
                           <span>Set result code</span>
+                        </button>
+                        <button mat-menu-item type="button" (click)="editCompetitor(id)">
+                          <mat-icon>person</mat-icon>
+                          <span>Edit competitor</span>
                         </button>
                         <button mat-menu-item type="button" (click)="tieWithAbove(id)" [disabled]="!canTieWithAbove(id)">
                           <mat-icon>call_split</mat-icon>
@@ -163,6 +171,10 @@
                   <button mat-menu-item type="button" (click)="setRowResultCode(id)">
                     <mat-icon>edit</mat-icon>
                     <span>Set result code</span>
+                  </button>
+                  <button mat-menu-item type="button" (click)="editCompetitor(id)">
+                    <mat-icon>person</mat-icon>
+                    <span>Edit competitor</span>
                   </button>
                   <button mat-menu-item type="button" (click)="removeFromQueue(id)">
                     <mat-icon>close</mat-icon>

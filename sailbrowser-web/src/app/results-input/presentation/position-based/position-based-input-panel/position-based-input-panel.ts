@@ -41,6 +41,8 @@ import {
 } from '../../../services/manual-results.service';
 import { ResultCodeDialog } from '../result-code-dialog';
 import { RaceCompetitor, sortEntries } from 'app/results-input';
+import { EditRaceCompetitorDialog } from '../../edit-race-competitor-dialog/edit-race-competitor-dialog';
+import { RaceCompetitorEditService } from '../../../services/race-competitor-edit.service';
 
 /** Placing / penalty queue derived from `RaceCompetitor[]`; overwritten when race or row-id set changes. */
 interface OrderQueueModel {
@@ -114,6 +116,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
   private readonly manualResults = inject(ManualResultsService);
   private readonly breakpoint = inject(BreakpointObserver);
   private readonly dialog = inject(MatDialog);
+  private readonly competitorEdit = inject(RaceCompetitorEditService);
 
   race = input.required<Race>();
   competitors = input.required<RaceCompetitor[]>();
@@ -675,6 +678,18 @@ export class PositionBasedInputPanel implements AfterViewInit {
 
   rowFor(id: string): OrderEntryRowState | undefined {
     return this.orderQueue().rowState.get(id);
+  }
+
+  async editCompetitor(id: string): Promise<void> {
+    const competitor = this.compById().get(id);
+    if (!competitor) return;
+    const dialogRef = this.dialog.open(EditRaceCompetitorDialog, {
+      width: 'min(92vw, 460px)',
+      data: { competitor },
+    });
+    const command = await firstValueFrom(dialogRef.afterClosed());
+    if (!command) return;
+    await this.competitorEdit.apply(command);
   }
 
   /** Rank label for a tie group card (1-based position in placings). */
