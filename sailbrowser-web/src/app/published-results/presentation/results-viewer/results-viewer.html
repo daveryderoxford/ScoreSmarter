@@ -55,8 +55,8 @@
             (raceClicked)="raceClicked($event)" />
 
          @for (race of reversedRaces(); track race.id; let i = $index, isFirst = $first, isLast = $last) {
-         <div class="race-container">
-            <div class="race-title" [attr.data-race-id]="race.id">
+         <div class="race-container" [attr.data-race-id]="race.id" [attr.id]="'race-' + race.id">
+            <div class="race-title">
                <h3>Race {{race.index}} - {{race.scheduledStart| date:'dd MMM yy'}} {{race.results.length === 0 ? ' - No
                   competitors' : '' }}</h3>
                <div class="race-nav">

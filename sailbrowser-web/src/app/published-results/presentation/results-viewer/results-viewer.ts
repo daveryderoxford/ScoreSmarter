@@ -1,6 +1,6 @@
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { DatePipe } from '@angular/common';
-import { Component, computed, effect, ElementRef, inject, input, Signal, signal } from '@angular/core';
+import { afterRenderEffect, Component, computed, effect, ElementRef, inject, input, Signal, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -37,8 +37,10 @@ export class ResultsViewer {
   protected auth = inject(AuthService);
   private router = inject(Router);
   private currentRacesStore = inject(CurrentRaces);
+  private readonly autoScrolledTarget = signal('');
 
   id = input<string>('');  // Route parameter
+  raceId = input<string>(''); // Query parameter
 
   isMobile = this.breakpoints.isMobile;
 
@@ -93,6 +95,22 @@ export class ResultsViewer {
     effect(() => {
       this.store.selectedSeriesId.set(this.id());
     });
+
+    // When deep-linked with raceId, scroll the selected race into view after render.
+    afterRenderEffect(() => {
+      const seriesId = this.id();
+      const targetRaceId = this.raceId();
+      const races = this.reversedRaces();
+      if (!seriesId || !targetRaceId || races.length === 0) return;
+      if (!races.some(r => r.id === targetRaceId)) return;
+
+      const targetKey = `${seriesId}:${targetRaceId}`;
+      if (this.autoScrolledTarget() === targetKey) return;
+
+      if (this.scrollToRaceElement(targetRaceId)) {
+        this.autoScrolledTarget.set(targetKey);
+      }
+    });
   }
 
   togglePanel() {
@@ -100,10 +118,7 @@ export class ResultsViewer {
   }
 
   raceClicked(raceId: string) {
-    const element = this.elementRef.nativeElement.querySelector(`[data-race-id="${raceId}"]`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    this.scrollToRaceElement(raceId);
   }
 
   scrollToTop() {
@@ -117,6 +132,13 @@ export class ResultsViewer {
 
   onConfigurationChange(newSeriesId: string) {
     this.router.navigate(['/results/viewer', newSeriesId]);
+  }
+
+  private scrollToRaceElement(raceId: string): boolean {
+    const element = this.elementRef.nativeElement.querySelector(`[data-race-id="${raceId}"]`);
+    if (!element) return false;
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
   }
 
 }
