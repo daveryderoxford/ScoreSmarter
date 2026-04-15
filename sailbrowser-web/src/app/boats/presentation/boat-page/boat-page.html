@@ -1,4 +1,19 @@
-<app-toolbar title="Boats"></app-toolbar>
+<app-toolbar title="Boats">
+  <button mat-icon-button [matMenuTriggerFor]="boatsDataMenu" aria-label="Boats data actions">
+    <mat-icon>more_vert</mat-icon>
+  </button>
+</app-toolbar>
+<mat-menu #boatsDataMenu="matMenu">
+  <button mat-menu-item (click)="downloadCsv()">
+    <mat-icon>download</mat-icon>
+    <span>Download CSV</span>
+  </button>
+  <button mat-menu-item (click)="csvFileInput.click()">
+    <mat-icon>upload</mat-icon>
+    <span>Upload CSV</span>
+  </button>
+</mat-menu>
+<input #csvFileInput type="file" (change)="importCsv($event)" accept=".csv,text/csv" style="display:none">
 
 <div class="content">
 
