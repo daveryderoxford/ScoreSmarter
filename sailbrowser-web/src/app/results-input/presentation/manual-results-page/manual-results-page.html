@@ -25,6 +25,9 @@
   <app-busy-button [style]="'text'" [busy]="publishing()" (click)="publish()">
     Publish
   </app-busy-button>
+  <button matButton="text" type="button" [disabled]="!selectedRace()" (click)="viewResultsForSelectedRace()">
+    Results
+  </button>
 
 </app-toolbar>
 

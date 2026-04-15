@@ -20,7 +20,7 @@
             @for (boat of filteredBoats(); track boat.id) {
               <mat-option [value]="boat">
                 @if (boat.isClub) {
-                  Club {{ boat.boatClass }} {{ boat.sailNumber }}
+                  Club {{ boat.boatClass }} Club Boat {{ boat.sailNumber }}
                 } @else {
                   {{ boat.boatClass }} {{ boat.sailNumber }} - ({{ boat.helm }})
                 }
@@ -70,6 +70,7 @@
             <input matInput formControlName="crew" placeholder="Optional" autocomplete="off" />
           </mat-form-field>
         </div>
+
       } @else {
         <div class="placeholder">
           <p>

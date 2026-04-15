@@ -5,6 +5,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import type { Race } from '../../model/race';
 import { RaceCalendarStore } from '../../services/full-race-calander';
 import { RaceTitlePipe } from 'app/shared/pipes/race-title-pipe';
+import { groupBy } from 'app/shared/utils/group-by';
 
 export interface RacePickerDialogData {
   title: string;
@@ -151,16 +152,7 @@ export class RacePickerDialog {
       .filter(r => !isScheduledToday(r))
       .sort(sortRacesByTimeThenIndex);
 
-    const byDay = new Map<string, Race[]>();
-    for (const race of races) {
-      const key = new Date(race.scheduledStart).toDateString();
-      const list = byDay.get(key);
-      if (list) {
-        list.push(race);
-      } else {
-        byDay.set(key, [race]);
-      }
-    }
+    const byDay = groupBy(races, race => new Date(race.scheduledStart).toDateString());
 
     return [...byDay.entries()]
       .sort((a, b) => new Date(a[1][0].scheduledStart).getTime() - new Date(b[1][0].scheduledStart).getTime())

@@ -19,7 +19,11 @@ export interface HandicapConfiguration extends BaseScoringConfiguration {
    handicapScheme: Exclude<HandicapScheme, 'Level Rating'>;
 }
 
-export function getConfigName(fleet: Fleet, hcapScheme: HandicapScheme) {
+export function getConfigName(hcapScheme: HandicapScheme, fleet?: Fleet) {
+   if (!fleet) {
+      return hcapScheme;
+   }
+
    switch (fleet.type) {
       case 'BoatClass':
          return getFleetName(fleet);

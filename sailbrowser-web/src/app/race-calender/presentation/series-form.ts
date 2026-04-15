@@ -333,7 +333,7 @@ export class SeriesForm {
          
          const primaryScoringConfiguration: ScoringConfiguration = {
             id: formValue.id || 'overall',
-            name: getConfigName(primaryFleet, formValue.primaryHandicapScheme),
+            name: getConfigName(formValue.primaryHandicapScheme, primaryFleet),
             type: primaryFleet.type === 'BoatClass' ? 'LevelRating' : 'Handicap',
             fleet: primaryFleet,
             handicapScheme: formValue.primaryHandicapScheme as any
@@ -343,7 +343,7 @@ export class SeriesForm {
             const fleet = this.fleets().find(f => f.id === config.fleetId);
             return {
                id: config.id,
-              name: fleet ? getConfigName(fleet, config.handicapScheme) : 'Secondary',
+              name: getConfigName(config.handicapScheme, fleet),
                type: fleet?.type === 'BoatClass' ? 'LevelRating' : 'Handicap',
                fleet: fleet!,
                handicapScheme: config.handicapScheme as any

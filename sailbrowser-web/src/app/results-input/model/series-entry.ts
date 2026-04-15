@@ -1,4 +1,5 @@
 import { Handicap } from 'app/scoring/model/handicap';
+import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 
 export interface SeriesEntry {
    id: string;
@@ -13,6 +14,7 @@ export interface SeriesEntry {
    boatClass: string;
    sailNumber: number;
    handicaps: Handicap[];
+   personalHandicapBand?: PersonalHandicapBand;
    fleetId?: string;
 
    // For subset scoring

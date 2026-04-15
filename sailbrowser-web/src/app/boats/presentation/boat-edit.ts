@@ -35,7 +35,7 @@ export class BoatEdit {
   async submitted(data: Partial<Boat>) {
     try {
       this.busy.set(true);
-      const save = await this.dupCheck.duplicateCheck(data);
+      const save = await this.dupCheck.duplicateCheck(data, { excludeBoatId: this.id() });
       if (save) {
         await this.bs.update(this.id(), data);
         this.router.navigate(["/boats"]);

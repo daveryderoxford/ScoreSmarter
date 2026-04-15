@@ -35,6 +35,15 @@
    grid-area: toolbar;
 }
 
+.toolbar-selected-series {
+   max-width: min(70vw, 900px);
+   text-align: center;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   font-weight: 500;
+}
+
 .sidebar {
    grid-area: sidebar;
    border-right: 1px solid #eee;

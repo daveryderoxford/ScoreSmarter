@@ -6,6 +6,7 @@ import { getLongAlgorithm, getShortAlgorithm, isFinishedComp, isRedress, isStart
 import { ScoreSmarterError } from '../../shared/utils/scoresmarter-error';
 import { SeriesScoringScheme } from '../model/scoring-algotirhm';
 import { getHandicapValue } from '../model/handicap';
+import { isUnknownHandicapValue } from '../model/personal-handicap';
 import { getCorrectedTime, getElapsedSeconds } from './scorer-times';
 
 /**
@@ -143,6 +144,12 @@ export function buildRaceResults(
       throw new ScoreSmarterError(`Series entry not found for competitor ${comp.id}`);
     }
 
+    const handicap = getHandicapValue(comp.handicaps, scheme) ?? getHandicapValue(entry.handicaps, scheme) ?? 0;
+    const adjustedResultCode =
+      isUnknownHandicapValue(scheme, handicap) && isFinishedComp(comp.resultCode)
+        ? 'NOT FINISHED'
+        : comp.resultCode;
+
     return {
       seriesEntryId: comp.seriesEntryId,
       rank: comp.manualPosition || 0,
@@ -152,13 +159,13 @@ export function buildRaceResults(
       crew: comp.crew || entry.crew,
       club: entry.club,
       laps: comp.numLaps,
-      handicap: getHandicapValue(comp.handicaps, scheme) ?? getHandicapValue(entry.handicaps, scheme) ?? 0,
+      handicap,
       startTime: comp.startTime!,
       finishTime: comp.finishTime!,
       elapsedTime: 0,
       correctedTime: 0,
       points: 0,
-      resultCode: comp.resultCode,
+      resultCode: adjustedResultCode,
     };
   });
 }

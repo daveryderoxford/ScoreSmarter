@@ -13,9 +13,8 @@ export class DuplicateBoatCheck {
   private dialog = inject(MatDialog);
   private bs = inject(BoatsStore);
 
-  async duplicateCheck(boat: Partial<Boat>): Promise<boolean> {
-
-    const check = checkForDuplicateBoats(boat, this.bs.boats());
+  async duplicateCheck(boat: Partial<Boat>, options?: { excludeBoatId?: string }): Promise<boolean> {
+    const check = checkForDuplicateBoats(boat, this.bs.boats(), options);
 
     if (check.isDuplicate) {
       this.snackbar.open("Duplicate Boat exists in boat repository", "Dismiss", { duration: 4000 });
@@ -36,14 +35,32 @@ export class DuplicateBoatCheck {
 }
 
 /** Checks for duplicate boats, returning a list of boats that
- * match exactly and ones that are similar to 
-*/
-function checkForDuplicateBoats(newBoat: Partial<Boat>, allBoats: Boat[]): { isDuplicate: boolean, matches: Boat[]; } {
-  const possibles = allBoats.filter(
-    boat => boat.boatClass === newBoat.boatClass &&
-      boat.sailNumber === newBoat.sailNumber);
+ * match exactly and ones that are similar to.
+ */
+function checkForDuplicateBoats(
+  newBoat: Partial<Boat>,
+  allBoats: Boat[],
+  options?: { excludeBoatId?: string }
+): { isDuplicate: boolean, matches: Boat[]; } {
+  const possibles = allBoats.filter(boat =>
+    boat.id !== options?.excludeBoatId &&
+    boat.boatClass === newBoat.boatClass &&
+    boat.sailNumber === newBoat.sailNumber
+  );
 
-  const isDuplicate = possibles.find(boat => boat.helm.toLowerCase() === newBoat.helm?.toLowerCase()) !== undefined;
+  const newName = (newBoat.name ?? '').trim().toLowerCase();
+  const newHelm = (newBoat.helm ?? '').trim().toLowerCase();
+
+  const isDuplicate = possibles.find(boat => {
+    const existingName = (boat.name ?? '').trim().toLowerCase();
+    const existingHelm = (boat.helm ?? '').trim().toLowerCase();
+    // Primary identity is class + sail number + name.
+    // If name is blank on either side, fall back to helm for backward compatibility.
+    if (newName && existingName) {
+      return existingName === newName;
+    }
+    return existingHelm.length > 0 && existingHelm === newHelm;
+  }) !== undefined;
 
   return { isDuplicate, matches: possibles };
 }

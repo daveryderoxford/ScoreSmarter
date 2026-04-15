@@ -6,8 +6,19 @@ import { toSignal } from '@angular/core/rxjs-interop';
    providedIn: 'root'
 })
 export class AppBreakpoints {
+   private readonly bp = inject(BreakpointObserver);
 
-   private breakpoint = toSignal(inject(BreakpointObserver).observe([Breakpoints.Handset]));
+   private readonly handset = toSignal(this.bp.observe([Breakpoints.Handset]));
+   private readonly coarsePointer = toSignal(this.bp.observe(['(pointer: coarse)']));
 
-   readonly isMobile = computed(() => this.breakpoint()?.matches);
+   /**
+    * True mobile devices only:
+    * - handset-sized layout
+    * - coarse pointer (touch-first)
+    *
+    * This prevents desktop window resize from switching to mobile-only UX.
+    */
+   readonly isMobile = computed(() =>
+      !!this.handset()?.matches && !!this.coarsePointer()?.matches
+   );
 }

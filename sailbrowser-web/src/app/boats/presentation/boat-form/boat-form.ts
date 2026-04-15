@@ -7,6 +7,7 @@ import { SubmitButton } from 'app/shared/components/submit-button';
 import { Boat } from 'app/boats';
 import { ClubStore } from 'app/club-tenant';
 import { getHandicapValue, type Handicap } from 'app/scoring/model/handicap';
+import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { HANDICAP_SCHEMES } from 'app/scoring/model/handicap-scheme';
 import {
   getHandicapSchemeMetadata,
@@ -53,11 +54,13 @@ export class BoatForm {
     helm: new FormControl('', Validators.required),
     crew: new FormControl(''),
     isClub: new FormControl<boolean>(false),
+    personalHandicapBand: new FormControl<PersonalHandicapBand | 'unknown'>('unknown'),
   }) as FormGroup<any>;
 
   constructor() {
     const suported = this.cs.club().supportedHandicapSchemes;
     for (const scheme of getSchemesForTarget(suported, 'boat')) {
+      if (scheme === 'Personal') continue;
       const meta = getHandicapSchemeMetadata(scheme);
       this.form.addControl(
         handicapControlName(scheme),
@@ -93,6 +96,7 @@ export class BoatForm {
       if (this.boat()) {
         const b = this.boat()!;
         const patch: Record<string, unknown> = { ...b };
+        patch['personalHandicapBand'] = b.personalHandicapBand ?? 'unknown';
         for (const scheme of HANDICAP_SCHEMES) {
           if (HANDICAP_SCHEME_METADATA[scheme].appliesTo !== 'boat') continue;
           const meta = getHandicapSchemeMetadata(scheme);
@@ -122,7 +126,7 @@ export class BoatForm {
   submit() {
     const v = this.form.getRawValue() as Record<string, unknown>;
     const helm = ((v['helm'] as string | undefined) ?? '').trim();
-    const boatHandicaps: Handicap[] = this.boatLevelSchemes().map(scheme => {
+    const boatHandicaps: Handicap[] = this.boatLevelSchemes().filter(s => s !== 'Personal').map(scheme => {
       const meta = getHandicapSchemeMetadata(scheme);
       const raw = v[handicapControlName(scheme)];
       const value = Number(raw ?? meta.defaultValue);
@@ -140,6 +144,9 @@ export class BoatForm {
       crew: (v['crew'] as string) ?? '',
       isClub: !!v['isClub'],
       handicaps: boatHandicaps.length ? boatHandicaps : undefined,
+      personalHandicapBand: v['personalHandicapBand'] === 'unknown'
+        ? undefined
+        : (v['personalHandicapBand'] as PersonalHandicapBand | undefined),
     };
     this.submitted.emit(output);
     this.form.reset();

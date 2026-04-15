@@ -136,6 +136,16 @@ export class ManualResultsPage {
     });
   }
 
+  async viewResultsForSelectedRace(): Promise<void> {
+    const race = this.selectedRace();
+    if (!race) return;
+    await this.router.navigate(['/results/viewer', race.seriesId], {
+      queryParams: {
+        raceId: race.id,
+      },
+    });
+  }
+
   async onTableRowClick(row: RaceCompetitor) {
     if (this.selectedRace()?.type !== 'Handicap') return;
     const panel = this.handicapInputPanel();

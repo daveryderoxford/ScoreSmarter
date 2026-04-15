@@ -33,6 +33,8 @@ import { manualRaceTableSort, ManualResultsService } from '../../../services/man
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-time-dialog';
 import { RaceTimeInput } from '../race-time-input';
 import { ResultCodeSelect } from '../../result-code-select';
+import { EditRaceCompetitorDialog } from '../../edit-race-competitor-dialog/edit-race-competitor-dialog';
+import { RaceCompetitorEditService } from '../../../services/race-competitor-edit.service';
 
 @Component({
   selector: 'app-handicap-input-panel',
@@ -58,6 +60,7 @@ export class HandicapInputPanel {
   private readonly dialog = inject(MatDialog);
   private readonly dialogs = inject(DialogsService);
   private readonly fb = inject(FormBuilder);
+  private readonly competitorEdit = inject(RaceCompetitorEditService);
 
   race = input.required<Race>();
   competitors = input.required<RaceCompetitor[]>();
@@ -267,6 +270,18 @@ export class HandicapInputPanel {
 
   async save(): Promise<void> {
     await this.saveCurrentSelection(true);
+  }
+
+  async editSelectedCompetitor(): Promise<void> {
+    const competitor = this.selectedCompetitor();
+    if (!competitor) return;
+    const dialogRef = this.dialog.open(EditRaceCompetitorDialog, {
+      width: 'min(92vw, 460px)',
+      data: { competitor },
+    });
+    const command = await firstValueFrom(dialogRef.afterClosed());
+    if (!command) return;
+    await this.competitorEdit.apply(command);
   }
 
   private async saveCurrentSelection(clearAfterSave: boolean): Promise<boolean> {

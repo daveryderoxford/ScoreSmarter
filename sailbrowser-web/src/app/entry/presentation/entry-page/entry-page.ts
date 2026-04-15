@@ -22,6 +22,7 @@ import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { BusyButton } from 'app/shared/components/busy-button';
 import { CenteredText } from 'app/shared/components/centered-text';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { groupBy } from 'app/shared/utils/group-by';
 import { firstValueFrom, debounceTime, map, startWith } from 'rxjs';
 import { resolveHandicapsForSeries } from '../../services/entry-helpers';
 import { meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
@@ -238,6 +239,8 @@ export class EntryPage {
       helm,
       crew,
       handicaps: [...handicapByScheme.entries()].map(([scheme, value]) => ({ scheme, value })),
+      personalHandicapBand: boat.personalHandicapBand,
+      personalHandicapUnknown: !boat.personalHandicapBand,
       tags: [] as string[],
     };
   });
@@ -265,7 +268,12 @@ export class EntryPage {
 
       const handicaps = resolveHandicapsForSeries(
         series,
-        { boatClassName: candidate.boatClassName, handicaps: candidate.handicaps },
+        {
+          boatClassName: candidate.boatClassName,
+          handicaps: candidate.handicaps,
+          personalHandicapBand: candidate.personalHandicapBand,
+          personalHandicapUnknown: candidate.personalHandicapUnknown,
+        },
         this.cs.club().classes
       );
       return meetsPrimaryFleetEligibility(series, {
@@ -278,16 +286,7 @@ export class EntryPage {
   /** Eligible races grouped by calendar day (heading + ordered races). */
   readonly eligibleRacesByDay = computed((): EntryRaceDayGroup[] => {
     const races = [...this.eligibleRaces()].sort(sortRacesByTimeThenIndex);
-    const byDay = new Map<string, Race[]>();
-    for (const race of races) {
-      const key = new Date(race.scheduledStart).toDateString();
-      const list = byDay.get(key);
-      if (list) {
-        list.push(race);
-      } else {
-        byDay.set(key, [race]);
-      }
-    }
+    const byDay = groupBy(races, race => new Date(race.scheduledStart).toDateString());
     return [...byDay.entries()]
       .sort((a, b) => new Date(a[1][0].scheduledStart).getTime() - new Date(b[1][0].scheduledStart).getTime())
       .map(([dateKey, dayRaces]) => ({
@@ -411,7 +410,7 @@ export class EntryPage {
     if (!boat || typeof boat === 'string') {
       return typeof boat === 'string' ? boat : '';
     } else if (boat.isClub) {
-      return `Club ${boat.boatClass} ${boat.sailNumber}`;
+      return `Club ${boat.boatClass} Club Boat ${boat.sailNumber}`;
     } else {
       return `${boat.boatClass} ${boat.sailNumber} (${boat.helm})`;
     }
@@ -464,6 +463,7 @@ export class EntryPage {
       name: created.boat.name ?? '',
       isClub: false,
       handicaps: created.boat.handicaps,
+      personalHandicapBand: created.boat.personalHandicapBand,
     };
     this.selectedBoat.set(newBoat);
     this.boatSearchControl.setValue(newBoat, { emitEvent: false });
@@ -485,6 +485,7 @@ export class EntryPage {
       helm: candidate.helm,
       crew: candidate.crew,
       handicaps: active.size > 0 ? activeHandicaps : undefined,
+      personalHandicapBand: candidate.personalHandicapBand,
     };
 
     if (this._entryService.isDuplicateEntry(entryData)) {

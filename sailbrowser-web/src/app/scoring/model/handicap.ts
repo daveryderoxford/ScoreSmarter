@@ -1,4 +1,5 @@
 import { HandicapScheme } from './handicap-scheme';
+import { isUnknownHandicapValue } from './personal-handicap';
 
 export interface Handicap {
   scheme: HandicapScheme;
@@ -15,5 +16,16 @@ export function getHandicapValue(
   const h = handicaps?.find(x => x.scheme === scheme);
   if (!h) return undefined;
   return h.value > 0 ? h.value : undefined;
+}
+
+/**
+ * Returns handicap value only when it is a known/scorable number for `scheme`.
+ */
+export function getScorableHandicapValue(
+  handicaps: Handicap[] | undefined,
+  scheme: HandicapScheme
+): number | undefined {
+  const value = getHandicapValue(handicaps, scheme);
+  return isUnknownHandicapValue(scheme, value) ? undefined : value;
 }
 
