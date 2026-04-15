@@ -8,6 +8,7 @@ import { score } from 'app/scoring';
 import { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import { getHandicapValue } from 'app/scoring/model/handicap';
 import { isInFleet } from 'app/scoring/services/fleet-scoring';
+import { groupBy } from 'app/shared/utils/group-by';
 import { PublishedRace } from '../model/published-race';
 import { PublishedSeason, SeriesInfo } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
@@ -49,11 +50,11 @@ export class ScoringEngine {
 
     const batch = writeBatch(this.firestore);
     const seasonUpdates = new Map<string, PublishedSeason>();
-    const seriesIds = new Set(races.map(r => r.seriesId));
+    const racesBySeries = groupBy(races, race => race.seriesId);
 
-    for (const seriesId of seriesIds) {
-      const seriesRaces = races.filter(r => r.seriesId === seriesId).map(r => r.id);
-      await this.publishSeriesInternal(batch, seasonUpdates, seriesId, seriesRaces);
+    for (const [seriesId, seriesRaces] of racesBySeries) {
+      const raceIds = seriesRaces.map(r => r.id);
+      await this.publishSeriesInternal(batch, seasonUpdates, seriesId, raceIds);
     }
 
     // Apply season updates to batch

@@ -22,6 +22,7 @@ import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { BusyButton } from 'app/shared/components/busy-button';
 import { CenteredText } from 'app/shared/components/centered-text';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { groupBy } from 'app/shared/utils/group-by';
 import { firstValueFrom, debounceTime, map, startWith } from 'rxjs';
 import { resolveHandicapsForSeries } from '../../services/entry-helpers';
 import { meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
@@ -285,16 +286,7 @@ export class EntryPage {
   /** Eligible races grouped by calendar day (heading + ordered races). */
   readonly eligibleRacesByDay = computed((): EntryRaceDayGroup[] => {
     const races = [...this.eligibleRaces()].sort(sortRacesByTimeThenIndex);
-    const byDay = new Map<string, Race[]>();
-    for (const race of races) {
-      const key = new Date(race.scheduledStart).toDateString();
-      const list = byDay.get(key);
-      if (list) {
-        list.push(race);
-      } else {
-        byDay.set(key, [race]);
-      }
-    }
+    const byDay = groupBy(races, race => new Date(race.scheduledStart).toDateString());
     return [...byDay.entries()]
       .sort((a, b) => new Date(a[1][0].scheduledStart).getTime() - new Date(b[1][0].scheduledStart).getTime())
       .map(([dateKey, dayRaces]) => ({
