@@ -3,14 +3,22 @@
 <div class="content">
 
   <div class="search-bar">
-    <mat-form-field appearance="outline" class="search">
+    <mat-form-field class="search" subscriptSizing="dynamic">
       <mat-label>Search</mat-label>
-      <input matInput [formControl]="searchControl" placeholder="Search">
+      <input matInput [formControl]="searchControl" placeholder="Helm, No, Class">
       @if (searchControl.value) {
       <button mat-icon-button matSuffix (click)="searchControl.setValue('')" aria-label="Clear search">
         <mat-icon>close</mat-icon>
       </button>
       }
+    </mat-form-field>
+
+    <mat-form-field class="group-by" subscriptSizing="dynamic">
+      <mat-label>Group</mat-label>
+      <mat-select [formControl]="groupByControl">
+        <mat-option value="helm">Helm</mat-option>
+        <mat-option value="boatClass">Class</mat-option>
+      </mat-select>
     </mat-form-field>
 
     <a matButton="tonal" class="right-justify" [routerLink]="['/boats/add']">
@@ -24,35 +32,34 @@
     <app-loading-centered />
   } @else {
   <mat-list class="dense-list">
-    @for (boat of filteredBoats(); track boat.id) {
-    <mat-list-item>
-      @if (boat.isClub) {
-        Club
+    @for (group of groupedBoats(); track group.key; let isFirst = $first) {
+      @if (!isFirst) {
+        <mat-divider></mat-divider>
       }
-      <span matListItemTitle>{{boat.boatClass}} {{boat.sailNumber}} </span>
-        @if (boat.name) {
-          <span matListItemLine>{{boat.name}}</span>
+      <h3 matSubheader>{{ group.key }}</h3>
+      @for (boat of group.boats; track boat.id) {
+      <mat-list-item>
+        @if (boat.isClub) {
+          Club
         }
-      <span matListItemLine>
-        @if (!boat.isClub) {
-          Helm: {{boat.helm}}
-          @if (boat.crew) {
-            Crew: {{boat.crew}}
+        <span matListItemTitle>{{ boatSecondaryLabel(boat) }}</span>
+          @if (boat.name) {
+            <span matListItemLine>{{boat.name}}</span>
           }
-        }
-      </span>
+        <span matListItemLine>{{ boatHandicapSummary(boat) }}</span>
 
-      <span matListItemMeta>
-        <button matIconButton aria-label="Edit" [routerLink]="['/boats/edit/'+boat.id]">
-          <mat-icon class="green">edit</mat-icon>
-        </button>
-        <button matIconButton aria-label="Delete" (click)="deleteBoat(boat)">
-          <mat-icon class="warning">delete</mat-icon>
-        </button>
-      </span>
-    <mat-divider />
+        <span matListItemMeta>
+          <button matIconButton aria-label="Edit" [routerLink]="['/boats/edit/'+boat.id]">
+            <mat-icon class="green">edit</mat-icon>
+          </button>
+          <button matIconButton aria-label="Delete" (click)="deleteBoat(boat)">
+            <mat-icon class="warning">delete</mat-icon>
+          </button>
+        </span>
+      <mat-divider />
 
-    </mat-list-item>
+      </mat-list-item>
+      }
     } @empty {
       <mat-list-item>
         <span matListItemTitle>No Boats displayed</span>

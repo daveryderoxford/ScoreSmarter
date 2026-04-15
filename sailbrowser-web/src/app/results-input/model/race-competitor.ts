@@ -1,6 +1,7 @@
 import { ResultCode } from 'app/scoring';
 import { Handicap, getHandicapValue } from '../../scoring/model/handicap';
 import { HandicapScheme } from '../../scoring/model/handicap-scheme';
+import { PersonalHandicapBand } from '../../scoring/model/personal-handicap';
 import { differenceInSeconds } from 'date-fns';
 
 export const RESULTS_UNSET_VALUE = 9999;
@@ -17,6 +18,7 @@ export class RaceCompetitor {
   boatClass: string;
   sailNumber: number;
   handicaps: Handicap[];
+  personalHandicapBand?: PersonalHandicapBand;
   fleetId?: string;
 
   /**
@@ -63,6 +65,7 @@ export class RaceCompetitor {
     this.boatClass = data.boatClass || '';
     this.sailNumber = data.sailNumber || 0;
     this.handicaps = data.handicaps || [];
+    this.personalHandicapBand = data.personalHandicapBand;
     // Scoring data
     this.recordedFinishTime = data.recordedFinishTime;
     this.manualFinishTime = data.manualFinishTime;

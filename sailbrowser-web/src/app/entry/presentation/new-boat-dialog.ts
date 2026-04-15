@@ -6,6 +6,7 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import type { Boat } from 'app/boats';
 import { ClubStore } from 'app/club-tenant';
 import type { Handicap } from 'app/scoring/model/handicap';
+import { type PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { type HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getSchemesForTarget, getHandicapSchemeMetadata, handicapControlName } from 'app/scoring/model/handicap-scheme-metadata';
 import { BoatCoreFields } from 'app/boats/presentation/boat-form/boat-core-fields';
@@ -68,11 +69,13 @@ export class NewBoatDialog {
     name: [''],
     helm: ['', Validators.required],
     crew: [''],
+    personalHandicapBand: ['unknown' as PersonalHandicapBand | 'unknown'],
     saveBoat: [true],
   });
 
   constructor() {
     for (const scheme of this.boatSchemes()) {
+      if (scheme === 'Personal') continue;
       const meta = getHandicapSchemeMetadata(scheme);
       this.form.addControl(
         handicapControlName(scheme),
@@ -93,7 +96,7 @@ export class NewBoatDialog {
     if (this.form.invalid) return;
     const raw = this.form.getRawValue() as Record<string, unknown>;
 
-    const handicaps: Handicap[] = this.boatSchemes().map(scheme => {
+    const handicaps: Handicap[] = this.boatSchemes().filter(s => s !== 'Personal').map(scheme => {
       const meta = getHandicapSchemeMetadata(scheme);
       const value = Number(raw[handicapControlName(scheme)] ?? meta.defaultValue);
       return { scheme, value: Number.isFinite(value) && value > 0 ? value : meta.defaultValue };
@@ -107,6 +110,9 @@ export class NewBoatDialog {
       crew: String(raw['crew'] ?? '').trim(),
       isClub: false,
       handicaps: handicaps.length > 0 ? handicaps : undefined,
+      personalHandicapBand: raw['personalHandicapBand'] === 'unknown'
+        ? undefined
+        : (raw['personalHandicapBand'] as PersonalHandicapBand | undefined),
     };
 
     this.dialogRef.close({

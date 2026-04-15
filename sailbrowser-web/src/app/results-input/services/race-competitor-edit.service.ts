@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { SeriesEntryStore } from './series-entry-store';
 import { RaceCompetitorStore } from './race-competitor-store';
 import { Handicap } from 'app/scoring/model/handicap';
+import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { RaceCompetitor } from '../model/race-competitor';
 
 export type EditScope = 'raceOnly' | 'linkedBySeriesEntry';
@@ -11,7 +12,7 @@ export type EditOperation =
   | { type: 'setCrew'; value: string; scope: EditScope }
   | { type: 'setBoatClass'; value: string; scope: EditScope }
   | { type: 'setSailNumber'; value: number; scope: EditScope }
-  | { type: 'setHandicap'; scheme: Handicap['scheme']; value: number; scope: EditScope }
+  | { type: 'setHandicap'; scheme: Handicap['scheme']; value: number; scope: EditScope; personalBand?: PersonalHandicapBand }
   | { type: 'deleteCompetitor'; scope: EditScope };
 
 export interface EditRaceCompetitorCommand {
@@ -95,7 +96,10 @@ export class RaceCompetitorEditService {
         return { sailNumber: operation.value, ...(newSeriesEntryId ? { seriesEntryId: newSeriesEntryId } : {}) };
       case 'setHandicap': {
         const withoutScheme = (competitor.handicaps ?? []).filter(h => h.scheme !== operation.scheme);
-        return { handicaps: [...withoutScheme, { scheme: operation.scheme, value: operation.value }] };
+        return {
+          handicaps: [...withoutScheme, { scheme: operation.scheme, value: operation.value }],
+          ...(operation.scheme === 'Personal' ? { personalHandicapBand: operation.personalBand } : {}),
+        };
       }
       default:
         return {};
@@ -113,7 +117,9 @@ export class RaceCompetitorEditService {
       case 'setSailNumber':
         return { sailNumber: operation.value };
       case 'setHandicap':
-        return {};
+        return operation.scheme === 'Personal'
+          ? { personalHandicapBand: operation.personalBand }
+          : {};
     }
   }
 
@@ -175,7 +181,10 @@ export class RaceCompetitorEditService {
       case 'setSailNumber':
         return impacted.every(c => c.sailNumber === operation.value);
       case 'setHandicap':
-        return impacted.every(c => c.handicaps.some(h => h.scheme === operation.scheme && h.value === operation.value));
+        return impacted.every(c =>
+          c.handicaps.some(h => h.scheme === operation.scheme && h.value === operation.value) &&
+          (operation.scheme !== 'Personal' || c.personalHandicapBand === operation.personalBand)
+        );
       default:
         return false;
     }

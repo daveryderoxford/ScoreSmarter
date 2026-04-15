@@ -1,1588 +1,1017 @@
 [
  {
-  "boatClass": "29er",
-  "sailNumber": 2788,
-  "helm": "Rory Clow",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1035
-   }
-  ]
- },
- {
-  "boatClass": "Blaze",
-  "sailNumber": 533,
-  "helm": "Michael Tokajuk",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1133
-   }
-  ]
- },
- {
-  "boatClass": "Blaze",
-  "sailNumber": 757,
-  "helm": "John Oldham",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1082
-   }
-  ]
- },
- {
-  "boatClass": "Blaze",
-  "sailNumber": 777,
-  "helm": "Rory Clow",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1082
-   }
-  ]
- },
- {
-  "boatClass": "Blaze",
-  "sailNumber": 777,
-  "helm": "Douglas Clow",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1082
-   }
-  ]
- },
- {
-  "boatClass": "Blaze",
-  "sailNumber": 811,
-  "helm": "Andy Wilson",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1133
-   }
-  ]
- },
- {
-  "boatClass": "Enterprise",
-  "sailNumber": 22409,
-  "helm": "Patrick Pengilly",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1308
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 4",
-  "sailNumber": 122513,
-  "helm": "Michelle Ryder",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1398
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 4",
-  "sailNumber": 152767,
-  "helm": "George Sumner",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1398
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 4",
-  "sailNumber": 209991,
-  "helm": "Dexter Corkin",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1338
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 4",
-  "sailNumber": 210780,
-  "helm": "Harry  Dence",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1338
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 53327,
-  "helm": "Mike Goldring",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 112025,
-  "helm": "Mark Phillips",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1269
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 122513,
-  "helm": "Michelle Ryder",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 134295,
-  "helm": "Grzegorz Walczak",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 147819,
-  "helm": "Martin Yates",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 150360,
-  "helm": "Simon Woodward",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 152767,
-  "helm": "George Sumner",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 152767,
-  "helm": "Rob Sumner",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 165372,
-  "helm": "Simon Bean",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 173611,
-  "helm": "David Symonds",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 178519,
-  "helm": "Kevin Pearson",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 185722,
-  "helm": "David Todd",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 197629,
-  "helm": "Ben May",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 204965,
-  "helm": "Paul Southall",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 210223,
-  "helm": "Hannah Kewley",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 213052,
-  "helm": "Isla Todd",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1269
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 213540,
-  "helm": "Lucas Symonds",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1269
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 6",
-  "sailNumber": 216513,
-  "helm": "Megan Thompson",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1327
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 14393,
-  "helm": "Val Samchuk",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1214
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 47819,
-  "helm": "Tony Wilson",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1214
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 112025,
-  "helm": "Mark Phillips",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1104
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 122513,
-  "helm": "Dave Ryder",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1159
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 134295,
-  "helm": "David Roberts",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1270
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 144278,
-  "helm": "Nigel Cope",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1214
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 147819,
-  "helm": "Martin Yates",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1214
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 165372,
-  "helm": "Simon Bean",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1159
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 178519,
-  "helm": "Kevin Pearson",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1104
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 182443,
-  "helm": "Nick Beynon",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1214
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 185722,
-  "helm": "David Todd",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1214
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 204713,
-  "helm": "Jonathon Leake",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1270
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 209000,
-  "helm": "Piotre Tokajuk",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1270
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 209000,
-  "helm": "Urszula Tokajuk",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1270
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 213082,
-  "helm": "Graham Parsons",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1270
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 213540,
-  "helm": "Lucas Symonds",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1270
-   }
-  ]
- },
- {
-  "boatClass": "ILCA 7",
-  "sailNumber": 221578,
-  "helm": "Rob Sumner",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1104
-   }
-  ]
- },
- {
-  "boatClass": "Phantom",
-  "sailNumber": 1185,
-  "helm": "Dylan Emmett",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1198
-   }
-  ]
- },
- {
-  "boatClass": "Rooster 8.1",
-  "sailNumber": 650,
-  "helm": "Colin Hammond",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1072
-   }
-  ]
- },
- {
-  "boatClass": "Aero 5",
-  "sailNumber": 4644,
-  "helm": "Caroline Baldwin",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1367
-   }
-  ]
- },
- {
-  "boatClass": "Aero 6",
-  "sailNumber": 3175,
-  "helm": "Gareth Griffiths",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1099
-   }
-  ]
- },
- {
-  "boatClass": "Aero 6",
-  "sailNumber": 3345,
-  "helm": "Caro Penlington",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1209
-   }
-  ]
- },
- {
-  "boatClass": "Aero 6",
-  "sailNumber": 4644,
-  "helm": "Caroline Baldwin",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1209
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 1023,
-  "helm": "Tony Sproat",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 1463,
-  "helm": "Paul Wright-Anderson",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 1502,
-  "helm": "Elinor O'Leary",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1063
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 1589,
-  "helm": "Brendan O'Leary",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 2214,
-  "helm": "Yana Skvortsov",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 2441,
-  "helm": "David Todd",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1169
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 2441,
-  "helm": "Finlay Todd",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 2584,
-  "helm": "Chris Evans",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 2607,
-  "helm": "Dave Ryder",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 2612,
-  "helm": "Mike Said",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 2616,
-  "helm": "Andy Godwin",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 2784,
-  "helm": "Richard Barker",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1116
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 2785,
-  "helm": "John Kewley",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1169
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 2787,
-  "helm": "Carl Pittam",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 3175,
-  "helm": "Gareth Griffiths",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1063
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 3596,
-  "helm": "Paul Playle",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1116
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 4189,
-  "helm": "Jeff Davison",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1063
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 4551,
-  "helm": "James Collett",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1169
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 4641,
-  "helm": "Andrew Barnett",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 4643,
-  "helm": "Paul Halliwell",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 7",
-  "sailNumber": 4647,
-  "helm": "David Baldwin",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1222
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 1463,
-  "helm": "Paul Wright-Anderson",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1156
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 2612,
-  "helm": "Mike Said",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1156
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 2612,
-  "helm": "Alex Oldham",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1156
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 2708,
-  "helm": "Colin Bristow",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1156
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 2784,
-  "helm": "Richard Barker",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1055
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 2785,
-  "helm": "John Kewley",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1055
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 2787,
-  "helm": "Carl Pittam",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1156
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 3042,
-  "helm": "Paul Halliwell",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1156
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 3175,
-  "helm": "Gareth Griffiths",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1005
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 3596,
-  "helm": "Paul Playle",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1055
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 4189,
-  "helm": "Jeff Davison",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1156
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 4228,
-  "helm": "Andrew Barnett",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1156
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 4546,
-  "helm": "Kim Gavin",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1156
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 4641,
-  "helm": "Andrew Barnett",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1156
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 4642,
-  "helm": "Andy Norman",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1156
-   }
-  ]
- },
- {
-  "boatClass": "Aero 9",
-  "sailNumber": 4642,
-  "helm": "Andy Norman",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1156
-   }
-  ]
- },
- {
-  "boatClass": "RS Vareo",
-  "sailNumber": 165,
-  "helm": "Stephen Rado ",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1095
-   }
-  ]
- },
- {
-  "boatClass": "RS Vareo",
-  "sailNumber": 408,
-  "helm": "Nick Marley",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1095
-   }
-  ]
- },
- {
-  "boatClass": "RS100 10.2",
-  "sailNumber": 313,
-  "helm": "Ian Peace",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1128
-   }
-  ]
- },
- {
-  "boatClass": "RS100 10.2",
-  "sailNumber": 447,
-  "helm": "Colin Hammond",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1128
-   }
-  ]
- },
- {
-  "boatClass": "RS200",
-  "sailNumber": 651,
-  "helm": "David Todd",
-  "crew": "Isla Todd",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1208
-   }
-  ]
- },
- {
-  "boatClass": "RS200",
-  "sailNumber": 1236,
-  "helm": "Nigel Randell",
-  "crew": "Francessca Campagnoli",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1208
-   }
-  ]
- },
- {
-  "boatClass": "RS200",
-  "sailNumber": 1238,
-  "helm": "Fiona Fardon",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1208
-   }
-  ]
- },
- {
-  "boatClass": "RS200",
-  "sailNumber": 1241,
-  "helm": "Uta Griesenbach",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1208
-   }
-  ]
- },
- {
-  "boatClass": "RS200",
-  "sailNumber": 1409,
-  "helm": "Clare James",
-  "crew": "Clare Archer",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1155
-   }
-  ]
- },
- {
-  "boatClass": "RS200",
-  "sailNumber": 1635,
-  "helm": "Andrew Barnett",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1208
-   }
-  ]
- },
- {
-  "boatClass": "RS200",
-  "sailNumber": 1639,
-  "helm": "Chris Thomas",
-  "crew": "Verity Hopkins",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1155
-   }
-  ]
- },
- {
-  "boatClass": "RS200",
-  "sailNumber": 1725,
-  "helm": "Nick Marley",
-  "crew": "Kirsten Marley",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1208
-   }
-  ]
- },
- {
-  "boatClass": "RS400",
-  "sailNumber": 675,
-  "helm": "Mike Barrett",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1083
-   }
-  ]
- },
- {
-  "boatClass": "RS400",
-  "sailNumber": 845,
-  "helm": "Nigel Thomson",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1083
-   }
-  ]
- },
- {
-  "boatClass": "RS400",
-  "sailNumber": 845,
-  "helm": "Ian Peace",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1083
-   }
-  ]
- },
- {
-  "boatClass": "RS400",
-  "sailNumber": 917,
-  "helm": "Mike Curtis",
-  "crew": "Lorna Davis",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 942
-   }
-  ]
- },
- {
-  "boatClass": "RS400",
-  "sailNumber": 964,
-  "helm": "Kas Daneshkhah",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1036
-   }
-  ]
- },
- {
-  "boatClass": "RS400",
-  "sailNumber": 1447,
-  "helm": "Dave Ryder",
-  "crew": "Michelle Ryder",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 989
-   }
-  ]
- },
- {
-  "boatClass": "RS400",
-  "sailNumber": 1470,
-  "helm": "Ian Peace",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1083
-   }
-  ]
- },
- {
-  "boatClass": "RS600",
-  "sailNumber": 851,
-  "helm": "Rory Clow",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1013
-   }
-  ]
- },
- {
-  "boatClass": "Solo",
-  "sailNumber": 3736,
-  "helm": "Nick Marley",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1310
-   }
-  ]
- },
- {
-  "boatClass": "Solo",
-  "sailNumber": 3736,
-  "helm": "Kirstin Marley",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1310
-   }
-  ]
- },
- {
-  "boatClass": "Solo",
-  "sailNumber": 3827,
-  "helm": "David Barington-West",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1310
-   }
-  ]
- },
- {
-  "boatClass": "Solo",
-  "sailNumber": 4361,
-  "helm": "Peter Halliday",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1310
-   }
-  ]
- },
- {
-  "boatClass": "Solo",
-  "sailNumber": 4647,
-  "helm": "Ben Russell",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1310
-   }
-  ]
- },
- {
-  "boatClass": "Solo",
-  "sailNumber": 5215,
-  "helm": "Mike Jones",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1310
-   }
-  ]
- },
- {
-  "boatClass": "Solo",
-  "sailNumber": 5648,
-  "helm": "Tim Gabriel",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1310
-   }
-  ]
- },
- {
-  "boatClass": "Streaker",
-  "sailNumber": 2132,
-  "helm": "Chris Smith",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1236
-   }
-  ]
- },
- {
-  "boatClass": "Topper",
-  "sailNumber": 3827,
-  "helm": "Edward Marren",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1567
-   }
-  ]
- },
- {
-  "boatClass": "Topper",
-  "sailNumber": 5648,
-  "helm": "Max Poet",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1567
-   }
-  ]
- },
- {
-  "boatClass": "Topper",
-  "sailNumber": 48580,
-  "helm": "Jude Quail",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1567
-   }
-  ]
- },
- {
-  "boatClass": "Topper",
-  "sailNumber": 49061,
-  "helm": "Isaac Chapman",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1567
-   }
-  ]
- },
- {
-  "boatClass": "Topper",
-  "sailNumber": 49063,
-  "helm": "Issy Simpson",
-  "crew": "",
-  "isClub": false,
-  "handicaps": [
-   {
-    "scheme": "Personal",
-    "value": 1567
-   }
-  ]
+ "boatClass": "29er",
+ "sailNumber": 2788,
+ "helm": "Rory Clow",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Blaze",
+ "sailNumber": 533,
+ "helm": "Michael Tokajuk",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Blaze",
+ "sailNumber": 757,
+ "helm": "John Oldham",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Blaze",
+ "sailNumber": 777,
+ "helm": "Rory Clow",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Blaze",
+ "sailNumber": 777,
+ "helm": "Douglas Clow",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Blaze",
+ "sailNumber": 811,
+ "helm": "Andy Wilson",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Enterprise",
+ "sailNumber": 22409,
+ "helm": "Patrick Pengilly",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 4",
+ "sailNumber": 122513,
+ "helm": "Michelle Ryder",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 4",
+ "sailNumber": 152767,
+ "helm": "George Sumner",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 4",
+ "sailNumber": 209991,
+ "helm": "Dexter Corkin",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 4",
+ "sailNumber": 210780,
+ "helm": "Harry Dence",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 53327,
+ "helm": "Mike Goldring",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 112025,
+ "helm": "Mark Phillips",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 122513,
+ "helm": "Michelle Ryder",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 134295,
+ "helm": "Grzegorz Walczak",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 147819,
+ "helm": "Martin Yates",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 150360,
+ "helm": "Simon Woodward",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 152767,
+ "helm": "George Sumner",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 152767,
+ "helm": "Rob Sumner",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 165372,
+ "helm": "Simon Bean",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 173611,
+ "helm": "David Symonds",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 178519,
+ "helm": "Kevin Pearson",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 185722,
+ "helm": "David Todd",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 197629,
+ "helm": "Ben May",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 204965,
+ "helm": "Paul Southall",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 210223,
+ "helm": "Hannah Kewley",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 213052,
+ "helm": "Isla Todd",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 213540,
+ "helm": "Lucas Symonds",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 216513,
+ "helm": "Megan Thompson",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 14393,
+ "helm": "Val Samchuk",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 47819,
+ "helm": "Tony Wilson",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 112025,
+ "helm": "Mark Phillips",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 122513,
+ "helm": "Dave Ryder",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 134295,
+ "helm": "David Roberts",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 144278,
+ "helm": "Nigel Cope",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 147819,
+ "helm": "Martin Yates",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 165372,
+ "helm": "Simon Bean",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 178519,
+ "helm": "Kevin Pearson",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 182443,
+ "helm": "Nick Beynon",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 185722,
+ "helm": "David Todd",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 204713,
+ "helm": "Jonathon Leake",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 209000,
+ "helm": "Piotre Tokajuk",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 209000,
+ "helm": "Urszula Tokajuk",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 213082,
+ "helm": "Graham Parsons",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 213540,
+ "helm": "Lucas Symonds",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 7",
+ "sailNumber": 221578,
+ "helm": "Rob Sumner",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Phantom",
+ "sailNumber": 1185,
+ "helm": "Dylan Emmett",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Rooster 8.1",
+ "sailNumber": 650,
+ "helm": "Colin Hammond",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 5",
+ "sailNumber": 4644,
+ "helm": "Caroline Baldwin",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 6",
+ "sailNumber": 3175,
+ "helm": "Gareth Griffiths",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 6",
+ "sailNumber": 3345,
+ "helm": "Caro Penlington",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 6",
+ "sailNumber": 4644,
+ "helm": "Caroline Baldwin",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 1023,
+ "helm": "Tony Sproat",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 1463,
+ "helm": "Paul Wright-Anderson",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 1502,
+ "helm": "Elinor O'Leary",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 1589,
+ "helm": "Brendan O'Leary",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 2214,
+ "helm": "Yana Skvortsov",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 2441,
+ "helm": "David Todd",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 2441,
+ "helm": "Finlay Todd",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 2584,
+ "helm": "Chris Evans",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 2607,
+ "helm": "Dave Ryder",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 2612,
+ "helm": "Mike Said",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 2616,
+ "helm": "Andy Godwin",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 2784,
+ "helm": "Richard Barker",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 2785,
+ "helm": "John Kewley",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 2787,
+ "helm": "Carl Pittam",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 3175,
+ "helm": "Gareth Griffiths",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 3596,
+ "helm": "Paul Playle",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 4189,
+ "helm": "Jeff Davison",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 4551,
+ "helm": "James Collett",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 4641,
+ "helm": "Andrew Barnett",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 4643,
+ "helm": "Paul Halliwell",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 7",
+ "sailNumber": 4647,
+ "helm": "David Baldwin",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 1463,
+ "helm": "Paul Wright-Anderson",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 2612,
+ "helm": "Mike Said",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 2612,
+ "helm": "Alex Oldham",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 2708,
+ "helm": "Colin Bristow",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 2784,
+ "helm": "Richard Barker",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 2785,
+ "helm": "John Kewley",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 2787,
+ "helm": "Carl Pittam",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 3042,
+ "helm": "Paul Halliwell",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 3175,
+ "helm": "Gareth Griffiths",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 3596,
+ "helm": "Paul Playle",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 4189,
+ "helm": "Jeff Davison",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 4228,
+ "helm": "Andrew Barnett",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 4546,
+ "helm": "Kim Gavin",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 4641,
+ "helm": "Andrew Barnett",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 4642,
+ "helm": "Andy Norman",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Aero 9",
+ "sailNumber": 4642,
+ "helm": "Andy Norman",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS Vareo",
+ "sailNumber": 165,
+ "helm": "Stephen Rado ",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS Vareo",
+ "sailNumber": 408,
+ "helm": "Nick Marley",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS100 10.2",
+ "sailNumber": 313,
+ "helm": "Ian Peace",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS100 10.2",
+ "sailNumber": 447,
+ "helm": "Colin Hammond",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS200",
+ "sailNumber": 651,
+ "helm": "David Todd",
+ "crew": "Isla Todd",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS200",
+ "sailNumber": 1236,
+ "helm": "Nigel Randell",
+ "crew": "Francessca Campagnoli",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS200",
+ "sailNumber": 1238,
+ "helm": "Fiona Fardon",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS200",
+ "sailNumber": 1241,
+ "helm": "Uta Griesenbach",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS200",
+ "sailNumber": 1409,
+ "helm": "Clare James",
+ "crew": "Clare Archer",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS200",
+ "sailNumber": 1635,
+ "helm": "Andrew Barnett",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS200",
+ "sailNumber": 1639,
+ "helm": "Chris Thomas",
+ "crew": "Verity Hopkins",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS200",
+ "sailNumber": 1725,
+ "helm": "Nick Marley",
+ "crew": "Kirsten Marley",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS400",
+ "sailNumber": 675,
+ "helm": "Mike Barrett",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS400",
+ "sailNumber": 845,
+ "helm": "Nigel Thomson",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS400",
+ "sailNumber": 845,
+ "helm": "Ian Peace",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS400",
+ "sailNumber": 917,
+ "helm": "Mike Curtis",
+ "crew": "Lorna Davis",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS400",
+ "sailNumber": 964,
+ "helm": "Kas Daneshkhah",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS400",
+ "sailNumber": 1447,
+ "helm": "Dave Ryder",
+ "crew": "Michelle Ryder",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS400",
+ "sailNumber": 1470,
+ "helm": "Ian Peace",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "RS600",
+ "sailNumber": 851,
+ "helm": "Rory Clow",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Solo",
+ "sailNumber": 3736,
+ "helm": "Nick Marley",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Solo",
+ "sailNumber": 3736,
+ "helm": "Kirstin Marley",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Solo",
+ "sailNumber": 3827,
+ "helm": "David Barington-West",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Solo",
+ "sailNumber": 4361,
+ "helm": "Peter Halliday",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Solo",
+ "sailNumber": 4647,
+ "helm": "Ben Russell",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Solo",
+ "sailNumber": 5215,
+ "helm": "Mike Jones",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Solo",
+ "sailNumber": 5648,
+ "helm": "Tim Gabriel",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Streaker",
+ "sailNumber": 2132,
+ "helm": "Chris Smith",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Topper",
+ "sailNumber": 3827,
+ "helm": "Edward Marren",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Topper",
+ "sailNumber": 5648,
+ "helm": "Max Poet",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Topper",
+ "sailNumber": 48580,
+ "helm": "Jude Quail",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Topper",
+ "sailNumber": 49061,
+ "helm": "Isaac Chapman",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "Topper",
+ "sailNumber": 49063,
+ "helm": "Issy Simpson",
+ "crew": "",
+ "isClub": false
+ },
+ {
+ "boatClass": "ILCA 4",
+ "sailNumber": 1,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "ILCA 4",
+ "sailNumber": 2,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "ILCA 4",
+ "sailNumber": 3,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "ILCA 4",
+ "sailNumber": 4,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "ILCA 4",
+ "sailNumber": 5,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "ILCA 4",
+ "sailNumber": 6,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 1,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 2,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 3,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 4,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 5,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "ILCA 6",
+ "sailNumber": 6,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "Hartley 12",
+ "sailNumber": 1,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "Hartley 12",
+ "sailNumber": 2,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "Hartley 12",
+ "sailNumber": 3,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "Hartley 12",
+ "sailNumber": 4,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "Hartley 12",
+ "sailNumber": 5,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "Hartley 12",
+ "sailNumber": 6,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "RS Vision",
+ "sailNumber": 1,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "RS Vision",
+ "sailNumber": 2,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "RS Vision",
+ "sailNumber": 3,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "RS Vision",
+ "sailNumber": 4,
+ "helm": "",
+ "crew": "",
+ "isClub": true
+ },
+ {
+ "boatClass": "RS Vision",
+ "sailNumber": 5,
+ "helm": "",
+ "crew": "",
+ "isClub": true
  }
 ]

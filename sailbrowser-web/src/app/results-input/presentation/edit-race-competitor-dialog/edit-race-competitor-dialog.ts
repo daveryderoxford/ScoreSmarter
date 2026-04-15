@@ -6,7 +6,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { RaceCompetitor } from 'app/results-input';
+import { getHandicapValue } from 'app/scoring/model/handicap';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { calculatePersonalHandicapFromPy, PERSONAL_HANDICAP_BANDS, type PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { EditRaceCompetitorCommand } from '../../services/race-competitor-edit.service';
 
 type OperationType = EditRaceCompetitorCommand['operation']['type'];
@@ -46,7 +48,15 @@ export interface EditRaceCompetitorDialogData {
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Value</mat-label>
-              <input matInput formControlName="handicapValue" type="number" />
+              @if (isPersonalHandicap()) {
+                <mat-select formControlName="personalBand">
+                  @for (band of personalBands; track band) {
+                    <mat-option [value]="band">{{ band }}</mat-option>
+                  }
+                </mat-select>
+              } @else {
+                <input matInput formControlName="handicapValue" type="number" />
+              }
             </mat-form-field>
           </div>
         } @else {
@@ -86,10 +96,12 @@ export class EditRaceCompetitorDialog {
     value: this.fb.nonNullable.control<string>(''),
     handicapScheme: this.fb.nonNullable.control<string>(''),
     handicapValue: this.fb.nonNullable.control<number>(0),
+    personalBand: this.fb.control<PersonalHandicapBand | null>(null),
     scope: this.fb.nonNullable.control<'raceOnly' | 'linkedBySeriesEntry'>('raceOnly', Validators.required),
   });
 
   readonly availableSchemes = computed(() => [...new Set(this.data.competitor.handicaps.map(h => h.scheme))]);
+  readonly personalBands = PERSONAL_HANDICAP_BANDS;
 
   constructor() {
     this.form.controls.operation.valueChanges.subscribe(op => {
@@ -106,6 +118,16 @@ export class EditRaceCompetitorDialog {
       }
       this.syncValidators(op);
     });
+    this.form.controls.handicapScheme.valueChanges.subscribe(scheme => {
+      if (scheme !== 'Personal') return;
+      const existingBand = this.data.competitor.personalHandicapBand ?? 'Band0';
+      this.form.controls.personalBand.setValue(existingBand, { emitEvent: false });
+      const py = getHandicapValue(this.data.competitor.handicaps, 'PY');
+      if (py && py > 0) {
+        this.form.controls.handicapValue.setValue(calculatePersonalHandicapFromPy(py, existingBand), { emitEvent: false });
+      }
+      this.syncValidators(this.form.controls.operation.value);
+    });
     this.form.controls.operation.setValue('setCrew');
   }
 
@@ -117,6 +139,9 @@ export class EditRaceCompetitorDialog {
   }
   isSailNumber(): boolean {
     return this.form.controls.operation.value === 'setSailNumber';
+  }
+  isPersonalHandicap(): boolean {
+    return this.isHandicap() && this.form.controls.handicapScheme.value === 'Personal';
   }
 
   submit(): void {
@@ -138,10 +163,19 @@ export class EditRaceCompetitorDialog {
         operation = { type: op, value: Number(value), scope };
         break;
       case 'setHandicap':
+        const scheme = this.form.controls.handicapScheme.value as HandicapScheme;
+        let handicapValue = Number(this.form.controls.handicapValue.value);
+        const personalBand = this.form.controls.personalBand.value;
+        if (scheme === 'Personal') {
+          const py = getHandicapValue(this.data.competitor.handicaps, 'PY');
+          if (!py || py <= 0 || !personalBand) return;
+          handicapValue = calculatePersonalHandicapFromPy(py, personalBand);
+        }
         operation = {
           type: op,
-          scheme: this.form.controls.handicapScheme.value as HandicapScheme,
-          value: Number(this.form.controls.handicapValue.value),
+          scheme,
+          value: handicapValue,
+          ...(scheme === 'Personal' && personalBand ? { personalBand } : {}),
           scope,
         };
         break;
@@ -181,14 +215,23 @@ export class EditRaceCompetitorDialog {
 
     const hs = this.form.controls.handicapScheme;
     const hv = this.form.controls.handicapValue;
+    const pb = this.form.controls.personalBand;
     if (op === 'setHandicap') {
       hs.setValidators([Validators.required]);
-      hv.setValidators([Validators.required, Validators.min(1)]);
+      if (this.form.controls.handicapScheme.value === 'Personal') {
+        hv.clearValidators();
+        pb.setValidators([Validators.required]);
+      } else {
+        hv.setValidators([Validators.required, Validators.min(1)]);
+        pb.clearValidators();
+      }
     } else {
       hs.clearValidators();
       hv.clearValidators();
+      pb.clearValidators();
     }
     hs.updateValueAndValidity({ emitEvent: false });
     hv.updateValueAndValidity({ emitEvent: false });
+    pb.updateValueAndValidity({ emitEvent: false });
   }
 }

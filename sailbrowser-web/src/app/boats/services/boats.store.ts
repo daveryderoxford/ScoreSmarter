@@ -39,7 +39,17 @@ export class BoatsStore {
       update.name = update.name.trim();
     }
 
-    return update
+    return this.withoutUndefined(update);
+  }
+
+  private withoutUndefined<T extends Record<string, unknown>>(obj: T): T {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (v !== undefined) {
+        out[k] = v;
+      }
+    }
+    return out as T;
   }
 
   /** Collection of all boats */

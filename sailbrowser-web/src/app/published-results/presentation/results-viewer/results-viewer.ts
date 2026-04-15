@@ -9,6 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatChipsModule } from '@angular/material/chips';
 import { RouterLink, Router } from '@angular/router';
 import { PublishedResultsReader } from 'app/published-results/services/published-results-store';
+import { getConfigName } from 'app/scoring/model/scoring-configuration';
 import { LoadingCentered } from 'app/shared/components/loading-centered';
 import { Toolbar } from "app/shared/components/toolbar";
 import { RaceResultsTable } from "../results-tables/race-results-table/race-results-table";
@@ -79,6 +80,21 @@ export class ResultsViewer {
       s.baseSeriesId === current.baseSeriesId &&
       (s.id === current.baseSeriesId || s.id.startsWith(current.baseSeriesId + '_'))
     );
+  });
+
+  readonly selectedSeriesName = computed(() => this.series()?.name?.trim() ?? '');
+
+  readonly selectedScoringAlgorithmLabel = computed(() => {
+    const publishedSeries = this.series();
+    if (!publishedSeries) return '';
+
+    const scheme = publishedSeries.competitors[0]?.handicapScheme;
+    const fleet = this.cs.club().fleets.find(f => f.id === publishedSeries.fleetId);
+
+    if (scheme) {
+      return getConfigName(scheme, fleet) ?? scheme;
+    }
+    return (this.currentSeriesInfo()?.name || this.currentFleetName()).trim();
   });
 
   raceTitles = computed(() => this.races().map((({ id, index, scheduledStart, raceOfDay }) => ({

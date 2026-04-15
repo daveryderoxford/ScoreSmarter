@@ -3,12 +3,15 @@ import type { Series } from '../../race-calender/model/series';
 import type { Handicap } from '../../scoring/model/handicap';
 import { getHandicapValue } from '../../scoring/model/handicap';
 import { handicapSchemesRequiredForSeries } from '../../scoring/model/handicap-race-requirements';
+import { calculatePersonalHandicapFromPy, type PersonalHandicapBand, toUnknownHandicapValue } from '../../scoring/model/personal-handicap';
 import type { HandicapScheme } from '../../scoring/model/handicap-scheme';
 import { getHandicapSchemeMetadata } from '../../scoring/model/handicap-scheme-metadata';
 
 export interface EntryHandicapSource {
   boatClassName: string;
   handicaps?: Handicap[];
+  personalHandicapBand?: PersonalHandicapBand;
+  personalHandicapUnknown?: boolean;
 }
 
 export interface PrimaryFleetEligibilityEntry {
@@ -29,8 +32,22 @@ export function resolveHandicapsForSeries(
 ): Handicap[] {
   const boatClass = clubClasses.find(c => c.name === source.boatClassName);
   const schemes = handicapSchemesRequiredForSeries(series);
+  const classPy = getHandicapValue(boatClass?.handicaps, 'PY');
+  const sourcePy = getHandicapValue(source.handicaps, 'PY') ?? classPy;
 
   return schemes.map((scheme: HandicapScheme) => {
+    if (scheme === 'Personal') {
+      if (source.personalHandicapUnknown) {
+        return { scheme, value: toUnknownHandicapValue('Personal') };
+      }
+      if (source.personalHandicapBand && sourcePy && sourcePy > 0) {
+        return {
+          scheme,
+          value: calculatePersonalHandicapFromPy(sourcePy, source.personalHandicapBand),
+        };
+      }
+    }
+
     const meta = getHandicapSchemeMetadata(scheme);
     const entry = source.handicaps?.find(h => h.scheme === scheme);
     const overrideValid = entry && entry.value > 0 ? entry.value : undefined;

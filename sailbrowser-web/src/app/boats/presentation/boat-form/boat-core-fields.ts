@@ -5,6 +5,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { ClubStore } from 'app/club-tenant';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { PERSONAL_HANDICAP_BANDS } from 'app/scoring/model/personal-handicap';
 import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inputs';
 
 @Component({
@@ -45,8 +46,20 @@ import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inpu
         <input matInput formControlName="crew">
       </mat-form-field>
 
-      @if (boatLevelSchemes().length > 0) {
-        <app-handicap-scheme-inputs [form]="form()" [schemes]="boatLevelSchemes()" />
+      @if (supportsPersonalBand()) {
+        <mat-form-field>
+          <mat-label>Personal handicap band</mat-label>
+          <mat-select formControlName="personalHandicapBand">
+            <mat-option value="unknown">Unknown / request allocation</mat-option>
+            @for (band of personalBands; track band) {
+              <mat-option [value]="band">{{ band }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+
+      @if (nonPersonalBoatSchemes().length > 0) {
+        <app-handicap-scheme-inputs [form]="form()" [schemes]="nonPersonalBoatSchemes()" />
       }
     </div>
   `,
@@ -64,8 +77,17 @@ import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inpu
 })
 export class BoatCoreFields {
   protected readonly cs = inject(ClubStore);
+  readonly personalBands = PERSONAL_HANDICAP_BANDS;
 
   form = input.required<FormGroup>();
   boatLevelSchemes = input.required<HandicapScheme[]>();
+
+  supportsPersonalBand(): boolean {
+    return this.boatLevelSchemes().includes('Personal');
+  }
+
+  nonPersonalBoatSchemes(): HandicapScheme[] {
+    return this.boatLevelSchemes().filter(s => s !== 'Personal');
+  }
 }
 

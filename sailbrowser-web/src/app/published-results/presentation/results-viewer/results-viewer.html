@@ -1,5 +1,8 @@
 <div class="page-container" [class.mobile-mode]="isMobile()" [class.panel-collapsed]="isPanelCollapsed()">
    <app-toolbar title="Results" class="toolbar-area">
+      @if (!isMobile() && selectedSeriesName()) {
+         <div center class="toolbar-selected-series">{{ selectedSeriesName() }}</div>
+      }
       @if (isMobile()) {
          <button matButton [routerLink]="['/results/mobile-results-list']">
             <mat-icon>back</mat-icon>Select series
@@ -57,7 +60,7 @@
          @for (race of reversedRaces(); track race.id; let i = $index, isFirst = $first, isLast = $last) {
          <div class="race-container" [attr.data-race-id]="race.id" [attr.id]="'race-' + race.id">
             <div class="race-title">
-               <h3>Race {{race.index}} - {{race.scheduledStart| date:'dd MMM yy'}} {{race.results.length === 0 ? ' - No
+               <h3>Race {{race.index}} - {{race.scheduledStart| date:'dd MMM yy'}} @if (selectedScoringAlgorithmLabel()) { - {{selectedScoringAlgorithmLabel()}} } {{race.results.length === 0 ? ' - No
                   competitors' : '' }}</h3>
                <div class="race-nav">
                   @if (auth.isRaceOfficer()) {
