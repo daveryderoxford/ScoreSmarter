@@ -7,6 +7,10 @@ import { isInFleet } from 'app/scoring/services/fleet-scoring';
 
 const NOT_FINISHED: ResultCode = 'NOT FINISHED';
 
+export function doesRaceRequireHandicap(raceType: Race['type']): boolean {
+  return raceType === 'Handicap';
+}
+
 /** 
  * Returns Series entries to include in the series 
  * for a given ScoringConfiguration. 
@@ -27,7 +31,7 @@ export function competitorsForConfigRace(
     if (!entry) return false;
     return (
       isInFleet(entry, config.fleet) &&
-      getHandicapValue(c.handicaps, handicapScheme) != null
+      (!doesRaceRequireHandicap(race.type) || getHandicapValue(c.handicaps, handicapScheme) != null)
     );
   });
 }

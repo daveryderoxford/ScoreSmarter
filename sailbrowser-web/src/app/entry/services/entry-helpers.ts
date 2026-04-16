@@ -80,7 +80,7 @@ export function meetsPrimaryFleetEligibility(
 
   switch (fleet.type) {
     case 'GeneralHandicap':
-      return getHandicapValue(entry.handicaps, config.handicapScheme) != null;
+      return true;
     case 'BoatClass':
       return entry.boatClass === fleet.boatClassId;
     case 'HandicapRange': {

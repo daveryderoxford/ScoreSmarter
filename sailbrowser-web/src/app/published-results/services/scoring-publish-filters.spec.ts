@@ -3,7 +3,7 @@ import type { Race } from 'app/race-calender/model/race';
 import { RaceCompetitor } from 'app/results-input/model/race-competitor';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
 import type { HandicapConfiguration } from 'app/scoring/model/scoring-configuration';
-import { competitorsForConfigRace, isRaceScorable } from './scoring-publish-filters';
+import { competitorsForConfigRace, doesRaceRequireHandicap, isRaceScorable } from './scoring-publish-filters';
 
 const pyConfig: HandicapConfiguration = {
   id: 'cfg-py',
@@ -60,6 +60,12 @@ function minimalRace(id: string): Race {
 
 describe('scoring-publish-filters', () => {
   const race1 = minimalRace('race-1');
+
+  it('requires handicap only for handicap races', () => {
+    expect(doesRaceRequireHandicap('Handicap')).toBe(true);
+    expect(doesRaceRequireHandicap('Pursuit')).toBe(false);
+    expect(doesRaceRequireHandicap('Level Rating')).toBe(false);
+  });
 
   it('GeneralHandicap fleet: scorable whenever there are in-fleet rows (race status is enforced in ScoringEngine)', () => {
     const entries = [entry({ id: 'e1' }), entry({ id: 'e2', sailNumber: 101 })];
@@ -153,5 +159,50 @@ describe('scoring-publish-filters', () => {
     ];
 
     expect(isRaceScorable(race1, laserFleetConfig, comps, entries)).toBe(false);
+  });
+
+  it('includes pursuit competitors without the scoring handicap', () => {
+    const pursuitRace: Race = { ...race1, type: 'Pursuit' };
+    const entries = [entry({ id: 'e1' }), entry({ id: 'e2', sailNumber: 101 })];
+    const comps = [
+      new RaceCompetitor({
+        id: 'c1',
+        raceId: 'race-1',
+        seriesId: 'series-1',
+        seriesEntryId: 'e1',
+        handicaps: [],
+        resultCode: 'OK',
+      }),
+      new RaceCompetitor({
+        id: 'c2',
+        raceId: 'race-1',
+        seriesId: 'series-1',
+        seriesEntryId: 'e2',
+        handicaps: [{ scheme: 'PY', value: 1100 }],
+        resultCode: 'NOT FINISHED',
+      }),
+    ];
+
+    expect(competitorsForConfigRace(pursuitRace, pyConfig, comps, entries)).toHaveLength(2);
+    expect(isRaceScorable(pursuitRace, pyConfig, comps, entries)).toBe(true);
+  });
+
+  it('includes level rating competitors without the scoring handicap', () => {
+    const levelRatingRace: Race = { ...race1, type: 'Level Rating' };
+    const entries = [entry({ id: 'e-laser', boatClass: 'Laser' })];
+    const comps = [
+      new RaceCompetitor({
+        id: 'c1',
+        raceId: 'race-1',
+        seriesId: 'series-1',
+        seriesEntryId: 'e-laser',
+        boatClass: 'Laser',
+        handicaps: [],
+        resultCode: 'OK',
+      }),
+    ];
+
+    expect(competitorsForConfigRace(levelRatingRace, laserFleetConfig, comps, entries)).toHaveLength(1);
+    expect(isRaceScorable(levelRatingRace, laserFleetConfig, comps, entries)).toBe(true);
   });
 });

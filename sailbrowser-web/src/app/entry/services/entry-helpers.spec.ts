@@ -146,12 +146,12 @@ function eligibilitySeries(fleet: Fleet, handicapScheme: HandicapConfiguration['
 }
 
 describe('meetsPrimaryFleetEligibility', () => {
-  it('matches GeneralHandicap using config handicap scheme', () => {
+  it('matches GeneralHandicap even when the handicap is missing', () => {
     const series = eligibilitySeries({ type: 'GeneralHandicap', id: 'f1', name: 'General Handicap' }, 'PY');
     expect(
       meetsPrimaryFleetEligibility(series, {
         boatClass: 'Laser',
-        handicaps: [{ scheme: 'PY', value: 1090 }],
+        handicaps: [],
       })
     ).toBe(true);
   });

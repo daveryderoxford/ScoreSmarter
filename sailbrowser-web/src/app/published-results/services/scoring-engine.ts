@@ -15,7 +15,7 @@ import { PublishedSeries } from '../model/published-series';
 import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH } from './published-results-store';
 
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
-import { competitorsForConfigRace, isRaceScorable } from './scoring-publish-filters';
+import { competitorsForConfigRace, doesRaceRequireHandicap, isRaceScorable } from './scoring-publish-filters';
 
 const SCORING_CANDIDATE_STATUSES = new Set<Race['status']>([
   'In progress',
@@ -192,9 +192,11 @@ export class ScoringEngine {
     }
 
     const handicapScheme = config.handicapScheme;
+    const anyRaceRequiresHandicap = racesToScore.some(race => doesRaceRequireHandicap(race.type));
 
     const filteredSeriesEntries = seriesEntries.filter(e =>
-      isInFleet(e, config.fleet) && getHandicapValue(e.handicaps, handicapScheme) != null
+      isInFleet(e, config.fleet) &&
+      (!anyRaceRequiresHandicap || getHandicapValue(e.handicaps, handicapScheme) != null)
     );
 
     let existingPublishedRaces: PublishedRace[] = [];
