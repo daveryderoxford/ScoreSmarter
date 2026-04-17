@@ -55,6 +55,7 @@ function aggregateCompetitorResults(
       sailNumber: entry.sailNumber,
       club: entry.club || '',
       handicap: getHandicapValue(entry.handicaps, handicapScheme) ?? 0,
+      personalHandicapBand: entry.personalHandicapBand,
       handicapScheme,
       boatClass: entry.boatClass,
       raceScores: [],
