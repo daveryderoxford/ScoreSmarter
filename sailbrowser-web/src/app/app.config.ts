@@ -23,6 +23,7 @@ import { APP_ROUTES } from './app.routes';
 import { ClubTenant } from './club-tenant/services/club-tenant';
 import { firebaseConfig } from './firebase-config';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
+import { provideServiceWorker } from '@angular/service-worker';
 
 if (isDevMode()) {
   (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
@@ -77,6 +78,9 @@ export const appConfig: ApplicationConfig = {
       useValue: {
         appearance: 'outline',
       }
-    },
+    }, provideServiceWorker('ngsw-worker.js', {
+            enabled: !isDevMode(),
+            registrationStrategy: 'registerWhenStable:30000'
+          }),
   ],
 };

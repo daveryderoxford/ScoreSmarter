@@ -5,14 +5,130 @@
   <title>ScoreSmarter - Sailing race entry and results</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&amp;display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="manifest" href="manifest.webmanifest">
+  <style>
+    /* Pre-bootstrap shell: mirrors home (toolbar + centered mat-card). RGB fallbacks match measured UI. */
+    html {
+      height: 100%;
+      color-scheme: light;
+    }
+    body {
+      margin: 0;
+      height: 100%;
+      font-family: Roboto, "Helvetica Neue", sans-serif;
+      background-color: var(--mat-sys-background, rgb(250, 249, 253));
+      color: var(--mat-sys-on-background, #1a1b1f);
+    }
+
+    .app-boot {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      background-color: var(--mat-sys-background, rgb(250, 249, 253));
+    }
+
+    .app-boot-toolbar {
+      display: flex;
+      align-items: center;
+      min-height: 60px;
+      padding: 0 16px;
+      background-color: var(--mat-sys-primary-container, rgb(215, 227, 255));
+      color: var(--mat-sys-primary, rgb(0, 92, 187));
+  
+    }
+    .app-boot-toolbar-left {
+      display: flex;
+      align-items: center;
+      flex: 1;
+    }
+
+    .boot-menu-button {
+      padding: 6px;
+      color: var(--mat-sys-primary, rgb(0, 92, 187));
+    }
+
+    .app-boot-title {
+      font-size: 22px;
+      margin-left: 8px;
+      font-weight: 500;
+      font-size: 22px;
+    }
+
+    .app-boot-content {
+      flex: 1;
+      padding: 24px;
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .app-boot-card {
+      background: var(--mat-sys-surface-container-low, rgb(244, 243, 246));
+      border-radius: 16px;
+      padding: 48px 24px;
+      box-shadow: var(--mat-sys-level1, 0px 2px 1px -1px rgba(0, 0, 0, 0.2), 0px 1px 1px 0px rgba(0, 0, 0, 0.14), 0px 1px 3px 0px rgba(0, 0, 0, 0.12));
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .app-boot-loading {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+    .app-boot-loading-text {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--mat-sys-on-surface, #1a1b1f);
+    }
+    .app-boot-spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--mat-sys-outline-variant, #c4c6d0);
+      border-top-color: var(--mat-sys-primary, #005cbb);
+      border-radius: 50%;
+      animation: app-boot-spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes app-boot-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
 </head>
 <body>
-  <app-root></app-root>
+  <app-root>
+    <div class="app-boot">
+      <header class="app-boot-toolbar">
+        <div class="app-boot-toolbar-left">
+          <span class="boot-menu-button">
+          <span class="material-icons" aria-hidden="true">menu</span>
+          </span>
+          <span class="app-boot-title">ScoreSmarter</span>
+        </div>
+      </header>
+      <div class="app-boot-content">
+        <div class="app-boot-card">
+          <div class="app-boot-loading" role="status" aria-live="polite">
+            <div class="app-boot-spinner" aria-hidden="true"></div>
+            <span class="app-boot-loading-text">Loading…</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </app-root>
   <noscript>Please enable JavaScript to continue using this application.</noscript>
 </body>
 </html>
