@@ -1,4 +1,5 @@
 import { RaceType } from '../../race-calender/model/race-type';
+import type { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { ResultCode } from 'app/scoring/model/result-code';
 
 /** Immutable race results object, stored in the `published_races` collection. */
@@ -24,6 +25,8 @@ export interface RaceResult {
    helm: string;
    crew?: string;
    handicap: number;
+   /** Present when the series uses Personal handicap; shown in results UI. */
+   personalHandicapBand?: PersonalHandicapBand;
    laps: number;
    startTime: Date;
    finishTime: Date;

@@ -159,6 +159,7 @@ export function buildRaceResults(
       crew: comp.crew || entry.crew,
       club: entry.club,
       laps: comp.numLaps,
+      personalHandicapBand: comp.personalHandicapBand ?? entry.personalHandicapBand,
       handicap,
       startTime: comp.startTime!,
       finishTime: comp.finishTime!,

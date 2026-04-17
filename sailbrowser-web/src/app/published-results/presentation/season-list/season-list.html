@@ -3,7 +3,7 @@
     <mat-form-field class="filter" appearance="outline">
       <mat-label>Filter Series</mat-label>
       <input matInput type="text" [ngModel]="subseriesFilter()" (ngModelChange)="subseriesFilter.set($event)"
-        placeholder="e.g., Laser" />
+        placeholder="Series or Fleet name" />
       <mat-icon matPrefix>search</mat-icon>
       @if (subseriesFilter()) {
       <button matSuffix matIconButton aria-label="Clear" (click)="subseriesFilter.set('')">
@@ -11,15 +11,16 @@
       </button>
       }
     </mat-form-field>
+
     @if (!breakpoints.isMobile()) {
-      <button class="align-right" mat-icon-button (click)="this.hide.emit()" title="Hide panel">
-        <mat-icon>close</mat-icon>
-      </button>
+    <button class="align-right" mat-icon-button (click)="this.hide.emit()" title="Hide panel">
+      <mat-icon>close</mat-icon>
+    </button>
     }
   </div>
 
   <mat-accordion multi>
-    @for (season of expansionPanels(); track season.title; let isFirst = $first) {
+    @for (season of expansionPanels(); track $index; let isFirst = $first) {
     <mat-expansion-panel [expanded]="isFirst">
       <mat-expansion-panel-header>
         <mat-panel-title>

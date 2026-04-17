@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { CdkTableModule } from '@angular/cdk/table';
 import { PublishedSeries, PublishedSeriesResult } from 'app/published-results';
 import { format } from 'date-fns';
-import { competitorColumns, nameColumnWidth } from '../results-table-shared';
+import { competitorColumns, nameColumnWidth as computeNameColumnWidth } from '../results-table-shared';
 import { HighlightPosition } from "../highlighted-position";
 
 export const seriesColumns = [...competitorColumns, 'total', 'net'] as const;
@@ -36,8 +36,7 @@ export class SeriesResultsTable {
 
   tableData = computed(() => this.series()?.competitors || []);
 
-  nameColumnWidth = computed(() => 
-    nameColumnWidth(this.series()?.competitors));
+  nameColumnWidth = computed(() => computeNameColumnWidth(this.series()?.competitors));
 
   raceTitle(index: number): string {
     const title = this.raceTitles()[index];

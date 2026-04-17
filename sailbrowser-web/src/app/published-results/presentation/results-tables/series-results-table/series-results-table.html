@@ -36,7 +36,12 @@
 
     <ng-container cdkColumnDef="handicap">
       <th cdk-header-cell *cdkHeaderCellDef>Rating</th>
-      <td cdk-cell *cdkCellDef="let competitor"> {{ competitor.handicap }} </td>
+      <td cdk-cell *cdkCellDef="let competitor">
+        {{ competitor.handicap }}
+        @if (competitor.handicapScheme === 'Personal' && competitor.personalHandicapBand) {
+          <br><span class="personal-band">{{ competitor.personalHandicapBand }}</span>
+        }
+      </td>
     </ng-container>
 
     <ng-container cdkColumnDef="total">

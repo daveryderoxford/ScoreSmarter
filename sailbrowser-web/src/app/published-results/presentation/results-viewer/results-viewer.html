@@ -86,7 +86,11 @@
                </div>
             </div>
             @if (race.results.length > 0) {
-            <app-race-results-table [results]="race.results" />
+            <app-race-results-table
+               [results]="race.results"
+               [raceType]="race.type"
+               [scoringHandicapScheme]="series()!.competitors[0]?.handicapScheme"
+            />
             }
          </div>
          }

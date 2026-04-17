@@ -1,4 +1,5 @@
 import type { Race } from 'app/race-calender/model/race';
+import { doesRaceRequireHandicap } from 'app/race-calender/model/race-type';
 import type { RaceCompetitor, SeriesEntry } from 'app/results-input';
 import type { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import type { ResultCode } from 'app/scoring/model/result-code';
@@ -7,9 +8,7 @@ import { isInFleet } from 'app/scoring/services/fleet-scoring';
 
 const NOT_FINISHED: ResultCode = 'NOT FINISHED';
 
-export function doesRaceRequireHandicap(raceType: Race['type']): boolean {
-  return raceType === 'Handicap';
-}
+export { doesRaceRequireHandicap };
 
 /** 
  * Returns Series entries to include in the series 
