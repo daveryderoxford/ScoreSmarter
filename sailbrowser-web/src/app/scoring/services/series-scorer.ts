@@ -1,10 +1,11 @@
 import { PublishedSeriesResult } from '../../published-results';
 import { SeriesScoringScheme } from '../model/scoring-algotirhm';
-import { PublishedRace } from '../../published-results/model/published-race';
+import { PublishedRace, RaceResult } from '../../published-results/model/published-race';
 import { getShortAlgorithm, includeInAveragePool, isDiscardable as isResultCodeDiscardable, ResultCodeAlgorithm, isStartAreaComp, isFinishedComp } from '../model/result-code-scoring';
 import { SeriesEntry } from '../../results-input';
 import { getHandicapValue } from '../model/handicap';
 import { HandicapScheme } from '../model/handicap-scheme';
+import { mergeKeyFor, type MergeStrategy } from './merge-key';
 
 export interface ScoringConfig {
   seriesType: SeriesScoringScheme;
@@ -21,81 +22,166 @@ export interface IntermediateSeriesResult extends PublishedSeriesResult {
 
 /**
  * Aggregates pre-scored race results into a final, ranked series result.
- * @param races - An array of PublishedRace objects for the series.
- * @param seriesEntries - An array of SeriesEntry objects defining the competitors.
- * @param config - The scoring configuration for the series.
- * @returns An array of SeriesCompetitorResult, sorted by rank.
+ *
+ * Per-hull RaceResults are grouped by `competitorKey` so that merging
+ * strategies (e.g. "score by helm") collapse multiple hulls into a single
+ * series row. Display fields (helm, boatClass, sailNumber, handicap, PHB,
+ * club, crew) are seeded from the per-hull SeriesEntry corresponding to the
+ * *first chronological* race contribution for each merge group; race-level
+ * tables continue to show the actual per-race details.
  */
 export function scoreSeries(
   races: PublishedRace[],
   seriesEntries: SeriesEntry[],
   config: ScoringConfig,
-  handicapScheme: HandicapScheme
+  handicapScheme: HandicapScheme,
+  mergeStrategy: MergeStrategy,
 ): IntermediateSeriesResult[] {
-  const competitorMap = aggregateCompetitorResults(races, seriesEntries, handicapScheme);
+  const competitorMap = aggregateCompetitorResults(races, seriesEntries, handicapScheme, mergeStrategy);
   const resultsWithTotals = calculateTotalsAndDiscards(Array.from(competitorMap.values()), config);
   const rankedResults = rankCompetitors(resultsWithTotals);
 
   return rankedResults;
 }
 
+/**
+ * Builds one IntermediateSeriesResult per distinct merge group. For each
+ * group we:
+ *
+ *   - Iterate races in calendar (`index`) order.
+ *   - Pick the first race in which any hull belonging to the group has a
+ *     RaceResult; seed display fields from that hull's SeriesEntry.
+ *   - For every race after the first appearance: append the group's points
+ *     for that race, or a DNC where no hull in the group raced.
+ *
+ * `dncPoints` for each group is `mergeGroupCount + 1` where mergeGroupCount
+ * is the total number of distinct merge groups across the series.
+ */
 function aggregateCompetitorResults(
   races: PublishedRace[],
   seriesEntries: SeriesEntry[],
-  handicapScheme: HandicapScheme
+  handicapScheme: HandicapScheme,
+  mergeStrategy: MergeStrategy,
 ): Map<string, IntermediateSeriesResult> {
+  const entryById = new Map(seriesEntries.map(e => [e.id, e]));
+
+  // Pre-compute merge groups across all known SeriesEntries so DNC counts and
+  // ranking domain are consistent even for hulls that haven't raced yet.
+  const groupMembers = new Map<string, SeriesEntry[]>();
+  for (const entry of seriesEntries) {
+    const key = mergeKeyFor(entry, mergeStrategy);
+    const list = groupMembers.get(key);
+    if (list) {
+      list.push(entry);
+    } else {
+      groupMembers.set(key, [entry]);
+    }
+  }
+
+  const dncPoints = groupMembers.size + 1;
+
+  // Sort races chronologically by calendar index for "first appearance" lookups.
+  const orderedRaces = [...races].sort((a, b) => a.index - b.index);
+
   const competitorMap = new Map<string, IntermediateSeriesResult>();
-  const dncPoints = seriesEntries.length + 1;
-  
-  seriesEntries.forEach(entry => {
-    competitorMap.set(entry.id, {
-      seriesEntryId: entry.id,
-      helm: entry.helm,
-      crew: entry.crew,
-      sailNumber: entry.sailNumber,
-      club: entry.club || '',
-      handicap: getHandicapValue(entry.handicaps, handicapScheme) ?? 0,
-      personalHandicapBand: entry.personalHandicapBand,
-      handicapScheme,
-      boatClass: entry.boatClass,
-      raceScores: [],
-      totalPoints: 0,
-      netPoints: 0,
-      rank: 0,
-      scoresForTiebreak: [],
-    });
-  });
 
-  races.forEach((race) => {
-    const resultsByKey = new Map(race.results.map(r => [r.seriesEntryId, r]));
-    competitorMap.forEach((seriesResult, seriesEntryId) => {
-      const raceResult = resultsByKey.get(seriesEntryId);
-      
-      // If the race result has overrides for boat class, sail number, or handicap, 
-      // we could potentially use them here. But for the series result summary, 
-      // we typically display the default/primary boat details from the SeriesEntry.
-      // We'll stick with the SeriesEntry defaults for the overall series display.
+  // Initialise every known merge group, even if they haven't yet raced.
+  for (const [key, members] of groupMembers) {
+    // Default seed: lowest-id member. Will be overridden when the group's
+    // first actual race contribution is found below.
+    const seed = members[0];
+    competitorMap.set(key, makeSeriesRow(key, seed, handicapScheme));
+  }
 
-      if (raceResult) {
-        seriesResult.raceScores.push({ 
-          raceIndex: race.index, 
-          points: raceResult.points, 
-          resultCode: raceResult.resultCode, 
-          isDiscard: false, 
+  // Walk races in chronological order to seed display from first appearance
+  // and to append per-race scores.
+  const seededKeys = new Set<string>();
+
+  for (const race of orderedRaces) {
+    // Group the per-hull race results by competitorKey for this race. If two
+    // hulls in the same merge group somehow appear in the same race we keep
+    // the best (lowest) score and remember the first contribution for display.
+    const racePointsByKey = new Map<string, { points: number; resultCode: RaceResult['resultCode']; firstResult: RaceResult }>();
+    for (const r of race.results) {
+      const existing = racePointsByKey.get(r.competitorKey);
+      if (!existing) {
+        racePointsByKey.set(r.competitorKey, { points: r.points, resultCode: r.resultCode, firstResult: r });
+      } else if (r.points < existing.points) {
+        racePointsByKey.set(r.competitorKey, { points: r.points, resultCode: r.resultCode, firstResult: existing.firstResult });
+      }
+    }
+
+    for (const [key, row] of competitorMap) {
+      const contribution = racePointsByKey.get(key);
+
+      if (contribution && !seededKeys.has(key)) {
+        // First time this merge group races: seed display fields from the
+        // SeriesEntry of this race's contribution.
+        const entry = entryById.get(contribution.firstResult.seriesEntryId);
+        if (entry) {
+          seedDisplayFromEntry(row, entry, handicapScheme);
+        }
+        seededKeys.add(key);
+      }
+
+      if (contribution) {
+        row.raceScores.push({
+          raceIndex: race.index,
+          points: contribution.points,
+          resultCode: contribution.resultCode,
+          isDiscard: false,
         });
       } else {
-        // Competitor did not compete in this race (DNC)
-        seriesResult.raceScores.push({
+        row.raceScores.push({
           raceIndex: race.index,
           points: dncPoints,
           resultCode: 'DNC',
           isDiscard: false,
         });
       }
-    });
-  });
+    }
+  }
 
   return competitorMap;
+}
+
+function makeSeriesRow(
+  competitorKey: string,
+  seed: SeriesEntry,
+  handicapScheme: HandicapScheme,
+): IntermediateSeriesResult {
+  return {
+    competitorKey,
+    seriesEntryId: seed.id,
+    helm: seed.helm,
+    crew: seed.crew,
+    sailNumber: seed.sailNumber,
+    club: seed.club || '',
+    handicap: getHandicapValue(seed.handicaps, handicapScheme) ?? 0,
+    personalHandicapBand: seed.personalHandicapBand,
+    handicapScheme,
+    boatClass: seed.boatClass,
+    raceScores: [],
+    totalPoints: 0,
+    netPoints: 0,
+    rank: 0,
+    scoresForTiebreak: [],
+  };
+}
+
+function seedDisplayFromEntry(
+  row: IntermediateSeriesResult,
+  entry: SeriesEntry,
+  handicapScheme: HandicapScheme,
+): void {
+  row.seriesEntryId = entry.id;
+  row.helm = entry.helm;
+  row.crew = entry.crew;
+  row.sailNumber = entry.sailNumber;
+  row.club = entry.club || '';
+  row.handicap = getHandicapValue(entry.handicaps, handicapScheme) ?? 0;
+  row.personalHandicapBand = entry.personalHandicapBand;
+  row.boatClass = entry.boatClass;
 }
 
 function calculateTotalsAndDiscards(

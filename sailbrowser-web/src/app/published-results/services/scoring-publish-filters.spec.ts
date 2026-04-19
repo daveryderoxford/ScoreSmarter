@@ -41,6 +41,16 @@ function entry(overrides: Partial<SeriesEntry> & Pick<SeriesEntry, 'id'>): Serie
   };
 }
 
+function comp(id: string, seriesEntryId: string, resultCode: RaceCompetitor['resultCode'] = 'NOT FINISHED'): RaceCompetitor {
+  return new RaceCompetitor({
+    id,
+    raceId: 'race-1',
+    seriesId: 'series-1',
+    seriesEntryId,
+    resultCode,
+  });
+}
+
 function minimalRace(id: string): Race {
   return {
     id,
@@ -69,64 +79,21 @@ describe('scoring-publish-filters', () => {
 
   it('GeneralHandicap fleet: scorable whenever there are in-fleet rows (race status is enforced in ScoringEngine)', () => {
     const entries = [entry({ id: 'e1' }), entry({ id: 'e2', sailNumber: 101 })];
-    const comps = [
-      new RaceCompetitor({
-        id: 'c1',
-        raceId: 'race-1',
-        seriesId: 'series-1',
-        seriesEntryId: 'e1',
-        handicaps: [{ scheme: 'PY', value: 1100 }],
-        resultCode: 'NOT FINISHED',
-      }),
-      new RaceCompetitor({
-        id: 'c2',
-        raceId: 'race-1',
-        seriesId: 'series-1',
-        seriesEntryId: 'e2',
-        handicaps: [{ scheme: 'PY', value: 1100 }],
-        resultCode: 'NOT FINISHED',
-      }),
-    ];
+    const comps = [comp('c1', 'e1'), comp('c2', 'e2')];
 
     expect(isRaceScorable(race1, pyConfig, comps, entries)).toBe(true);
   });
 
   it('returns true when at least one competitor has a non–NOT FINISHED code', () => {
     const entries = [entry({ id: 'e1' }), entry({ id: 'e2', sailNumber: 101 })];
-    const comps = [
-      new RaceCompetitor({
-        id: 'c1',
-        raceId: 'race-1',
-        seriesId: 'series-1',
-        seriesEntryId: 'e1',
-        handicaps: [{ scheme: 'PY', value: 1100 }],
-        resultCode: 'NOT FINISHED',
-      }),
-      new RaceCompetitor({
-        id: 'c2',
-        raceId: 'race-1',
-        seriesId: 'series-1',
-        seriesEntryId: 'e2',
-        handicaps: [{ scheme: 'PY', value: 1100 }],
-        resultCode: 'DNF',
-      }),
-    ];
+    const comps = [comp('c1', 'e1'), comp('c2', 'e2', 'DNF')];
 
     expect(isRaceScorable(race1, pyConfig, comps, entries)).toBe(true);
   });
 
   it('returns true when there are no in-fleet rows for this fleet (vacuous)', () => {
     const entries = [entry({ id: 'e1', boatClass: 'Laser' })];
-    const comps = [
-      new RaceCompetitor({
-        id: 'c1',
-        raceId: 'race-1',
-        seriesId: 'series-1',
-        seriesEntryId: 'e1',
-        handicaps: [{ scheme: 'PY', value: 1100 }],
-        resultCode: 'NOT FINISHED',
-      }),
-    ];
+    const comps = [comp('c1', 'e1')];
 
     expect(isRaceScorable(race1, optimistFleetConfig, comps, entries)).toBe(true);
     expect(competitorsForConfigRace(race1, optimistFleetConfig, comps, entries)).toHaveLength(0);
@@ -137,51 +104,18 @@ describe('scoring-publish-filters', () => {
       entry({ id: 'e-laser', boatClass: 'Laser' }),
       entry({ id: 'e-optimist', boatClass: 'Optimist', sailNumber: 102, helm: 'O' }),
     ];
-    const comps = [
-      new RaceCompetitor({
-        id: 'c1',
-        raceId: 'race-1',
-        seriesId: 'series-1',
-        seriesEntryId: 'e-laser',
-        boatClass: 'Laser',
-        handicaps: [{ scheme: 'PY', value: 1100 }],
-        resultCode: 'NOT FINISHED',
-      }),
-      new RaceCompetitor({
-        id: 'c2',
-        raceId: 'race-1',
-        seriesId: 'series-1',
-        seriesEntryId: 'e-optimist',
-        boatClass: 'Optimist',
-        handicaps: [{ scheme: 'PY', value: 1200 }],
-        resultCode: 'OK',
-      }),
-    ];
+    const comps = [comp('c1', 'e-laser'), comp('c2', 'e-optimist', 'OK')];
 
     expect(isRaceScorable(race1, laserFleetConfig, comps, entries)).toBe(false);
   });
 
   it('includes pursuit competitors without the scoring handicap', () => {
     const pursuitRace: Race = { ...race1, type: 'Pursuit' };
-    const entries = [entry({ id: 'e1' }), entry({ id: 'e2', sailNumber: 101 })];
-    const comps = [
-      new RaceCompetitor({
-        id: 'c1',
-        raceId: 'race-1',
-        seriesId: 'series-1',
-        seriesEntryId: 'e1',
-        handicaps: [],
-        resultCode: 'OK',
-      }),
-      new RaceCompetitor({
-        id: 'c2',
-        raceId: 'race-1',
-        seriesId: 'series-1',
-        seriesEntryId: 'e2',
-        handicaps: [{ scheme: 'PY', value: 1100 }],
-        resultCode: 'NOT FINISHED',
-      }),
+    const entries = [
+      entry({ id: 'e1', handicaps: [] }),
+      entry({ id: 'e2', sailNumber: 101 }),
     ];
+    const comps = [comp('c1', 'e1', 'OK'), comp('c2', 'e2')];
 
     expect(competitorsForConfigRace(pursuitRace, pyConfig, comps, entries)).toHaveLength(2);
     expect(isRaceScorable(pursuitRace, pyConfig, comps, entries)).toBe(true);
@@ -189,18 +123,8 @@ describe('scoring-publish-filters', () => {
 
   it('includes level rating competitors without the scoring handicap', () => {
     const levelRatingRace: Race = { ...race1, type: 'Level Rating' };
-    const entries = [entry({ id: 'e-laser', boatClass: 'Laser' })];
-    const comps = [
-      new RaceCompetitor({
-        id: 'c1',
-        raceId: 'race-1',
-        seriesId: 'series-1',
-        seriesEntryId: 'e-laser',
-        boatClass: 'Laser',
-        handicaps: [],
-        resultCode: 'OK',
-      }),
-    ];
+    const entries = [entry({ id: 'e-laser', boatClass: 'Laser', handicaps: [] })];
+    const comps = [comp('c1', 'e-laser', 'OK')];
 
     expect(competitorsForConfigRace(levelRatingRace, laserFleetConfig, comps, entries)).toHaveLength(1);
     expect(isRaceScorable(levelRatingRace, laserFleetConfig, comps, entries)).toBe(true);

@@ -8,6 +8,7 @@ import { SeriesScoringScheme } from '../model/scoring-algotirhm';
 import { getHandicapValue } from '../model/handicap';
 import { isUnknownHandicapValue } from '../model/personal-handicap';
 import { getCorrectedTime, getElapsedSeconds } from './scorer-times';
+import { mergeKeyFor, type MergeStrategy } from './merge-key';
 
 /**
  * Uses competitor start, finish. lap and status to calculate results for a single race. 
@@ -129,12 +130,19 @@ function validateFinishersHaveData(finishers: RaceResult[], property: keyof Race
 }
 
 /**
- * Maps RaceCompetitor data to initial RaceResult objects.
+ * Maps RaceCompetitor + linked SeriesEntry data to initial RaceResult objects.
+ *
+ * All identity, boat and handicap fields are read from the SeriesEntry (the
+ * canonical per-hull source of truth). Crew is taken from
+ * `comp.crewOverride ?? entry.crew`. The `competitorKey` is derived from the
+ * series' merge strategy so series-level aggregation can collapse hulls when
+ * required (e.g. score-by-helm).
  */
 export function buildRaceResults(
   competitors: RaceCompetitor[],
   seriesEntries: SeriesEntry[],
-  scheme: HandicapScheme
+  scheme: HandicapScheme,
+  mergeStrategy: MergeStrategy,
 ): RaceResult[] {
   const entryMap = new Map(seriesEntries.map(e => [e.id, e]));
 
@@ -144,7 +152,7 @@ export function buildRaceResults(
       throw new ScoreSmarterError(`Series entry not found for competitor ${comp.id}`);
     }
 
-    const handicap = getHandicapValue(comp.handicaps, scheme) ?? getHandicapValue(entry.handicaps, scheme) ?? 0;
+    const handicap = getHandicapValue(entry.handicaps, scheme) ?? 0;
     const adjustedResultCode =
       isUnknownHandicapValue(scheme, handicap) && isFinishedComp(comp.resultCode)
         ? 'NOT FINISHED'
@@ -152,14 +160,15 @@ export function buildRaceResults(
 
     return {
       seriesEntryId: comp.seriesEntryId,
+      competitorKey: mergeKeyFor(entry, mergeStrategy),
       rank: comp.manualPosition || 0,
-      boatClass: comp.boatClass || entry.boatClass,
-      sailNumber: comp.sailNumber || 0,
-      helm: comp.helm || entry.helm,
-      crew: comp.crew || entry.crew,
+      boatClass: entry.boatClass,
+      sailNumber: entry.sailNumber,
+      helm: entry.helm,
+      crew: comp.crewOverride ?? entry.crew,
       club: entry.club,
       laps: comp.numLaps,
-      personalHandicapBand: comp.personalHandicapBand ?? entry.personalHandicapBand,
+      personalHandicapBand: entry.personalHandicapBand,
       handicap,
       startTime: comp.startTime!,
       finishTime: comp.finishTime!,

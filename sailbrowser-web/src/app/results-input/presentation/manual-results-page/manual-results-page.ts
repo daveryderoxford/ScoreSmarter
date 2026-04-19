@@ -6,7 +6,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { Router } from '@angular/router';
 import { ScoringEngine } from 'app/published-results';
 import { Race, RaceCalendarStore, RacePickerDialog, type RacePickerDialogData } from 'app/race-calender';
-import { CurrentRaces, RaceCompetitor, RaceCompetitorStore } from 'app/results-input';
+import {
+  CurrentRaces,
+  RaceCompetitorStore,
+  ResolvedRaceCompetitor,
+  resolveRaceCompetitors,
+  SeriesEntryStore,
+} from 'app/results-input';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { BusyButton } from 'app/shared/components/busy-button';
 import { Toolbar } from 'app/shared/components/toolbar';
@@ -38,6 +44,7 @@ import { PositionBasedInputPanel } from '../position-based/position-based-input-
 })
 export class ManualResultsPage {
   private readonly store = inject(RaceCompetitorStore);
+  private readonly entryStore = inject(SeriesEntryStore);
   private readonly dialog = inject(MatDialog);
   protected readonly currentRacesStore = inject(CurrentRaces);
   private readonly raceCalendarStore = inject(RaceCalendarStore);
@@ -62,10 +69,11 @@ export class ManualResultsPage {
   readonly sortedCompetitors = computed(() => {
     const raceId = this.selectedRace()?.id;
     const comps = this.store.selectedCompetitors().filter(comp => raceId === comp.raceId);
-    return [...comps].sort((a, b) => manualRaceTableSort(a, b, 'elapsedTime', 'asc'));
+    const resolved = resolveRaceCompetitors(comps, this.entryStore.selectedEntries());
+    return [...resolved].sort((a, b) => manualRaceTableSort(a, b, 'elapsedTime', 'asc'));
   });
 
-  readonly handicapSelectedCompetitor = linkedSignal<RaceCompetitor | undefined>(() => {
+  readonly handicapSelectedCompetitor = linkedSignal<ResolvedRaceCompetitor | undefined>(() => {
     this.selectedRace()?.id;
     return undefined;
   });
@@ -146,7 +154,7 @@ export class ManualResultsPage {
     });
   }
 
-  async onTableRowClick(row: RaceCompetitor) {
+  async onTableRowClick(row: ResolvedRaceCompetitor) {
     if (this.selectedRace()?.type !== 'Handicap') return;
     const panel = this.handicapInputPanel();
     if (panel) {

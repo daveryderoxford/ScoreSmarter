@@ -5,7 +5,8 @@ import { Race } from 'app/race-calender';
 import { Series } from 'app/race-calender/model/series';
 import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
 import { ScoringEngine } from 'app/published-results';
-import { CurrentRaces, RaceCompetitor, RaceCompetitorStore } from 'app/results-input';
+import { CurrentRaces, RaceCompetitor, RaceCompetitorStore, SeriesEntryStore } from 'app/results-input';
+import { SeriesEntry } from 'app/results-input/model/series-entry';
 import { ManualResultsService, OrderEntryPersistInput } from '../../services/manual-results.service';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { HandicapConfiguration, LevelRatingConfiguration } from 'app/scoring/model/scoring-configuration';
@@ -37,17 +38,48 @@ function baseRace(id: string, seriesId: string, type: Race['type']): Race {
   };
 }
 
-function comp(
-  p: Partial<RaceCompetitor> &
-    Pick<RaceCompetitor, 'id' | 'helm' | 'boatClass' | 'sailNumber'> & { raceId: string; seriesId: string },
-): RaceCompetitor {
+interface CompSeed {
+  id: string;
+  helm: string;
+  boatClass: string;
+  sailNumber: number;
+  raceId: string;
+  seriesId: string;
+  startTime?: Date;
+  manualFinishTime?: Date;
+  manualLaps?: number;
+  manualPosition?: number;
+  resultCode?: RaceCompetitor['resultCode'];
+  handicapValue?: number;
+}
+
+function comp(p: CompSeed): RaceCompetitor {
   return new RaceCompetitor({
+    id: p.id,
+    raceId: p.raceId,
+    seriesId: p.seriesId,
     seriesEntryId: `entry-${p.id}`,
-    handicaps: [{ scheme: 'PY', value: 1104 }],
-    resultCode: 'NOT FINISHED',
-    manualLaps: 0,
-    ...p,
+    startTime: p.startTime,
+    manualFinishTime: p.manualFinishTime,
+    manualLaps: p.manualLaps ?? 0,
+    manualPosition: p.manualPosition,
+    resultCode: p.resultCode ?? 'NOT FINISHED',
   });
+}
+
+function entryFor(p: CompSeed): SeriesEntry {
+  return {
+    id: `entry-${p.id}`,
+    seriesId: p.seriesId,
+    helm: p.helm,
+    boatClass: p.boatClass,
+    sailNumber: p.sailNumber,
+    handicaps: [{ scheme: 'PY', value: p.handicapValue ?? 1104 }],
+  };
+}
+
+function compsAndEntries(seeds: CompSeed[]): { comps: RaceCompetitor[]; entries: SeriesEntry[] } {
+  return { comps: seeds.map(comp), entries: seeds.map(entryFor) };
 }
 
 const primaryHandicap: HandicapConfiguration = {
@@ -103,93 +135,37 @@ const raceLevel = baseRace(RACE_LR_ID, SERIES_LR_ID, 'Level Rating');
 
 const start = raceHandicap.actualStart!;
 
-const handicapCompetitors: RaceCompetitor[] = [
-  comp({
-    id: 'c1',
-    raceId: RACE_H_ID,
-    seriesId: SERIES_H_ID,
-    helm: 'Alex',
-    boatClass: 'ILCA 7',
-    sailNumber: 100001,
-    startTime: start,
-    manualFinishTime: new Date(start.getTime() + 45 * 60 * 1000),
-    manualLaps: 3,
-    resultCode: 'OK',
-  }),
-  comp({
-    id: 'c2',
-    raceId: RACE_H_ID,
-    seriesId: SERIES_H_ID,
-    helm: 'Blake',
-    boatClass: 'ILCA 6',
-    sailNumber: 200002,
-    startTime: start,
-    manualFinishTime: new Date(start.getTime() + 48 * 60 * 1000),
-    manualLaps: 3,
-    resultCode: 'OK',
-  }),
-  comp({
-    id: 'c3',
-    raceId: RACE_H_ID,
-    seriesId: SERIES_H_ID,
-    helm: 'Chris',
-    boatClass: 'ILCA 7',
-    sailNumber: 100003,
-  }),
-  comp({
-    id: 'c4',
-    raceId: RACE_H_ID,
-    seriesId: SERIES_H_ID,
-    helm: 'Dana',
-    boatClass: 'RS Aero 7',
-    sailNumber: 4004,
-    handicaps: [{ scheme: 'PY', value: 1063 }],
-  }),
-];
+const handicapData = compsAndEntries([
+  {
+    id: 'c1', raceId: RACE_H_ID, seriesId: SERIES_H_ID,
+    helm: 'Alex', boatClass: 'ILCA 7', sailNumber: 100001,
+    startTime: start, manualFinishTime: new Date(start.getTime() + 45 * 60 * 1000),
+    manualLaps: 3, resultCode: 'OK',
+  },
+  {
+    id: 'c2', raceId: RACE_H_ID, seriesId: SERIES_H_ID,
+    helm: 'Blake', boatClass: 'ILCA 6', sailNumber: 200002,
+    startTime: start, manualFinishTime: new Date(start.getTime() + 48 * 60 * 1000),
+    manualLaps: 3, resultCode: 'OK',
+  },
+  { id: 'c3', raceId: RACE_H_ID, seriesId: SERIES_H_ID, helm: 'Chris', boatClass: 'ILCA 7', sailNumber: 100003 },
+  { id: 'c4', raceId: RACE_H_ID, seriesId: SERIES_H_ID, helm: 'Dana', boatClass: 'RS Aero 7', sailNumber: 4004, handicapValue: 1063 },
+]);
 
-const handicapCompetitorsRace2: RaceCompetitor[] = [
-  comp({
-    id: 'c1b',
-    raceId: RACE_H2_ID,
-    seriesId: SERIES_H_ID,
-    helm: 'Alex',
-    boatClass: 'ILCA 7',
-    sailNumber: 100001,
-    startTime: start,
-    manualFinishTime: new Date(start.getTime() + 46 * 60 * 1000),
-    manualLaps: 3,
-    resultCode: 'OK',
-  }),
-  comp({
-    id: 'c2b',
-    raceId: RACE_H2_ID,
-    seriesId: SERIES_H_ID,
-    helm: 'Blake',
-    boatClass: 'ILCA 6',
-    sailNumber: 200002,
-  }),
-];
+const handicapData2 = compsAndEntries([
+  {
+    id: 'c1b', raceId: RACE_H2_ID, seriesId: SERIES_H_ID,
+    helm: 'Alex', boatClass: 'ILCA 7', sailNumber: 100001,
+    startTime: start, manualFinishTime: new Date(start.getTime() + 46 * 60 * 1000),
+    manualLaps: 3, resultCode: 'OK',
+  },
+  { id: 'c2b', raceId: RACE_H2_ID, seriesId: SERIES_H_ID, helm: 'Blake', boatClass: 'ILCA 6', sailNumber: 200002 },
+]);
 
-const levelCompetitors: RaceCompetitor[] = [
-  comp({
-    id: 'l1',
-    raceId: RACE_LR_ID,
-    seriesId: SERIES_LR_ID,
-    helm: 'Erin',
-    boatClass: 'ILCA 7',
-    sailNumber: 111,
-  }),
-  comp({
-    id: 'l2',
-    raceId: RACE_LR_ID,
-    seriesId: SERIES_LR_ID,
-    helm: 'Frank',
-    boatClass: 'ILCA 7',
-    sailNumber: 222,
-    manualPosition: 1,
-    resultCode: 'OK',
-  }),
-];
+const levelData = compsAndEntries([
+  { id: 'l1', raceId: RACE_LR_ID, seriesId: SERIES_LR_ID, helm: 'Erin', boatClass: 'ILCA 7', sailNumber: 111 },
+  { id: 'l2', raceId: RACE_LR_ID, seriesId: SERIES_LR_ID, helm: 'Frank', boatClass: 'ILCA 7', sailNumber: 222, manualPosition: 1, resultCode: 'OK' },
+]);
 
 function createManualResultsStub(): ManualResultsService {
   return {
@@ -203,12 +179,14 @@ function createManualResultsStub(): ManualResultsService {
 type StoryStores = {
   races: Race[];
   competitors: RaceCompetitor[];
+  entries: SeriesEntry[];
   series: Series[];
 };
 
 function applicationConfigForStores(stores: StoryStores) {
   const racesSig = signal(stores.races);
   const compsSig = signal(stores.competitors);
+  const entriesSig = signal(stores.entries);
   const seriesSig = signal(stores.series);
 
   return applicationConfig({
@@ -216,6 +194,7 @@ function applicationConfigForStores(stores: StoryStores) {
       { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
       { provide: CurrentRaces, useValue: { selectedRaces: racesSig.asReadonly() } },
       { provide: RaceCompetitorStore, useValue: { selectedCompetitors: compsSig.asReadonly() } },
+      { provide: SeriesEntryStore, useValue: { selectedEntries: entriesSig.asReadonly() } },
       {
         provide: RaceCalendarStore,
         useValue: {
@@ -253,7 +232,8 @@ export const HandicapRace: Story = {
   decorators: [
     applicationConfigForStores({
       races: [raceHandicap],
-      competitors: handicapCompetitors,
+      competitors: handicapData.comps,
+      entries: handicapData.entries,
       series: [seriesHandicap],
     }),
   ],
@@ -264,7 +244,8 @@ export const LevelRatingRace: Story = {
   decorators: [
     applicationConfigForStores({
       races: [raceLevel],
-      competitors: levelCompetitors,
+      competitors: levelData.comps,
+      entries: levelData.entries,
       series: [seriesLevel],
     }),
   ],
@@ -276,7 +257,8 @@ export const MultipleHandicapRaces: Story = {
   decorators: [
     applicationConfigForStores({
       races: [raceHandicap, raceHandicap2],
-      competitors: [...handicapCompetitors, ...handicapCompetitorsRace2],
+      competitors: [...handicapData.comps, ...handicapData2.comps],
+      entries: [...handicapData.entries, ...handicapData2.entries],
       series: [seriesHandicap],
     }),
   ],

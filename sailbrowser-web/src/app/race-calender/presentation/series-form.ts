@@ -356,7 +356,7 @@ export class SeriesForm {
             name: formValue.name,
             archived: formValue.archived,
             scoringAlgorithm: formValue.scoringAlgorithm,
-            entryAlgorithm: formValue.entryAlgorithm,
+            entryAlgorithm: formValue.entryAlgorithm as Series['entryAlgorithm'],
             initialDiscardAfter: formValue.initialDiscardAfter,
             subsequentDiscardsEveryN: formValue.subsequentDiscardsEveryN,
             primaryScoringConfiguration,

@@ -17,7 +17,17 @@ export interface PublishedRace {
 }
 
 export interface RaceResult {
+   /**
+    * Per-hull SeriesEntry id this row belongs to. Always unique per hull.
+    */
    seriesEntryId: string;
+   /**
+    * Series-aggregation grouping key. Multiple per-hull rows with the same
+    * `competitorKey` collapse into a single competitor in the series scoring
+    * pass (e.g. when scoring by helm). For non-merging strategies this equals
+    * `seriesEntryId`. See `mergeKeyFor`.
+    */
+   competitorKey: string;
    rank: number;
    club?: string;
    boatClass: string;

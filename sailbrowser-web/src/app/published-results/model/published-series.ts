@@ -3,6 +3,18 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import type { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 
 export interface PublishedSeriesResult {
+   /**
+    * Stable identifier for the merged competitor (see `mergeKeyFor`). This is
+    * the primary key for series rows. When the series scoring strategy
+    * doesn't merge hulls, it equals `seriesEntryId`.
+    */
+   competitorKey: string;
+   /**
+    * The SeriesEntry id of the *first chronological race* this competitor
+    * appears in. Display fields (helm, boatClass, sailNumber, handicap, PHB)
+    * are seeded from that entry. Other races for the same merge group are
+    * still scored against their own per-hull entries.
+    */
    seriesEntryId: string;
    rank: number;
    helm: string;

@@ -12,12 +12,13 @@ import { LoadingCentered } from 'app/shared/components/loading-centered';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
+import { ResolvedRaceCompetitor, resolveRaceCompetitors } from '../../results-input/model/resolved-race-competitor';
 import { CurrentRaces } from '../../results-input/services/current-races-store';
 import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
+import { SeriesEntryStore } from '../../results-input/services/series-entry-store';
 import { CenteredText } from "app/shared/components/centered-text";
 import { BoatEntrySummaryComponent } from "./entry-summary";
 import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
-import { getHandicapValue } from 'app/scoring/model/handicap';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 
 @Component({
@@ -60,7 +61,7 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
           <app-centered-text>No entries for this selection</app-centered-text>
       } @else {
         @if (raceFilter() === 'all') {
-          <app-boat-entry-summary [competitors]="competitorStore.selectedCompetitors()" [races]="currentRaces.selectedRaces()"/>
+          <app-boat-entry-summary [competitors]="resolved()" [races]="currentRaces.selectedRaces()"/>
         } @else {
           <mat-list class="dense-list">
             @for (comp of filtered(); track comp.id) {
@@ -120,6 +121,7 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 })
 export class EntriesListPage {
   protected readonly competitorStore = inject(RaceCompetitorStore);
+  protected readonly entryStore = inject(SeriesEntryStore);
   protected currentRaces = inject(CurrentRaces);
   protected ds = inject(DialogsService);
   protected snackbar = inject(MatSnackBar);
@@ -132,12 +134,16 @@ export class EntriesListPage {
 
   competitors = this.competitorStore.selectedCompetitors;
 
-  filtered = computed(() =>
-    this.competitors().filter(c => filter(c, this.raceFilter()!))
+  resolved = computed(() =>
+    resolveRaceCompetitors(this.competitors(), this.entryStore.selectedEntries()),
   );
 
-  displayHandicap(comp: RaceCompetitor): number | undefined {
-    return getHandicapValue(comp.handicaps, this.displayScheme);
+  filtered = computed(() =>
+    this.resolved().filter(c => filter(c, this.raceFilter()!))
+  );
+
+  displayHandicap(comp: ResolvedRaceCompetitor): number | undefined {
+    return comp.handicapForScheme(this.displayScheme);
   }
 
   async delete(comp: RaceCompetitor) {
@@ -157,6 +163,6 @@ export class EntriesListPage {
   }
 }
 
-function filter(comp: RaceCompetitor, filter: string) {
+function filter(comp: ResolvedRaceCompetitor, filter: string) {
   return (filter === 'all') || filter === comp.raceId;
 }

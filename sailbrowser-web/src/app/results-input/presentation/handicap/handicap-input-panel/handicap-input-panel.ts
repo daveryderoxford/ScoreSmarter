@@ -22,7 +22,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { Race } from 'app/race-calender';
-import { RaceCompetitor } from 'app/results-input';
+import { ResolvedRaceCompetitor } from 'app/results-input';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { requiresTime } from 'app/scoring/model/result-code-scoring';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
@@ -63,10 +63,10 @@ export class HandicapInputPanel {
   private readonly competitorEdit = inject(RaceCompetitorEditService);
 
   race = input.required<Race>();
-  competitors = input.required<RaceCompetitor[]>();
+  competitors = input.required<ResolvedRaceCompetitor[]>();
 
   /** Two-way bound from parent so the results table can highlight the selected row. */
-  selectedCompetitor = model<RaceCompetitor | undefined>(undefined);
+  selectedCompetitor = model<ResolvedRaceCompetitor | undefined>(undefined);
   readonly addEntryRequested = output<void>();
 
   readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
@@ -94,7 +94,7 @@ export class HandicapInputPanel {
 
   readonly hasSelectedCompetitor = computed(() => this.selectedCompetitor() != null);
 
-  readonly searchControl = new FormControl<string | RaceCompetitor | null>('');
+  readonly searchControl = new FormControl<string | ResolvedRaceCompetitor | null>('');
   private readonly searchTerm = toSignal(
     this.searchControl.valueChanges.pipe(
       startWith(''),
@@ -156,7 +156,7 @@ export class HandicapInputPanel {
     const toFinish = filtered.filter(c => c.resultCode === 'NOT FINISHED');
     const finished = filtered.filter(c => c.resultCode !== 'NOT FINISHED');
 
-    const groups: { name: string; competitors: RaceCompetitor[] }[] = [];
+    const groups: { name: string; competitors: ResolvedRaceCompetitor[] }[] = [];
     if (toFinish.length > 0) groups.push({ name: 'To Finish', competitors: toFinish });
     if (finished.length > 0) groups.push({ name: 'Finished', competitors: finished });
     return groups;
@@ -221,19 +221,19 @@ export class HandicapInputPanel {
     } as never);
   }
 
-  displayFn(comp: RaceCompetitor): string {
+  displayFn(comp: ResolvedRaceCompetitor): string {
     return comp ? `${comp.helm} ${comp.boatClass} ${comp.sailNumber}` : '';
   }
 
   onCompetitorSelected(event: MatAutocompleteSelectedEvent): void {
-    void this.setSelectedCompetitor(event.option.value as RaceCompetitor);
+    void this.setSelectedCompetitor(event.option.value as ResolvedRaceCompetitor);
   }
 
   requestAddEntry(): void {
     this.addEntryRequested.emit();
   }
 
-  async setSelectedCompetitor(next: RaceCompetitor | undefined): Promise<void> {
+  async setSelectedCompetitor(next: ResolvedRaceCompetitor | undefined): Promise<void> {
     if (this.switchingSelection()) return;
     const current = this.selectedCompetitor();
     if (current?.id === next?.id) return;

@@ -1,25 +1,29 @@
 import { ResultCode } from 'app/scoring';
-import { Handicap, getHandicapValue } from '../../scoring/model/handicap';
-import { HandicapScheme } from '../../scoring/model/handicap-scheme';
-import { PersonalHandicapBand } from '../../scoring/model/personal-handicap';
 import { differenceInSeconds } from 'date-fns';
 
 export const RESULTS_UNSET_VALUE = 9999;
 
 export const RESULTS_TIME_ERROR = -9999;
 
+/**
+ * A competitor's row for a single race.
+ *
+ * RaceCompetitor carries scoring data only - identity, boat, handicap and fleet
+ * details all live on the linked SeriesEntry (one entry per unique
+ * class+sail+helm hull). The single per-race override is `crewOverride`, used
+ * when a hull has a different crew on a given day.
+ */
 export class RaceCompetitor {
   id: string;
-  seriesEntryId: string; 
+  seriesEntryId: string;
   raceId: string;
   seriesId: string;
-  helm: string;
-  crew?: string;
-  boatClass: string;
-  sailNumber: number;
-  handicaps: Handicap[];
-  personalHandicapBand?: PersonalHandicapBand;
-  fleetId?: string;
+
+  /**
+   * Per-race override for crew name. When undefined, the crew from the
+   * SeriesEntry is used. The empty string explicitly clears the entry crew.
+   */
+  crewOverride?: string;
 
   /**
    * Finish time recorded when competitor finishes.
@@ -54,19 +58,11 @@ export class RaceCompetitor {
   manualPosition?: number;
 
   constructor(data: Partial<RaceCompetitor>) {
-    // Keys
     this.id = data.id || '';
-    this.seriesEntryId = data.seriesEntryId || ''; 
+    this.seriesEntryId = data.seriesEntryId || '';
     this.raceId = data.raceId || '';
     this.seriesId = data.seriesId || '';
-    // Competitor info
-    this.helm = data.helm || '';
-    this.crew = data.crew;
-    this.boatClass = data.boatClass || '';
-    this.sailNumber = data.sailNumber || 0;
-    this.handicaps = data.handicaps || [];
-    this.personalHandicapBand = data.personalHandicapBand;
-    // Scoring data
+    this.crewOverride = data.crewOverride;
     this.recordedFinishTime = data.recordedFinishTime;
     this.manualFinishTime = data.manualFinishTime;
     this.startTime = data.startTime;
@@ -77,14 +73,6 @@ export class RaceCompetitor {
   }
 
   /**
-   * Returns the numeric handicap for `scheme`, or undefined if missing.
-   * Note: corrected-time calculations in scoring use scheme-specific handicaps.
-   */
-  handicapForScheme(scheme: HandicapScheme): number | undefined {
-    return getHandicapValue(this.handicaps, scheme);
-  }
-
-  /**
    * Gets the finish time using a manually entered time in preference to
    * a recorded one. Returns undefined if no finish time is available.
    */
@@ -92,12 +80,11 @@ export class RaceCompetitor {
     return this.manualFinishTime ?? this.recordedFinishTime;
   }
 
-  /** 
-   * Returns the elapsed time in seconds, 
+  /**
+   * Returns the elapsed time in seconds,
    * or undefined if it cannot be calculated.
-  */
+   */
   get elapsedTime(): number | undefined {
-    // Competitor has not finished, or does not have a valid start/finish time.
     if (this.resultCode === 'NOT FINISHED' || !this.startTime || !this.finishTime) {
       return undefined;
     }
@@ -105,7 +92,7 @@ export class RaceCompetitor {
     const elapsed = differenceInSeconds(this.finishTime, this.startTime);
 
     if (elapsed < 0) {
-      console.error("RaceCompetitor: Finish time is before Start time for competitor:", this.id);
+      console.error('RaceCompetitor: Finish time is before Start time for competitor:', this.id);
       return RESULTS_TIME_ERROR;
     }
 
@@ -119,16 +106,11 @@ export class RaceCompetitor {
     if (this.manualLaps > 0) {
       return this.manualLaps;
     }
-    // If competitor has finished then he has completed an extra lap.
     return this.finishTime ? this.lapTimes.length + 1 : this.lapTimes.length;
   }
 
-  get helmCrew(): string {
-    return this.crew && this.crew.trim().length > 0 ? `${this.helm} / ${this.crew}` : this.helm;
-  }
-
   /**
-   * Gets the average lap time in seconds.
+   * Average lap time in seconds.
    */
   get averageLapTime(): number | undefined {
     if (this.elapsedTime && this.numLaps > 0) {

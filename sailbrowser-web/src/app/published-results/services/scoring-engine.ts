@@ -8,6 +8,7 @@ import { score } from 'app/scoring';
 import { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import { getHandicapValue } from 'app/scoring/model/handicap';
 import { isInFleet } from 'app/scoring/services/fleet-scoring';
+import { mergeKeyFor } from 'app/scoring/services/merge-key';
 import { groupBy } from 'app/shared/utils/group-by';
 import { PublishedRace } from '../model/published-race';
 import { PublishedSeason, SeriesInfo } from '../model/published-season';
@@ -202,6 +203,15 @@ export class ScoringEngine {
     let existingPublishedRaces: PublishedRace[] = [];
     let currentSeriesResults: any[] = [];
 
+    // Distinct merge groups (after fleet/handicap filtering) drive penalty
+    // scores like DNF and SCP. With per-hull SeriesEntries this can be lower
+    // than `filteredSeriesEntries.length` whenever the strategy collapses
+    // hulls (e.g. score-by-helm).
+    const mergeStrategy = series.entryAlgorithm;
+    const distinctMergeGroups = new Set(
+      filteredSeriesEntries.map(e => mergeKeyFor(e, mergeStrategy)),
+    ).size;
+
     for (let i = 0; i < racesToScore.length; i++) {
       const race = racesToScore[i];
 
@@ -212,7 +222,7 @@ export class ScoringEngine {
       const { scoredRaces, seriesResults } = score(race, filteredCompetitors, existingPublishedRaces, filteredSeriesEntries, {
         seriesType: series.scoringAlgorithm,
         discards: this.calculateDiscards(series, raceCount),
-      }, config);
+      }, config, mergeStrategy, distinctMergeGroups);
 
       scoredRaces.forEach((r: PublishedRace) => {
         r.seriesId = publishedSeriesId;

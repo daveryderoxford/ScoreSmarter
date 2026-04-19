@@ -40,7 +40,7 @@ import {
   TieGroupRow,
 } from '../../../services/manual-results.service';
 import { ResultCodeDialog } from '../result-code-dialog';
-import { RaceCompetitor, sortEntries } from 'app/results-input';
+import { ResolvedRaceCompetitor, sortResolvedCompetitors } from 'app/results-input';
 import { EditRaceCompetitorDialog } from '../../edit-race-competitor-dialog/edit-race-competitor-dialog';
 import { RaceCompetitorEditService } from '../../../services/race-competitor-edit.service';
 
@@ -55,8 +55,8 @@ function emptyOrderQueue(): OrderQueueModel {
   return { processedIds: [], remainingIds: [], rowState: new Map() };
 }
 
-function buildOrderQueueFromCompetitors(comps: RaceCompetitor[]): OrderQueueModel {
-  const sorted = [...comps].sort(sortEntries);
+function buildOrderQueueFromCompetitors(comps: ResolvedRaceCompetitor[]): OrderQueueModel {
+  const sorted = [...comps].sort(sortResolvedCompetitors);
 
   const withPos = comps
     .filter(c => c.manualPosition != null && c.manualPosition !== undefined)
@@ -94,7 +94,7 @@ function buildOrderQueueFromCompetitors(comps: RaceCompetitor[]): OrderQueueMode
   };
 }
 
-type OrderEntryInput = { key: string; raceId: string; comps: RaceCompetitor[] };
+type OrderEntryInput = { key: string; raceId: string; comps: ResolvedRaceCompetitor[] };
 
 @Component({
   selector: 'app-position-based-input-panel',
@@ -119,7 +119,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
   private readonly competitorEdit = inject(RaceCompetitorEditService);
 
   race = input.required<Race>();
-  competitors = input.required<RaceCompetitor[]>();
+  competitors = input.required<ResolvedRaceCompetitor[]>();
   readonly addEntryRequested = output<void>();
 
   readonly isMobile = toSignal(
@@ -184,7 +184,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
   readonly pendingPersist = signal(false);
 
   readonly compById = computed(() => {
-    const m = new Map<string, RaceCompetitor>();
+    const m = new Map<string, ResolvedRaceCompetitor>();
     for (const c of this.competitors()) {
       m.set(c.id, c);
     }
@@ -229,7 +229,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
           return hay.includes(term);
         })
       : [...ids];
-    return list.sort((a, b) => sortEntries(byId.get(a)!, byId.get(b)!));
+    return list.sort((a, b) => sortResolvedCompetitors(byId.get(a)!, byId.get(b)!));
   });
 
   /**
@@ -409,7 +409,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
   async removeFromQueue(competitorId: string): Promise<void> {
     const proc = this.orderQueue().processedIds.filter(id => id !== competitorId);
     const rem = [...this.orderQueue().remainingIds, competitorId].sort((a, b) =>
-      sortEntries(this.compById().get(a)!, this.compById().get(b)!)
+      sortResolvedCompetitors(this.compById().get(a)!, this.compById().get(b)!)
     );
     const state = new Map(this.orderQueue().rowState);
     state.delete(competitorId);
@@ -581,7 +581,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
           state.delete(gid);
         }
         rem.push(...group.ids);
-        rem.sort((a, b) => sortEntries(this.compById().get(a)!, this.compById().get(b)!));
+        rem.sort((a, b) => sortResolvedCompetitors(this.compById().get(a)!, this.compById().get(b)!));
         const newPlaced = flattenTieGroups(groups);
         const g2 = buildTieGroupsFromPlaced(newPlaced, state);
         state = normalizeRowStateFromOrderedTieGroups(g2, state);
@@ -593,7 +593,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
         np.splice(event.previousIndex, 1);
         state.delete(id);
         rem.push(id);
-        rem.sort((a, b) => sortEntries(this.compById().get(a)!, this.compById().get(b)!));
+        rem.sort((a, b) => sortResolvedCompetitors(this.compById().get(a)!, this.compById().get(b)!));
         proc = mergePlacedAndNonPlacedSegments(placed, np);
       }
     }

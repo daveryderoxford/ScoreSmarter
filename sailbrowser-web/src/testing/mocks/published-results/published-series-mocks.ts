@@ -8,6 +8,7 @@ export const PUBLIC_SERIES_MOCK : PublishedSeries = {
    competitors: [
       {
          seriesEntryId: 'entry-1',
+         competitorKey: 'entry-1',
          rank: 1,
          helm: 'John Doe',
          boatClass: 'Laser',
@@ -29,6 +30,7 @@ export const PUBLIC_SERIES_MOCK : PublishedSeries = {
       },
       {
          seriesEntryId: 'entry-2',
+         competitorKey: 'entry-2',
          rank: 2,
          helm: 'Jane Smith',
          crew: 'Jim Crew',
