@@ -9,6 +9,13 @@ export const PUBLISHED_RESULTS_ROUTES: Routes = [
    // On Desktop: This route shows the sidebar + a "Select an item" message
    { path: 'mobile-results-list', component: SeasonPage },
 
+   {
+      path: 'today',
+      title: "Today's results",
+      loadComponent: () =>
+         import('./presentation/todays-results-page/todays-results-page').then(m => m.TodaysResultsPage),
+   },
+
    { path: 'viewer', component: ResultsViewer },
    { path: 'viewer/:id', component: ResultsViewer },
 

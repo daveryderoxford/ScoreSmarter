@@ -1,0 +1,60 @@
+<app-toolbar title="Today's results" class="toolbar">
+  <div center class="toolbar-sub">{{ headingDate() }}</div>
+  <mat-slide-toggle
+    class="auto-scroll-toggle"
+    [checked]="autoScrollEnabled()"
+    [disabled]="autoScrollToggleDisabled()"
+    (change)="onAutoScrollToggle($event.checked)"
+    labelPosition="before"
+  >
+    Auto-scroll
+  </mat-slide-toggle>
+  <a matButton="tonal" routerLink="/results/viewer">Series results</a>
+</app-toolbar>
+
+<main #scrollHost class="scroll-main" tabindex="-1">
+  @if (loading()) {
+    <app-loading-centered />
+  } @else if (loadError()) {
+    <app-centered-text>Could not load today's published races.</app-centered-text>
+  } @else if (isEmpty()) {
+    <app-centered-text>No published races for today.</app-centered-text>
+  } @else {
+    <div class="tables-wrap">
+      @for (b of blocks(); track b.seriesId + b.race.id) {
+        <section class="race-block" [attr.data-race-id]="b.race.id">
+          <header class="race-header">
+            <div class="titles">
+              <h2 class="race-line">
+                {{ b.seriesName }} — Race {{ b.race.index }}
+                <span class="muted">({{ b.race.scheduledStart | date: 'shortTime' }})</span>
+              </h2>
+              <p class="meta">{{ fleetLabel(b.fleetId) }} · {{ b.race.type }}</p>
+            </div>
+            <div class="actions">
+              <button
+                matButton
+                type="button"
+                (click)="openInViewer(b.seriesId, b.race.id)"
+              >
+                Series results
+              </button>
+              @if (auth.isRaceOfficer()) {
+                <button matButton type="button" (click)="editRace(b.race.id)">Edit</button>
+              }
+            </div>
+          </header>
+          @if (b.race.results.length > 0) {
+            <app-race-results-table
+              [results]="b.race.results"
+              [raceType]="b.race.type"
+              [scoringHandicapScheme]="b.scoringHandicapScheme"
+            />
+          } @else {
+            <p class="no-results">No competitors in this published race.</p>
+          }
+        </section>
+      }
+    </div>
+  }
+</main>
