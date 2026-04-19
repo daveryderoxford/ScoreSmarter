@@ -3,11 +3,10 @@ import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, outp
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { ExtendedRaceCompetitor, manualRaceTableSort } from 'app/results-input/services/manual-results.service';
-import { getHandicapValue } from 'app/scoring/model/handicap';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getCorrectedTime } from 'app/scoring/services/scorer-times';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
-import { RaceCompetitor } from '../../../model/race-competitor';
+import { ResolvedRaceCompetitor } from '../../../model/resolved-race-competitor';
 
 @Component({
   selector: 'app-handicap-results-table',
@@ -17,12 +16,12 @@ import { RaceCompetitor } from '../../../model/race-competitor';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HandicapResultsTable {
-  competitors = input.required<RaceCompetitor[]>();
+  competitors = input.required<ResolvedRaceCompetitor[]>();
   handicapScheme = input.required<HandicapScheme>();
   /** Highlight row matching handicap input panel selection (handicap results entry). */
   selectedCompetitorId = input<string | null>(null);
 
-  rowClicked = output<RaceCompetitor>();
+  rowClicked = output<ResolvedRaceCompetitor>();
 
   sortState = linkedSignal<Sort>(() => 
     ({ active: 'correctedTime', direction: 'asc' })
@@ -35,11 +34,11 @@ export class HandicapResultsTable {
     return (comp.numLaps > max) ? comp.numLaps : max;
   }, 0));
 
-  onRowClick(row: RaceCompetitor) {
+  onRowClick(row: ResolvedRaceCompetitor) {
     this.rowClicked.emit(row);
   }
 
-  corrected(comp: RaceCompetitor, maxLaps: number): number | undefined {
+  corrected(comp: ResolvedRaceCompetitor, maxLaps: number): number | undefined {
     if (!comp.finishTime || comp.numLaps <= 0 || !comp.elapsedTime) {
       return undefined;
     }
@@ -47,7 +46,7 @@ export class HandicapResultsTable {
     const elapsedSeconds = comp.elapsedTime * maxLaps / comp.numLaps;
 
     const scheme = this.handicapScheme();
-    const handicap = getHandicapValue(comp.handicaps, scheme);
+    const handicap = comp.handicapForScheme(scheme);
 
     // For Level Rating, handicap is not used for corrected time.
     if (scheme !== 'Level Rating' && !handicap) {
@@ -57,8 +56,8 @@ export class HandicapResultsTable {
     return getCorrectedTime(elapsedSeconds, handicap ?? 1, scheme);
   }
 
-  displayHandicap(comp: RaceCompetitor): number | undefined {
-    return getHandicapValue(comp.handicaps, this.handicapScheme());
+  displayHandicap(comp: ResolvedRaceCompetitor): number | undefined {
+    return comp.handicapForScheme(this.handicapScheme());
   }
 
   tabledata = computed(() => {
@@ -66,7 +65,7 @@ export class HandicapResultsTable {
     const sort = this.sortState();
 
     return this.competitors().map(c => {
-      const data = new ExtendedRaceCompetitor(c);
+      const data = new ExtendedRaceCompetitor(c, c.entry);
       data.correctedTime = this.corrected(data, maxLaps);
       return data;
     }).sort((a, b) =>

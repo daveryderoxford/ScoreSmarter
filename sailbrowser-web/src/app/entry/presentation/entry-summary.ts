@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { Race } from 'app/race-calender';
-import { RaceCompetitor } from 'app/results-input';
+import { ResolvedRaceCompetitor } from 'app/results-input';
 
 interface BoatSeriesSummary {
    seriesName: string;
@@ -45,7 +45,7 @@ interface BoatEntry {
    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BoatEntrySummaryComponent {
-   competitors = input.required<RaceCompetitor[]>();
+   competitors = input.required<ResolvedRaceCompetitor[]>();
    races = input.required<Race[]>();
 
    boatEntries = computed(() => {
@@ -53,7 +53,7 @@ export class BoatEntrySummaryComponent {
       const races = this.races();
       const racesById = new Map(races.map(r => [r.id, r]));
 
-      const boats = new Map<string, { comp: RaceCompetitor, series: Map<string, number>; }>();
+      const boats = new Map<string, { comp: ResolvedRaceCompetitor, series: Map<string, number>; }>();
 
       for (const comp of competitors) {
          const boatId = `${comp.boatClass}-${comp.sailNumber}`;

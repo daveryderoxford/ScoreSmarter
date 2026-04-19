@@ -1,25 +1,44 @@
 import { inject, Injectable } from '@angular/core';
 import { SeriesEntryStore } from './series-entry-store';
 import { RaceCompetitorStore } from './race-competitor-store';
-import { Handicap } from 'app/scoring/model/handicap';
+import { Handicap, getHandicapValue } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
+import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
 import { RaceCompetitor } from '../model/race-competitor';
+import { SeriesEntry } from '../model/series-entry';
+import {
+  PerHullIdentity,
+  describeIdentity,
+  findCollidingEntry,
+} from './series-entry-identity';
 
-export type EditScope = 'raceOnly' | 'linkedBySeriesEntry';
+/**
+ * Per-race overrides are now intentionally minimal. Only `crew` may differ
+ * between races for the same hull (handled via `RaceCompetitor.crewOverride`).
+ * Every other piece of identity / boat / handicap data lives on the
+ * `SeriesEntry` and is therefore inherently series-wide.
+ */
+export type CrewEditScope = 'raceOnly' | 'wholeSeries';
 
 export type EditOperation =
-  | { type: 'setHelm'; value: string; scope: EditScope }
-  | { type: 'setCrew'; value: string; scope: EditScope }
-  | { type: 'setBoatClass'; value: string; scope: EditScope }
-  | { type: 'setSailNumber'; value: number; scope: EditScope }
-  | { type: 'setHandicap'; scheme: Handicap['scheme']; value: number; scope: EditScope; personalBand?: PersonalHandicapBand }
-  | { type: 'deleteCompetitor'; scope: EditScope };
+  | { type: 'setHelm'; value: string }
+  | { type: 'setCrew'; value: string; scope: CrewEditScope }
+  | { type: 'setBoatClass'; value: string }
+  | { type: 'setSailNumber'; value: number }
+  | { type: 'setHandicap'; scheme: Handicap['scheme']; value: number }
+  | { type: 'setPersonalHandicapBand'; band: PersonalHandicapBand | undefined }
+  | { type: 'deleteCompetitor' };
 
 export interface EditRaceCompetitorCommand {
   competitorId: string;
   operation: EditOperation;
 }
 
+/**
+ * Applies edit commands originating from the per-race UI. Logic intentionally
+ * isolates per-race scope (only the crew field) from per-hull scope (everything
+ * else); see `EditOperation` for the strict allowed shapes.
+ */
 @Injectable({ providedIn: 'root' })
 export class RaceCompetitorEditService {
   private readonly competitors = inject(RaceCompetitorStore);
@@ -30,163 +49,136 @@ export class RaceCompetitorEditService {
     if (!target) {
       throw new Error(`Competitor not found: ${command.competitorId}`);
     }
+    const entry = this.seriesEntries.selectedEntries().find(e => e.id === target.seriesEntryId);
+    if (!entry) {
+      throw new Error(`SeriesEntry ${target.seriesEntryId} not found for competitor ${target.id}`);
+    }
 
-    const impacted = await this.resolveImpacted(target, command.operation.scope);
-    if (impacted.length === 0) return;
-    if (this.isNoOp(impacted, command.operation)) return;
+    switch (command.operation.type) {
+      case 'deleteCompetitor':
+        await this.deleteCompetitor(target);
+        return;
+      case 'setCrew':
+        await this.applyCrew(target, entry, command.operation);
+        return;
+      case 'setHelm':
+      case 'setBoatClass':
+      case 'setSailNumber':
+      case 'setHandicap':
+      case 'setPersonalHandicapBand':
+        await this.applyEntryChange(entry, command.operation);
+        return;
+    }
+  }
 
-    const touchedSeriesEntryIds = new Set<string>(impacted.map(c => c.seriesEntryId));
-    if (command.operation.type === 'deleteCompetitor') {
-      for (const comp of impacted) {
-        await this.competitors.deleteResult(comp.id);
-      }
-      await this.cleanupOrphanedSeriesEntries(target.seriesId, touchedSeriesEntryIds);
+  private async applyCrew(
+    target: RaceCompetitor,
+    entry: SeriesEntry,
+    op: Extract<EditOperation, { type: 'setCrew' }>,
+  ): Promise<void> {
+    const trimmed = op.value.trim();
+    if (op.scope === 'raceOnly') {
+      // crewOverride === undefined means "use entry crew"; we keep the empty
+      // string as an explicit override that clears the entry crew for this race.
+      const next = trimmed === (entry.crew ?? '') ? undefined : trimmed;
+      if ((target.crewOverride ?? null) === (next ?? null)) return;
+      await this.competitors.updateResult(target.id, { crewOverride: next });
       return;
     }
 
-    let newSeriesEntryId: string | undefined;
-    if (
-      command.operation.type === 'setHelm' ||
-      command.operation.type === 'setBoatClass' ||
-      command.operation.type === 'setSailNumber'
-    ) {
-      const identity = this.nextIdentity(target, command.operation);
-      const merged = await this.findOrCreateSeriesEntry(target.seriesId, identity, target.handicaps);
-      newSeriesEntryId = merged.id;
-      touchedSeriesEntryIds.add(merged.id);
+    if ((entry.crew ?? '') !== trimmed) {
+      await this.seriesEntries.updateEntry(entry.id, { crew: trimmed });
     }
-
-    for (const comp of impacted) {
-      const changes = this.buildCompetitorChanges(comp, command.operation, newSeriesEntryId);
-      if (Object.keys(changes).length > 0) {
-        await this.competitors.updateResult(comp.id, changes);
+    // Wholeseries: drop any per-race overrides for this entry that now match
+    // the new entry crew. We deliberately do NOT touch overrides that still
+    // diverge from the new entry crew.
+    const allForEntry = this.competitors.selectedCompetitors().filter(c => c.seriesEntryId === entry.id);
+    for (const comp of allForEntry) {
+      if (comp.crewOverride !== undefined && comp.crewOverride === trimmed) {
+        await this.competitors.updateResult(comp.id, { crewOverride: undefined });
       }
     }
+  }
 
-    if (command.operation.scope === 'linkedBySeriesEntry' && impacted.length > 0) {
-      const entryId = impacted[0].seriesEntryId;
-      const entryChanges = this.buildSeriesEntryChanges(command.operation);
-      if (Object.keys(entryChanges).length > 0) {
-        await this.seriesEntries.updateEntry(entryId, entryChanges);
-      }
+  private async applyEntryChange(
+    entry: SeriesEntry,
+    op: Exclude<EditOperation, { type: 'setCrew' | 'deleteCompetitor' }>,
+  ): Promise<void> {
+    // setHelm / setBoatClass / setSailNumber rewrite the per-hull identity
+    // tuple and could collide with another existing SeriesEntry. Guard against
+    // that here so we never break the "one entry per (helm, class, sail)"
+    // invariant via a rename - the user must resolve the duplicate first.
+    if (op.type === 'setHelm' || op.type === 'setBoatClass' || op.type === 'setSailNumber') {
+      this.assertRenameDoesNotCollide(entry, op);
     }
 
-    await this.cleanupOrphanedSeriesEntries(target.seriesId, touchedSeriesEntryIds);
-  }
-
-  private async resolveImpacted(target: RaceCompetitor, scope: EditScope): Promise<RaceCompetitor[]> {
-    if (scope === 'raceOnly') return [target];
-    const allSeriesCompetitors = await this.competitors.getSeriesCompetitors(target.seriesId);
-    return allSeriesCompetitors.filter(c => c.seriesEntryId === target.seriesEntryId);
-  }
-
-  private buildCompetitorChanges(
-    competitor: RaceCompetitor,
-    operation: EditOperation,
-    newSeriesEntryId?: string,
-  ): Partial<RaceCompetitor> {
-    switch (operation.type) {
+    const update: Partial<SeriesEntry> = {};
+    switch (op.type) {
       case 'setHelm':
-        return { helm: operation.value, ...(newSeriesEntryId ? { seriesEntryId: newSeriesEntryId } : {}) };
-      case 'setCrew':
-        return { crew: operation.value };
+        if (entry.helm === op.value) return;
+        update.helm = op.value;
+        break;
       case 'setBoatClass':
-        return { boatClass: operation.value, ...(newSeriesEntryId ? { seriesEntryId: newSeriesEntryId } : {}) };
+        if (entry.boatClass === op.value) return;
+        update.boatClass = op.value;
+        break;
       case 'setSailNumber':
-        return { sailNumber: operation.value, ...(newSeriesEntryId ? { seriesEntryId: newSeriesEntryId } : {}) };
+        if (entry.sailNumber === op.value) return;
+        update.sailNumber = op.value;
+        break;
       case 'setHandicap': {
-        const withoutScheme = (competitor.handicaps ?? []).filter(h => h.scheme !== operation.scheme);
-        return {
-          handicaps: [...withoutScheme, { scheme: operation.scheme, value: operation.value }],
-          ...(operation.scheme === 'Personal' ? { personalHandicapBand: operation.personalBand } : {}),
-        };
+        const current = getHandicapValue(entry.handicaps, op.scheme);
+        if (current === op.value) return;
+        const without = (entry.handicaps ?? []).filter(h => h.scheme !== op.scheme);
+        update.handicaps = [...without, { scheme: op.scheme, value: op.value }];
+        break;
       }
-      default:
-        return {};
+      case 'setPersonalHandicapBand':
+        if ((entry.personalHandicapBand ?? null) === (op.band ?? null)) return;
+        update.personalHandicapBand = op.band;
+        break;
+    }
+    if (Object.keys(update).length > 0) {
+      await this.seriesEntries.updateEntry(entry.id, update);
     }
   }
 
-  private buildSeriesEntryChanges(operation: Exclude<EditOperation, { type: 'deleteCompetitor' }>): Record<string, unknown> {
-    switch (operation.type) {
-      case 'setHelm':
-        return { helm: operation.value };
-      case 'setCrew':
-        return { crew: operation.value };
-      case 'setBoatClass':
-        return { boatClass: operation.value };
-      case 'setSailNumber':
-        return { sailNumber: operation.value };
-      case 'setHandicap':
-        return operation.scheme === 'Personal'
-          ? { personalHandicapBand: operation.personalBand }
-          : {};
-    }
-  }
-
-  private nextIdentity(target: RaceCompetitor, operation: Extract<EditOperation, { type: 'setHelm' | 'setBoatClass' | 'setSailNumber' }>) {
-    return {
-      helm: operation.type === 'setHelm' ? operation.value : target.helm,
-      boatClass: operation.type === 'setBoatClass' ? operation.value : target.boatClass,
-      sailNumber: operation.type === 'setSailNumber' ? operation.value : target.sailNumber,
-      crew: target.crew,
+  /**
+   * Throws if applying `op` to `entry` would produce a per-hull identity that
+   * already exists on a different SeriesEntry in the same series. Excludes
+   * the entry being edited itself so a no-op rename is allowed.
+   */
+  private assertRenameDoesNotCollide(
+    entry: SeriesEntry,
+    op: Extract<EditOperation, { type: 'setHelm' | 'setBoatClass' | 'setSailNumber' }>,
+  ): void {
+    const next: PerHullIdentity = {
+      helm: op.type === 'setHelm' ? op.value : entry.helm,
+      boatClass: op.type === 'setBoatClass' ? op.value : entry.boatClass,
+      sailNumber: op.type === 'setSailNumber' ? op.value : entry.sailNumber,
     };
-  }
-
-  private async findOrCreateSeriesEntry(
-    seriesId: string,
-    identity: { helm: string; boatClass: string; sailNumber: number; crew?: string },
-    handicaps: Handicap[],
-  ): Promise<{ id: string }> {
-    const all = await this.seriesEntries.getSeriesEntries(seriesId);
-    const existing = all.find(
-      e =>
-        e.seriesId === seriesId &&
-        e.helm === identity.helm &&
-        e.boatClass === identity.boatClass &&
-        e.sailNumber === identity.sailNumber,
-    );
-    if (existing) {
-      await this.seriesEntries.updateEntry(existing.id, { handicaps });
-      return { id: existing.id };
-    }
-    const id = await this.seriesEntries.addEntry({
-      seriesId,
-      helm: identity.helm,
-      crew: identity.crew,
-      boatClass: identity.boatClass,
-      sailNumber: identity.sailNumber,
-      handicaps,
-      tags: [],
-    });
-    return { id };
-  }
-
-  private async cleanupOrphanedSeriesEntries(seriesId: string, touchedSeriesEntryIds: Set<string>): Promise<void> {
-    const seriesCompetitors = await this.competitors.getSeriesCompetitors(seriesId);
-    const referenced = new Set(seriesCompetitors.map(c => c.seriesEntryId));
-    for (const id of touchedSeriesEntryIds) {
-      if (!id || referenced.has(id)) continue;
-      await this.seriesEntries.deleteEntry(id);
+    const sameSeries = this.seriesEntries
+      .selectedEntries()
+      .filter(e => e.seriesId === entry.seriesId);
+    const collision = findCollidingEntry(sameSeries, next, entry.id);
+    if (collision) {
+      throw new ScoreSmarterError(
+        `Cannot rename: another series entry already exists for ` +
+        `${describeIdentity(next)} (id ${collision.id}). ` +
+        `Delete or merge that entry before renaming.`,
+      );
     }
   }
 
-  private isNoOp(impacted: RaceCompetitor[], operation: EditOperation): boolean {
-    switch (operation.type) {
-      case 'setHelm':
-        return impacted.every(c => c.helm === operation.value);
-      case 'setCrew':
-        return impacted.every(c => (c.crew ?? '') === operation.value);
-      case 'setBoatClass':
-        return impacted.every(c => c.boatClass === operation.value);
-      case 'setSailNumber':
-        return impacted.every(c => c.sailNumber === operation.value);
-      case 'setHandicap':
-        return impacted.every(c =>
-          c.handicaps.some(h => h.scheme === operation.scheme && h.value === operation.value) &&
-          (operation.scheme !== 'Personal' || c.personalHandicapBand === operation.personalBand)
-        );
-      default:
-        return false;
+  private async deleteCompetitor(target: RaceCompetitor): Promise<void> {
+    await this.competitors.deleteResult(target.id);
+    // If no other RaceCompetitor still references the SeriesEntry, drop the
+    // entry too so it doesn't haunt the series with a phantom DNC row.
+    const stillReferenced = this.competitors
+      .selectedCompetitors()
+      .some(c => c.id !== target.id && c.seriesEntryId === target.seriesEntryId);
+    if (!stillReferenced) {
+      await this.seriesEntries.deleteEntry(target.seriesEntryId);
     }
   }
 }

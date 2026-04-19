@@ -30,7 +30,7 @@ export function competitorsForConfigRace(
     if (!entry) return false;
     return (
       isInFleet(entry, config.fleet) &&
-      (!doesRaceRequireHandicap(race.type) || getHandicapValue(c.handicaps, handicapScheme) != null)
+      (!doesRaceRequireHandicap(race.type) || getHandicapValue(entry.handicaps, handicapScheme) != null)
     );
   });
 }

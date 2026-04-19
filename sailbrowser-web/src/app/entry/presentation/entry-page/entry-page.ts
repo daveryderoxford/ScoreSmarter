@@ -22,11 +22,13 @@ import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { BusyButton } from 'app/shared/components/busy-button';
 import { CenteredText } from 'app/shared/components/centered-text';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dialog';
 import { groupBy } from 'app/shared/utils/group-by';
 import { firstValueFrom, debounceTime, map, startWith } from 'rxjs';
 import { resolveHandicapsForSeries } from '../../services/entry-helpers';
 import { meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
-import { EntryService } from '../../services/entry.service';
+import { EntryConflict, EntryService } from '../../services/entry.service';
 import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
 
 interface EntryRaceDayGroup {
@@ -174,6 +176,7 @@ export class EntryPage {
   private readonly route = inject(ActivatedRoute);
   private readonly snackbar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
+  private readonly dialogs = inject(DialogsService);
 
   selectedBoat = signal<Boat | null>(null);
   busy = signal(false);
@@ -488,14 +491,21 @@ export class EntryPage {
       personalHandicapBand: candidate.personalHandicapBand,
     };
 
-    if (this._entryService.isDuplicateEntry(entryData)) {
-      this.snackbar.open('Duplicate entry for race', 'Dismiss', { duration: 3000 });
-      return;
+    const conflicts = this._entryService.findEntryConflicts(entryData);
+    if (conflicts.length > 0) {
+      const choice = await this.dialogs.promptEntryConflict(
+        conflicts.map(c => this.summariseConflict(c)),
+      );
+      if (choice === 'cancel') return;
     }
 
     try {
       this.busy.set(true);
-      await this._entryService.enterRaces(entryData);
+      if (conflicts.length > 0) {
+        await this._entryService.swapAndEnter(entryData, conflicts);
+      } else {
+        await this._entryService.enterRaces(entryData);
+      }
     } catch (error: unknown) {
       this.snackbar.open('Error encountered adding entries', 'Dismiss', { duration: 3000 });
       console.log('EntryPage: Error adding entries: ' + String(error));
@@ -520,5 +530,26 @@ export class EntryPage {
 
   public canDeactivate(): boolean {
     return !this.raceSelectionGroup.dirty && !this.competitorDetailsGroup.dirty;
+  }
+
+  /**
+   * Translate a service-level conflict into a UI-friendly summary the
+   * dialog can render without needing to know about Race/SeriesEntry shapes.
+   */
+  private summariseConflict(c: EntryConflict): EntryConflictSummary {
+    const e = c.existingEntry;
+    const existingLabel = `${e.helm} – ${e.boatClass} #${e.sailNumber}`;
+    const raceLabel = `${c.race.seriesName} race ${c.race.index}`;
+    const reasonLabel = (() => {
+      switch (c.reason) {
+        case 'sameEntry':
+          return 'Exact same boat is already entered.';
+        case 'sameHelmDifferentHull':
+          return 'This series merges by helm, so a sailor can only enter one boat per race.';
+        case 'sameHullDifferentHelm':
+          return 'This series merges by boat, so a hull can only be entered once per race.';
+      }
+    })();
+    return { raceLabel, existingLabel, reasonLabel };
   }
 }

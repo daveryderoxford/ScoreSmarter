@@ -1,5 +1,6 @@
 import { ScoringConfiguration } from "app/scoring/model/scoring-configuration";
 import { SeriesScoringScheme } from "app/scoring/model/scoring-algotirhm";
+import { SeriesEntryMatchingStrategy } from "app/entry/model/entry-grouping";
 
 export interface Series {
    id: string;
@@ -11,7 +12,12 @@ export interface Series {
    
    // Base scoring rules
    scoringAlgorithm: SeriesScoringScheme;
-   entryAlgorithm: string;
+   /**
+    * Controls how per-hull SeriesEntries are *merged* during series-level
+    * scoring (see `mergeKeyFor`). Per-hull entries are always created at
+    * sign-on regardless of this setting.
+    */
+   entryAlgorithm: SeriesEntryMatchingStrategy;
    initialDiscardAfter: number;
    subsequentDiscardsEveryN: number;
 

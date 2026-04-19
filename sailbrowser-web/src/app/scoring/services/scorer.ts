@@ -1,10 +1,10 @@
 import { PublishedRace, RaceResult } from '../../published-results/model/published-race';
 import { Race } from '../../race-calender/model/race';
-import { Series } from '../../race-calender/model/series';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { SeriesEntry } from '../../results-input/model/series-entry';
 import { ScoringConfiguration } from '../model/scoring-configuration';
 import { buildRaceResults, calculateRacePoints, scoreRace } from './race-scorer';
+import { type MergeStrategy } from './merge-key';
 import { IntermediateSeriesResult, scoreSeries, ScoringConfig } from './series-scorer';
 
 /**
@@ -14,6 +14,12 @@ import { IntermediateSeriesResult, scoreSeries, ScoringConfig } from './series-s
  * 2. Scores the current race (if provided) and updates the grid.
  * 3. Performs series scoring (handles discards and RDG).
  * 4. Applies series-dependent scores (like averages) back to the grid.
+ *
+ * `seriesCompetitorCount` is the count of *distinct merge groups* in the
+ * series (NOT the count of per-hull entries) and must be supplied by the
+ * caller. `mergeStrategy` controls how per-hull entries are collapsed into
+ * competitors at series-aggregation time (see `mergeKeyFor`).
+ *
  * @returns An object containing the final scored races and series results.
  */
 export function score(
@@ -22,10 +28,11 @@ export function score(
   existingScoredRaces: PublishedRace[],
   seriesEntries: SeriesEntry[],
   config: ScoringConfig,
-  scoringConfiguration: ScoringConfiguration
+  scoringConfiguration: ScoringConfiguration,
+  mergeStrategy: MergeStrategy,
+  seriesCompetitorCount: number,
 ): { scoredRaces: PublishedRace[], seriesResults: IntermediateSeriesResult[]; } {
 
-  const seriesCompetitorCount = seriesEntries.length;
   const handicapScheme = scoringConfiguration.handicapScheme || 'PY';
 
   // 1. Initialize the "Scoring Grid" by creating a mutable copy of the races.
@@ -33,7 +40,7 @@ export function score(
 
   // 2. Score the current race and update it in the grid.
   if (raceToScore) {
-    const initialResults = buildRaceResults(competitorsInRace, seriesEntries, handicapScheme);
+    const initialResults = buildRaceResults(competitorsInRace, seriesEntries, handicapScheme, mergeStrategy);
     const scoredResults = scoreRace(raceToScore, initialResults, handicapScheme, config.seriesType, seriesCompetitorCount);
     updateGridWithRace(scoringGrid, raceToScore, scoredResults);
   }
@@ -51,15 +58,20 @@ export function score(
   scoringGrid.sort((a, b) => a.index - b.index);
 
   // 3. Final series scoring with the fully updated grid.
-  const finalSeriesResults = scoreSeries(scoringGrid, seriesEntries, config, handicapScheme);
+  const finalSeriesResults = scoreSeries(scoringGrid, seriesEntries, config, handicapScheme, mergeStrategy);
 
-  // 4. Update the scoring grid with points calculated during series scoring (e.g., RDG).
+  // 4. Update the scoring grid with points calculated during series scoring (e.g., RDG, OOD).
+  // Series rows are keyed by `competitorKey` (which can collapse hulls), so we
+  // must propagate by `competitorKey` rather than `seriesEntryId`.
   for (const seriesResult of finalSeriesResults) {
     for (const raceScore of seriesResult.raceScores) {
       const race = scoringGrid.find(r => r.index === raceScore.raceIndex);
       if (race) {
-        const raceResult = race.results.find(res => res.seriesEntryId === seriesResult.seriesEntryId);
-        if (raceResult) raceResult.points = raceScore.points;
+        for (const raceResult of race.results) {
+          if (raceResult.competitorKey === seriesResult.competitorKey) {
+            raceResult.points = raceScore.points;
+          }
+        }
       }
     }
   }
@@ -83,4 +95,3 @@ function updateGridWithRace(scoringGrid: PublishedRace[], race: Race, updatedRes
     });
   }
 }
-

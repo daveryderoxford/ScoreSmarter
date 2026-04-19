@@ -3,7 +3,8 @@ import { applicationConfig, Meta, StoryObj } from '@storybook/angular';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { Race } from 'app/race-calender';
 import { ManualResultsService, OrderEntryPersistInput } from 'app/results-input/services/manual-results.service';
-import { RaceCompetitor } from 'app/results-input';
+import { RaceCompetitor, ResolvedRaceCompetitor } from 'app/results-input';
+import { SeriesEntry } from 'app/results-input/model/series-entry';
 import { PositionBasedInputPanel } from './position-based-input-panel';
 
 /** Captured across stories / play for assertions */
@@ -29,19 +30,37 @@ function baseRace(type: Race['type']): Race {
   };
 }
 
-function comp(p: Partial<RaceCompetitor> & Pick<RaceCompetitor, 'id' | 'helm' | 'boatClass' | 'sailNumber'>): RaceCompetitor {
-  return new RaceCompetitor({
+interface CompSeed {
+  id: string;
+  helm: string;
+  boatClass: string;
+  sailNumber: number;
+  manualPosition?: number;
+  resultCode?: RaceCompetitor['resultCode'];
+}
+
+function comp(p: CompSeed): ResolvedRaceCompetitor {
+  const competitor = new RaceCompetitor({
+    id: p.id,
     raceId: 'story-race-1',
     seriesId: 'series-1',
     seriesEntryId: `entry-${p.id}`,
-    handicaps: [{ scheme: 'PY', value: 1000 }],
-    resultCode: 'NOT FINISHED',
+    resultCode: p.resultCode ?? 'NOT FINISHED',
     manualLaps: 0,
-    ...p,
+    manualPosition: p.manualPosition,
   });
+  const entry: SeriesEntry = {
+    id: `entry-${p.id}`,
+    seriesId: 'series-1',
+    helm: p.helm,
+    boatClass: p.boatClass,
+    sailNumber: p.sailNumber,
+    handicaps: [{ scheme: 'PY', value: 1000 }],
+  };
+  return new ResolvedRaceCompetitor(competitor, entry);
 }
 
-const pursuitCompetitors = [
+const pursuitCompetitors: ResolvedRaceCompetitor[] = [
   comp({ id: 'c1', helm: 'Alice', boatClass: 'ILCA 6', sailNumber: 201 }),
   comp({ id: 'c2', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 2010 }),
   comp({ id: 'c3', helm: 'Cormac', boatClass: 'GP14', sailNumber: 7890 }),
@@ -109,20 +128,12 @@ export const PursuitWithExistingOrder: Story = {
       if (!starterProcessed.includes(c.id)) {
         return c;
       }
-      return new RaceCompetitor({
+      return comp({
         id: c.id,
-        seriesEntryId: c.seriesEntryId,
-        raceId: c.raceId,
-        seriesId: c.seriesId,
         helm: c.helm,
-        crew: c.crew,
         boatClass: c.boatClass,
         sailNumber: c.sailNumber,
-        handicaps: c.handicaps,
-        fleetId: c.fleetId,
         resultCode: 'OK',
-        manualLaps: c.manualLaps,
-        lapTimes: c.lapTimes,
         manualPosition: starterProcessed.indexOf(c.id) + 1,
       });
     }),

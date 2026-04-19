@@ -8,58 +8,82 @@ import { HandicapScheme } from '../model/handicap-scheme';
 import { SeriesScoringScheme } from '../model/scoring-algotirhm';
 import { RaceResult } from '../../published-results/model/published-race';
 
-/** Helper to create RaceCompetitor objects for testing */
+/**
+ * Per-test fixture options. RaceCompetitor itself no longer carries helm /
+ * boatClass / sailNumber / handicaps - those live on the SeriesEntry. The
+ * helper splits options into per-race scoring data and per-hull entry data.
+ */
+interface CompetitorFixtureOptions {
+  manualPosition?: number;
+  manualLaps?: number;
+  lapTimes?: Date[];
+  crewOverride?: string;
+  helm?: string;
+  crew?: string;
+  boatClass?: string;
+  sailNumber?: number;
+  handicaps?: { scheme: string; value: number }[];
+}
+
+interface CompetitorFixture {
+  competitor: RaceCompetitor;
+  entry: SeriesEntry;
+}
+
 function createCompetitor(
   id: string,
   finishTimeOffset: number | null,
   resultCode: ResultCode,
-  options: Partial<RaceCompetitor> = {}
-): RaceCompetitor {
+  options: CompetitorFixtureOptions = {},
+): CompetitorFixture {
   const startTime = new Date('2024-01-01T10:00:00Z');
   const finishTime = finishTimeOffset !== null ? new Date(startTime.getTime() + finishTimeOffset * 1000) : undefined;
+  const seriesEntryId = `entry${id}`;
 
-  return {
+  const competitor = new RaceCompetitor({
     id,
     raceId: 'race1',
     seriesId: 'series1',
-    seriesEntryId: `entry${id}`,
-    helm: `Helm ${id}`,
-    sailNumber: 100 + parseInt(id, 10),
-    boatClass: 'Test Class',
-    handicaps: [{ scheme: 'PY', value: 1000 }],
+    seriesEntryId,
+    crewOverride: options.crewOverride,
     startTime,
-    finishTime,
-    numLaps: 1,
-    manualLaps: 0,
-    lapTimes: [],
+    recordedFinishTime: finishTime,
+    manualLaps: options.manualLaps ?? 0,
+    lapTimes: options.lapTimes ?? [],
     resultCode,
-    ...options,
-  } as RaceCompetitor;
+    manualPosition: options.manualPosition,
+  });
+
+  const entry: SeriesEntry = {
+    id: seriesEntryId,
+    seriesId: 'series1',
+    helm: options.helm ?? `Helm ${id}`,
+    crew: options.crew,
+    boatClass: options.boatClass ?? 'Test Class',
+    sailNumber: options.sailNumber ?? 100 + parseInt(id, 10),
+    handicaps: (options.handicaps ?? [{ scheme: 'PY', value: 1000 }]) as SeriesEntry['handicaps'],
+  } as SeriesEntry;
+
+  return { competitor, entry };
 }
 
-/** Helper to mimic old scoreRace behavior for tests */
+function competitorsOf(fixtures: CompetitorFixture[]): RaceCompetitor[] {
+  return fixtures.map(f => f.competitor);
+}
+
+function entriesOf(fixtures: CompetitorFixture[]): SeriesEntry[] {
+  return fixtures.map(f => f.entry);
+}
+
 function scoreRaceHelper(
   race: Race,
-  competitors: RaceCompetitor[],
-  seriesEntries: SeriesEntry[],
+  fixtures: CompetitorFixture[],
   scheme: HandicapScheme,
   seriesType: SeriesScoringScheme,
   seriesCompetitorCount: number,
 ): RaceResult[] {
-  const results = buildRaceResults(competitors, seriesEntries, scheme);
+  const results = buildRaceResults(competitorsOf(fixtures), entriesOf(fixtures), scheme, 'classSailNumberHelm');
   return scoreRace(race, results, scheme, seriesType, seriesCompetitorCount);
-}
-
-function generateSeriesEntries(competitors: RaceCompetitor[]): SeriesEntry[] {
-  return competitors.map(c => ({
-    id: c.seriesEntryId,
-    seriesId: c.seriesId,
-    helm: c.helm,
-    crew: c.crew,
-    boatClass: c.boatClass || 'Test Class',
-    sailNumber: parseInt((c.sailNumber || 0).toString(), 10),
-    handicaps: c.handicaps,
-  }));
 }
 
 describe('RaceScorer', () => {
@@ -84,9 +108,7 @@ describe('RaceScorer', () => {
       createCompetitor('1', 600, 'OK'), // 1st, 10 mins
       createCompetitor('3', 840, 'OK'), // 3rd, 14 mins
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
-    const results = scoreRaceHelper(mockRace, competitors, seriesEntries, 'Level Rating', 'short', 3);
+    const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 3);
 
     const r1 = results.find(r => r.sailNumber === 101)!;
     const r2 = results.find(r => r.sailNumber === 102)!;
@@ -107,9 +129,7 @@ describe('RaceScorer', () => {
       createCompetitor('2', null, 'OK', { manualPosition: 1 }),
       createCompetitor('3', null, 'OK', { manualPosition: 3 }),
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
-    const results = scoreRaceHelper(pursuitRace, competitors, seriesEntries, 'Level Rating', 'short', 3);
+    const results = scoreRaceHelper(pursuitRace, competitors, 'Level Rating', 'short', 3);
 
     const r1 = results.find(r => r.sailNumber === 101)!;
     const r2 = results.find(r => r.sailNumber === 102)!;
@@ -128,9 +148,7 @@ describe('RaceScorer', () => {
       createCompetitor('3', null, 'OK', { manualPosition: 2 }), // Tied for 2nd
       createCompetitor('4', null, 'OK', { manualPosition: 4 }), // 4th
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
-    const results = scoreRaceHelper(levelRace, competitors, seriesEntries, 'Level Rating', 'short', 4);
+    const results = scoreRaceHelper(levelRace, competitors, 'Level Rating', 'short', 4);
 
     const r1 = results.find(r => r.sailNumber === 101)!;
     const r2 = results.find(r => r.sailNumber === 102)!;
@@ -155,12 +173,10 @@ describe('RaceScorer', () => {
       createCompetitor('4', 700, 'OK'), // Corrected: 700. Ties for 2nd
       createCompetitor('5', 900, 'OK'), // 5th, corrected 900
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
     // c1 is 1st (1pt)
     // c2, c3, c4 tie for 2nd. They occupy places 2, 3, 4. Points = (2+3+4)/3 = 3
     // c5 is 5th (5pts)
-    const results = scoreRaceHelper(mockRace, competitors, seriesEntries, 'PY', 'short', 5);
+    const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 5);
 
     const r1 = results.find(r => r.sailNumber === 101)!;
     const r2 = results.find(r => r.sailNumber === 102)!;
@@ -184,12 +200,10 @@ describe('RaceScorer', () => {
     const competitors = [
       ...['1', '2', '3', '4'].map(id => createCompetitor(id, 600, 'OK')),
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
     // Positions 1, 2, 3 are tied. Points = (1+2+3)/3 = 2
     // Position 4 gets 4 points.
     // Position 5 gets 5 points.
-    const results = scoreRaceHelper(mockRace, competitors, seriesEntries, 'PY', 'short', 5);
+    const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 5);
 
     const r1 = results.find(r => r.sailNumber === 101)!;
     const r2 = results.find(r => r.sailNumber === 102)!;
@@ -216,13 +230,11 @@ describe('RaceScorer', () => {
       createCompetitor('5', null, 'DNS'), // Did Not Start
       createCompetitor('6', null, 'DSQ'), // Disqualified
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
     // For short series, all non-finishers (except DNC) get seriesCompetitorCount + 1
     const penaltyPoints = seriesCompetitorCount + 1; // 7 points
     const nonStarterPoints = penaltyPoints;
 
-    const results = scoreRaceHelper(mockRace, competitors, seriesEntries, 'PY', 'short', seriesCompetitorCount);
+    const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCompetitorCount);
 
     const r1 = results.find(r => r.sailNumber === 101)!;
     const r2 = results.find(r => r.sailNumber === 102)!;
@@ -246,14 +258,12 @@ describe('RaceScorer', () => {
       createCompetitor('2', null, 'NOT FINISHED'),
       createCompetitor('3', null, 'DNS'),
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
     // 'NOT FINISHED' is not a starter.
     // Starters = 1 (only competitor '1')
     const starterPoints = 1 + 1; // 2
     const nonStarterPoints = seriesCompetitorCount + 1; // 4
 
-    const results = scoreRaceHelper(mockRace, competitors, seriesEntries, 'PY', 'short', seriesCompetitorCount);
+    const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCompetitorCount);
 
     const r1 = results.find(r => r.sailNumber === 101)!;
     const r2 = results.find(r => r.sailNumber === 102)!;
@@ -270,13 +280,11 @@ describe('RaceScorer', () => {
       createCompetitor('2', 700, 'SCP'), // 2nd, but gets penalty
       createCompetitor('3', 800, 'OK'), // 3rd
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
     // SCP for short series 
     // c2 finishes 2nd, gets 2 points.
     // SCP penalty is 20% of series entries = 100 * 0.2 = 20
     // Final order by points: c1 (1), c2 (22), c3 (3)
-    const results = scoreRaceHelper(mockRace, competitors, seriesEntries, 'PY', 'short', 100);
+    const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 100);
 
     const r1 = results.find(r => r.sailNumber === 101)!;
     const r2 = results.find(r => r.sailNumber === 102)!;
@@ -294,12 +302,10 @@ describe('RaceScorer', () => {
       createCompetitor('1', 600, 'OK'),  // 1st -> 1 point
       createCompetitor('2', 700, 'SCP'), // 2nd -> 2 points + penalty
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
     // seriesCompetitorCount = 13
     // Penalty = 20% of 13 = 2.6
     // c2 finishes 2nd (2 pts). Penalty is 2.6. Total = 4.6 points.
-    const results = scoreRaceHelper(mockRace, competitors, seriesEntries, 'PY', 'short', seriesCompetitorCount);
+    const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCompetitorCount);
 
     const r2 = results.find(r => r.sailNumber === 102)!;
     expect(r2.points).toBe(4.6);
@@ -315,13 +321,11 @@ describe('RaceScorer', () => {
       createCompetitor('5', 800, 'OK'),  // 5rd -> 5 points
       createCompetitor('6', 900, 'SCP'), // 6th -> 6 points
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
     // There are 6 starters. DNF score is 6 + 1 = 7 points.
     // Penalty is 0.2*dnf = 7*0.2 = 1.4
     // Total 7.4.
     // DNF score 6+1 = 7  So score should be capped to 7
-    const results = scoreRaceHelper(mockRace, competitors, seriesEntries, 'PY', 'long', seriesCompetitorCount);
+    const results = scoreRaceHelper(mockRace, competitors, 'PY', 'long', seriesCompetitorCount);
 
     const r4 = results.find(r => r.sailNumber === 106)!;
     expect(r4.points).toBe(7);
@@ -334,11 +338,9 @@ describe('RaceScorer', () => {
         createCompetitor('2', 720, 'OK'),                         // Finisher MISSING position
         createCompetitor('3', null, 'DNF'),                      // Non-finisher, should be ignored
       ];
-      const seriesEntries = generateSeriesEntries(competitors);
-
       const expectedError = 'Inconsistent ordering data: Manual positions are used, but finisher with sail number 102 is missing a position.';
 
-      expect(() => scoreRaceHelper(mockRace, competitors, seriesEntries, 'Level Rating', 'short', 3))
+      expect(() => scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 3))
         .toThrow(new ScoreSmarterError(expectedError));
     });
 
@@ -348,11 +350,9 @@ describe('RaceScorer', () => {
         createCompetitor('2', null, 'OK'),  // Finisher MISSING time
         createCompetitor('3', null, 'DNS'), // Non-finisher, should be ignored
       ];
-      const seriesEntries = generateSeriesEntries(competitors);
-
       const expectedError = 'Inconsistent ordering data: Finish times are used, but finisher with sail number 102 is missing a finish time.';
 
-      expect(() => scoreRaceHelper(mockRace, competitors, seriesEntries, 'Level Rating', 'short', 3))
+      expect(() => scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 3))
         .toThrow(new ScoreSmarterError(expectedError));
     });
 
@@ -364,11 +364,9 @@ describe('RaceScorer', () => {
         createCompetitor('3', null, 'DSQ'),                        // Non-finisher, should be ignored
         createCompetitor('4', null, 'OCS'),                        // Non-finisher, should be ignored
       ];
-      const seriesEntries = generateSeriesEntries(competitors);
-
       const expectedError = 'Inconsistent ordering data: Pursuit races require a manual position, but finisher with sail number 102 is missing a position.';
 
-      expect(() => scoreRaceHelper(pursuitRace, competitors, seriesEntries, 'Level Rating', 'short', 4))
+      expect(() => scoreRaceHelper(pursuitRace, competitors, 'Level Rating', 'short', 4))
         .toThrow(new ScoreSmarterError(expectedError));
     });
 
@@ -380,9 +378,7 @@ describe('RaceScorer', () => {
         createCompetitor('4', 800, 'OK'), // 4th, corrected 800 -> 4 points
         createCompetitor('5', null, 'DNF'), // 5th, DNF -> 6 points
       ];
-      const seriesEntries = generateSeriesEntries(competitors);
-
-      const results = scoreRaceHelper(mockRace, competitors, seriesEntries, 'PY', 'short', 5);
+      const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 5);
 
       const r1 = results.find(r => r.sailNumber === 101)!;
       const r2 = results.find(r => r.sailNumber === 102)!;
@@ -406,12 +402,10 @@ describe('RaceScorer', () => {
       createCompetitor('2', 700, 'ZFP'), // 2nd -> 2 points + penalty
       createCompetitor('3', 800, 'OK'),  // 3rd -> 3 points
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
     // seriesCompetitorCount = 10
     // Penalty = 20% of 10 = 2.0
     // c2 finishes 2nd (2 pts). Penalty is 2. Total = 4 points.
-    const results = scoreRaceHelper(mockRace, competitors, seriesEntries, 'PY', 'short', seriesCompetitorCount);
+    const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCompetitorCount);
 
     const r2 = results.find(r => r.sailNumber === 102)!;
     const r3 = results.find(r => r.sailNumber === 103)!;
@@ -428,12 +422,10 @@ describe('RaceScorer', () => {
       createCompetitor('1', 600, 'OK'),  // 1st -> 1 point
       createCompetitor('2', 700, 'ZFP'), // 2nd -> 2 points + penalty
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
     // seriesCompetitorCount = 11
     // Penalty = 20% of 11 = 2.2
     // c2 finishes 2nd (2 pts). Penalty is 2.2. Total = 4.2 points.
-    const results = scoreRaceHelper(mockRace, competitors, seriesEntries, 'PY', 'short', seriesCompetitorCount);
+    const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCompetitorCount);
 
     const r2 = results.find(r => r.sailNumber === 102)!;
     expect(r2.points).toBe(4.2);
@@ -445,13 +437,11 @@ describe('RaceScorer', () => {
       createCompetitor('1', 600, 'OK'),  // 1st -> 1 point
       createCompetitor('2', 700, 'ZFP'), // 2nd -> 2 points + penalty
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-
     // seriesCompetitorCount = 4
     // 20% of 4 = 0.8. Rounded = 1.
     // BUT minimum penalty is 2 places.
     // c2 finishes 2nd (2 pts). Penalty is 2. Total = 4 points.
-    const results = scoreRaceHelper(mockRace, competitors, seriesEntries, 'PY', 'short', seriesCompetitorCount);
+    const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCompetitorCount);
 
     const r2 = results.find(r => r.sailNumber === 102)!;
     expect(r2.points).toBe(4);
@@ -462,8 +452,7 @@ describe('RaceScorer', () => {
       createCompetitor('1', 600, 'OK'),
       createCompetitor('2', 700, 'SCP'),
     ];
-    const seriesEntries = generateSeriesEntries(competitors);
-    const results = buildRaceResults(competitors, seriesEntries, 'PY');
+    const results = buildRaceResults(competitorsOf(competitors), entriesOf(competitors), 'PY', 'classSailNumberHelm');
 
     // Manually set times to simulate they were already calculated
     results[0].elapsedTime = 600;

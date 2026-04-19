@@ -18,7 +18,7 @@ export class RaceCompetitorStore {
   private readonly firestore = inject(Firestore);
   private selectedRaces = inject(CurrentRaces);
   private tenant = inject(FirestoreTenantService);
-  
+
   private collection = this.tenant.collectionOf<RaceCompetitor>(RaceCompetitor, 'race-results');
   private ref = (id: string) => doc(this.collection, id);
 
@@ -44,7 +44,6 @@ export class RaceCompetitorStore {
           where('raceId', 'in', selectedIds)
         );
         return collectionData(q).pipe(
-          map(rc => rc.sort(sortEntries)),
           tap(rc => console.log(`RaceCompetitorStore. Loaded ${rc.length} competitors`))
         );
       }
@@ -52,17 +51,11 @@ export class RaceCompetitorStore {
     defaultValue: []
   });
 
-  /** Time string fields if they exist on the update object */
+  /** Trim string fields that we still own on RaceCompetitor */
   private tidyStrings(comp: Partial<RaceCompetitor>): Partial<RaceCompetitor> {
     const update = { ...comp };
-    if (update.helm) {
-      update.helm = update.helm.trim();
-    }
-    if (update.crew) {
-      update.crew = update.crew.trim();
-    }
-    if (update.boatClass) {
-      update.boatClass = update.boatClass.trim();
+    if (typeof update.crewOverride === 'string') {
+      update.crewOverride = update.crewOverride.trim();
     }
     return update;
   }
@@ -73,7 +66,7 @@ export class RaceCompetitorStore {
 
   async addResult(result: Partial<RaceCompetitor>): Promise<string> {
     const update = this.tidyStrings(result);
-    const id = generateSecureID(10000, `RC-${update.boatClass}-${update.sailNumber}`);
+    const id = generateSecureID(10000, `RC-${update.seriesEntryId ?? 'unknown'}`);
     await setDoc(this.ref(id), update);
     return id;
   }
@@ -86,13 +79,4 @@ export class RaceCompetitorStore {
   async deleteResult(id: string) {
     await deleteDoc(this.ref(id));
   }
-}
-
-/** Sort entries by speed, class and sail number */
-export function sortEntries(a: RaceCompetitor, b: RaceCompetitor): number {
-  const classCompare = a.boatClass.localeCompare(b.boatClass);
-  if (classCompare !== 0) {
-    return classCompare;
-  }
-  return a.sailNumber - b.sailNumber;
 }

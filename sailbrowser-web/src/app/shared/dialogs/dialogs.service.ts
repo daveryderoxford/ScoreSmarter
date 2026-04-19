@@ -1,6 +1,11 @@
 import { MatDialog as MatDialog, MatDialogRef as MatDialogRef } from '@angular/material/dialog';
 
 import { ConfirmDialog } from './confirm-dialog';
+import {
+  EntryConflictChoice,
+  EntryConflictDialog,
+  EntryConflictSummary,
+} from './entry-conflict-dialog';
 import { MessageDialog } from "./message-dialog";
 import { UnsavedChangesChoice, UnsavedChangesDialog } from './unsaved-changes-dialog';
 import { inject, Injectable } from '@angular/core';
@@ -34,6 +39,17 @@ export class DialogsService {
         dialogRef.componentInstance.message = message;
 
         return firstValueFrom(dialogRef.afterClosed());
+    }
+
+    public async promptEntryConflict(
+        conflicts: EntryConflictSummary[],
+    ): Promise<EntryConflictChoice> {
+        const dialogRef = this.dialog.open<EntryConflictDialog, void, EntryConflictChoice>(
+            EntryConflictDialog,
+        );
+        dialogRef.componentInstance.conflicts = conflicts;
+        const result = await firstValueFrom(dialogRef.afterClosed());
+        return result ?? 'cancel';
     }
 
     public async promptUnsavedChanges(

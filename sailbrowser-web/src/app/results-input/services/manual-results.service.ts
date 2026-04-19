@@ -6,13 +6,19 @@ import { ResultCode } from 'app/scoring/model/result-code';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { differenceInSeconds } from 'date-fns';
 import { deleteField } from 'firebase/firestore';
-import { RaceCompetitorStore, sortEntries } from './race-competitor-store';
+import { RaceCompetitorStore } from './race-competitor-store';
 import { RaceCompetitor } from '../model/race-competitor';
+import { ResolvedRaceCompetitor, sortResolvedCompetitors } from '../model/resolved-race-competitor';
 import { SeriesEntryStore } from './series-entry-store';
 import { resolveStartTimeForEntry } from './race-start-resolver';
 import type { RaceStart } from 'app/race-calender/model/race-start';
 
-export class ExtendedRaceCompetitor extends RaceCompetitor {
+/**
+ * View model used by the manual results table. Adds a derived `correctedTime`
+ * to a `ResolvedRaceCompetitor`. Sorting and identity continue to come from
+ * the underlying SeriesEntry.
+ */
+export class ExtendedRaceCompetitor extends ResolvedRaceCompetitor {
   correctedTime?: number;
 }
 
@@ -429,8 +435,8 @@ export class ManualResultsService {
  * followed by finished competitors sorted by key value. 
  */
 export function manualRaceTableSort(
-  a: ExtendedRaceCompetitor,
-  b: ExtendedRaceCompetitor,
+  a: ResolvedRaceCompetitor,
+  b: ResolvedRaceCompetitor,
   finishedOrder: keyof ExtendedRaceCompetitor,
   dir: 'asc' | 'desc' | ''
 ): number {
@@ -443,7 +449,7 @@ export function manualRaceTableSort(
     return aAwaitingResult ? -1 : 1;
   } else if (aAwaitingResult && bAwaitingResult) {
     // Neither have a result sort by class / boat
-    return sortEntries(a, b);
+    return sortResolvedCompetitors(a, b);
   } else {
     // Both have a result, so sort them accordingly
     return sortCompetitorsWithResult(a, b, finishedOrder, dir);

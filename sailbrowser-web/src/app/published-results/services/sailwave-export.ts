@@ -1,13 +1,12 @@
 import { addSeconds, format } from 'date-fns';
-import { RaceCompetitor } from '../../results-input/model/race-competitor';
+import { ResolvedRaceCompetitor } from '../../results-input/model/resolved-race-competitor';
 import { ResultCode } from 'app/scoring/model/result-code';
-import { getHandicapValue } from 'app/scoring/model/handicap';
 
 /** Generate a CSV file of raw results to imprt into 
  * Sailwave.  Either elapsed times or start/finish times may be exported
  */
 export function generateSailwaveCSV(
-  competitors: RaceCompetitor[],
+  competitors: ResolvedRaceCompetitor[],
   mode: 'elapsed' | 'raw' = 'elapsed'
 ): string {
 
@@ -26,7 +25,7 @@ export function generateSailwaveCSV(
       comp.crew || '',
       comp.boatClass,
       comp.sailNumber,
-      getHandicapValue(comp.handicaps, 'PY') ?? '',
+      comp.handicapForScheme('PY') ?? '',
       comp.numLaps,
       toSailwaveCode(comp.resultCode)
     ];

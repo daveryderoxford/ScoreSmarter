@@ -22,6 +22,7 @@ class FakeRaceCompetitorStore {
 
 class FakeSeriesEntryStore {
   entries: SeriesEntry[] = [];
+  readonly selectedEntries = () => this.entries;
   async getSeriesEntries(seriesId: string): Promise<SeriesEntry[]> {
     return this.entries.filter(e => e.seriesId === seriesId);
   }
@@ -57,31 +58,32 @@ describe('RaceCompetitorEditService', () => {
     entryStore = TestBed.inject(SeriesEntryStore) as unknown as FakeSeriesEntryStore;
   });
 
-  it('updates linked competitors for helm change', async () => {
+  it('writes helm change to the SeriesEntry (no per-race scope)', async () => {
     entryStore.entries = [
       { id: 'se-1', seriesId: 's1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] },
     ];
     compStore.comps = [
-      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] }),
-      new RaceCompetitor({ id: 'c2', seriesId: 's1', raceId: 'r2', seriesEntryId: 'se-1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] }),
+      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
+      new RaceCompetitor({ id: 'c2', seriesId: 's1', raceId: 'r2', seriesEntryId: 'se-1' }),
     ];
 
     await service.apply({
       competitorId: 'c1',
-      operation: { type: 'setHelm', value: 'New Helm', scope: 'linkedBySeriesEntry' },
+      operation: { type: 'setHelm', value: 'New Helm' },
     });
 
-    expect(compStore.comps.every(c => c.helm === 'New Helm')).toBe(true);
     expect(entryStore.entries[0].helm).toBe('New Helm');
+    // RaceCompetitor rows should be untouched - identity is now resolved via the entry.
+    expect(compStore.comps.every(c => (c as any).helm === undefined)).toBe(true);
   });
 
-  it('updates race only for crew change', async () => {
+  it('records crewOverride on RaceCompetitor for raceOnly crew change', async () => {
     entryStore.entries = [
-      { id: 'se-1', seriesId: 's1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] },
+      { id: 'se-1', seriesId: 's1', helm: 'Old', crew: 'A', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] },
     ];
     compStore.comps = [
-      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1', helm: 'Old', crew: 'A', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] }),
-      new RaceCompetitor({ id: 'c2', seriesId: 's1', raceId: 'r2', seriesEntryId: 'se-1', helm: 'Old', crew: 'B', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] }),
+      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
+      new RaceCompetitor({ id: 'c2', seriesId: 's1', raceId: 'r2', seriesEntryId: 'se-1' }),
     ];
 
     await service.apply({
@@ -89,8 +91,99 @@ describe('RaceCompetitorEditService', () => {
       operation: { type: 'setCrew', value: 'Crew X', scope: 'raceOnly' },
     });
 
-    expect(compStore.comps.find(c => c.id === 'c1')?.crew).toBe('Crew X');
-    expect(compStore.comps.find(c => c.id === 'c2')?.crew).toBe('B');
+    expect(compStore.comps.find(c => c.id === 'c1')?.crewOverride).toBe('Crew X');
+    expect(compStore.comps.find(c => c.id === 'c2')?.crewOverride).toBeUndefined();
+    expect(entryStore.entries[0].crew).toBe('A');
+  });
+
+  it('writes wholeSeries crew to the SeriesEntry', async () => {
+    entryStore.entries = [
+      { id: 'se-1', seriesId: 's1', helm: 'Old', crew: 'A', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] },
+    ];
+    compStore.comps = [
+      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
+    ];
+
+    await service.apply({
+      competitorId: 'c1',
+      operation: { type: 'setCrew', value: 'New Crew', scope: 'wholeSeries' },
+    });
+
+    expect(entryStore.entries[0].crew).toBe('New Crew');
+  });
+
+  it('refuses to rename helm when the new identity collides with another entry in the series', async () => {
+    entryStore.entries = [
+      { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+      { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+    ];
+    compStore.comps = [
+      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
+    ];
+
+    await expect(
+      service.apply({ competitorId: 'c1', operation: { type: 'setHelm', value: 'Sam' } }),
+    ).rejects.toThrowError(/Cannot rename/);
+
+    // Entry must be unchanged - no partial write.
+    expect(entryStore.entries.find(e => e.id === 'se-2')?.helm).toBe('Bob');
+  });
+
+  it('uses case-insensitive normalisation when detecting rename collisions', async () => {
+    entryStore.entries = [
+      { id: 'se-1', seriesId: 's1', helm: 'Sam Skipper', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+      { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+    ];
+    compStore.comps = [
+      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
+    ];
+
+    await expect(
+      service.apply({ competitorId: 'c1', operation: { type: 'setHelm', value: '  sam SKIPPER  ' } }),
+    ).rejects.toThrowError(/Cannot rename/);
+  });
+
+  it('refuses to rename sail number into another entry', async () => {
+    entryStore.entries = [
+      { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+      { id: 'se-2', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 200, handicaps: [] },
+    ];
+    compStore.comps = [
+      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
+    ];
+
+    await expect(
+      service.apply({ competitorId: 'c1', operation: { type: 'setSailNumber', value: 100 } }),
+    ).rejects.toThrowError(/Cannot rename/);
+    expect(entryStore.entries.find(e => e.id === 'se-2')?.sailNumber).toBe(200);
+  });
+
+  it('allows rename when only the entry being edited matches the new identity (case fix)', async () => {
+    entryStore.entries = [
+      { id: 'se-1', seriesId: 's1', helm: 'sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+    ];
+    compStore.comps = [
+      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
+    ];
+
+    await service.apply({ competitorId: 'c1', operation: { type: 'setHelm', value: 'Sam' } });
+
+    expect(entryStore.entries[0].helm).toBe('Sam');
+  });
+
+  it('ignores entries in OTHER series when checking for a rename collision', async () => {
+    entryStore.entries = [
+      { id: 'se-1', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+      // Same identity but different series - must not block the rename.
+      { id: 'se-99', seriesId: 's2', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+    ];
+    compStore.comps = [
+      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
+    ];
+
+    await service.apply({ competitorId: 'c1', operation: { type: 'setHelm', value: 'Sam' } });
+
+    expect(entryStore.entries.find(e => e.id === 'se-1')?.helm).toBe('Sam');
   });
 
   it('deletes orphaned series entry after deleting last competitor', async () => {
@@ -98,12 +191,12 @@ describe('RaceCompetitorEditService', () => {
       { id: 'se-1', seriesId: 's1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] },
     ];
     compStore.comps = [
-      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] }),
+      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
     ];
 
     await service.apply({
       competitorId: 'c1',
-      operation: { type: 'deleteCompetitor', scope: 'raceOnly' },
+      operation: { type: 'deleteCompetitor' },
     });
 
     expect(compStore.comps.length).toBe(0);

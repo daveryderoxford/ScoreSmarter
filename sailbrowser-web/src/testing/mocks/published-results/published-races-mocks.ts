@@ -31,6 +31,7 @@ function createRawRaceResult(index: number, baseStartTime: Date): RaceResult {
 
   return {
     seriesEntryId: `entry-${index}`,
+    competitorKey: `entry-${index}`,
     rank: 0,   // Placeholder, will be set after sorting
     club,
     boatClass,
