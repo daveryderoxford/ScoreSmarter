@@ -1,0 +1,54 @@
+@use '@angular/material' as mat;
+
+// Toolbar slots
+.app-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.toolbar-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 2;
+}
+
+.toolbar-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex: 1;
+  gap: 8px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+  display: none;
+}
+
+.title {
+  margin-left: 8px;
+  font-weight: 500;
+}
+
+// Style Material controls in toolbar.
+:host {
+  @include mat.button-toggle-overrides((
+      height: 30px,
+      text-color: var(--mat-sys-primary),
+      selected-state-text-color: var(--mat-sys-primary),
+    ));
+
+  @include mat.slide-toggle-overrides((
+     label-text-weight: 600,
+     label-text-color: var(--mat-sys-primary),
+    disabled-label-text-color: var(--mat-sys-primary),
+    ));
+}

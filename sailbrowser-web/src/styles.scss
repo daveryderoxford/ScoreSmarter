@@ -30,40 +30,6 @@ html {
     ));
 }
 
-// Toolbar control tuning: compact controls and primary-blue accents.
-.app-toolbar {
-  @include mat.button-toggle-overrides((
-      height: 35px,
-    ));
-}
-
-.app-toolbar .mat-button-toggle-group {
-  color: var(--mat-sys-primary);
-}
-
-.app-toolbar .mat-button-toggle-label-content,
-.app-toolbar .mat-button-toggle-button {
-  color: var(--mat-sys-primary) !important;
-  font-weight: 600;
-}
-
-.app-toolbar .mat-mdc-slide-toggle {
-  color: var(--mat-sys-primary);
-  white-space: nowrap;
-  transform: scale(0.92);
-  transform-origin: center right;
-  --mdc-switch-selected-track-color: var(--mat-sys-primary);
-  --mdc-switch-selected-handle-color: var(--mat-sys-primary);
-  --mdc-switch-selected-focus-track-color: var(--mat-sys-primary);
-  --mdc-switch-selected-hover-track-color: var(--mat-sys-primary);
-  --mdc-switch-selected-pressed-track-color: var(--mat-sys-primary);
-}
-
-.app-toolbar .mat-mdc-slide-toggle .mdc-label {
-  color: var(--mat-sys-primary) !important;
-  font-weight: 600;
-}
-
 body {
   color-scheme: light;
   background-color: var(--mat-sys-secondary);
