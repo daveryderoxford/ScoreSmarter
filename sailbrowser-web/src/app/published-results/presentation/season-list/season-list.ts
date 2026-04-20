@@ -108,7 +108,18 @@ export class SeasonList {
   protected expansionPanels = computed(() => {
     return this.filteredSeasons()
       .filter(s => s.series.length > 0)
-      .map(s => ({ id: s.id, title: s.name || s.id, series: s.series }));
+      .map(s => ({ id: s.id, title: s.name || s.id, series: s.series }))
+      .sort((a, b) => {
+        const aLatest = a.series.reduce(
+          (max, s) => (s.endDate > max ? s.endDate : max),
+          a.series[0].endDate,
+        );
+        const bLatest = b.series.reduce(
+          (max, s) => (s.endDate > max ? s.endDate : max),
+          b.series[0].endDate,
+        );
+        return bLatest.getTime() - aLatest.getTime();
+      });
   });
 
   protected expandedSeasonId = computed(() => {
@@ -135,12 +146,9 @@ export class SeasonList {
       return 0;
     }
 
-    if (typeof series.recentRaceCount6d === 'number') {
-      return series.recentRaceCount6d;
-    }
-
-    // Backward compatibility for older published season docs.
-    return series.raceCount;
+    return typeof series.recentRaceCount6d === 'number'
+      ? Math.max(0, series.recentRaceCount6d)
+      : 0;
   }
 
   protected trackBySeasonName(index: number, season: PublishedSeason): string {

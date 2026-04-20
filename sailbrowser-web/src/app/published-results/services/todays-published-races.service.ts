@@ -134,9 +134,9 @@ export class TodaysPublishedRacesService {
     const flat = parts.flat();
     flat.sort(
       (a, b) =>
-        a.race.scheduledStart.getTime() - b.race.scheduledStart.getTime() ||
+        b.race.scheduledStart.getTime() - a.race.scheduledStart.getTime() ||
         a.seriesName.localeCompare(b.seriesName) ||
-        a.race.index - b.race.index,
+        b.race.index - a.race.index,
     );
     return flat;
   }
