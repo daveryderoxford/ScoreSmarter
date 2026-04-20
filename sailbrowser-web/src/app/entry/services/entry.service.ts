@@ -9,7 +9,7 @@ import { SeriesEntry } from '../../results-input/model/series-entry';
 import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
 import { Handicap } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
-import { resolveHandicapsForSeries } from './entry-helpers';
+import { applyPersonalBandTag, resolveHandicapsForSeries } from './entry-helpers';
 import {
   PerHullIdentity,
   describeIdentity,
@@ -244,7 +244,7 @@ export class EntryService {
       const entryUpdate: Partial<SeriesEntry> = {
         handicaps,
         personalHandicapBand: details.personalHandicapBand,
-        tags: this.withPersonalBandTag(existing.tags, details.personalHandicapBand),
+        tags: applyPersonalBandTag(existing.tags, details.personalHandicapBand),
       };
       // Update crew if a value was provided (stays on the entry).
       if (details.crew !== undefined && details.crew !== existing.crew) {
@@ -264,13 +264,7 @@ export class EntryService {
       sailNumber: details.sailNumber,
       handicaps,
       personalHandicapBand: details.personalHandicapBand,
-      tags: this.withPersonalBandTag([], details.personalHandicapBand),
+      tags: applyPersonalBandTag([], details.personalHandicapBand),
     });
-  }
-
-  private withPersonalBandTag(tags: string[] | undefined, band: PersonalHandicapBand | undefined): string[] {
-    const next = new Set((tags ?? []).filter(t => !t.startsWith('personal-band:')));
-    if (band) next.add(`personal-band:${band}`);
-    return [...next];
   }
 }

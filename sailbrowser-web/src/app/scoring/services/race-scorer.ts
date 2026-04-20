@@ -1,14 +1,14 @@
-import { PublishedRace, RaceResult } from '../../published-results/model/published-race';
+import { RaceResult } from '../../published-results/model/published-race';
 import { Race, RaceType } from '../../race-calender';
 import { RaceCompetitor, SeriesEntry } from '../../results-input';
-import { HandicapScheme } from '../model/handicap-scheme';
-import { getLongAlgorithm, getShortAlgorithm, isFinishedComp, isRedress, isStartAreaComp, ResultCodeAlgorithm } from '../model/result-code-scoring';
 import { ScoreSmarterError } from '../../shared/utils/scoresmarter-error';
-import { SeriesScoringScheme } from '../model/scoring-algotirhm';
 import { getHandicapValue } from '../model/handicap';
+import { HandicapScheme } from '../model/handicap-scheme';
 import { isUnknownHandicapValue } from '../model/personal-handicap';
-import { getCorrectedTime, getElapsedSeconds } from './scorer-times';
+import { getLongAlgorithm, getShortAlgorithm, isFinishedComp, isRedress, isStartAreaComp, ResultCodeAlgorithm } from '../model/result-code-scoring';
+import { SeriesScoringScheme } from '../model/scoring-algotirhm';
 import { mergeKeyFor, type MergeStrategy } from './merge-key';
+import { getCorrectedTime, getElapsedSeconds } from './scorer-times';
 
 /**
  * Uses competitor start, finish. lap and status to calculate results for a single race. 

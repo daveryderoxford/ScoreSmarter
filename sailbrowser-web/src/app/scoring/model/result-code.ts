@@ -17,7 +17,7 @@ export interface ResultCodeDefinition {
   isBasic: boolean;
 }
 
-export const RESULT_CODE_DEFINITIONS: Readonly<ResultCodeDefinition[]> = [
+export const RESULT_CODE_DEFINITIONS: readonly ResultCodeDefinition[] = [
   {
     id: 'NOT FINISHED',
     description: 'Competitor has not finished',

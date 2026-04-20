@@ -1,0 +1,74 @@
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.field-full {
+  width: 100%;
+}
+
+.row.class-and-sail {
+  display: grid;
+  grid-template-columns: 1fr minmax(4.5rem, 6.5rem);
+  gap: 8px;
+  align-items: start;
+}
+
+.field-class {
+  min-width: 0;
+}
+
+.field-sail {
+  width: 100%;
+}
+
+/* Stack class + sail only on very narrow screens */
+@media (max-width: 340px) {
+  .row.class-and-sail {
+    grid-template-columns: 1fr;
+  }
+
+  .field-sail {
+    max-width: 12rem;
+  }
+}
+
+.handicap-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.handicap-line-title {
+  font-weight: 500;
+  color: var(--mat-sys-on-surface-variant);
+  margin-right: 4px;
+}
+
+.handicap-chip {
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface);
+}
+
+.handicap-chip--warn {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}

@@ -69,6 +69,22 @@ export function resolveHandicapsForSeries(
 }
 
 /**
+ * Re-derives the `tags` array after a personal handicap band change.
+ *
+ * The `personal-band:<band>` token is owned by the band field; every caller
+ * must strip any stale token and, when a band is set, reintroduce the token
+ * that matches it. Arbitrary user tags (none today) would be preserved.
+ */
+export function applyPersonalBandTag(
+  tags: string[] | undefined,
+  band: PersonalHandicapBand | undefined,
+): string[] {
+  const next = new Set((tags ?? []).filter(t => !t.startsWith('personal-band:')));
+  if (band) next.add(`personal-band:${band}`);
+  return [...next];
+}
+
+/**
  * Returns true when an entry satisfies a series' primary fleet rule.
  */
 export function meetsPrimaryFleetEligibility(

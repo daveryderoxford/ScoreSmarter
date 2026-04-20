@@ -34,7 +34,6 @@ import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-tim
 import { RaceTimeInput } from '../race-time-input';
 import { ResultCodeSelect } from '../../result-code-select';
 import { EditRaceCompetitorDialog } from '../../edit-race-competitor-dialog/edit-race-competitor-dialog';
-import { RaceCompetitorEditService } from '../../../services/race-competitor-edit.service';
 
 @Component({
   selector: 'app-handicap-input-panel',
@@ -60,7 +59,6 @@ export class HandicapInputPanel {
   private readonly dialog = inject(MatDialog);
   private readonly dialogs = inject(DialogsService);
   private readonly fb = inject(FormBuilder);
-  private readonly competitorEdit = inject(RaceCompetitorEditService);
 
   race = input.required<Race>();
   competitors = input.required<ResolvedRaceCompetitor[]>();
@@ -275,13 +273,14 @@ export class HandicapInputPanel {
   async editSelectedCompetitor(): Promise<void> {
     const competitor = this.selectedCompetitor();
     if (!competitor) return;
+    // The dialog owns the edit call so a collision error can keep it open.
+    // We just wait for it to close.
     const dialogRef = this.dialog.open(EditRaceCompetitorDialog, {
-      width: 'min(92vw, 460px)',
+      maxWidth: '100vw',
+      width: 'min(calc(100vw - 24px), 460px)',
       data: { competitor },
     });
-    const command = await firstValueFrom(dialogRef.afterClosed());
-    if (!command) return;
-    await this.competitorEdit.apply(command);
+    await firstValueFrom(dialogRef.afterClosed());
   }
 
   private async saveCurrentSelection(clearAfterSave: boolean): Promise<boolean> {

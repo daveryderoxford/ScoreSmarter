@@ -9,7 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
       type="button"
       matButton="tonal"
       [disabled]="busy() || disabled()"
-      (click)="$event.stopPropagation(); click.emit()"
+      (click)="$event.stopPropagation(); delete.emit()"
     >
       @if (busy()) {
       <mat-progress-spinner diameter="24" mode="indeterminate" />
@@ -28,5 +28,5 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 export class DeleteButton {
   busy = input<boolean>(false);
   disabled = input<boolean>(false);
-  click = output();
+  delete = output();
 }

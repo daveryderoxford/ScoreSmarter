@@ -9,16 +9,16 @@ import { SeriesEntry } from './series-entry';
  * UI/scoring view of a RaceCompetitor combined with its SeriesEntry.
  *
  * RaceCompetitor stores only scoring data and ids. All identity, boat,
- * handicap and fleet metadata are read from the linked SeriesEntry.
+ * and handicap metadata are read from the linked SeriesEntry.
  *
  * Components that previously read flat fields off RaceCompetitor (helm,
- * boatClass, sailNumber, handicaps, personalHandicapBand, fleetId, club)
+ * boatClass, sailNumber, handicaps, personalHandicapBand, club)
  * should consume `ResolvedRaceCompetitor[]` instead.
  *
  * Identity rules:
  * - `helm`, `boatClass`, `sailNumber`, `handicaps`, `personalHandicapBand`,
- *   `fleetId`, `club` come from the entry (per-hull, consistent across the
- *   series).
+ *   `club` come from the entry (per-hull, consistent across the
+ *   series). Fleet context for a race comes from `Race.fleetId`, not the entry.
  * - `crew` uses the per-race `crewOverride` when defined, otherwise the
  *   entry crew.
  */
@@ -52,10 +52,6 @@ export class ResolvedRaceCompetitor extends RaceCompetitor {
 
   get personalHandicapBand(): PersonalHandicapBand | undefined {
     return this.entry.personalHandicapBand;
-  }
-
-  get fleetId(): string | undefined {
-    return this.entry.fleetId;
   }
 
   get club(): string | undefined {

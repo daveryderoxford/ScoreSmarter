@@ -1,0 +1,76 @@
+<form [formGroup]="form" class="edit-form" (ngSubmit)="onSubmit()">
+  <mat-form-field appearance="outline" class="field-full">
+    <mat-label>Helm</mat-label>
+    <input matInput formControlName="helm" autocomplete="name" autocapitalize="words" />
+    @if (form.controls.helm.hasError('required')) {
+      <mat-error>Helm required</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="field-full">
+    <mat-label>Crew</mat-label>
+    <input matInput formControlName="crew" autocomplete="off" />
+    <mat-hint>Applies to this race only</mat-hint>
+  </mat-form-field>
+
+  <div class="row class-and-sail">
+    <mat-form-field appearance="outline" class="field-class">
+      <mat-label>Boat class</mat-label>
+      <mat-select formControlName="boatClass">
+        @for (name of classOptions(); track name) {
+          <mat-option [value]="name">{{ name }}</mat-option>
+        }
+      </mat-select>
+      @if (form.controls.boatClass.hasError('required')) {
+        <mat-error>Boat class required</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="field-sail">
+      <mat-label>Sail #</mat-label>
+      <input
+        matInput
+        type="number"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        formControlName="sailNumber"
+      />
+      @if (form.controls.sailNumber.hasError('required')) {
+        <mat-error>Required</mat-error>
+      } @else if (form.controls.sailNumber.hasError('min') || form.controls.sailNumber.hasError('pattern')) {
+        <mat-error>1+</mat-error>
+      }
+    </mat-form-field>
+  </div>
+
+  @if (supportsPersonalBand()) {
+    <mat-form-field appearance="outline" class="field-full">
+      <mat-label>Personal handicap band</mat-label>
+      <mat-select formControlName="personalHandicapBand">
+        <mat-option value="unknown">Unknown / request allocation</mat-option>
+        @for (band of personalBands; track band) {
+          <mat-option [value]="band">{{ band }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+
+  @if (previewHandicaps().length > 0) {
+    <div class="handicap-line" role="group" aria-label="Handicaps">
+      <span class="handicap-line-title">Handicaps</span>
+      @for (h of previewHandicaps(); track h.scheme) {
+        <span class="handicap-chip">{{ h.scheme }} {{ h.value }}</span>
+      }
+      @if (!isKnownClass()) {
+        <span class="handicap-chip handicap-chip--warn">Class not in club list</span>
+      }
+    </div>
+  }
+
+  <div class="actions">
+    <button mat-button type="button" (click)="onCancel()">Cancel</button>
+      <app-submit-button [disabled]="form.invalid">
+        Save
+      </app-submit-button>
+  </div>
+</form>

@@ -17,8 +17,7 @@ export interface ScoringConfig {
 /**
  * Intermediate data structure for series scoring calculations.
  */
-export interface IntermediateSeriesResult extends PublishedSeriesResult {
-}
+export type IntermediateSeriesResult = PublishedSeriesResult
 
 /**
  * Aggregates pre-scored race results into a final, ranked series result.

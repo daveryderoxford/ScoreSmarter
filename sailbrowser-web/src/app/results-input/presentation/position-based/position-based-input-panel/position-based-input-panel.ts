@@ -42,7 +42,6 @@ import {
 import { ResultCodeDialog } from '../result-code-dialog';
 import { ResolvedRaceCompetitor, sortResolvedCompetitors } from 'app/results-input';
 import { EditRaceCompetitorDialog } from '../../edit-race-competitor-dialog/edit-race-competitor-dialog';
-import { RaceCompetitorEditService } from '../../../services/race-competitor-edit.service';
 
 /** Placing / penalty queue derived from `RaceCompetitor[]`; overwritten when race or row-id set changes. */
 interface OrderQueueModel {
@@ -116,7 +115,6 @@ export class PositionBasedInputPanel implements AfterViewInit {
   private readonly manualResults = inject(ManualResultsService);
   private readonly breakpoint = inject(BreakpointObserver);
   private readonly dialog = inject(MatDialog);
-  private readonly competitorEdit = inject(RaceCompetitorEditService);
 
   race = input.required<Race>();
   competitors = input.required<ResolvedRaceCompetitor[]>();
@@ -683,13 +681,14 @@ export class PositionBasedInputPanel implements AfterViewInit {
   async editCompetitor(id: string): Promise<void> {
     const competitor = this.compById().get(id);
     if (!competitor) return;
+    // The dialog owns the edit call so a collision error can keep it open.
+    // We just wait for it to close.
     const dialogRef = this.dialog.open(EditRaceCompetitorDialog, {
-      width: 'min(92vw, 460px)',
+      maxWidth: '100vw',
+      width: 'min(calc(100vw - 24px), 460px)',
       data: { competitor },
     });
-    const command = await firstValueFrom(dialogRef.afterClosed());
-    if (!command) return;
-    await this.competitorEdit.apply(command);
+    await firstValueFrom(dialogRef.afterClosed());
   }
 
   /** Rank label for a tie group card (1-based position in placings). */

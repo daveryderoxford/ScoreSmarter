@@ -81,7 +81,6 @@ function buildSeriesEntries(seeds: CompetitorSeed[]): SeriesEntry[] {
       helm: c.helm,
       boatClass: 'TestClass',
       sailNumber: c.sailNumber,
-      fleetId: 'fleet1',
       handicaps: [{ scheme: 'PY', value: 1000 }],
     });
   }
