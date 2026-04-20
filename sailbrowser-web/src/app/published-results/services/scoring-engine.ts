@@ -197,6 +197,7 @@ export class ScoringEngine {
         config.fleet.id,
         0,
         0,
+        undefined,
       );
       return;
     }
@@ -253,6 +254,7 @@ export class ScoringEngine {
       config.fleet.id,
       racesToScore.length,
       this.recentRaceCount(racesToScore, 6),
+      this.latestScheduledStart(racesToScore),
     );
   }
 
@@ -318,6 +320,7 @@ export class ScoringEngine {
     fleetId: string,
     raceCount: number,
     recentRaceCount6d: number,
+    lastPublishedRaceStart: Date | undefined,
   ): Promise<void> {
     const seasonId = series.seasonId;
     let seasonData = updates.get(seasonId);
@@ -341,6 +344,9 @@ export class ScoringEngine {
       raceCount: raceCount,
       recentRaceCount6d,
     };
+    if (lastPublishedRaceStart) {
+      seriesInfo.lastPublishedRaceStart = lastPublishedRaceStart;
+    }
 
     const existingIndex = seasonData.series.findIndex(s => s.id === publishedSeriesId);
     if (existingIndex === -1) {
@@ -360,5 +366,17 @@ export class ScoringEngine {
   private recentRaceCount(races: Race[], days: number): number {
     const cutoffDay = startOfDay(subDays(new Date(), days)).getTime();
     return races.filter(r => startOfDay(r.actualStart ?? r.scheduledStart).getTime() >= cutoffDay).length;
+  }
+
+  /** Returns the latest scheduledStart across the supplied races, or undefined. */
+  private latestScheduledStart(races: Race[]): Date | undefined {
+    if (races.length === 0) return undefined;
+    let latest = races[0].scheduledStart;
+    for (const r of races) {
+      if (r.scheduledStart > latest) {
+        latest = r.scheduledStart;
+      }
+    }
+    return latest;
   }
 }

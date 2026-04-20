@@ -69,6 +69,7 @@ type SeriesInfo = PublishedSeason['series'][number];
    mat-list-item.season-list-item--active .mdc-list-item__primary-text {
      font-weight: 500;
    }
+
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -87,6 +88,14 @@ export class SeasonList {
     this.seasons().flatMap(s => s.series).filter(s => !s.baseSeriesId || s.id === s.baseSeriesId),
   );
 
+  /**
+   * Ordering key: prefer the scheduled start of the latest published race in
+   * the series; fall back to the calendar-derived endDate for legacy docs.
+   */
+  private seriesOrderDate(s: SeriesInfo): Date {
+    return s.lastPublishedRaceStart ?? s.endDate;
+  }
+
   protected filteredSeasons = computed(() => {
     const selectedFleetId = this.fleetFilter();
 
@@ -101,7 +110,7 @@ export class SeasonList {
           );
           return alternatives.some(s => s.fleetId === selectedFleetId);
         })
-        .sort((a, b) => b.endDate.getTime() - a.endDate.getTime()),
+        .sort((a, b) => this.seriesOrderDate(b).getTime() - this.seriesOrderDate(a).getTime()),
     }));
   });
 
@@ -111,12 +120,18 @@ export class SeasonList {
       .map(s => ({ id: s.id, title: s.name || s.id, series: s.series }))
       .sort((a, b) => {
         const aLatest = a.series.reduce(
-          (max, s) => (s.endDate > max ? s.endDate : max),
-          a.series[0].endDate,
+          (max, s) => {
+            const d = this.seriesOrderDate(s);
+            return d > max ? d : max;
+          },
+          this.seriesOrderDate(a.series[0]),
         );
         const bLatest = b.series.reduce(
-          (max, s) => (s.endDate > max ? s.endDate : max),
-          b.series[0].endDate,
+          (max, s) => {
+            const d = this.seriesOrderDate(s);
+            return d > max ? d : max;
+          },
+          this.seriesOrderDate(b.series[0]),
         );
         return bLatest.getTime() - aLatest.getTime();
       });
@@ -128,12 +143,18 @@ export class SeasonList {
 
     return panels.reduce((current, candidate) => {
       const currentLastRace = current.series.reduce(
-        (max, s) => (s.endDate > max ? s.endDate : max),
-        current.series[0].endDate,
+        (max, s) => {
+          const d = this.seriesOrderDate(s);
+          return d > max ? d : max;
+        },
+        this.seriesOrderDate(current.series[0]),
       );
       const candidateLastRace = candidate.series.reduce(
-        (max, s) => (s.endDate > max ? s.endDate : max),
-        candidate.series[0].endDate,
+        (max, s) => {
+          const d = this.seriesOrderDate(s);
+          return d > max ? d : max;
+        },
+        this.seriesOrderDate(candidate.series[0]),
       );
       return candidateLastRace > currentLastRace ? candidate : current;
     }).id;

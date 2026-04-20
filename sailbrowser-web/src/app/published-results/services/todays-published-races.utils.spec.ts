@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { PublishedSeason, SeriesInfo } from '../model/published-season';
 import {
   isScheduledToday,
+  isScheduledInRecentLocalDays,
   seriesOverlapsLocalDay,
+  seriesOverlapsRecentLocalDays,
   uniqueSeriesCandidatesForDay,
+  uniqueSeriesCandidatesForRecentDays,
 } from './todays-published-races.utils';
 
 function series(id: string, start: Date, end: Date, name = 'S'): SeriesInfo {
@@ -46,5 +49,49 @@ describe('isScheduledToday', () => {
     const now = new Date(2026, 5, 7, 12, 0, 0);
     expect(isScheduledToday(new Date(2026, 5, 7, 8, 0, 0), now)).toBe(true);
     expect(isScheduledToday(new Date(2026, 5, 6, 23, 59, 59), now)).toBe(false);
+  });
+});
+
+describe('isScheduledInRecentLocalDays', () => {
+  it('includes races on today and the inclusive cutoff day', () => {
+    const now = new Date(2026, 3, 20, 12, 0, 0);
+    expect(isScheduledInRecentLocalDays(new Date(2026, 3, 20, 8, 0, 0), 6, now)).toBe(true);
+    expect(isScheduledInRecentLocalDays(new Date(2026, 3, 14, 23, 59, 0), 6, now)).toBe(true);
+  });
+
+  it('excludes races older than the cutoff day and future races', () => {
+    const now = new Date(2026, 3, 20, 12, 0, 0);
+    expect(isScheduledInRecentLocalDays(new Date(2026, 3, 13, 23, 59, 0), 6, now)).toBe(false);
+    expect(isScheduledInRecentLocalDays(new Date(2026, 3, 21, 0, 0, 0), 6, now)).toBe(false);
+  });
+});
+
+describe('seriesOverlapsRecentLocalDays', () => {
+  it('returns true when the series span intersects the last 6 days', () => {
+    const now = new Date(2026, 3, 20, 12, 0, 0);
+    const s = series('recent', new Date(2026, 2, 1), new Date(2026, 3, 15));
+    expect(seriesOverlapsRecentLocalDays(s, 6, now)).toBe(true);
+  });
+
+  it('returns false when the series ended before the cutoff', () => {
+    const now = new Date(2026, 3, 20, 12, 0, 0);
+    const s = series('old', new Date(2026, 1, 1), new Date(2026, 3, 13));
+    expect(seriesOverlapsRecentLocalDays(s, 6, now)).toBe(false);
+  });
+});
+
+describe('uniqueSeriesCandidatesForRecentDays', () => {
+  it('keeps only series that overlap recent days and dedupes by id', () => {
+    const now = new Date(2026, 3, 20, 12, 0, 0);
+    const recent = series('dup', new Date(2026, 2, 1), new Date(2026, 3, 20), 'Recent');
+    const old = series('old', new Date(2026, 0, 1), new Date(2026, 2, 1), 'Old');
+    const seasons: PublishedSeason[] = [
+      { id: 'a', name: 'A', series: [recent, old] },
+      { id: 'b', name: 'B', series: [{ ...recent, name: 'Duplicate Recent' }] },
+    ];
+
+    const out = uniqueSeriesCandidatesForRecentDays(seasons, 6, now);
+    expect(out).toHaveLength(1);
+    expect(out[0].id).toBe('dup');
   });
 });

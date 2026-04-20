@@ -14,5 +14,3 @@ export { SeriesEntryStore } from './services/series-entry-store';
 export { CurrentRaces } from './services/current-races-store';
 
 export { RaceCompetitorStore } from './services/race-competitor-store';
-
-export { dirtySeriesGuard } from './services/dirty-series-guard';

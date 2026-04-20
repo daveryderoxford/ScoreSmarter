@@ -5,7 +5,8 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { Router } from '@angular/router';
 import { ScoringEngine } from 'app/published-results';
-import { Race, RaceCalendarStore, RacePickerDialog, type RacePickerDialogData } from 'app/race-calender';
+import { Race, RaceCalendarStore } from 'app/race-calender';
+import { RacePickerDialog, type RacePickerDialogData } from 'app/race-calender/presentation/race-picker-dialog/race-picker-dialog';
 import {
   CurrentRaces,
   RaceCompetitorStore,

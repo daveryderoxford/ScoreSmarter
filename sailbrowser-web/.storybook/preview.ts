@@ -1,5 +1,7 @@
 // .storybook/preview.ts
-import { Preview, componentWrapperDecorator } from '@storybook/angular';
+import { initializeApp } from '@angular/fire/app';
+import { Preview, applicationConfig, componentWrapperDecorator } from '@storybook/angular';
+import { provideFirebaseApp } from '@angular/fire/app';
 // import '../src/styles.scss';
 import '!style-loader!css-loader!sass-loader!../src/styles.scss';
 
@@ -14,6 +16,18 @@ const preview: Preview = {
     },
   },
   decorators: [
+    applicationConfig({
+      providers: [
+        provideFirebaseApp(() =>
+          initializeApp({
+            apiKey: 'storybook',
+            authDomain: 'storybook.local',
+            projectId: 'storybook',
+            appId: 'storybook',
+          }),
+        ),
+      ],
+    }),
     // This decorator wraps every story in a div and applies the base theme styles.
     // It mimics the app's `body` tag styles without needing to change global CSS.
     // This ensures that Material CSS variables for color and typography are

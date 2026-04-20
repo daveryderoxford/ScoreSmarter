@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { CanDeactivateFn } from '@angular/router';
 import { RaceCalendarStore } from 'app/race-calender';
-import { ScoringEngine } from 'app/published-results';
+import { ScoringEngine } from 'app/published-results/services/scoring-engine';
 import { ManualResultsPage } from '../presentation/manual-results-page/manual-results-page';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
