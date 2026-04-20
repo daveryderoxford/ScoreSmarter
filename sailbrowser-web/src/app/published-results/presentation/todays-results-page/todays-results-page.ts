@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from 'app/auth/auth.service';
 import { ClubStore } from 'app/club-tenant';
@@ -26,13 +26,13 @@ import { PublishedRacesMode, TodaysPublishedRacesService } from '../../services/
 import { RaceResultsTable } from '../results-tables/race-results-table/race-results-table';
 
 /** Vertical scroll speed when reading downward (px per second). */
-const READ_SCROLL_PX_PER_SEC = 34;
+const READ_SCROLL_PX_PER_SEC = 36;
 /** Slightly faster return to the top so the cycle does not feel sluggish. */
 const RETURN_SCROLL_PX_PER_SEC = 62;
 /** Time to read the bottom of the list before scrolling back up. */
-const PAUSE_AT_BOTTOM_MS = 1625;
+const PAUSE_AT_BOTTOM_MS = 1125;
 /** Time at the top before starting the next downward pass. */
-const PAUSE_AT_TOP_MS = 1125;
+const PAUSE_AT_TOP_MS = 1000;
 /** Minimum overflow (px) before kiosk scrolling runs. */
 const OVERFLOW_THRESHOLD_PX = 12;
 
@@ -69,7 +69,7 @@ function prefersReducedMotion(): boolean {
     Toolbar,
     MatButtonModule,
     MatButtonToggleModule,
-    MatSlideToggleModule,
+    MatCheckboxModule,
     RouterLink,
     LoadingCentered,
     CenteredText,
@@ -89,7 +89,7 @@ export class TodaysResultsPage {
 
   private readonly scrollHost = viewChild<ElementRef<HTMLElement>>('scrollHost');
 
-  /** User-controlled kiosk scrolling (toolbar slide toggle). */
+  /** User-controlled kiosk scrolling */
   protected readonly autoScrollEnabled = signal(false);
   protected readonly mode = this.publishedRaces.mode;
   protected readonly isMobile = this.breakpoints.isMobile;

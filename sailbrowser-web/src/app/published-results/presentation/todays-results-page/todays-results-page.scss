@@ -5,10 +5,6 @@
   overflow: hidden;
 }
 
-.toolbar {
-  flex: 0 0 auto;
-}
-
 .toolbar-sub {
   font-weight: 500;
   opacity: 0.85;
@@ -19,8 +15,7 @@
 }
 
 .auto-scroll-toggle {
-  margin-right: 0.25rem;
-  white-space: nowrap;
+  margin-right: 15px;
 }
 
 .scroll-main {
@@ -85,8 +80,3 @@
   flex-shrink: 0;
 }
 
-.no-results {
-  margin: 0.5rem 0 0;
-  font-style: italic;
-  opacity: 0.8;
-}

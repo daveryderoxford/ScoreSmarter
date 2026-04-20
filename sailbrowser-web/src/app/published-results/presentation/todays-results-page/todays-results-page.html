@@ -1,10 +1,10 @@
-<app-toolbar [title]="toolbarTitle()" class="toolbar">
+<app-toolbar [title]="toolbarTitle()">
   <div center class="toolbar-sub">{{ headingDate() }}</div>
   @if (!isMobile() && isTodayMode()) {
-  <mat-slide-toggle class="auto-scroll-toggle" [checked]="autoScrollEnabled()" [disabled]="autoScrollToggleDisabled()"
-    (change)="onAutoScrollToggle($event.checked)" labelPosition="before">
-    Scroll
-  </mat-slide-toggle>
+  <mat-checkbox class="auto-scroll-toggle" [checked]="autoScrollEnabled()" [disabled]="autoScrollToggleDisabled()"
+    (change)="onAutoScrollToggle($event.checked)">
+    scroll 
+  </mat-checkbox>
   }
   @if (!isMobile()) {
     <mat-button-toggle-group [value]="mode()" (change)="onModeChange($event.value)" aria-label="Results mode">
@@ -39,7 +39,7 @@
                 type="button"
                 (click)="openInViewer(b.seriesId, b.race.id)"
               >
-                Series results
+                Full results
               </button>
               @if (auth.isRaceOfficer()) {
                 <button matButton type="button" (click)="editRace(b.race.id)">Edit</button>
@@ -53,7 +53,9 @@
               [scoringHandicapScheme]="b.scoringHandicapScheme"
             />
           } @else {
-            <p class="no-results">No competitors in this published race.</p>
+            <app-centered-text>
+              No competitors in this published race.
+            </app-centered-text>
           }
         </section>
       }
