@@ -11,7 +11,7 @@ export const PUBLISHED_RESULTS_ROUTES: Routes = [
 
    {
       path: 'today',
-      title: "Today's results",
+      title: 'Recent races',
       loadComponent: () =>
          import('./presentation/todays-results-page/todays-results-page').then(m => m.TodaysResultsPage),
    },

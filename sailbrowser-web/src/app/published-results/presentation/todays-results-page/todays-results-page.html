@@ -1,24 +1,27 @@
-<app-toolbar title="Today's results" class="toolbar">
+<app-toolbar [title]="toolbarTitle()" class="toolbar">
   <div center class="toolbar-sub">{{ headingDate() }}</div>
-  <mat-slide-toggle
-    class="auto-scroll-toggle"
-    [checked]="autoScrollEnabled()"
-    [disabled]="autoScrollToggleDisabled()"
-    (change)="onAutoScrollToggle($event.checked)"
-    labelPosition="before"
-  >
-    Auto-scroll
+  @if (!isMobile() && isTodayMode()) {
+  <mat-slide-toggle class="auto-scroll-toggle" [checked]="autoScrollEnabled()" [disabled]="autoScrollToggleDisabled()"
+    (change)="onAutoScrollToggle($event.checked)" labelPosition="before">
+    Scroll
   </mat-slide-toggle>
-  <a matButton="tonal" routerLink="/results/viewer">Series results</a>
+  }
+  @if (!isMobile()) {
+    <mat-button-toggle-group [value]="mode()" (change)="onModeChange($event.value)" aria-label="Results mode">
+      <mat-button-toggle value="recent6d">Recent</mat-button-toggle>
+      <mat-button-toggle value="today">Today</mat-button-toggle>
+    </mat-button-toggle-group>
+  }
+  <button matButton routerLink="/results/viewer">Series results</button>
 </app-toolbar>
 
 <main #scrollHost class="scroll-main" tabindex="-1">
   @if (loading()) {
     <app-loading-centered />
   } @else if (loadError()) {
-    <app-centered-text>Could not load today's published races.</app-centered-text>
+    <app-centered-text>Could not load published races.</app-centered-text>
   } @else if (isEmpty()) {
-    <app-centered-text>No published races for today.</app-centered-text>
+    <app-centered-text>{{ emptyMessage() }}</app-centered-text>
   } @else {
     <div class="tables-wrap">
       @for (b of blocks(); track b.seriesId + b.race.id) {
@@ -26,8 +29,7 @@
           <header class="race-header">
             <div class="titles">
               <h2 class="race-line">
-                {{ b.seriesName }} — Race {{ b.race.index }}
-                <span class="muted">({{ b.race.scheduledStart | date: 'shortTime' }})</span>
+                {{ raceHeadingDateLabel(b.race.scheduledStart) }} - {{ b.seriesName }} — Race {{ b.race.index }}
               </h2>
               <p class="meta">{{ fleetLabel(b.fleetId) }} · {{ b.race.type }}</p>
             </div>

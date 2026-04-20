@@ -1,34 +1,32 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { MatIconButton } from '@angular/material/button';
+import { MatBadgeModule } from '@angular/material/badge';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { PublishedSeason } from 'app/published-results';
+import { FleetSelect } from 'app/shared/components/fleet-select';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
-import { normaliseString } from 'app/shared/utils/string-utils';
-import { subDays } from 'date-fns';
+import { startOfDay, subDays } from 'date-fns';
 
 type SeriesInfo = PublishedSeason['series'][number];
 
 /**
- * Displays published series grouped by season, with optional text filter on series name or fleet id.
+ * Displays published series grouped by season, with optional fleet filter and
+ * a 6-day recent-races badge.
  */
 @Component({
   selector: 'app-season-list',
   imports: [
-    FormsModule,
     MatExpansionModule,
-    MatFormFieldModule,
+    MatBadgeModule,
     MatIconButton,
     MatIconModule,
-    MatInputModule,
     MatListModule,
     RouterLink,
     RouterLinkActive,
+    FleetSelect,
   ],
   templateUrl: './season-list.html',
   styles: `
@@ -81,73 +79,69 @@ export class SeasonList {
   seasons = input.required<PublishedSeason[]>();
   hide = output();
 
-  /** Text filter: matches series name or published fleet id (primary or alternate views). */
-  protected subseriesFilter = signal('');
+  /** Fleet filter for published series list. Empty means "all fleets". */
+  protected fleetFilter = signal('');
 
   /** All primary series across seasons */
   private allSeries = computed(() =>
     this.seasons().flatMap(s => s.series).filter(s => !s.baseSeriesId || s.id === s.baseSeriesId),
   );
 
-  /** Series with a race in the last week */
-  latestSeries = computed(() => {
-    const series = this.allSeries();
-    if (series.length === 0) return [];
-
-    const lastRaceDate = series.reduce((max, s) => (s.endDate > max ? s.endDate : max), series[0].endDate);
-
-    const cutoff = subDays(lastRaceDate, 7).getTime();
-    const end = lastRaceDate.getTime();
-
-    return series.filter(s => {
-      const time = s.endDate.getTime();
-      return time >= cutoff && time <= end;
-    });
-  });
-
   protected filteredSeasons = computed(() => {
-    const filter = normaliseString(this.subseriesFilter());
+    const selectedFleetId = this.fleetFilter();
 
     return this.seasons().map(season => ({
       ...season,
       series: season.series
         .filter(s => !s.baseSeriesId || s.id === s.baseSeriesId)
         .filter(primarySeries => {
-          if (!filter) return true;
+          if (!selectedFleetId) return true;
           const alternatives = season.series.filter(
             s => s.baseSeriesId === primarySeries.id || s.id === primarySeries.id,
           );
-          return alternatives.some(
-            s => normaliseString(s.name).includes(filter) || normaliseString(s.fleetId).includes(filter),
-          );
+          return alternatives.some(s => s.fleetId === selectedFleetId);
         })
-        .map(primarySeries => {
-          if (!filter) return primarySeries;
-          const alternatives = season.series.filter(
-            s => s.baseSeriesId === primarySeries.id || s.id === primarySeries.id,
-          );
-          const bestMatch = alternatives.find(
-            s =>
-              normaliseString(s.name).includes(filter) || normaliseString(s.fleetId).includes(filter),
-          );
-          return bestMatch || primarySeries;
-        }),
+        .sort((a, b) => b.endDate.getTime() - a.endDate.getTime()),
     }));
   });
 
   protected expansionPanels = computed(() => {
-    const panels: { title: string; series: SeriesInfo[] }[] = [];
-    const latest = this.latestSeries();
-    if (latest.length > 0) {
-      panels.push({ title: 'Latest results', series: latest });
-    }
-    panels.push(
-      ...this.filteredSeasons()
-        .filter(s => s.series.length > 0)
-        .map(s => ({ title: s.name || s.id, series: s.series })),
-    );
-    return panels;
+    return this.filteredSeasons()
+      .filter(s => s.series.length > 0)
+      .map(s => ({ id: s.id, title: s.name || s.id, series: s.series }));
   });
+
+  protected expandedSeasonId = computed(() => {
+    const panels = this.expansionPanels();
+    if (panels.length === 0) return '';
+
+    return panels.reduce((current, candidate) => {
+      const currentLastRace = current.series.reduce(
+        (max, s) => (s.endDate > max ? s.endDate : max),
+        current.series[0].endDate,
+      );
+      const candidateLastRace = candidate.series.reduce(
+        (max, s) => (s.endDate > max ? s.endDate : max),
+        candidate.series[0].endDate,
+      );
+      return candidateLastRace > currentLastRace ? candidate : current;
+    }).id;
+  });
+
+  protected recentRaceBadgeCount(series: SeriesInfo): number {
+    const cutoffDay = startOfDay(subDays(new Date(), 6)).getTime();
+    const seriesLastRaceDay = startOfDay(series.endDate).getTime();
+    if (seriesLastRaceDay < cutoffDay) {
+      return 0;
+    }
+
+    if (typeof series.recentRaceCount6d === 'number') {
+      return series.recentRaceCount6d;
+    }
+
+    // Backward compatibility for older published season docs.
+    return series.raceCount;
+  }
 
   protected trackBySeasonName(index: number, season: PublishedSeason): string {
     return season.id;

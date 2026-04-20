@@ -1,16 +1,11 @@
 <div class="container">
   <div class="filter-container">
-    <mat-form-field class="filter" appearance="outline">
-      <mat-label>Filter Series</mat-label>
-      <input matInput type="text" [ngModel]="subseriesFilter()" (ngModelChange)="subseriesFilter.set($event)"
-        placeholder="Series or Fleet name" />
-      <mat-icon matPrefix>search</mat-icon>
-      @if (subseriesFilter()) {
-      <button matSuffix matIconButton aria-label="Clear" (click)="subseriesFilter.set('')">
-        <mat-icon>close</mat-icon>
-      </button>
-      }
-    </mat-form-field>
+    <app-fleet-select
+      class="filter"
+      [fleetId]="fleetFilter()"
+      (fleetIdChange)="fleetFilter.set($event)"
+      [includeAllOption]="true"
+      allOptionLabel="All fleets" />
 
     @if (!breakpoints.isMobile()) {
     <button class="align-right" mat-icon-button (click)="this.hide.emit()" title="Hide panel">
@@ -20,8 +15,8 @@
   </div>
 
   <mat-accordion multi>
-    @for (season of expansionPanels(); track $index; let isFirst = $first) {
-    <mat-expansion-panel [expanded]="isFirst">
+    @for (season of expansionPanels(); track season.id) {
+    <mat-expansion-panel [expanded]="season.id === expandedSeasonId()">
       <mat-expansion-panel-header>
         <mat-panel-title>
           {{ season.title }}
@@ -36,6 +31,15 @@
             routerLinkActive="season-list-item--active"
             [routerLinkActiveOptions]="{ exact: true }">
             <span matListItemTitle>{{ series.name }}</span>
+            @if (recentRaceBadgeCount(series) > 0) {
+            <span
+              matListItemMeta
+              [matBadge]="recentRaceBadgeCount(series)"
+              matBadgeSize="large"
+              matBadgeColor="primary"
+              matBadgeDescription="Races in the last 6 days">
+            </span>
+            }
           </mat-list-item>
           }
         </mat-nav-list>

@@ -11,7 +11,14 @@ import type { PublishedRace } from '../model/published-race';
 import type { SeriesInfo } from '../model/published-season';
 import type { PublishedSeries } from '../model/published-series';
 import { PUBLISHED_SERIES_PATH, PublishedResultsReader } from './published-results-store';
-import { isScheduledToday, uniqueSeriesCandidatesForDay } from './todays-published-races.utils';
+import {
+  isScheduledInRecentLocalDays,
+  isScheduledToday,
+  uniqueSeriesCandidatesForDay,
+  uniqueSeriesCandidatesForRecentDays,
+} from './todays-published-races.utils';
+
+export type PublishedRacesMode = 'today' | 'recent6d';
 
 export interface TodaysPublishedRaceBlock {
   seriesId: string;
@@ -30,12 +37,14 @@ export interface TodaysPublishedRaceBlock {
 @Injectable()
 export class TodaysPublishedRacesService {
   private static readonly EMPTY_BLOCKS: TodaysPublishedRaceBlock[] = [];
+  private static readonly RECENT_DAYS = 6;
 
   private readonly injector = inject(Injector);
   private readonly tenant = inject(FirestoreTenantService);
   private readonly reader = inject(PublishedResultsReader);
 
   private readonly blocksErrorSignal = signal<unknown>(undefined);
+  readonly mode = signal<PublishedRacesMode>('recent6d');
 
   /**
    * Seasons index + a one-minute tick so we re-evaluate "today" around midnight
@@ -44,14 +53,19 @@ export class TodaysPublishedRacesService {
   private readonly blocks$ = combineLatest([
     toObservable(this.reader.seasons, { injector: this.injector }),
     timer(0, 60_000),
+    toObservable(this.mode, { injector: this.injector }),
   ]).pipe(
     tap(() => this.blocksErrorSignal.set(undefined)),
-    switchMap(([seasons]) => {
-      const candidates = uniqueSeriesCandidatesForDay(seasons, new Date());
+    switchMap(([seasons, _tick, mode]) => {
+      const now = new Date();
+      const candidates =
+        mode === 'today'
+          ? uniqueSeriesCandidatesForDay(seasons, now)
+          : uniqueSeriesCandidatesForRecentDays(seasons, TodaysPublishedRacesService.RECENT_DAYS, now);
       if (candidates.length === 0) {
         return of(TodaysPublishedRacesService.EMPTY_BLOCKS);
       }
-      return combineLatest(candidates.map(c => this.watchSeriesBlocks(c))).pipe(
+      return combineLatest(candidates.map(c => this.watchSeriesBlocks(c, mode))).pipe(
         map(parts => this.flattenAndSort(parts)),
       );
     }),
@@ -72,7 +86,7 @@ export class TodaysPublishedRacesService {
   /** True until the published seasons index has first loaded from Firestore. */
   readonly loading = computed(() => this.reader.seasonsLoading());
 
-  private watchSeriesBlocks(info: SeriesInfo): Observable<TodaysPublishedRaceBlock[]> {
+  private watchSeriesBlocks(info: SeriesInfo, mode: PublishedRacesMode): Observable<TodaysPublishedRaceBlock[]> {
     const seriesId = info.id;
     const seriesRef = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, seriesId);
     const racesQuery = query(
@@ -89,7 +103,15 @@ export class TodaysPublishedRacesService {
         const day = new Date();
         const out: TodaysPublishedRaceBlock[] = [];
         for (const race of races) {
-          if (isScheduledToday(race.scheduledStart, day)) {
+          const includeRace =
+            mode === 'today'
+              ? isScheduledToday(race.scheduledStart, day)
+              : isScheduledInRecentLocalDays(
+                  race.scheduledStart,
+                  TodaysPublishedRacesService.RECENT_DAYS,
+                  day,
+                );
+          if (includeRace) {
             out.push({
               seriesId,
               seriesName: series.name,

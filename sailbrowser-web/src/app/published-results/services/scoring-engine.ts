@@ -17,6 +17,7 @@ import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH } from './published-resul
 
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
 import { competitorsForConfigRace, doesRaceRequireHandicap, isRaceScorable } from './scoring-publish-filters';
+import { startOfDay, subDays } from 'date-fns';
 
 const SCORING_CANDIDATE_STATUSES = new Set<Race['status']>([
   'In progress',
@@ -188,7 +189,15 @@ export class ScoringEngine {
       this.batchSavePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, []);
       const existingRaces = await this.readPublishedRaces(publishedSeriesId);
       this.batchSavePublishedRaces(batch, publishedSeriesId, [], existingRaces);
-      await this.prepareSeasonUpdate(seasonUpdates, series, publishedSeriesId, publishedSeriesName, config.fleet.id, 0);
+      await this.prepareSeasonUpdate(
+        seasonUpdates,
+        series,
+        publishedSeriesId,
+        publishedSeriesName,
+        config.fleet.id,
+        0,
+        0,
+      );
       return;
     }
 
@@ -236,7 +245,15 @@ export class ScoringEngine {
     this.batchSavePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, currentSeriesResults);
     const existingRaces = await this.readPublishedRaces(publishedSeriesId);
     this.batchSavePublishedRaces(batch, publishedSeriesId, existingPublishedRaces, existingRaces);
-    await this.prepareSeasonUpdate(seasonUpdates, series, publishedSeriesId, publishedSeriesName, config.fleet.id, racesToScore.length);
+    await this.prepareSeasonUpdate(
+      seasonUpdates,
+      series,
+      publishedSeriesId,
+      publishedSeriesName,
+      config.fleet.id,
+      racesToScore.length,
+      this.recentRaceCount(racesToScore, 6),
+    );
   }
 
   private async readPublishedRaces(publishedSeriesId: string): Promise<PublishedRace[]> {
@@ -299,7 +316,8 @@ export class ScoringEngine {
     publishedSeriesId: string,
     publishedSeriesName: string,
     fleetId: string,
-    raceCount: number
+    raceCount: number,
+    recentRaceCount6d: number,
   ): Promise<void> {
     const seasonId = series.seasonId;
     let seasonData = updates.get(seasonId);
@@ -321,6 +339,7 @@ export class ScoringEngine {
       startDate: series.startDate || new Date(),
       endDate: series.endDate || new Date(),
       raceCount: raceCount,
+      recentRaceCount6d,
     };
 
     const existingIndex = seasonData.series.findIndex(s => s.id === publishedSeriesId);
@@ -335,5 +354,11 @@ export class ScoringEngine {
     const seasonDoc = this.tenant.docRef<PublishedSeason>(PUBLISHED_SEASONS_PATH, seasonId);
     const docSnap = await getDoc(seasonDoc);
     return docSnap.exists() ? docSnap.data() : null;
+  }
+
+  /** Counts races whose local race-date falls in the rolling N-day window (inclusive). */
+  private recentRaceCount(races: Race[], days: number): number {
+    const cutoffDay = startOfDay(subDays(new Date(), days)).getTime();
+    return races.filter(r => startOfDay(r.actualStart ?? r.scheduledStart).getTime() >= cutoffDay).length;
   }
 }

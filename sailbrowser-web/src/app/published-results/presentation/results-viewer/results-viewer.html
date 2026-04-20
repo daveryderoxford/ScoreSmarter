@@ -3,6 +3,7 @@
       @if (!isMobile() && selectedSeriesName()) {
          <div center class="toolbar-selected-series">{{ selectedSeriesName() }}</div>
       }
+      <button matButton routerLink="/results/today">Recent races</button>
       @if (isMobile()) {
          <button matButton [routerLink]="['/results/mobile-results-list']">
             <mat-icon>back</mat-icon>Select series

@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -12,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from 'app/auth/auth.service';
@@ -21,7 +21,8 @@ import { CurrentRaces } from 'app/results-input';
 import { CenteredText } from 'app/shared/components/centered-text';
 import { LoadingCentered } from 'app/shared/components/loading-centered';
 import { Toolbar } from 'app/shared/components/toolbar';
-import { TodaysPublishedRacesService } from '../../services/todays-published-races.service';
+import { AppBreakpoints } from 'app/shared/services/breakpoints';
+import { PublishedRacesMode, TodaysPublishedRacesService } from '../../services/todays-published-races.service';
 import { RaceResultsTable } from '../results-tables/race-results-table/race-results-table';
 
 /** Vertical scroll speed when reading downward (px per second). */
@@ -67,9 +68,9 @@ function prefersReducedMotion(): boolean {
   imports: [
     Toolbar,
     MatButtonModule,
+    MatButtonToggleModule,
     MatSlideToggleModule,
     RouterLink,
-    DatePipe,
     LoadingCentered,
     CenteredText,
     RaceResultsTable,
@@ -78,10 +79,11 @@ function prefersReducedMotion(): boolean {
   styleUrl: './todays-results-page.scss',
 })
 export class TodaysResultsPage {
-  private readonly todayRaces = inject(TodaysPublishedRacesService);
+  private readonly publishedRaces = inject(TodaysPublishedRacesService);
   private readonly clubStore = inject(ClubStore);
   private readonly router = inject(Router);
   private readonly injector = inject(Injector);
+  private readonly breakpoints = inject(AppBreakpoints);
   protected readonly auth = inject(AuthService);
   private readonly currentRaces = inject(CurrentRaces);
 
@@ -89,14 +91,21 @@ export class TodaysResultsPage {
 
   /** User-controlled kiosk scrolling (toolbar slide toggle). */
   protected readonly autoScrollEnabled = signal(false);
+  protected readonly mode = this.publishedRaces.mode;
+  protected readonly isMobile = this.breakpoints.isMobile;
+  protected readonly isTodayMode = computed(() => this.mode() === 'today');
 
-  protected readonly loading = this.todayRaces.loading;
-  protected readonly blocks = this.todayRaces.blocks;
-  protected readonly loadError = this.todayRaces.loadError;
+  protected readonly loading = this.publishedRaces.loading;
+  protected readonly blocks = this.publishedRaces.blocks;
+  protected readonly loadError = this.publishedRaces.loadError;
+  protected readonly toolbarTitle = computed(() =>
+    this.isTodayMode() ? "Today's races" : 'Recent races',
+  );
 
   /** Recomputes when results update so the heading stays correct around midnight. */
   protected readonly headingDate = computed(() => {
-    void this.todayRaces.blocks().length;
+    void this.publishedRaces.blocks().length;
+    if (!this.isTodayMode()) return 'Last week';
     return new Intl.DateTimeFormat(undefined, {
       weekday: 'long',
       day: 'numeric',
@@ -112,6 +121,8 @@ export class TodaysResultsPage {
   /** Slide toggle disabled when auto-scroll cannot run meaningfully. */
   protected readonly autoScrollToggleDisabled = computed(
     () =>
+      this.isMobile() ||
+      !this.isTodayMode() ||
       this.loading() ||
       !!this.loadError() ||
       this.isEmpty() ||
@@ -119,6 +130,12 @@ export class TodaysResultsPage {
   );
 
   constructor() {
+    effect(() => {
+      if (this.isMobile() && this.mode() !== 'recent6d') {
+        this.mode.set('recent6d');
+      }
+    });
+
     // Turn kiosk mode off when the page can no longer support it (e.g. data reload → loading).
     effect(() => {
       if (this.autoScrollToggleDisabled() && this.autoScrollEnabled()) {
@@ -156,6 +173,36 @@ export class TodaysResultsPage {
 
   protected onAutoScrollToggle(checked: boolean): void {
     this.autoScrollEnabled.set(checked);
+  }
+
+  protected onModeChange(mode: PublishedRacesMode): void {
+    if (this.isMobile()) return;
+    this.mode.set(mode);
+  }
+
+  protected emptyMessage = computed(() =>
+    this.isTodayMode() ? 'No race results published today.' : 'No race results in the last week.',
+  );
+
+  protected raceHeadingDateLabel(d: Date): string {
+    const weekday = new Intl.DateTimeFormat(undefined, { weekday: 'short' }).format(d);
+    const day = d.getDate();
+    return `${weekday} ${day}${this.ordinalSuffix(day)}`;
+  }
+
+  private ordinalSuffix(day: number): string {
+    const mod100 = day % 100;
+    if (mod100 >= 11 && mod100 <= 13) return 'th';
+    switch (day % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
   }
 
   fleetLabel(fleetId: string): string {
