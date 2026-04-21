@@ -3,6 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
 
+
 @Component({
   selector: 'app-sys-admin-switchboard',
   imports: [MatButtonModule, Toolbar, RouterLink],
@@ -12,10 +13,13 @@ import { Toolbar } from 'app/shared/components/toolbar';
       <div class=buttons>
         <a matButton='tonal' routerLink="/sys-admin/users">
             User administration
-        </a>
+        </a>. 
         <a matButton='tonal' routerLink="/sys-admin/data">
             System Data Import/Export
         </a>
+         <a matButton='tonal' routerLink="/results-input/scan-scoring-sheet">
+            Scan scoring sheet
+        </a>.
       </div>
       <span class="message">
          {{msgText()}}

@@ -1,6 +1,7 @@
 import { Meta, StoryObj } from '@storybook/angular';
 import { SeriesResultsTable } from './series-results-table';
 import { PUBLIC_SERIES_MOCK } from '@testing/mocks/published-results/published-series-mocks';
+import { MERGED_BOAT_CLASS_SEPARATOR } from 'app/scoring/services/series-scorer';
 
 export default {
   title: 'Published Results/Results Table',
@@ -42,6 +43,30 @@ export const ThirdPlace: Story = {
   args: {
     ...Default.args,
     series: { ...PUBLIC_SERIES_MOCK, competitors: [{ ...PUBLIC_SERIES_MOCK.competitors[0], rank: 3 }, PUBLIC_SERIES_MOCK.competitors[1]] }
+  },
+  render: (args) => ({
+    props: args,
+  }),
+};
+
+export const MergedClasses: Story = {
+  args: {
+    ...Default.args,
+    series: {
+      ...PUBLIC_SERIES_MOCK,
+      competitors: [
+        {
+          ...PUBLIC_SERIES_MOCK.competitors[0],
+          boatClass: `ILCA 7${MERGED_BOAT_CLASS_SEPARATOR}RS Aero 7`,
+          sailNumber: 1234,
+        },
+        {
+          ...PUBLIC_SERIES_MOCK.competitors[1],
+          boatClass: `ILCA 6${MERGED_BOAT_CLASS_SEPARATOR}ILCA 7${MERGED_BOAT_CLASS_SEPARATOR}RS Aero 6`,
+          sailNumber: 5678,
+        },
+      ],
+    },
   },
   render: (args) => ({
     props: args,

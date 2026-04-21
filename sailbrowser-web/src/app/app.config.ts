@@ -47,7 +47,7 @@ export const appConfig: ApplicationConfig = {
       }
       return auth;
     }),
-    provideFunctions(() => getFunctions()),
+    provideFunctions(() => getFunctions(getApp(), "europe-west1")),
     provideFirestore(() => {
       let firestore = getFirestore();
       try {

@@ -7,6 +7,8 @@ import { getHandicapValue } from '../model/handicap';
 import { HandicapScheme } from '../model/handicap-scheme';
 import { mergeKeyFor, type MergeStrategy } from './merge-key';
 
+export const MERGED_BOAT_CLASS_SEPARATOR = '&';
+
 export interface ScoringConfig {
   seriesType: SeriesScoringScheme;
   discards: number;
@@ -89,7 +91,9 @@ function aggregateCompetitorResults(
     // Default seed: lowest-id member. Will be overridden when the group's
     // first actual race contribution is found below.
     const seed = members[0];
-    competitorMap.set(key, makeSeriesRow(key, seed, handicapScheme));
+    const row = makeSeriesRow(key, seed, handicapScheme);
+    row.boatClass = mergedBoatClassForGroup(members);
+    competitorMap.set(key, row);
   }
 
   // Walk races in chronological order to seed display from first appearance
@@ -119,6 +123,9 @@ function aggregateCompetitorResults(
         const entry = entryById.get(contribution.firstResult.seriesEntryId);
         if (entry) {
           seedDisplayFromEntry(row, entry, handicapScheme);
+          // Persist all classes sailed by this merged competitor in a single
+          // field so published-series docs carry full class context.
+          row.boatClass = mergedBoatClassForGroup(groupMembers.get(key) ?? [entry]);
         }
         seededKeys.add(key);
       }
@@ -142,6 +149,13 @@ function aggregateCompetitorResults(
   }
 
   return competitorMap;
+}
+
+function mergedBoatClassForGroup(entries: SeriesEntry[]): string {
+  const classes = Array.from(
+    new Set(entries.map(e => e.boatClass.trim()).filter(Boolean)),
+  );
+  return classes.join(MERGED_BOAT_CLASS_SEPARATOR);
 }
 
 function makeSeriesRow(

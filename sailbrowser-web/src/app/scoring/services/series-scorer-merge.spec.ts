@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { PublishedRace, RaceResult } from '../../published-results/model/published-race';
 import type { SeriesEntry } from '../../results-input/model/series-entry';
 import { ResultCode } from '../model/result-code';
-import { scoreSeries, ScoringConfig } from './series-scorer';
+import { MERGED_BOAT_CLASS_SEPARATOR, scoreSeries, ScoringConfig } from './series-scorer';
 import { mergeKeyFor, type MergeStrategy } from './merge-key';
 
 /**
@@ -116,6 +116,7 @@ describe("scoreSeries — strategy 'helm' (late merge)", () => {
     expect(sam.raceScores.find(s => s.raceIndex === 0)?.points).toBe(1);
     expect(sam.raceScores.find(s => s.raceIndex === 1)?.points).toBe(1);
     expect(sam.totalPoints).toBe(2);
+    expect(sam.boatClass).toBe(`ILCA 7${MERGED_BOAT_CLASS_SEPARATOR}RS Aero 7`);
   });
 
   it("seeds display fields (boatClass, sail #, handicap) from the chronologically first race the merged competitor sailed", () => {
@@ -146,7 +147,7 @@ describe("scoreSeries — strategy 'helm' (late merge)", () => {
     const [row] = scoreSeries(races, entries, config, 'PY', 'helm');
 
     expect(row.helm).toBe('Sam Skipper');
-    expect(row.boatClass).toBe('RS Aero 7');
+    expect(row.boatClass).toBe(`ILCA 7${MERGED_BOAT_CLASS_SEPARATOR}RS Aero 7`);
     expect(row.sailNumber).toBe(200);
     expect(row.handicap).toBe(1063);
   });
@@ -163,7 +164,7 @@ describe("scoreSeries — strategy 'helm' (late merge)", () => {
     ];
 
     const [row] = scoreSeries(races, entries, config, 'PY', 'helm');
-    expect(row.boatClass).toBe('RS Aero 7');
+    expect(row.boatClass).toBe(`ILCA 7${MERGED_BOAT_CLASS_SEPARATOR}RS Aero 7`);
     expect(row.sailNumber).toBe(200);
   });
 

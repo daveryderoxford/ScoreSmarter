@@ -30,7 +30,6 @@ const db = getFirestore();
 export const seriesCreated = onDocumentCreated(
     {
         document: '/clubs/{clubId}/series/{seriesId}',
-        region: 'europe-west1',
     }, async (event) => {
 
     if (event.data == null) return;
@@ -62,7 +61,6 @@ export const seriesCreated = onDocumentCreated(
 export const seriesChanged = onDocumentUpdated(
     {
         document: '/clubs/{clubId}/series/{seriesId}',
-        region: 'europe-west1',  
     }, async (event) => {
 
         if (event.data == null) return;
