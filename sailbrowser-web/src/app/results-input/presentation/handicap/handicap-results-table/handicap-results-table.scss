@@ -39,6 +39,10 @@ tr.row-selected td {
   font-weight: 700;
 }
 
+tr.row-suspect:not(.row-selected) {
+  box-shadow: inset 4px 0 0 var(--mat-sys-error);
+}
+
 tr.mat-mdc-row {
   cursor: pointer;
 }

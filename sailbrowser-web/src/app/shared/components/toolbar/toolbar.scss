@@ -44,11 +44,17 @@
       height: 30px,
       text-color: var(--mat-sys-primary),
       selected-state-text-color: var(--mat-sys-primary),
+      selected-state-background-color: var(--mat-sys-surface-variant),
+
     ));
 
-  @include mat.slide-toggle-overrides((
-     label-text-weight: 600,
+  @include mat.checkbox-overrides((
+     label-text-weight: 500,
      label-text-color: var(--mat-sys-primary),
-    disabled-label-text-color: var(--mat-sys-primary),
+     disabled-label-color: var(--mat-sys-primary),
+     unselected-icon-color: var(--mat-sys-primary),
+     unselected-focus-icon-color: var(--mat-sys-primary),
+     unselected-hover-icon-color: var(--mat-sys-primary),
+     disabled-unselected-icon-color: var(--mat-sys-primary),
     ));
 }

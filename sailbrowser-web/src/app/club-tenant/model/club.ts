@@ -2,6 +2,7 @@ import { Season } from 'app/race-calender/model/season';
 import { BoatClass } from './boat-class';
 import { Fleet } from 'app/club-tenant/model/fleet';
 import { HandicapScheme } from '../../scoring/model/handicap-scheme';
+import type { SuspectTimeThresholdOverrides } from 'app/results-input/services/suspect-time-rules';
 
 export interface Club {
    id: string;
@@ -14,4 +15,5 @@ export interface Club {
    seasons: Season[];
    logoUrl?: string;
    supportedHandicapSchemes: HandicapScheme[];
+   suspectTimeThresholds?: SuspectTimeThresholdOverrides;
 }

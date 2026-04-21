@@ -44,6 +44,7 @@
       <div class="input-section mat-elevation-z2">
         <h3>Record Result</h3>
         <app-handicap-input-panel [race]="race" [competitors]="sortedCompetitors()"
+          [handicapScheme]="handicapScheme()"
           [(selectedCompetitor)]="handicapSelectedCompetitor"
           (addEntryRequested)="addEntryForSelectedRace()" />
       </div>
