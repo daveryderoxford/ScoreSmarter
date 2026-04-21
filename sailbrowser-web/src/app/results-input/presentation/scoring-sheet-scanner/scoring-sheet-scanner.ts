@@ -5,6 +5,9 @@ import { FirebaseApp } from '@angular/fire/app';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { environment } from '../../../../environments/environment';
 import { MatButtonModule } from '@angular/material/button';
+
+/** 5:30 - Higher than the timeout for Gemini call in cluod funtions so we see it time out */
+const PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS = 318_000;
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -141,7 +144,9 @@ export class ScoringSheetScanner {
         // Ignore "already configured" errors as it could be called repeatedly
       }
     }
-    const parseFn = httpsCallable(functions, 'parseResultsSheet');
+    const parseFn = httpsCallable(functions, 'parseResultsSheet', {
+      timeout: PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS,
+    });
 
     const scannerContext = {
       targetRaces: [] as string[],
