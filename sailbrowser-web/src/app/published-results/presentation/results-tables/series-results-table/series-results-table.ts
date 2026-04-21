@@ -4,6 +4,7 @@ import { PublishedSeries, PublishedSeriesResult } from 'app/published-results';
 import { format } from 'date-fns';
 import { competitorColumns, nameColumnWidth as computeNameColumnWidth } from '../results-table-shared';
 import { HighlightPosition } from "../highlighted-position";
+import { MERGED_BOAT_CLASS_SEPARATOR } from 'app/scoring/services/series-scorer';
 
 export const seriesColumns = [...competitorColumns, 'total', 'net'] as const;
 export type SeriesColumn = typeof seriesColumns[number];
@@ -57,6 +58,17 @@ export class SeriesResultsTable {
 
   trackByKey(index: number, item: PublishedSeriesResult) {
     return item.sailNumber.toString() + item.boatClass + item.helm;
+  }
+
+  boatClassLines(comp: PublishedSeriesResult): string[] {
+    return comp.boatClass
+      .split(MERGED_BOAT_CLASS_SEPARATOR)
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+
+  hideSailNumber(comp: PublishedSeriesResult): boolean {
+    return this.boatClassLines(comp).length > 1;
   }
 
   onRaceHeaderClick(raceIndex: number) {

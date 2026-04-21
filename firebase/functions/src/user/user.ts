@@ -3,7 +3,7 @@ import { AuthData } from 'firebase-functions/tasks';
 import { CallableRequest, HttpsError, onCall } from 'firebase-functions/v2/https';
 import { Role, UserData } from '../model/user-data.js';
 
-export const ensureUserData = 
+export const ensureUserData =
    onCall(async (request: CallableRequest<{ clubId: string }>) => {
 
    if (!request.auth) {

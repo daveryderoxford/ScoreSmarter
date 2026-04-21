@@ -23,9 +23,13 @@
       <th cdk-header-cell *cdkHeaderCellDef>Boat</th>
       <td cdk-cell *cdkCellDef="let competitor">
         @if (showBoatClass()) {
-        {{ competitor.boatClass }} <br>
+          @for (className of boatClassLines(competitor); track className) {
+            {{ className }} <br>
+          }
         }
-        {{ competitor.sailNumber }}
+        @if (!hideSailNumber(competitor)) {
+          {{ competitor.sailNumber }}
+        }
       </td>
     </ng-container>
 

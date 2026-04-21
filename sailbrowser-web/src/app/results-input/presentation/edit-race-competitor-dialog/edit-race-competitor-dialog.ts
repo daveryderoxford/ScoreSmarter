@@ -3,6 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { RaceCalendarStore } from 'app/race-calender';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
+import { DeleteButton } from "app/shared/components/delete-button";
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
 import {
@@ -10,8 +11,6 @@ import {
   SeriesEntryEditCommand,
 } from '../../services/race-competitor-edit.service';
 import { SeriesEntryEditForm } from '../series-entry-edit-form/series-entry-edit-form';
-import { BusyButton } from "app/shared/components/busy-button";
-import { DeleteButton } from "app/shared/components/delete-button";
 
 export interface EditRaceCompetitorDialogData {
   /** The race row being edited - identity comes from its SeriesEntry. */
@@ -25,8 +24,8 @@ export interface EditRaceCompetitorDialogData {
  * dismisses without committing.
  */
 export type EditRaceCompetitorDialogResult =
-  | { kind: 'saved' }
-  | { kind: 'deleted' }
+  | { kind: 'saved'; }
+  | { kind: 'deleted'; }
   | undefined;
 
 /**
@@ -39,7 +38,7 @@ export type EditRaceCompetitorDialogResult =
  */
 @Component({
   selector: 'app-edit-race-competitor-dialog',
-  imports: [MatDialogModule, MatButtonModule, SeriesEntryEditForm, BusyButton, DeleteButton],
+  imports: [MatDialogModule, MatButtonModule, SeriesEntryEditForm, DeleteButton],
   template: `
     <h3 mat-dialog-title>Edit competitor</h3>
     <mat-dialog-content>
