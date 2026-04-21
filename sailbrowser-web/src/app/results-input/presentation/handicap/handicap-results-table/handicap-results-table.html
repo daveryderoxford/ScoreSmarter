@@ -60,6 +60,7 @@
    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
    <tr mat-row *matRowDef="let row; columns: displayedColumns;"
       [class.row-has-result]="row.resultCode !== 'NOT FINISHED'"
+      [class.row-suspect]="row.isSuspect"
       [class.row-selected]="row.id === selectedCompetitorId()" (click)="onRowClick(row)">
    </tr>
 </table>

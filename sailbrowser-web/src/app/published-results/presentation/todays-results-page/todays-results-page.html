@@ -7,7 +7,12 @@
   </mat-checkbox>
   }
   @if (!isMobile()) {
-    <mat-button-toggle-group [value]="mode()" (change)="onModeChange($event.value)" aria-label="Results mode">
+    <mat-button-toggle-group 
+      [value]="mode()" 
+      (change)="onModeChange($event.value)" 
+      aria-label="Results mode"
+      hideSingleSelectionIndicator="true"
+    >
       <mat-button-toggle value="recent6d">Recent</mat-button-toggle>
       <mat-button-toggle value="today">Today</mat-button-toggle>
     </mat-button-toggle-group>

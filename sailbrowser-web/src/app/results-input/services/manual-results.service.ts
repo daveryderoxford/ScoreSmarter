@@ -20,6 +20,7 @@ import type { RaceStart } from 'app/race-calender/model/race-start';
  */
 export class ExtendedRaceCompetitor extends ResolvedRaceCompetitor {
   correctedTime?: number;
+  isSuspect?: boolean;
 }
 
 export interface ResultInput {

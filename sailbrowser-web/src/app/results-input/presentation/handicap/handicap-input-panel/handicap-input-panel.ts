@@ -30,6 +30,10 @@ import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { firstValueFrom, map, startWith } from 'rxjs';
 import { manualRaceTableSort, ManualResultsService } from '../../../services/manual-results.service';
+import { ClubStore } from 'app/club-tenant';
+import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { getCorrectedTime } from 'app/scoring/services/scorer-times';
+import { isSuspectIncludingCorrected, resolveSuspectTimeRules } from '../../../services/suspect-time-rules';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-time-dialog';
 import { RaceTimeInput } from '../race-time-input';
 import { ResultCodeSelect } from '../../result-code-select';
@@ -59,9 +63,11 @@ export class HandicapInputPanel {
   private readonly dialog = inject(MatDialog);
   private readonly dialogs = inject(DialogsService);
   private readonly fb = inject(FormBuilder);
+  private readonly clubStore = inject(ClubStore);
 
   race = input.required<Race>();
   competitors = input.required<ResolvedRaceCompetitor[]>();
+  handicapScheme = input.required<HandicapScheme>();
 
   /** Two-way bound from parent so the results table can highlight the selected row. */
   selectedCompetitor = model<ResolvedRaceCompetitor | undefined>(undefined);
@@ -130,8 +136,22 @@ export class HandicapInputPanel {
       startTime
     );
     if (!stats) return null;
-    const isSuspicious = stats.avgLapTime < 120 || stats.avgLapTime > 3600;
-    return { ...stats, isSuspicious };
+    const selected = this.selectedCompetitor();
+    const scheme = this.handicapScheme();
+    const handicap = selected?.handicapForScheme(scheme);
+    const correctedTime = getCorrectedTime(
+      stats.elapsedSeconds,
+      handicap ?? 1,
+      scheme,
+    );
+    const rules = resolveSuspectTimeRules(this.clubStore.club().suspectTimeThresholds);
+    const isSuspicious = isSuspectIncludingCorrected(
+      stats.elapsedSeconds,
+      stats.avgLapTime,
+      scheme === 'Level Rating' ? undefined : correctedTime,
+      rules,
+    );
+    return { ...stats, correctedTime, isSuspicious };
   });
 
   private readonly lastEnteredLaps = signal<number>(1);

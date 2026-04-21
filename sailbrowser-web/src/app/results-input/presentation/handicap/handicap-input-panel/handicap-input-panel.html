@@ -12,6 +12,7 @@
 <div class="stats-display" [class.suspicious]="stats?.isSuspicious">
   <div class="stat-row">
     <span>Elapsed: <b>{{ stats ? (stats.elapsedSeconds | duration) : ''}}</b></span>
+    <span>Corrected: <b>{{ stats ? (stats.correctedTime | duration) : ''}}</b></span>
     <span>Avg Lap: <b>{{ stats ? (stats.avgLapTime | duration) : ''}}</b></span>
   </div>
 </div>
@@ -47,7 +48,8 @@
   <mat-form-field appearance="outline">
     <mat-label>Finish Time</mat-label>
     <app-race-time-input formControlName="finishTime" [mode]="timeInputContext().mode"
-      [baseTime]="timeInputContext().baseTime" (keydown.enter)="save(); $event.preventDefault()">
+      [baseTime]="timeInputContext().baseTime" [scheduledStart]="race().scheduledStart"
+      (keydown.enter)="save(); $event.preventDefault()">
     </app-race-time-input>
     @if (form.controls.finishTime.hasError('timeGreaterThan')) {
       <mat-error>Finish time must be after start time</mat-error>

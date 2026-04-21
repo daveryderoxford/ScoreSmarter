@@ -9,6 +9,7 @@ import { Fleet } from 'app/club-tenant/model/fleet';
 import { BoatClass } from '../model/boat-class';
 import { Season } from 'app/race-calender/model/season';
 import { dataObjectConverter } from 'app/shared/firebase/firestore-helper';
+import { DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES } from 'app/results-input/services/suspect-time-rules';
 
 @Injectable({
   providedIn: 'root',
@@ -42,7 +43,8 @@ export class ClubStore {
       fleets: [], 
       classes: [], 
       seasons: [],
-      supportedHandicapSchemes: []
+      supportedHandicapSchemes: [],
+      suspectTimeThresholds: DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES,
     }
   });
 
@@ -66,7 +68,14 @@ export class ClubStore {
       }
     });
 
-    return { ...club, fleets: allFleets };
+    return {
+      ...club,
+      fleets: allFleets,
+      suspectTimeThresholds: {
+        ...DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES,
+        ...(club.suspectTimeThresholds ?? {}),
+      },
+    };
   });
   public isLoading = this._clubResource.isLoading;
   public error = this._clubResource.error;

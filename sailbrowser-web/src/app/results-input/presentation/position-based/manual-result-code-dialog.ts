@@ -37,6 +37,7 @@ export interface ManualResultCodeDialogResult {
               formControlName="finishTime"
               [mode]="timeInputMode()"
               [baseTime]="timeBaseTime()"
+              [scheduledStart]="data.race.scheduledStart"
             />
           </mat-form-field>
         }

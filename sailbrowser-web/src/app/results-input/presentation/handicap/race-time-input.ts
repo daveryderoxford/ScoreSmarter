@@ -4,8 +4,23 @@ import { AbstractControl, FormControl, NG_VALIDATORS, NG_VALUE_ACCESSOR, Reactiv
 import { MatFormFieldControl, MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { FormFieldBase } from 'app/shared/components/form-field.base';
-import { format, isValid, parse } from 'date-fns';
+import { addHours, addMinutes, addSeconds, format, isValid, parse, startOfDay } from 'date-fns';
 import { merge, of } from 'rxjs';
+
+export function parseElapsedStopwatchReading(
+  value: string,
+  scheduledStart: Date,
+): Date | null {
+  const trimmed = value.trim();
+  const match = /^(\d{1,2}):([0-5]\d)(?::([0-5]\d))?$/.exec(trimmed);
+  if (!match) return null;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3] ?? '0');
+  const anchor = startOfDay(scheduledStart);
+  return addSeconds(addMinutes(addHours(anchor, hours), minutes), seconds);
+}
 
 @Component({
   selector: 'app-race-time-input',
@@ -54,6 +69,7 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
   // --- Component-specific properties ---
   mode = input.required<'tod' | 'elapsed' | undefined>();
   baseTime = input.required<Date>(); // Reference time: Race Date (TOD) or Start Time (Elapsed)
+  scheduledStart = input.required<Date>();
 
   inputPlaceholder = computed(() => this.mode() === 'elapsed' ? 'mm:ss' : 'hh:mm:ss');
   inputControl = new FormControl<string>('', { nonNullable: true });
@@ -150,11 +166,15 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
   private processInput(val: string) {
     let newDate: Date | null = null;
     if (val) {
-      const base = this.baseTime();
-      // Try parsing with seconds, then without, to be more flexible.
-      let date = parse(val, 'HH:mm:ss', base);
-      if (!isValid(date)) date = parse(val, 'HH:mm', base);
-      if (isValid(date)) newDate = date;
+      if (this.mode() === 'elapsed') {
+        newDate = parseElapsedStopwatchReading(val, this.scheduledStart());
+      } else {
+        const base = this.baseTime();
+        // Try parsing with seconds, then without, to be more flexible.
+        let date = parse(val, 'HH:mm:ss', base);
+        if (!isValid(date)) date = parse(val, 'HH:mm', base);
+        if (isValid(date)) newDate = date;
+      }
     }
     // Update the value in the base class and notify forms API
     this.value = newDate;
