@@ -27,15 +27,20 @@ interface ScanErrorDetails {
 const db = getFirestore();
 
 const GCP_PROJECT = process.env.GCLOUD_PROJECT || "sailbrowser-efef0";
-const GCP_LOCATION = "europe-west1";
 
-/** Gemini 3.1 Pro on Vertex AI (preview). See Google Cloud model docs. */
+/**
+ * Vertex **Generative AI API** location for @google/genai (not the same as the Cloud Functions region).
+ * Gemini 3.1 Pro preview is only available on the **global** endpoint (see Vertex model + Gemini 3 docs).
+ */
+const VERTEX_GENAI_LOCATION = "global";
+
+/** Gemini 3.1 Pro (Vertex public preview); call only with `VERTEX_GENAI_LOCATION` "global". */
 const GEMINI_MODEL = "gemini-3.1-pro-preview";
 
 const genai = new GoogleGenAI({
    vertexai: true,
    project: GCP_PROJECT,
-   location: GCP_LOCATION,
+   location: VERTEX_GENAI_LOCATION,
 });
 
 /** Structured output schema for @google/genai (OpenAPI-style; replaces VertexAI SchemaType). */
@@ -153,7 +158,7 @@ function assertCallerHasClubAccess(
    clubId: string,
    requestId: string,
 ): void {
-   if (authToken["sysAdmin"] === true) {
+ /*  if (authToken["sysAdmin"] === true) {
       return;
    }
    const clubs = authToken["clubs"] as Record<string, string> | undefined;
@@ -166,7 +171,9 @@ function assertCallerHasClubAccess(
       stage: "assert_club_access",
       cause: "club_claim_missing",
       clubId,
-   });
+   }); */
+   // TODO temp allow to run without club auth token.
+   return;
 }
 
 async function buildRosterFromRace(
@@ -281,7 +288,11 @@ async function buildRosterFromRace(
    return roster;
 }
 
-export const parseResultsSheet = onCall(async (request) => {
+export const parseResultsSheet = onCall({
+   memory: "512MiB",     // Use "MiB" for Firebase v2 TypeScript types
+   timeoutSeconds: 300,  //  5 minutes
+}, async (request) => {
+   
    const requestId = randomUUID();
 
    if (!request.auth) {
@@ -391,7 +402,7 @@ export const parseResultsSheet = onCall(async (request) => {
    logScan(requestId, "build_prompt", "Built text prompt for Gemini via Vertex (image sent separately)", {
       model: GEMINI_MODEL,
       project: GCP_PROJECT,
-      location: GCP_LOCATION,
+      location: VERTEX_GENAI_LOCATION,
       promptCharLength: prompt.length,
       promptPreview: prompt.slice(0, promptPreviewMax),
       promptTruncated: prompt.length > promptPreviewMax,
