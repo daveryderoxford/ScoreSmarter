@@ -6,17 +6,10 @@ import { getHandicapValue } from 'app/scoring/model/handicap';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { parseCsv, toCsv } from 'app/shared/utils/csv';
 import { getHandicapSchemeMetadata } from 'app/scoring/model/handicap-scheme-metadata';
-import type { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
+import { PERSONAL_HANDICAP_BANDS, type PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 
 const BASE_COLUMNS = ['id', 'boatClass', 'sailNumber', 'helm', 'crew', 'name', 'isClub', 'personalHandicapBand'] as const;
-const ALLOWED_PERSONAL_BANDS = new Set<PersonalHandicapBand>([
-  'Band0',
-  'Band1',
-  'Band2',
-  'Band3',
-  'Band4',
-  'Band5',
-]);
+const ALLOWED_PERSONAL_BANDS = new Set<PersonalHandicapBand>(PERSONAL_HANDICAP_BANDS);
 
 export interface BoatsCsvParseResult {
   boats: Partial<Boat>[];
@@ -109,7 +102,7 @@ export class BoatsCsvService {
       personalHandicapBandRaw.toLowerCase() !== 'unknown' &&
       !ALLOWED_PERSONAL_BANDS.has(personalHandicapBandRaw as PersonalHandicapBand)
     ) {
-      rowErrors.push('personalHandicapBand must be one of Band0..Band5 or unknown');
+      rowErrors.push(`personalHandicapBand must be one of ${PERSONAL_HANDICAP_BANDS.join(', ')} or unknown`);
     }
 
     const isClubBool = isClub ?? false;

@@ -1,162 +1,198 @@
-
-import { Component, ElementRef, viewChild, signal, inject, OnInit, OnDestroy } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDividerModule } from '@angular/material/divider';
 
+export interface WebcamCapture {
+  /** JPEG/PNG blob suitable for upload. */
+  blob: Blob;
+  /** MIME type matching `blob`. */
+  mimeType: string;
+  /** Data URL of the same bitmap for in-page preview. */
+  dataUrl: string;
+  /** Source image width in pixels. */
+  width: number;
+  /** Source image height in pixels. */
+  height: number;
+}
+
+/**
+ * Minimal live-camera component: requests `getUserMedia`, shows a preview,
+ * and emits a captured frame (Blob + preview data URL) via `captured`.
+ *
+ * Notes:
+ * - The preview video may be mirrored via CSS (`scaleX(-1)`) when using the
+ *   user-facing camera, but the emitted bitmap is always unmirrored so OCR
+ *   models receive text in the correct reading order.
+ * - Defaults to `facingMode: 'environment'` (rear camera on mobile) which is
+ *   what you want for photographing a results sheet.
+ */
 @Component({
   selector: 'app-webcam',
   standalone: true,
-  imports: [
-    MatButtonModule,
-    MatCardModule,
-    MatIconModule,
-    MatSnackBarModule,
-    MatDividerModule
-  ],
+  imports: [MatButtonModule, MatCardModule, MatIconModule, MatSnackBarModule],
   template: `
-    <mat-card class="webcam-card">
-      <mat-card-header>
-         <mat-card-title>Camera Feed</mat-card-title>
-         <mat-card-subtitle>Point and click to capture</mat-card-subtitle>
-      </mat-card-header>
+    <div class="webcam">
+      <div class="video-container" [class.mirrored]="mirrorPreview()">
+        <video #videoEl autoplay playsinline muted></video>
 
-      <mat-card-content>
-         <div class="video-container">
-            <video #videoElement autoplay playsinline></video>
+        <button
+          mat-fab
+          class="capture-btn"
+          type="button"
+          [disabled]="!ready()"
+          (click)="capture()"
+          aria-label="Capture photo"
+        >
+          <mat-icon>photo_camera</mat-icon>
+        </button>
+      </div>
 
-            <button mat-fab color="primary" class="capture-btn" (click)="capture()" [disabled]="isUploading()">
-            <mat-icon>photo_camera</mat-icon>
-            </button>
-         </div>
+      <canvas #canvasEl style="display: none;"></canvas>
 
-         <canvas #canvasElement style="display: none;"></canvas>
-
-         @if (capturedImage()) {
-            <mat-divider></mat-divider>
-            <div class="preview-section">
-            <h3>Preview</h3>
-            <img [src]="capturedImage()" class="img-preview" />
-            </div>
-         }
-      </mat-card-content>
-      </mat-card>
-   `,
+      @if (!ready() && errorMessage()) {
+        <p class="status error">{{ errorMessage() }}</p>
+      } @else if (!ready()) {
+        <p class="status">Starting camera…</p>
+      }
+    </div>
+  `,
   styles: [`
-      .webcam-card {
-         max-width: 700px;
-         margin: 2rem auto;
-         padding: 16px;
-      }
-
-      .video-container {
-         position: relative;
-         width: 100 %;
-         background: #000;
-         border-radius: 8px;
-         overflow: hidden;
-         line-height: 0; /* Removes bottom gap in video */
-      }
-
-      video {
-         width: 100 %;
-         height: auto;
-         transform: scaleX(-1); /* Natural mirroring */
-      }
-
-      .capture-btn {
-         position: absolute;
-         bottom: 20px;
-         left: 50 %;
-         transform: translateX(-50 %);
-         z-index: 10;
-      }
-
-      .preview-section {
-         margin-top: 20px;
-         text-align: center;
-      }
-
-      .img-preview {
-         width: 100 %;
-         max-width: 300px;
-         border-radius: 4px;
-         border: 1px solid #ccc;
-         transform: scaleX(-1); /* Match the mirrored video */
-      }
-
-      mat-divider {
-         margin: 20px 0;
-      }
-   `]
+    .webcam {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .video-container {
+      position: relative;
+      width: 100%;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      line-height: 0;
+    }
+    video {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .video-container.mirrored video {
+      transform: scaleX(-1);
+    }
+    .capture-btn {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+    .status {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--mat-sys-on-surface-variant);
+      text-align: center;
+    }
+    .status.error {
+      color: var(--mat-sys-error);
+    }
+  `],
 })
 export class Webcam implements OnInit, OnDestroy {
-  videoElement = viewChild.required<ElementRef<HTMLVideoElement>>('videoElement');
-  canvasElement = viewChild.required<ElementRef<HTMLCanvasElement>>('canvasElement');
+  /** Preferred camera: 'environment' is the rear camera; 'user' is the front camera. */
+  readonly facingMode = input<'environment' | 'user'>('environment');
+  /** Output MIME type for captured image. */
+  readonly mimeType = input<'image/jpeg' | 'image/png'>('image/jpeg');
+  /** JPEG quality in [0,1]; ignored for PNG. */
+  readonly quality = input<number>(0.92);
+  /** Mirror the preview (useful for selfie/user camera). Capture is never mirrored. */
+  readonly mirrorPreview = input<boolean>(false);
 
-  capturedImage = signal<string | null>(null);
-  isUploading = signal<boolean>(false);
+  /** Emits once per successful capture. */
+  readonly captured = output<WebcamCapture>();
+
+  private readonly videoEl = viewChild.required<ElementRef<HTMLVideoElement>>('videoEl');
+  private readonly canvasEl = viewChild.required<ElementRef<HTMLCanvasElement>>('canvasEl');
+  private readonly snackBar = inject(MatSnackBar);
+
+  readonly ready = signal(false);
+  readonly errorMessage = signal<string | null>(null);
+
   private stream: MediaStream | null = null;
 
-  private http = inject(HttpClient);
-  private snackBar = inject(MatSnackBar);
-
-  async ngOnInit() {
-    await this.setupCamera();
+  async ngOnInit(): Promise<void> {
+    await this.start();
   }
 
-  async setupCamera() {
+  ngOnDestroy(): void {
+    this.stop();
+  }
+
+  private async start(): Promise<void> {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      this.errorMessage.set('Camera API not supported in this browser.');
+      return;
+    }
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 1280, height: 720 },
-        audio: false
+        video: {
+          facingMode: { ideal: this.facingMode() },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
+        audio: false,
       });
-      this.videoElement().nativeElement.srcObject = this.stream;
+      const video = this.videoEl().nativeElement;
+      video.srcObject = this.stream;
+      await video.play().catch(() => undefined);
+      this.ready.set(true);
+      this.errorMessage.set(null);
     } catch (err) {
-      this.snackBar.open('Could not access webcam', 'Close', { duration: 3000 });
+      const message = err instanceof Error ? err.message : 'Could not access camera';
+      this.errorMessage.set(message);
+      this.snackBar.open(`Camera error: ${message}`, 'Close', { duration: 4000 });
     }
   }
 
-  capture() {
-    const video = this.videoElement().nativeElement;
-    const canvas = this.canvasElement().nativeElement;
-    const context = canvas.getContext('2d');
-
-    if (context) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0);
-
-      const dataUrl = canvas.toDataURL('image/png');
-      this.capturedImage.set(dataUrl);
-
-      canvas.toBlob((blob) => {
-        if (blob) this.uploadToServer(blob);
-      }, 'image/png');
-    }
+  private stop(): void {
+    this.stream?.getTracks().forEach(t => t.stop());
+    this.stream = null;
   }
 
-  private uploadToServer(blob: Blob) {
-    this.isUploading.set(true);
-    const formData = new FormData();
-    formData.append('file', blob, `capture.png`);
+  capture(): void {
+    const video = this.videoEl().nativeElement;
+    const canvas = this.canvasEl().nativeElement;
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+    if (!width || !height) return;
 
-    this.http.post('https://your-api.com/upload', formData).subscribe({
-      next: () => {
-        this.snackBar.open('Photo uploaded successfully!', 'Done', { duration: 2000 });
-        this.isUploading.set(false);
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, width, height);
+
+    const mimeType = this.mimeType();
+    const dataUrl = canvas.toDataURL(mimeType, this.quality());
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return;
+        this.captured.emit({ blob, mimeType, dataUrl, width, height });
       },
-      error: () => {
-        this.snackBar.open('Upload failed', 'Retry', { duration: 3000 });
-        this.isUploading.set(false);
-      }
-    });
-  }
-
-  ngOnDestroy() {
-    this.stream?.getTracks().forEach(track => track.stop());
+      mimeType,
+      this.quality(),
+    );
   }
 }
