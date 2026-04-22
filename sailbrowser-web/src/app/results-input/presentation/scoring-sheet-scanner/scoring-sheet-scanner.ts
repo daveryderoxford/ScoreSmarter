@@ -5,9 +5,6 @@ import { FirebaseApp } from '@angular/fire/app';
 import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 import { environment } from '../../../../environments/environment';
 import { MatButtonModule } from '@angular/material/button';
-
-/** 5:30 - Higher than the timeout for Gemini call in cluod funtions so we see it time out */
-const PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS = 318_000;
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -19,6 +16,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { RaceCalendarStore } from 'app/race-calender';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { format } from 'date-fns';
+
+/** Slightly below parseResultsSheet timeoutSeconds in Cloud Functions. */
+const PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS = 318_000;
 
 /** Extract HttpsError.details from Firebase callable errors (shape varies slightly by SDK). */
 function extractCallableDetails(err: unknown): Record<string, unknown> | undefined {
@@ -82,6 +82,11 @@ export class ScoringSheetScanner {
   form = this.fb.nonNullable.group({
     raceId: ['', Validators.required],
     listOrder: ['chronological', Validators.required],
+    timeFormat: this.fb.nonNullable.control<'hours_minutes_seconds' | 'minutes_seconds_only'>(
+      'hours_minutes_seconds',
+      Validators.required,
+    ),
+    lapsPresentOnSheet: this.fb.nonNullable.control(true, Validators.required),
     lapFormat: ['numbers', Validators.required],
     hasHours: [false, Validators.required],
     defaultHour: [14],
@@ -148,15 +153,18 @@ export class ScoringSheetScanner {
       timeout: PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS,
     });
 
+    const v = this.form.getRawValue();
     const scannerContext = {
       targetRaces: [] as string[],
-      lapFormat: this.form.value.lapFormat as 'numbers' | 'ticks',
-      hasHours: this.form.value.hasHours,
-      defaultHour: this.form.value.defaultHour,
-      defaultLaps: this.form.value.defaultLaps,
-      listOrder: this.form.value.listOrder as 'chronological' | 'firstLap' | 'unsorted',
+      lapFormat: v.lapFormat as 'numbers' | 'ticks',
+      hasHours: v.hasHours,
+      defaultHour: v.defaultHour,
+      defaultLaps: v.defaultLaps,
+      listOrder: v.listOrder as 'chronological' | 'firstLap' | 'unsorted',
       classAliases: {} as Record<string, string>,
       roster: [] as { id: string; class: string; sailNumber: string; name?: string }[],
+      lapsPresentOnSheet: v.lapsPresentOnSheet,
+      timeFormat: v.timeFormat,
     };
 
     try {

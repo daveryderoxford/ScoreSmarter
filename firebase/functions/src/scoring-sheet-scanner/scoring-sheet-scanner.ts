@@ -133,6 +133,14 @@ interface ScannerContext {
    listOrder: "chronological" | "firstLap" | "unsorted";
    classAliases?: Record<string, string>;
    roster: Array<{ class: string; sailNumber: string; name?: string; id: string }>;
+   /** When false, the sheet has no lap column; use defaultLaps per row. Defaults to true if omitted. */
+   lapsPresentOnSheet?: boolean;
+   /**
+    * How to read handwritten times. Defaults to clock-style if omitted (legacy clients).
+    * - hours_minutes_seconds: clock or elapsed with optional hour (uses hasHours / defaultHour).
+    * - minutes_seconds_only: race officer wrote only minutes and seconds (e.g. 45:30 = 45m 30s), not HH:MM.
+    */
+   timeFormat?: "hours_minutes_seconds" | "minutes_seconds_only";
 }
 
 function logScan(requestId: string, stage: ScanStage, message: string, data?: Record<string, unknown>): void {
@@ -381,6 +389,8 @@ export const parseResultsSheet = onCall({
       hasHours: mergedContext.hasHours,
       defaultHour: mergedContext.defaultHour,
       defaultLaps: mergedContext.defaultLaps,
+      lapsPresentOnSheet: mergedContext.lapsPresentOnSheet ?? true,
+      timeFormat: mergedContext.timeFormat ?? "hours_minutes_seconds",
    });
 
    let prompt: string;
@@ -524,6 +534,33 @@ function buildPrompt(ctx: ScannerContext, raceId: string): string {
       ? JSON.stringify(ctx.targetRaces)
       : JSON.stringify([raceId]);
 
+   const lapsPresent = ctx.lapsPresentOnSheet !== false;
+   const timeFormat = ctx.timeFormat ?? "hours_minutes_seconds";
+
+   const lapRules = lapsPresent
+      ? `4. LAP COLUMN PRESENT — LAP FORMATTING:
+   Lap Format specified by user: ${ctx.lapFormat}
+   Default Laps if none written in a row: ${ctx.defaultLaps ?? "Unknown"}
+   If the format is 'ticks', lap numbers might be vertical tally marks (e.g., ||| = 3) or checkmarks (VV = 2). If both tallies and a final number are present, use the final number. Otherwise, count the marks and translate to an integer.
+   Read lap counts from the sheet where shown; use Default Laps when a row has no lap value visible.`
+      : `4. NO LAP COLUMN ON THIS SHEET:
+   The race officer did not record laps on this sheet. Do not infer a lap column from stray marks.
+   For every competitor row, set laps.value to the Default Laps value below (${ctx.defaultLaps ?? "use best guess from context"}) unless the sheet explicitly states a different lap count for that row. Set laps.confidence to HIGH if you apply the default consistently.
+   Lap Format (${ctx.lapFormat}) does not apply to a missing column; ignore tick/number lap rules.`;
+
+   const timeRules = timeFormat === "minutes_seconds_only"
+      ? `5. TIME FORMAT — MINUTES AND SECONDS ONLY (NO HOURS WRITTEN):
+   The officer typically wrote only elapsed minutes and seconds (e.g. "45:30" means 45 minutes 30 seconds, NOT 45 hours).
+   Treat two-part times as MM:SS (minutes:seconds). If you see three parts (A:B:C), the leftmost group may still be minutes if that matches the sheet style — prefer MM:SS interpretation when it matches other rows.
+   Do NOT prepend Default Hour to two-part times; Default Hour and "hours on sheet" do not apply to this format.
+   Output time.value as a string using two components for sub-hour elapsed, e.g. "45:30" or normalize to "45:30.000" if needed; never mis-read MM:SS as HH:MM unless the sheet clearly labels clock times.
+   Validate that minutes and seconds are in range (seconds 0–59). Provide alternatives if ambiguous.`
+      : `5. TIME FORMAT — HOURS : MINUTES : SECONDS (CLOCK OR FULL ELAPSED):
+   Hours expected on sheet?: ${ctx.hasHours ? "Yes" : "No"}
+   Default Hour (if hour part missing): ${ctx.defaultHour !== undefined ? ctx.defaultHour : "None provided"}
+   When the hour part is missing and Default Hour is provided, prepend it and express as HH:MM:SS.
+   When hours appear on the sheet, read as full clock-style or elapsed with hours as appropriate. Validate that the time looks mathematically correct. Provide alternative values if ambiguous.`;
+
    return `
 You are reading a handwritten race results sheet for sailing. You must follow these strict rules to maximize accuracy and provide structured output.
 
@@ -531,6 +568,8 @@ You are reading a handwritten race results sheet for sailing. You must follow th
 - Target race id (Firestore): ${raceId}
 - Target races list (may include duplicates filtered on server): ${targetRacesStr}
 - This roster was loaded from Firestore for that race. Each id is a race-results document id; set matchedCompetitorId to that id when you match a row to that competitor.
+- Sheet includes a lap column: ${lapsPresent ? "Yes" : "No"}
+- Time interpretation mode: ${timeFormat === "minutes_seconds_only" ? "Minutes and seconds only (elapsed MM:SS, no hours written)" : "Hours, minutes and seconds (clock / full H:M:S)"}
 
 --- RULES:
 1. THE ROSTER MUST BE USED TO CORRECT MISTAKES:
@@ -545,15 +584,9 @@ You are reading a handwritten race results sheet for sailing. You must follow th
    - Check the time column for standard sailing status codes (DNS, RET, DNF, DSQ, etc.). If you see one, set the 'time.value' to null and update the 'status' field.
    - Ignore any data that has a distinct horizontal line drawn through it or is heavily scribbled out. If a whole row is struck through, ignore it or output it with a status of 'STRUCK_THROUGH' (in 'status') or 'FAILED' confidence. If a time is crossed out but a new one is written next to it, take the new one.
 
-4. LAP FORMATTING:
-   Lap Format specified by user: ${ctx.lapFormat}
-   Default Laps if none written: ${ctx.defaultLaps || "Unknown"}
-   If the format is 'ticks', lap numbers might be vertical tally marks (e.g., ||| = 3) or checkmarks (VV = 2). If both tallies and a final number are present, use the final number. Otherwise, count the marks and translate to an integer.
+${lapRules}
 
-5. TIME VALIDATION:
-   Hours expected on sheet?: ${ctx.hasHours ? "Yes" : "No"}
-   Default Hour (if missing): ${ctx.defaultHour !== undefined ? ctx.defaultHour : "None provided"}
-   If hours are missing, prepend the Default Hour (if provided) and format as HH:MM:SS. Validate that the time looks mathematically correct. Check all time fields for colons or periods separating blocks. Provide alternative values if ambiguous.
+${timeRules}
 
 6. ORDER EXPECTATION:
    List Order Expectation: ${ctx.listOrder}
