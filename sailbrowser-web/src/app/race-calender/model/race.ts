@@ -27,5 +27,6 @@ export interface Race {
   status: RaceStatus;
   isDiscardable: boolean;
   isAverageLap: boolean;
+  resultsSheetImage: string;
   dirty: boolean;
 }
