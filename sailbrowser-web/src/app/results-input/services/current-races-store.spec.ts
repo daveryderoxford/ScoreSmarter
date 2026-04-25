@@ -55,6 +55,7 @@ function raceFixture(overrides: Partial<Race> & Pick<Race, 'id'>): Race {
     isDiscardable: true,
     isAverageLap: false,
     dirty: false,
+    resultsSheetImage: '',
     ...overrides,
   };
 }

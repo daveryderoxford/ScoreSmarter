@@ -85,7 +85,7 @@ function dayHeading(d: Date): string {
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-button type="button" (click)="cancel()">Cancel</button>
-      <button mat-flat-button color="primary" type="button" [disabled]="!canConfirm()" (click)="confirm()">
+      <button matButton="filled" type="button" [disabled]="!canConfirm()" (click)="confirm()">
         OK
       </button>
     </mat-dialog-actions>

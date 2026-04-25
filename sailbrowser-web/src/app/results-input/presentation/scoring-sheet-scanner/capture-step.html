@@ -1,0 +1,53 @@
+<mat-card appearance="outlined" class="form-card capture-card">
+  <input #mobileFileInput type="file" accept="image/*" capture="environment" style="display:none;" (change)="fileChanged.emit($event)">
+
+  @if (hasExistingImage() && !imagePreview()) {
+    <div class="stepper-form" style="width: 100%;">
+      <button matButton="filled" class="large-capture-btn" (click)="useExisting.emit()">
+        <mat-icon>image</mat-icon>
+        Use Existing Image
+      </button>
+      @if (!isMobile()) {
+        <button matButton="outlined" class="large-capture-btn" (click)="openCamera.emit()">
+          <mat-icon>camera_alt</mat-icon>
+          Capture New Image
+        </button>
+      } @else {
+        <button matButton="outlined" class="large-capture-btn" (click)="mobileFileInput.click()">
+          <mat-icon>camera_alt</mat-icon>
+          Capture New Image
+        </button>
+      }
+    </div>
+  } @else {
+    <div class="capture-zone">
+      @if (imagePreview()) {
+        <div class="preview-container">
+          <img [src]="imagePreview()" alt="Preview">
+        </div>
+        <div class="capture-actions">
+          <button matButton="outlined" (click)="clearImage.emit()">Retake/Upload Another</button>
+        </div>
+      } @else if (isMobile()) {
+        <button matButton="filled" class="large-capture-btn" (click)="mobileFileInput.click()">
+          <mat-icon>camera_alt</mat-icon>
+          Take Photo
+        </button>
+      } @else {
+        <button matButton="filled" class="large-capture-btn" (click)="openCamera.emit()">
+          <mat-icon>camera_alt</mat-icon>
+          Capture from Camera
+        </button>
+        <div class="divider">
+          <span>OR</span>
+        </div>
+        <div class="upload-zone">
+          <input type="file" accept="image/*" (change)="fileChanged.emit($event)">
+          <mat-icon>upload_file</mat-icon>
+          <p><strong>Click to upload</strong> or drag photo here</p>
+        </div>
+      }
+    </div>
+  }
+
+</mat-card>

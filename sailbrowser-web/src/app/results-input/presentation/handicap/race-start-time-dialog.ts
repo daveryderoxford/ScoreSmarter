@@ -93,8 +93,8 @@ function formatElapsedOffsetInput(offsetMinutes: number): string {
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
-      <button mat-flat-button color="primary" [disabled]="form.invalid || hasDuplicateFleetSelection()" (click)="save()">Set Start Time</button>
+      <button matButton mat-dialog-close>Cancel</button>
+      <button matButton="filled" [disabled]="form.invalid || hasDuplicateFleetSelection()" (click)="save()">Set Start Time</button>
     </mat-dialog-actions>
   `,
   styles: [`

@@ -1,0 +1,24 @@
+.form-card form {
+   display: flex;
+   flex-direction: column;
+   gap: 1rem;
+   padding-left: 25px;
+   padding-right: 25px;
+   padding-top: 15px;
+}
+
+.toggle-group-container {
+   margin-top: 0px;
+   margin-bottom: 1.5rem;
+
+   .toggle-label {
+      display: block;
+      font-size: 12px;
+      color: var(--mat-sys-on-surface-variant);
+      margin-bottom: 8px;
+   }
+}
+
+.margin-bottom {
+   margin-bottom: 1.5rem;
+}

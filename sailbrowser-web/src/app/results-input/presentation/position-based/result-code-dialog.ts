@@ -45,10 +45,9 @@ export interface ManualResultCodeDialogResult {
     </mat-dialog-content>
 
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close type="button">Cancel</button>
+      <button matButton mat-dialog-close type="button">Cancel</button>
       <button
-        mat-flat-button
-        color="primary"
+        matButton="filled"
         type="button"
         (click)="save()"
         [disabled]="form.controls.resultCode.value === data.initialResultCode && form.controls.finishTime.value === data.initialFinishTime"

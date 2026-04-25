@@ -27,6 +27,7 @@ function baseRace(type: Race['type']): Race {
     isDiscardable: false,
     isAverageLap: false,
     dirty: false,
+    resultsSheetImage: '',
   };
 }
 

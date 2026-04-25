@@ -273,6 +273,7 @@ describe('RaceCompetitorEditService', () => {
         isDiscardable: true,
         isAverageLap: false,
         dirty: false,
+        resultsSheetImage: '',
       };
     }
 

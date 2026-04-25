@@ -88,6 +88,51 @@ const SCAN_RESULT_RESPONSE_SCHEMA = {
   required: ["scannedResults", "unreadableRowsCount"],
 };
 
+const NORMALIZED_TIME_REGEX = /^\d{2}:\d{2}:\d{2}$/;
+
+function validateNormalizedTimes(parsed: unknown, requestId: string): void {
+  if (typeof parsed !== "object" || parsed === null) {
+    throw httpsWithDetails("internal", "Model response is not an object.", {
+      requestId,
+      stage: "parse_model_json",
+      cause: "invalid_model_shape",
+    });
+  }
+  const scannedResults = (parsed as { scannedResults?: unknown }).scannedResults;
+  if (!Array.isArray(scannedResults)) {
+    throw httpsWithDetails("internal", "Model response missing scannedResults array.", {
+      requestId,
+      stage: "parse_model_json",
+      cause: "missing_scanned_results",
+    });
+  }
+
+  for (const row of scannedResults) {
+    if (typeof row !== "object" || row === null) continue;
+    const rowObj = row as {
+      rowIndex?: unknown;
+      status?: unknown;
+      time?: { value?: unknown };
+    };
+    const status = typeof rowObj.status === "string" ? rowObj.status.toUpperCase() : "OK";
+    const timeValue = typeof rowObj.time?.value === "string" ? rowObj.time.value : "";
+    if (status === "OK" && !NORMALIZED_TIME_REGEX.test(timeValue)) {
+      throw httpsWithDetails(
+        "internal",
+        "Model returned invalid time format. Expected HH:mm:ss for finish rows.",
+        {
+          requestId,
+          stage: "parse_model_json",
+          cause: "invalid_time_format",
+          rowIndex: rowObj.rowIndex,
+          status,
+          timeValue,
+        },
+      );
+    }
+  }
+}
+
 export async function parseWithAi(
   requestId: string,
   imageBase64: string,
@@ -201,6 +246,7 @@ export async function parseWithAi(
 
   try {
     const parsed = JSON.parse(resultJson) as unknown;
+    validateNormalizedTimes(parsed, requestId);
     logScan(requestId, "parse_model_json", "Successfully parsed model JSON", {
       hasScannedResults: typeof parsed === "object" && parsed !== null && "scannedResults" in parsed,
     });
@@ -304,6 +350,12 @@ ${timeRules}
 
 8. PAGE NOTES:
    If there is a large note spanning multiple rows or columns (e.g., "RACE ABANDONED due to gusts"), extract it entirely into the 'pageNotes' root field on the JSON object, do not force it into competitor rows.
+
+9. OUTPUT TIME NORMALIZATION (REQUIRED):
+   For rows with status "OK", output time.value strictly as HH:mm:ss in 24-hour format with leading zeros.
+   Examples: "09:05:07", "14:23:10".
+   For non-finish/status rows (DNS, DNF, RET, DSQ, etc.), set time.value to an empty string.
+   Do not return milliseconds, AM/PM, words, or other separators.
 
 Respond strictly with the requested JSON schema. Do not include markdown blocks like \`\`\`json around the response, output just raw JSON.
 `;

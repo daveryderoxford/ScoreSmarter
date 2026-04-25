@@ -24,3 +24,9 @@ test("buildPrompt renders minutes_seconds_only guidance", () => {
   assert.match(prompt, /MINUTES AND SECONDS ONLY/);
   assert.match(prompt, /Treat two-part times as MM:SS/);
 });
+
+test("buildPrompt requires normalized HH:mm:ss output format", () => {
+  const prompt = buildPrompt(baseContext, "race-1");
+  assert.match(prompt, /output time\.value strictly as HH:mm:ss/i);
+  assert.match(prompt, /For non-finish\/status rows .* set time\.value to an empty string/i);
+});

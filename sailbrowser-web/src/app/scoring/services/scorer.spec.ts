@@ -31,6 +31,7 @@ function createMockRace(id: string, index: number): Race {
     isAverageLap: false,
     timeInputMode: 'tod',
     dirty: false,
+    resultsSheetImage: '',
   };
 }
 

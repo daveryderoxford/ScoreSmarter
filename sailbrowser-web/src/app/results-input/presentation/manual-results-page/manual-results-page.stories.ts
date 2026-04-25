@@ -35,6 +35,7 @@ function baseRace(id: string, seriesId: string, type: Race['type']): Race {
     isDiscardable: true,
     isAverageLap: true,
     dirty: false,
+    resultsSheetImage: '',
   };
 }
 

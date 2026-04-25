@@ -1,158 +1,60 @@
-<div class="scanner-wrapper">
-  <div class="header-section">
-    <h1>AI Results Scanner Test</h1>
-    <p>Upload a photo of a results sheet to test the Gemini parsing logic.</p>
-  </div>
+  <app-toolbar title="Scan Results Sheet">
 
-  <div class="layout-container">
-    <div class="left-pane">
-      <div class="pane-content">
-        <!-- Context Settings Form -->
-        <mat-card class="form-card" appearance="outlined">
-          <div class="section-title">
-            <span class="step-number">1</span>
-            Race &amp; scanner context
+  </app-toolbar>
+
+  <mat-stepper class="stepper" [linear]="true" #stepper [orientation]="isMobile() ? 'vertical' : 'horizontal'" (selectionChange)="onStepChange($event)">
+    <mat-step [stepControl]="form" [completed]="form.valid">
+      <ng-template matStepLabel>Setup</ng-template>
+      <div class="step-container">
+        <form [formGroup]="form" class="stepper-form">
+          <app-setup-step
+            [form]="form"
+            [todaysRaceOptions]="todaysRaceOptions()"
+            [pickedRaceOption]="pickedRaceOption()"
+            (raceSelect)="onRaceSelect($event)" />
+          <div class="step-actions">
+            <button matButton="filled" type="submit" matStepperNext [disabled]="form.invalid" style="margin-left:auto;">Next</button>
           </div>
-
-          <form [formGroup]="form" style="display: flex; flex-direction: column; gap: 1rem;">
-            <mat-form-field appearance="outline">
-              <mat-label>Race</mat-label>
-              <mat-select formControlName="raceId" required>
-                @for (opt of raceOptions(); track opt.id) {
-                  <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
-                }
-              </mat-select>
-              @if (raceOptions().length === 0) {
-                <mat-hint>No races loaded yet — open the calendar or results entry so races are available.</mat-hint>
-              }
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>List Order Expectation</mat-label>
-              <mat-select formControlName="listOrder">
-                <mat-option value="chronological">Chronological</mat-option>
-                <mat-option value="firstLap">First Lap (Overtakes expected)</mat-option>
-                <mat-option value="unsorted">Unsorted / Random</mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Time columns on sheet</mat-label>
-              <mat-select formControlName="timeFormat">
-                <mat-option value="hours_minutes_seconds">Hours, minutes &amp; seconds (HH:MM:SS)</mat-option>
-                <mat-option value="minutes_seconds_only">Minutes &amp; seconds only (elapsed MM:SS — no hours)</mat-option>
-              </mat-select>
-              <mat-hint>Race officers often write only elapsed minutes and seconds.</mat-hint>
-            </mat-form-field>
-
-            <div style="margin-bottom: 0.5rem;">
-              <mat-checkbox formControlName="lapsPresentOnSheet">Sheet includes a lap column</mat-checkbox>
-            </div>
-
-            @if (form.value.lapsPresentOnSheet) {
-            <mat-form-field appearance="outline">
-              <mat-label>Lap Format</mat-label>
-              <mat-select formControlName="lapFormat">
-                <mat-option value="numbers">Numbers (1, 2, 3)</mat-option>
-                <mat-option value="ticks">Ticks/Tallies (|||)</mat-option>
-              </mat-select>
-            </mat-form-field>
-            }
-
-            @if (form.value.timeFormat === 'hours_minutes_seconds') {
-            <div style="margin-bottom: 1rem;">
-              <mat-checkbox formControlName="hasHours">Sheet includes hour markers</mat-checkbox>
-            </div>
-
-            @if (!form.value.hasHours) {
-            <mat-form-field appearance="outline">
-              <mat-label>Default Hour (if missing)</mat-label>
-              <input matInput type="number" formControlName="defaultHour">
-            </mat-form-field>
-            }
-            }
-
-            <mat-form-field appearance="outline">
-              <mat-label>Default laps</mat-label>
-              <input matInput type="number" formControlName="defaultLaps">
-              @if (form.value.lapsPresentOnSheet) {
-                <mat-hint>Used when a row has no lap count visible.</mat-hint>
-              } @else {
-                <mat-hint>Applied to every row (no lap column on sheet).</mat-hint>
-              }
-            </mat-form-field>
-          </form>
-        </mat-card>
-
-        <!-- Image Upload -->
-        <mat-card class="form-card" appearance="outlined">
-          <div class="section-title">
-            <span class="step-number">2</span>
-            Results Sheet Image
-          </div>
-
-          <div class="upload-zone">
-            <input type="file" accept="image/*" (change)="onFileChange($event)">
-            <mat-icon>photo_camera</mat-icon>
-            <p><strong>Click to upload</strong> or drag photo here</p>
-            <p style="font-size: 0.75rem; opacity: 0.7;">JPEG, PNG up to 10MB</p>
-          </div>
-
-          @if (imagePreview()) {
-          <div class="preview-container">
-            <img [src]="imagePreview()" alt="Preview">
-          </div>
-          }
-
-          <div style="margin-top: 1.5rem;">
-            <button mat-flat-button color="primary" style="width: 100%; padding: 1.5rem;" (click)="scan()"
-              [disabled]="loading() || !imageBase64() || form.invalid">
-              @if (loading()) {
-              Analyzing Sheet...
-              } @else {
-              Run AI Scan
-              }
-            </button>
-            @if (loading()) {
-            <mat-progress-bar mode="indeterminate" style="margin-top: 1rem;"></mat-progress-bar>
-            }
-          </div>
-        </mat-card>
+        </form>
       </div>
-    </div>
+    </mat-step>
 
-    <div class="right-pane">
-      <div class="pane-content">
-        <div class="json-output-pane">
-          <div class="output-header">
-            <h2>
-              <span class="status-dot"></span>
-              Extracted Data Output
-            </h2>
-            @if (loading()) {
-            <span style="font-size: 0.625rem; color: #818cf8;">PROCESSING...</span>
-            }
-          </div>
-
-          <div class="json-viewer">
-            @if (error()) {
-            <div class="error-display">
-              <div style="font-weight: bold; margin-bottom: 0.25rem;">SCAN_FAILED</div>
-              {{ error() }}
-            </div>
-            }
-
-            @if (result()) {
-            <pre>{{ result() | json }}</pre>
-            } @else if (!loading() && !error()) {
-            <div class="empty-state">
-              <mat-icon>code</mat-icon>
-              <p>Waiting for scanner input...</p>
-            </div>
-            }
-          </div>
+    <mat-step [stepControl]="captureForm" [completed]="captureForm.valid">
+      <ng-template matStepLabel>Capture</ng-template>
+      <div class="step-container">
+        <app-capture-step
+          [isMobile]="isMobile()"
+          [hasExistingImage]="hasExistingImage()"
+          [imagePreview]="imagePreview()"
+          (fileChanged)="onFileChange($event)"
+          (openCamera)="openCameraDialog()"
+          (useExisting)="useExistingImage()"
+          (clearImage)="clearImage()" />
+        <div class="step-actions">
+          <button matButton matStepperPrevious>Previous</button>
+          <button matButton="filled" matStepperNext [disabled]="captureForm.invalid">Next</button>
         </div>
       </div>
-    </div>
-  </div>
-</div>
+    </mat-step>
+
+    <mat-step>
+      <ng-template matStepLabel>Review</ng-template>
+      <div class="step-container review-container">
+        <app-review-step
+          [result]="result()"
+          [matchedRows]="matchedRows()"
+          [unmatchedRows]="unmatchedRows()"
+          [loading]="loading()"
+          [scanStage]="scanStage()"
+          [error]="error()"
+          [displayedColumns]="displayedColumns"
+          [unmatchedColumns]="unmatchedColumns"
+          (backRequested)="stepper.previous()"
+          (startTimeRequested)="setStartTimesForSelectedRace()"
+          (retryRequested)="scan()"
+          (saveRequested)="saveResults()"
+          (knownBoatEntryRequested)="openKnownBoatEntry($event)"
+          (newEntryRequested)="openManualEntryForRow($event)" />
+      </div>
+    </mat-step>
+  </mat-stepper>

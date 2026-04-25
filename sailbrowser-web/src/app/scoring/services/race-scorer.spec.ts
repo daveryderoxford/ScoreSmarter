@@ -100,6 +100,7 @@ describe('RaceScorer', () => {
     isDiscardable: true,
     isAverageLap: false,
     dirty: false,
+    resultsSheetImage: '',
   };
 
   it('should score a level rating race with 3 competitors', () => {
