@@ -65,6 +65,7 @@ function minimalRace(id: string): Race {
     isDiscardable: true,
     isAverageLap: false,
     dirty: false,
+    resultsSheetImage: '',
   };
 }
 

@@ -1,186 +1,449 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { JsonPipe } from '@angular/common';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Component, computed, inject, signal, viewChild } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { FirebaseApp } from '@angular/fire/app';
-import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
-import { environment } from '../../../../environments/environment';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatOptionModule } from '@angular/material/core';
-import { MatIconModule } from '@angular/material/icon';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatCardModule } from '@angular/material/card';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { RaceCalendarStore } from 'app/race-calender';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatSelectChange } from '@angular/material/select';
+import { MatStepper, MatStepperModule } from '@angular/material/stepper';
+import { ActivatedRoute, Router } from '@angular/router';
+import { BoatsStore } from 'app/boats';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
-import { format } from 'date-fns';
-
-/** Slightly below parseResultsSheet timeoutSeconds in Cloud Functions. */
-const PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS = 318_000;
-
-/** Extract HttpsError.details from Firebase callable errors (shape varies slightly by SDK). */
-function extractCallableDetails(err: unknown): Record<string, unknown> | undefined {
-  if (!err || typeof err !== 'object') return undefined;
-  const e = err as Record<string, unknown>;
-  const d = e['details'];
-  if (d && typeof d === 'object') return d as Record<string, unknown>;
-  const customData = e['customData'];
-  if (customData && typeof customData === 'object') {
-    const inner = (customData as Record<string, unknown>)['details'];
-    if (inner && typeof inner === 'object') return inner as Record<string, unknown>;
-  }
-  return undefined;
-}
-
-function formatParseSheetError(err: unknown): string {
-  const message = err instanceof Error ? err.message : 'Error parsing image. Check console for details.';
-  const details = extractCallableDetails(err);
-  if (!details) return message;
-  const lines = [message];
-  const rid = details['requestId'];
-  const stage = details['stage'];
-  const cause = details['cause'];
-  if (typeof rid === 'string' && rid) lines.push(`Request ID: ${rid}`);
-  if (typeof stage === 'string' && stage) lines.push(`Stage: ${stage}`);
-  if (typeof cause === 'string' && cause) lines.push(`Cause: ${cause}`);
-  const fr = details['finishReason'];
-  if (typeof fr === 'string' && fr) lines.push(`Gemini finish: ${fr}`);
-  const pe = details['parseError'];
-  if (typeof pe === 'string' && pe) lines.push(`Parse: ${pe}`);
-  const vm = details['vertexMessage'];
-  if (typeof vm === 'string' && vm) lines.push(`Vertex: ${vm}`);
-  return lines.join('\n');
-}
+import { RaceCalendarStore } from 'app/race-calender';
+import { Race } from 'app/race-calender/model/race';
+import { RacePickerDialog } from 'app/race-calender/presentation/race-picker-dialog/race-picker-dialog';
+import { RESULT_CODES, ResultCode } from 'app/scoring/model/result-code-scoring';
+import { format, isToday } from 'date-fns';
+import { firstValueFrom } from 'rxjs';
+import { startWith } from 'rxjs/operators';
+import { Toolbar } from "../../../shared/components/toolbar";
+import { CurrentRaces } from '../../services/current-races-store';
+import { ManualResultsService } from '../../services/manual-results.service';
+import { RaceCompetitorStore } from '../../services/race-competitor-store';
+import { SeriesEntryStore } from '../../services/series-entry-store';
+import { RaceStartTimeDialog, RaceStartTimeResult } from '../handicap/race-start-time-dialog';
+import { CameraCaptureDialog } from './camera-capture-dialog';
+import { CaptureStep } from './capture-step';
+import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
+import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step';
+import { ScanResponse, ScannedResultRow, ScannerContext } from './scan-model';
+import { ScannerOrchestrationService } from './scanner-orchestration.service';
+import { SetupStep } from './setup-step';
 
 @Component({
   selector: 'app-scoring-sheet-scanner',
-  standalone: true,
   imports: [
     ReactiveFormsModule,
-    JsonPipe,
+    MatDialogModule,
+    MatStepperModule,
+    SetupStep,
+    CaptureStep,
+    ReviewStep,
     MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatOptionModule,
-    MatIconModule,
-    MatCheckboxModule,
-    MatCardModule,
-    MatProgressBarModule,
+    Toolbar
   ],
   templateUrl: './scoring-sheet-scanner.html',
   styleUrl: './scoring-sheet-scanner.scss',
 })
 export class ScoringSheetScanner {
-  private fb = inject(FormBuilder);
-  private app = inject(FirebaseApp);
+  private readonly allowedResultCodes = new Set<string>(RESULT_CODES as readonly string[]);
+
+  private normalizeScannedResultCode(rawStatus?: string): ResultCode {
+    const status = rawStatus?.trim().toUpperCase();
+    if (!status) return 'OK';
+    return this.allowedResultCodes.has(status) ? (status as ResultCode) : 'OK';
+  }
+
+  private hasConfiguredStarts(race: Race): boolean {
+    return !!race.actualStart || !!race.starts?.length;
+  }
+
+  async setStartTimesForSelectedRace(): Promise<boolean> {
+    const race = this.selectedRace();
+    if (!race) {
+      this.error.set('Select a race first.');
+      return false;
+    }
+    const dialog = this.dialog.open<RaceStartTimeDialog, { race: Race }, RaceStartTimeResult>(RaceStartTimeDialog, {
+      data: { race },
+    });
+    const result = await firstValueFrom(dialog.afterClosed());
+    if (!result) return false;
+    await this.manualResultsService.setStartTime(race.id, result.starts, result.mode);
+    this.error.set(null);
+    return true;
+  }
+
+  private async ensureStartTimesConfigured(): Promise<boolean> {
+    const race = this.selectedRace();
+    if (!race) {
+      this.error.set('Select a race first.');
+      return false;
+    }
+    if (this.hasConfiguredStarts(race)) return true;
+    this.error.set('Set race start time(s) before saving accepted results.');
+    return this.setStartTimesForSelectedRace();
+  }
+
+  private readonly fb = inject(FormBuilder);
+  private readonly dialog = inject(MatDialog);
   private readonly raceCalendarStore = inject(RaceCalendarStore);
+  private readonly currentRacesStore = inject(CurrentRaces);
+  private readonly competitorStore = inject(RaceCompetitorStore);
+  private readonly entryStore = inject(SeriesEntryStore);
+  private readonly boatsStore = inject(BoatsStore);
   private readonly clubTenant = inject(ClubTenant);
+  private readonly breakpointObserver = inject(BreakpointObserver);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly scannerOrchestration = inject(ScannerOrchestrationService);
+  private readonly manualResultsService = inject(ManualResultsService);
+
+  readonly isMobile = computed(() => this.breakpointObserver.isMatched('(max-width: 599px)'));
+  stepper = viewChild.required<MatStepper>('stepper');
 
   form = this.fb.nonNullable.group({
     raceId: ['', Validators.required],
     listOrder: ['chronological', Validators.required],
-    timeFormat: this.fb.nonNullable.control<'hours_minutes_seconds' | 'minutes_seconds_only'>(
-      'hours_minutes_seconds',
-      Validators.required,
-    ),
+    timeFormat: this.fb.nonNullable.control<'hours_minutes_seconds' | 'minutes_seconds_only'>('hours_minutes_seconds', Validators.required),
     lapsPresentOnSheet: this.fb.nonNullable.control(true, Validators.required),
     lapFormat: ['numbers', Validators.required],
-    hasHours: [false, Validators.required],
     defaultHour: [14],
     defaultLaps: [1],
   });
+  captureForm = this.fb.nonNullable.group({
+    hasImage: [false, Validators.requiredTrue],
+  });
 
-  readonly raceOptions = computed(() =>
-    this.raceCalendarStore.allRaces().map((r) => ({
+  private readonly selectedRaceId = toSignal(
+    this.form.controls.raceId.valueChanges.pipe(startWith(this.form.controls.raceId.value)),
+    { initialValue: this.form.controls.raceId.value }
+  );
+  readonly selectedRace = computed(() => this.raceCalendarStore.allRaces().find((r: Race) => r.id === this.selectedRaceId()));
+  readonly hasExistingImage = computed(() => !!this.selectedRace()?.resultsSheetImage);
+  readonly todaysRaceOptions = computed(() =>
+    this.raceCalendarStore.allRaces().filter((r: Race) => isToday(r.scheduledStart)).map((r: Race) => ({
       id: r.id,
-      label: `${r.seriesName} — Race ${r.index} (${format(r.scheduledStart, 'yyyy-MM-dd')})`,
+      label: `${r.seriesName} — Race ${r.index}`,
     })),
   );
+  pickedRaceId = signal<string | null>(null);
+  readonly pickedRaceOption = computed(() => {
+    const pId = this.pickedRaceId();
+    if (!pId) return null;
+    const r = this.raceCalendarStore.allRaces().find((x: Race) => x.id === pId);
+    if (!r) return null;
+    return { id: r.id, label: `${r.seriesName} — Race ${r.index} (${format(r.scheduledStart, 'yyyy-MM-dd')})` };
+  });
 
   imageBase64 = signal<string | null>(null);
   imageMimeType = signal<string | null>(null);
   imagePreview = signal<string | null>(null);
-
-  loading = signal<boolean>(false);
-  result = signal<unknown>(null);
+  loading = signal(false);
+  result = signal<ScanResponse | null>(null);
   error = signal<string | null>(null);
+  scanStage = signal<string | null>(null);
 
-  onFileChange(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) {
-      this.imageBase64.set(null);
-      this.imageMimeType.set(null);
-      this.imagePreview.set(null);
-      return;
+  readonly matchedResults = computed(() => this.result()?.scannedResults.filter(r => !!r.matchedCompetitorId) ?? []);
+  
+  private readonly matchedCompetitorById = computed(() =>
+    new Map(this.competitorStore.selectedCompetitors().map(c => [c.id, c] as const)),
+  );
+
+  private readonly helmBySeriesEntryId = computed(() =>
+    new Map(this.entryStore.selectedEntries().map(e => [e.id, e.helm] as const)),
+  );
+
+  readonly matchedRows = computed<MatchedRowVm[]>(() =>
+    this.matchedResults().map(row => {
+      const competitor = row.matchedCompetitorId ? this.matchedCompetitorById().get(row.matchedCompetitorId) : undefined;
+      const helm = competitor?.seriesEntryId ? this.helmBySeriesEntryId().get(competitor.seriesEntryId) : undefined;
+      return { row, helm, competitor };
+    }),
+  );
+
+  readonly unmatchedResults = computed(() => this.result()?.scannedResults.filter(r => !r.matchedCompetitorId) ?? []);
+  
+  readonly unmatchedRows = computed<UnmatchedRowVm[]>(() =>
+    this.unmatchedResults().map(row => {
+      const matches = this.findBoatMatches(row);
+      const helms = Array.from(new Set(matches.map(m => m.helm).filter((h): h is string => !!h && h.trim().length > 0)));
+      return { row, hasKnownBoat: matches.length > 0, possibleHelms: helms };
+    }),
+  );
+
+  readonly displayedColumns = ['accept', 'sailNumber', 'boatClass', 'helm', 'time', 'status', 'laps', 'overall'];
+  readonly unmatchedColumns = ['sailNumber', 'boatClass', 'time', 'status', 'laps', 'enter'];
+  readonly hasCapturedImage = computed(() => !!this.imageBase64() && !!this.imageMimeType());
+  readonly isMockScanMode = computed(() => this.scannerOrchestration.isMockMode(this.route.snapshot.queryParamMap.get('mockScan')));
+
+  private findBoatMatches(row: ScannedResultRow) {
+    const boatClass = row.boatClass?.value?.trim();
+    const sailNumber = Number(row.sailNumber?.value);
+    if (!boatClass || !Number.isFinite(sailNumber)) return [];
+    return this.boatsStore.boats().filter(
+      b => b.boatClass.toLowerCase() === boatClass.toLowerCase() && Number(b.sailNumber) === sailNumber,
+    );
+  }
+
+  constructor() {
+    if (this.isMockScanMode()) {
+      // Allow capture step completion without image while testing review flow.
+      this.captureForm.controls.hasImage.setValue(true);
     }
+  }
 
+  async onRaceSelect(event: MatSelectChange): Promise<void> {
+    if (event.value !== '__MORE__') return;
+    this.form.controls.raceId.setValue('', { emitEvent: false });
+    const dialogRef = this.dialog.open(RacePickerDialog, {
+      width: '500px',
+      data: { title: 'Select Race', maxSelections: 1, requireSelection: true },
+    });
+    dialogRef.afterClosed().subscribe(selection => {
+      const id = selection?.[0];
+      if (!id) return;
+      this.form.patchValue({ raceId: id });
+      this.pickedRaceId.set(id);
+      this.currentRacesStore.addRaceId(id);
+    });
+  }
+
+  onFileChange(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return this.clearImage();
+    this.result.set(null);
+    this.error.set(null);
     this.imageMimeType.set(file.type);
-
     const reader = new FileReader();
     reader.onload = () => {
       const readResult = reader.result as string;
       this.imagePreview.set(readResult);
-
-      const base64 = readResult.split(',')[1];
-      this.imageBase64.set(base64);
+      this.imageBase64.set(readResult.split(',')[1]);
+      this.captureForm.controls.hasImage.setValue(true);
     };
     reader.readAsDataURL(file);
   }
 
-  async scan() {
-    if (!this.imageBase64() || !this.imageMimeType()) return;
-    if (this.form.invalid) {
-      this.error.set('Select a race and complete the context form.');
+  clearImage(): void {
+    this.imageBase64.set(null);
+    this.imageMimeType.set(null);
+    this.imagePreview.set(null);
+    this.captureForm.controls.hasImage.setValue(this.isMockScanMode());
+    this.result.set(null);
+    this.error.set(null);
+  }
+
+  openCameraDialog(): void {
+    const dialogRef = this.dialog.open(CameraCaptureDialog, { width: '800px', maxWidth: '95vw', disableClose: true });
+    dialogRef.afterClosed().subscribe(result => {
+      if (!result) return;
+      this.imageBase64.set(result.base64);
+      this.imagePreview.set(result.preview);
+      this.imageMimeType.set('image/jpeg');
+      this.captureForm.controls.hasImage.setValue(true);
+    });
+  }
+
+  useExistingImage(): void {
+    const img = this.selectedRace()?.resultsSheetImage;
+    if (!img) return;
+    this.imagePreview.set(img);
+    if (img.startsWith('data:')) {
+      this.imageBase64.set(img.split(',')[1]);
+      this.imageMimeType.set(img.split(';')[0].split(':')[1]);
+    } else {
+      this.imageBase64.set(img);
+      this.imageMimeType.set('image/jpeg');
+    }
+    this.captureForm.controls.hasImage.setValue(true);
+    this.result.set(null);
+    this.error.set(null);
+  }
+
+  async onStepChange(event: { selectedIndex: number; }): Promise<void> {
+    if (event.selectedIndex !== 2) return;
+    if (!this.isMockScanMode() && (!this.imageBase64() || !this.imageMimeType())) return;
+    if (this.loading()) return;
+    if (this.result()) return;
+    await this.scan();
+  }
+
+  private parseScannedTime(timeStr: string): Date | null {
+    const race = this.selectedRace();
+    if (!timeStr || !race) return null;
+    const normalized = timeStr
+      .trim()
+      .replace(/[^\d]/g, ':')
+      .replace(/:+/g, ':')
+      .replace(/^:|:$/g, '');
+    const parts = normalized
+      .split(':')
+      .map(p => parseInt(p, 10))
+      .filter(p => Number.isFinite(p));
+    if (parts.length < 2 || parts.length > 3) return null;
+    const date = new Date(race.scheduledStart);
+    if (parts.length === 3) date.setHours(parts[0], parts[1], parts[2], 0);
+    else if (parts.length === 2 && this.form.value.timeFormat === 'hours_minutes_seconds') date.setHours(this.form.value.defaultHour ?? 14, parts[0], parts[1], 0);
+    else if (parts.length === 2) date.setHours(0, parts[0], parts[1], 0);
+    else return null;
+    return date;
+  }
+
+  private refreshScanRowMatch(row: ScannedResultRow, boatClass: string, sailNumber: number, helm?: string): void {
+    const raceId = this.form.value.raceId;
+    if (!raceId) return;
+    const comps = this.competitorStore.selectedCompetitors().filter(c => c.raceId === raceId);
+    const entries = this.entryStore.selectedEntries();
+    const match = comps.find(c => {
+      const e = entries.find(se => se.id === c.seriesEntryId);
+      if (!e) return false;
+      const classMatch = e.boatClass?.toLowerCase() === boatClass.toLowerCase();
+      const sailMatch = e.sailNumber === sailNumber;
+      const helmMatch = !helm || e.helm?.toLowerCase() === helm.toLowerCase();
+      return classMatch && sailMatch && helmMatch;
+    });
+    if (!match) return;
+    row.matchedCompetitorId = match.id;
+    row.accepted = true;
+    const current = this.result();
+    if (current) this.result.set({ ...current, scannedResults: [...current.scannedResults] });
+  }
+
+  async openKnownBoatEntry(row: ScannedResultRow): Promise<void> {
+    const raceId = this.form.value.raceId;
+    const boatClass = row.boatClass?.value?.trim();
+    const sailNumber = Number(row.sailNumber?.value);
+    if (!raceId || !boatClass || !Number.isFinite(sailNumber)) return;
+
+    const matches = this.boatsStore.boats().filter(
+      b => b.boatClass.toLowerCase() === boatClass.toLowerCase() && Number(b.sailNumber) === sailNumber,
+    );
+    if (matches.length === 0) {
+      await this.openManualEntryForRow(row);
       return;
     }
 
-    this.loading.set(true);
-    this.error.set(null);
-    this.result.set(null);
-
-    const functions = getFunctions(this.app, 'europe-west1');
-    if (environment.useEmulators) {
-      try {
-        connectFunctionsEmulator(functions, 'localhost', 5001);
-      } catch {
-        // Ignore "already configured" errors as it could be called repeatedly
-      }
-    }
-    const parseFn = httpsCallable(functions, 'parseResultsSheet', {
-      timeout: PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS,
+    const dialogRef = this.dialog.open(KnownBoatEntryDialog, {
+      width: '520px',
+      data: { raceId, boatClass, sailNumber, boats: matches },
     });
 
+    const result = (await firstValueFrom(dialogRef.afterClosed())) as KnownBoatEntryDialogResult | undefined;
+    if (!result?.created) return;
+    const selectedBoat = matches.find(b => b.id === result.selectedBoatId);
+    this.refreshScanRowMatch(row, boatClass, sailNumber, selectedBoat?.helm);
+  }
+
+  async openManualEntryForRow(row: ScannedResultRow): Promise<void> {
+    const raceId = this.form.value.raceId;
+    if (!raceId) return;
+    await this.router.navigate(['/entry/enter'], {
+      queryParams: { raceId, returnTo: 'results-input', boatClass: row.boatClass?.value ?? '', sailNumber: row.sailNumber?.value ?? '' },
+    });
+  }
+
+  async saveResults(): Promise<void> {
+    const raceId = this.form.value.raceId;
+    if (!raceId) return;
+    const race = this.selectedRace();
+    if (!race) {
+      console.log('ScoringSheetScanner.saveResults: selectedRace() returned null', {
+        raceIdFromForm: raceId,
+        availableRaceIds: this.raceCalendarStore.allRaces().map(r => r.id),
+      });
+      this.error.set('Select a race first.');
+      return;
+    }
+    const preSaveCompetitorsById = new Map(
+      this.competitorStore.selectedCompetitors().map(c => [c.id, c] as const),
+    );
+    if (!(await this.ensureStartTimesConfigured())) return;
+    const acceptedMatchedItems = this.matchedRows().filter(vm => vm.row.accepted && !!vm.row.matchedCompetitorId);
+    if (acceptedMatchedItems.length === 0) {
+      this.error.set('No accepted matched rows to save.');
+      return;
+    }
+    this.currentRacesStore.addRaceId(raceId);
+    this.error.set(null);
+    this.loading.set(true);
+    try {
+      const acceptedMatchedIds = acceptedMatchedItems.map(vm => vm.row.matchedCompetitorId!).filter(Boolean);
+      const missingMatchedIds = acceptedMatchedItems
+        .filter(vm => !vm.competitor)
+        .map(vm => vm.row.matchedCompetitorId!);
+      if (missingMatchedIds.length > 0) {
+        const diagnostic = {
+          raceIdFromForm: raceId,
+          acceptedMatchedIds,
+          missingMatchedIds,
+          availableCompetitorIds: Array.from(preSaveCompetitorsById.keys()),
+        };
+        console.log('ScoringSheetScanner.saveResults: competitor invariant failed', diagnostic);
+        this.error.set(
+          `Could not save accepted results: ${missingMatchedIds.length} matched competitors were not available in memory.`,
+        );
+        return;
+      }
+
+      for (const vm of acceptedMatchedItems) {
+        const competitor = vm.competitor!;
+        const finishTime = vm.row.time?.value ? this.parseScannedTime(vm.row.time.value) : null;
+        await this.manualResultsService.recordResult(competitor, race, {
+          finishTime,
+          laps: vm.row.laps?.value || 1,
+          resultCode: this.normalizeScannedResultCode(vm.row.status),
+        });
+      }
+      await this.router.navigate(['/results-input/manual'], { queryParams: { raceId } });
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  async scan(): Promise<void> {
+    if (!this.isMockScanMode() && (!this.imageBase64() || !this.imageMimeType())) return;
+    if (this.form.invalid) return this.error.set('Select a race and complete the context form.');
+
+    this.error.set(null);
+    this.result.set(null);
     const v = this.form.getRawValue();
-    const scannerContext = {
+    const scannerContext: ScannerContext = {
       targetRaces: [] as string[],
       lapFormat: v.lapFormat as 'numbers' | 'ticks',
-      hasHours: v.hasHours,
+      hasHours: v.timeFormat === 'hours_minutes_seconds',
       defaultHour: v.defaultHour,
       defaultLaps: v.defaultLaps,
       listOrder: v.listOrder as 'chronological' | 'firstLap' | 'unsorted',
       classAliases: {} as Record<string, string>,
-      roster: [] as { id: string; class: string; sailNumber: string; name?: string }[],
+      roster: [] as { id: string; class: string; sailNumber: string; name?: string; }[],
       lapsPresentOnSheet: v.lapsPresentOnSheet,
       timeFormat: v.timeFormat,
     };
 
-    try {
-      const res = await parseFn({
+    await new Promise<void>((resolve) => {
+      const sub = this.scannerOrchestration.runScan({
+        raceId: this.form.value.raceId!,
+        clubId: this.clubTenant.clubId,
+        scannerContext,
         imageBase64: this.imageBase64(),
         imageMimeType: this.imageMimeType(),
-        clubId: this.clubTenant.clubId,
-        raceId: this.form.value.raceId,
-        scannerContext,
+        mockMode: this.isMockScanMode(),
+      }).subscribe(state => {
+        if (state.status === 'running') {
+          this.loading.set(true);
+          this.scanStage.set(state.stageMessage ?? this.scannerOrchestration.defaultStageMessage());
+          return;
+        }
+        this.loading.set(false);
+        this.scanStage.set(null);
+        if (state.status === 'success' && state.result) {
+          this.result.set(state.result);
+        } else if (state.status === 'error') {
+          this.error.set(state.error ?? 'Scan failed.');
+        }
       });
-      this.result.set(res.data);
-    } catch (err: unknown) {
-      this.error.set(formatParseSheetError(err));
-      console.error('Scan error:', err, extractCallableDetails(err));
-    } finally {
-      this.loading.set(false);
-    }
+      sub.add(() => resolve());
+    });
   }
 }

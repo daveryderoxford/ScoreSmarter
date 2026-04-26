@@ -20,9 +20,9 @@
    </ng-container>
 
    <ng-container matColumnDef="finishTime">
-      <th mat-header-cell mat-sort-header="manualFinishTime" *matHeaderCellDef>Finish Time</th>
+      <th mat-header-cell mat-sort-header="finishTime" *matHeaderCellDef>Finish Time</th>
       <td mat-cell *matCellDef="let element">
-         {{element.manualFinishTime | date:'HH:mm:ss'}}
+         {{element.finishTime | date:'HH:mm:ss'}}
          <br>
          @if (element.startTime) {
             <span class="second-row-text">Start: {{element.startTime | date:'HH:mm:ss'}}</span>

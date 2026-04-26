@@ -143,7 +143,7 @@ import { SubmitButton } from 'app/shared/components/submit-button';
             </div>
           }
         </div>
-        <button mat-stroked-button type="button" (click)="addSecondaryConfig()">
+        <button matButton="outlined" type="button" (click)="addSecondaryConfig()">
           <mat-icon>add</mat-icon> Add Additional Scoring
         </button>
       </div>

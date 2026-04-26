@@ -22,6 +22,11 @@
          <span matListItemTitle>Results Input</span>
       </button>
 
+      <button mat-list-item (click)='closeSidenav(["/results-input/scan-scoring-sheet"])'>
+         <mat-icon matListItemIcon>document_scanner</mat-icon>
+         <span matListItemTitle>Scan Scoring Sheet</span>
+      </button>
+
    <mat-divider />
 
    @if (auth.user()) {

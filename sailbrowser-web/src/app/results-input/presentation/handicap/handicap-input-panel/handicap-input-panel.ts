@@ -203,7 +203,7 @@ export class HandicapInputPanel {
           this.resetFormDefaults();
         } else {
           this.form.reset({
-            finishTime: comp.manualFinishTime,
+            finishTime: comp.finishTime ?? null,
             laps: comp.manualLaps || 1,
             resultCode: comp.resultCode,
           } as never);

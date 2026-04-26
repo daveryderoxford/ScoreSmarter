@@ -29,8 +29,8 @@ export interface SeriesEntryDoc {
 }
 
 export interface RaceCompetitorDoc {
-  seriesEntryId?: string;
-  raceId?: string;
+  seriesEntryId: string;
+  raceId: string;
 }
 
 export interface ScannerContext {
@@ -54,7 +54,7 @@ export interface ScannerContext {
 
 export interface ParseResultsSheetRequest {
   imageBase64: string;
-  imageMimeType?: string;
+  imageMimeType: string;
   scannerContext: ScannerContext;
   clubId: string;
   raceId: string;
