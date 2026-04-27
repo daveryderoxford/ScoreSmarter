@@ -2,7 +2,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
-import { USER_ROLES, UserData } from '../model/user-data';
+import { USER_ROLES, UserData } from '../model/user-data.js';
 
 /**
  * Assigns a role to a user for a specific club or globally (sys-admin).

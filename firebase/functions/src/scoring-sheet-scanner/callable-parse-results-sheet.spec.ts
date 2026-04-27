@@ -1,8 +1,13 @@
 import test from "node:test";
-import assert from "node:assert/strict";
-import { validateRequest } from "./callable-parse-results-sheet";
+import * as assert from "node:assert/strict";
+import { getApps, initializeApp } from "firebase-admin/app";
 
-test("validateRequest defaults imageMimeType to image/jpeg", () => {
+if (getApps().length === 0) {
+  initializeApp();
+}
+
+test("validateRequest defaults imageMimeType to image/jpeg", async () => {
+  const { validateRequest } = await import("./callable-parse-results-sheet.js");
   const data = validateRequest(
     {
       imageBase64: "ZmFrZS1pbWFnZQ==",
@@ -18,7 +23,8 @@ test("validateRequest defaults imageMimeType to image/jpeg", () => {
   assert.equal(data.raceId, "race-1");
 });
 
-test("validateRequest throws when raceId is missing", () => {
+test("validateRequest throws when raceId is missing", async () => {
+  const { validateRequest } = await import("./callable-parse-results-sheet.js");
   assert.throws(
     () => validateRequest(
       {

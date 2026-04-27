@@ -73,14 +73,14 @@ describe('ScannerOrchestrationService', () => {
       scannerContext: {
         targetRaces: [],
         lapFormat: 'numbers',
-        hasHours: true,
         defaultHour: 14,
         defaultLaps: 3,
+        hasHours: true,
         listOrder: 'chronological',
         classAliases: {},
         roster: [],
         lapsPresentOnSheet: true,
-        timeFormat: 'hours_minutes_seconds',
+        timeFormat: 'clock_hms',
       },
       mockMode: true,
     }).subscribe(s => states.push(s));
@@ -110,14 +110,14 @@ describe('ScannerOrchestrationService', () => {
       scannerContext: {
         targetRaces: [],
         lapFormat: 'numbers',
-        hasHours: true,
         defaultHour: 14,
         defaultLaps: 3,
+        hasHours: true,
         listOrder: 'chronological',
         classAliases: {},
         roster: [],
         lapsPresentOnSheet: true,
-        timeFormat: 'hours_minutes_seconds',
+        timeFormat: 'clock_hms',
       },
       mockMode: false,
     }).subscribe(s => states.push(s));
