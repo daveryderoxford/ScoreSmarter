@@ -267,10 +267,18 @@ function normalizeOkTimeValue(
   if (timeFormat === "stopwatch_ms_elapsed") {
     const minutes = asObject ? Number(asObject.elapsedMinutes) : NaN;
     const seconds = asObject ? Number(asObject.seconds) : NaN;
-    if (Number.isNaN(minutes) || Number.isNaN(seconds) || minutes > 59 || seconds > 59) {
+    if (
+      Number.isNaN(minutes) ||
+      Number.isNaN(seconds) ||
+      minutes < 0 ||
+      seconds < 0 ||
+      seconds > 59
+    ) {
       return null;
     }
-    return `00:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    const hours = Math.floor(minutes / 60);
+    const normalizedMinutes = minutes % 60;
+    return `${String(hours).padStart(2, "0")}:${String(normalizedMinutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   }
 
   let hours = asObject ? Number(asObject.hours) : NaN;
@@ -280,6 +288,12 @@ function normalizeOkTimeValue(
   if ((Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds)) && timeFormat === "clock_hms" && asObject) {
     // Allow sub-hour clock rows to omit hours in structured output.
     hours = typeof defaultHour === "number" && defaultHour >= 0 && defaultHour <= 23 ? defaultHour : 0;
+    minutes = Number(asObject.elapsedMinutes ?? asObject.minutes);
+    seconds = Number(asObject.seconds);
+  }
+  if ((Number.isNaN(hours) || Number.isNaN(minutes) || Number.isNaN(seconds)) && timeFormat === "stopwatch_hms_elapsed" && asObject) {
+    // In stopwatch elapsed mode, omitted hour means sub-hour elapsed duration.
+    hours = 0;
     minutes = Number(asObject.elapsedMinutes ?? asObject.minutes);
     seconds = Number(asObject.seconds);
   }
@@ -294,6 +308,14 @@ function normalizeOkTimeValue(
     if (typeof timeValue !== "string") return null;
     const hms = HMS_REGEX.exec(timeValue);
     if (!hms) {
+      if (timeFormat === "stopwatch_hms_elapsed") {
+        const ms = MS_REGEX.exec(timeValue);
+        if (!ms) return null;
+        const m = Number(ms[1]);
+        const s = Number(ms[2]);
+        if (Number.isNaN(m) || Number.isNaN(s) || m > 59 || s > 59) return null;
+        return `00:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+      }
       if (timeFormat !== "clock_hms") return null;
       const ms = MS_REGEX.exec(timeValue);
       if (!ms) return null;

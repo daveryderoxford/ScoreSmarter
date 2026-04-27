@@ -31,12 +31,28 @@ test("validateAndNormalizeTimes accepts stopwatch_hms_elapsed", () => {
   assert.equal(parsed.scannedResults[0].time.value, "01:02:15");
 });
 
+test("validateAndNormalizeTimes sets stopwatch_hms_elapsed hour to 00 when omitted", () => {
+  const parsed = {
+    scannedResults: [{ rowIndex: 1, status: "OK", time: { value: { minutes: 45, seconds: 30 } } }],
+  };
+  validateAndNormalizeTimes(parsed, "req-3b", "stopwatch_hms_elapsed");
+  assert.equal(parsed.scannedResults[0].time.value, "00:45:30");
+});
+
 test("validateAndNormalizeTimes normalizes stopwatch_ms_elapsed to HH:mm:ss", () => {
   const parsed = {
     scannedResults: [{ rowIndex: 1, status: "OK", time: { value: { elapsedMinutes: 45, seconds: 30 } } }],
   };
   validateAndNormalizeTimes(parsed, "req-4", "stopwatch_ms_elapsed");
   assert.equal(parsed.scannedResults[0].time.value, "00:45:30");
+});
+
+test("validateAndNormalizeTimes carries stopwatch_ms_elapsed minutes overflow into hours", () => {
+  const parsed = {
+    scannedResults: [{ rowIndex: 1, status: "OK", time: { value: { elapsedMinutes: 75, seconds: 30 } } }],
+  };
+  validateAndNormalizeTimes(parsed, "req-4b", "stopwatch_ms_elapsed");
+  assert.equal(parsed.scannedResults[0].time.value, "01:15:30");
 });
 
 test("validateAndNormalizeTimes clears invalid times and downgrades confidence", () => {

@@ -22,7 +22,7 @@ test("buildPrompt includes target race and roster details", () => {
 test("buildPrompt renders stopwatch_ms_elapsed guidance", () => {
   const prompt = buildPrompt({ ...baseContext, timeFormat: "stopwatch_ms_elapsed" }, "race-1");
   assert.match(prompt, /STOPWATCH ELAPSED MINUTES\/SECONDS/);
-  assert.match(prompt, /45:30 -> 00:45:30/);
+  assert.match(prompt, /All times will be recorded as elapsed minutes, seconds/);
 });
 
 test("buildPrompt renders clock_hms guidance", () => {
@@ -34,13 +34,22 @@ test("buildPrompt renders clock_hms guidance", () => {
 test("buildPrompt renders stopwatch_hms_elapsed guidance", () => {
   const prompt = buildPrompt({ ...baseContext, timeFormat: "stopwatch_hms_elapsed" }, "race-1");
   assert.match(prompt, /STOPWATCH ELAPSED WITH HOURS/);
+  assert.match(prompt, /If only MM:SS is present, treat it as sub-hour elapsed and set hours = 0/i);
 });
 
 test("buildPrompt requires normalized HH:mm:ss output format", () => {
   const prompt = buildPrompt(baseContext, "race-1");
   assert.match(prompt, /OUTPUT TIME STRUCTURE \(REQUIRED\)/i);
+  assert.match(prompt, /This sheet uses clock time \(H:M:S\)/i);
   assert.match(prompt, /time\.value = \{ "hours": number, "minutes": number, "seconds": number \}/i);
+  assert.doesNotMatch(prompt, /time\.value = \{ "elapsedMinutes": number, "seconds": number \}/i);
+});
+
+test("buildPrompt output structure mirrors stopwatch_ms_elapsed sheet scheme", () => {
+  const prompt = buildPrompt({ ...baseContext, timeFormat: "stopwatch_ms_elapsed" }, "race-1");
+  assert.match(prompt, /This sheet uses stopwatch elapsed minutes\/seconds \(MM:SS\)/i);
   assert.match(prompt, /time\.value = \{ "elapsedMinutes": number, "seconds": number \}/i);
+  assert.doesNotMatch(prompt, /time\.value = \{ "hours": number, "minutes": number, "seconds": number \}/i);
 });
 
 test("buildPrompt numbers lap mode excludes tally instructions", () => {
