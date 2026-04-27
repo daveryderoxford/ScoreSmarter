@@ -5,15 +5,23 @@ import {
   ParseResultsSheetRequest,
   RaceCompetitorDoc,
   ScannerContext,
+  ScannerTimeFormat,
   SeriesEntryDoc,
   httpsWithDetails,
   logScan,
   logScanError,
-} from "./types";
-import { storeResultsSheetImage, updateRaceResultsSheetImagePath } from "./image-storage";
-import { parseWithAi } from "./ai-parsing";
+} from "./ai-scan-types.js";
+import { storeResultsSheetImage, updateRaceResultsSheetImagePath } from "./image-storage.js";
+import { parseWithAi } from "./ai-parsing.js";
 
 const db = getFirestore();
+
+function normalizeScannerTimeFormat(value: unknown): ScannerTimeFormat {
+  if (value === "clock_hms" || value === "stopwatch_hms_elapsed" || value === "stopwatch_ms_elapsed") {
+    return value;
+  }
+  return "clock_hms";
+}
 
 function assertCallerHasClubAccess(
   authToken: Record<string, unknown>,
@@ -225,6 +233,7 @@ export const parseResultsSheet = onCall({
 
   const mergedContext: ScannerContext = {
     ...scannerContext,
+    timeFormat: normalizeScannerTimeFormat(scannerContext.timeFormat),
     roster,
     targetRaces: [raceId, ...(scannerContext.targetRaces ?? [])].filter(
       (id, i, arr) => arr.indexOf(id) === i,
@@ -238,7 +247,7 @@ export const parseResultsSheet = onCall({
     defaultHour: mergedContext.defaultHour,
     defaultLaps: mergedContext.defaultLaps,
     lapsPresentOnSheet: mergedContext.lapsPresentOnSheet ?? true,
-    timeFormat: mergedContext.timeFormat ?? "hours_minutes_seconds",
+    timeFormat: mergedContext.timeFormat ?? "clock_hms",
   });
 
   const parsed = await parseWithAi(requestId, imageBase64, imageMimeType, mergedContext, raceId);

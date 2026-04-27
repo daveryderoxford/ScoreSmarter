@@ -33,12 +33,13 @@
     <div class="toggle-group-container">
       <div class="toggle-label">Time format</div>
       <mat-button-toggle-group formControlName="timeFormat" aria-label="Time format">
-        <mat-button-toggle value="hours_minutes_seconds">HH:MM:SS</mat-button-toggle>
-        <mat-button-toggle value="minutes_seconds_only">MM:SS (No Hours)</mat-button-toggle>
+        <mat-button-toggle value="clock_hms">Clock HH:MM:SS</mat-button-toggle>
+        <mat-button-toggle value="stopwatch_hms_elapsed">Stopwatch H:MM:SS</mat-button-toggle>
+        <mat-button-toggle value="stopwatch_ms_elapsed">Stopwatch MM:SS</mat-button-toggle>
       </mat-button-toggle-group>
     </div>
 
-    @if (form().value.timeFormat === 'hours_minutes_seconds') {
+    @if (form().value.timeFormat === 'clock_hms') {
     <mat-form-field>
       <mat-label>Default hour</mat-label>
       <input matInput type="number" formControlName="defaultHour">

@@ -7,7 +7,8 @@
     "paths": {
       "app/*": ["src/app/*"],
       "@env/*": ["src/environments/*"],
-      "@testing/*": ["src/testing/*"]
+      "@testing/*": ["src/testing/*"],
+      "@shared/scanner-context": ["../shared/contracts/scanner-context.d.ts"]
     },
     "outDir": "./out-tsc/spec",
     "types": [

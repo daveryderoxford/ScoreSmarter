@@ -6,7 +6,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth' ;
-import { makeUser } from '../user/user';
+import { makeUser } from '../user/user.js';
 
 export const createNewTenant = onCall(async (request) => {
    // 1. Check if the user is authenticated

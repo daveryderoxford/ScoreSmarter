@@ -1,4 +1,7 @@
 import { HttpsError } from "firebase-functions/v2/https";
+import type { ScannerContext, ScannerTimeFormat } from "@shared/scanner-context";
+
+export type { ScannerContext, ScannerTimeFormat };
 
 export const LOG = "parseResultsSheet";
 
@@ -31,25 +34,6 @@ export interface SeriesEntryDoc {
 export interface RaceCompetitorDoc {
   seriesEntryId: string;
   raceId: string;
-}
-
-export interface ScannerContext {
-  targetRaces: string[];
-  lapFormat: "numbers" | "ticks";
-  defaultLaps?: number;
-  hasHours: boolean;
-  defaultHour?: number;
-  listOrder: "chronological" | "firstLap" | "unsorted";
-  classAliases?: Record<string, string>;
-  roster: Array<{ class: string; sailNumber: string; name?: string; id: string }>;
-  /** When false, the sheet has no lap column; use defaultLaps per row. Defaults to true if omitted. */
-  lapsPresentOnSheet?: boolean;
-  /**
-   * How to read handwritten times. Defaults to clock-style if omitted (legacy clients).
-   * - hours_minutes_seconds: clock or elapsed with optional hour (uses hasHours / defaultHour).
-   * - minutes_seconds_only: race officer wrote only minutes and seconds (e.g. 45:30 = 45m 30s), not HH:MM.
-   */
-  timeFormat?: "hours_minutes_seconds" | "minutes_seconds_only";
 }
 
 export interface ParseResultsSheetRequest {

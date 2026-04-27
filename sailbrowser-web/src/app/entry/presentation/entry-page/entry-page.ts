@@ -191,11 +191,16 @@ export class EntryPage {
 
   private readonly helmControl = this.competitorDetailsGroup.get('helm')!;
   private readonly crewControl = this.competitorDetailsGroup.get('crew')!;
+  private readonly helmValue = toSignal(
+    this.helmControl.valueChanges.pipe(startWith(this.helmControl.value)),
+    { initialValue: this.helmControl.value }
+  );
 
   readonly canProceedToRaces = computed(() => {
     const boat = this.selectedBoat();
     if (!boat) return false;
-    return boat.isClub ? this.helmControl.valid : true;
+    if (!boat.isClub) return true;
+    return String(this.helmValue() ?? '').trim().length > 0;
   });
 
   readonly classHandicaps = computed<Handicap[]>(() => {

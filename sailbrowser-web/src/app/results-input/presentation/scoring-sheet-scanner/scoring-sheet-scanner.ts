@@ -29,6 +29,7 @@ import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step';
 import { ScanResponse, ScannedResultRow, ScannerContext } from './scan-model';
 import { ScannerOrchestrationService } from './scanner-orchestration.service';
 import { SetupStep } from './setup-step';
+import type { ScannerTimeFormat } from '@shared/scanner-context';
 
 @Component({
   selector: 'app-scoring-sheet-scanner',
@@ -105,7 +106,7 @@ export class ScoringSheetScanner {
   form = this.fb.nonNullable.group({
     raceId: ['', Validators.required],
     listOrder: ['chronological', Validators.required],
-    timeFormat: this.fb.nonNullable.control<'hours_minutes_seconds' | 'minutes_seconds_only'>('hours_minutes_seconds', Validators.required),
+    timeFormat: this.fb.nonNullable.control<ScannerTimeFormat>('clock_hms', Validators.required),
     lapsPresentOnSheet: this.fb.nonNullable.control(true, Validators.required),
     lapFormat: ['numbers', Validators.required],
     defaultHour: [14],
@@ -284,7 +285,7 @@ export class ScoringSheetScanner {
     if (parts.length < 2 || parts.length > 3) return null;
     const date = new Date(race.scheduledStart);
     if (parts.length === 3) date.setHours(parts[0], parts[1], parts[2], 0);
-    else if (parts.length === 2 && this.form.value.timeFormat === 'hours_minutes_seconds') date.setHours(this.form.value.defaultHour ?? 14, parts[0], parts[1], 0);
+    else if (parts.length === 2 && this.form.value.timeFormat === 'clock_hms') date.setHours(this.form.value.defaultHour ?? 14, parts[0], parts[1], 0);
     else if (parts.length === 2) date.setHours(0, parts[0], parts[1], 0);
     else return null;
     return date;
@@ -411,9 +412,9 @@ export class ScoringSheetScanner {
     const scannerContext: ScannerContext = {
       targetRaces: [] as string[],
       lapFormat: v.lapFormat as 'numbers' | 'ticks',
-      hasHours: v.timeFormat === 'hours_minutes_seconds',
       defaultHour: v.defaultHour,
       defaultLaps: v.defaultLaps,
+      hasHours: v.timeFormat !== 'stopwatch_ms_elapsed',
       listOrder: v.listOrder as 'chronological' | 'firstLap' | 'unsorted',
       classAliases: {} as Record<string, string>,
       roster: [] as { id: string; class: string; sailNumber: string; name?: string; }[],

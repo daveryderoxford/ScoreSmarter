@@ -1,21 +1,6 @@
 {
-  "compilerOptions": {
-    "skipLibCheck": true,
-    "module": "commonjs",
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "outDir": "lib",
-    "sourceMap": true,
-    "strict": true,
-    "target": "es2017",
-    "baseUrl": "src",
-    "rootDir": "src",
-    "typeRoots": [
-      "node_modules/@types"
-    ]
-  },
-  "compileOnSave": true,
+  "extends": "./tsconfig.base.json",
   "include": [
-    "**/*.ts",
+    "src/**/*.ts"
   ]
 }

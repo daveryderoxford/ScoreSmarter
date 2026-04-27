@@ -31,3 +31,7 @@ npm-debug.log*
 /www
 .firebase/
 /scripts/venv
+
+# Firebase Functions build/test artifacts
+/firebase/functions/lib/
+/firebase/functions/lib-test/

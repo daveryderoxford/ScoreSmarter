@@ -1,7 +1,17 @@
+import type { ScannerContext as SharedScannerContext } from '@shared/scanner-context';
+
 export interface ScannedValue<T> {
   value: T;
   confidence: 'HIGH' | 'MANUAL_CHECK' | 'FAILED' | 'AMBIGUOUS';
   alternatives?: T[];
+}
+
+export interface ScanEntryDetails {
+  id: string; 
+  class: string; 
+  sailNumber: string; 
+  name?: string;
+  helm?: string;
 }
 
 export interface ScannedResultRow {
@@ -23,18 +33,7 @@ export interface ScanResponse {
   unreadableRowsCount: number;
 }
 
-export interface ScannerContext {
-  targetRaces: string[];
-  lapFormat: 'numbers' | 'ticks';
-  hasHours: boolean;
-  defaultHour?: number | null;
-  defaultLaps?: number | null;
-  listOrder: 'chronological' | 'firstLap' | 'unsorted';
-  classAliases: Record<string, string>;
-  roster: Array<{ id: string; class: string; sailNumber: string; name?: string }>;
-  lapsPresentOnSheet: boolean;
-  timeFormat: 'hours_minutes_seconds' | 'minutes_seconds_only';
-}
+export type ScannerContext = SharedScannerContext;
 
 export interface ScanRunRequest {
   raceId: string;

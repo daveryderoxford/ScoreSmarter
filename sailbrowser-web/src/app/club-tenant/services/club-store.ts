@@ -5,7 +5,7 @@ import { FirebaseApp } from '@angular/fire/app';
 import { arrayRemove, arrayUnion, doc, docData, DocumentReference, getFirestore, setDoc, updateDoc, } from '@angular/fire/firestore';
 import { firstValueFrom, filter } from 'rxjs';
 import { Club } from '../model/club';
-import { Fleet } from 'app/club-tenant/model/fleet';
+import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 import { BoatClass } from '../model/boat-class';
 import { Season } from 'app/race-calender/model/season';
 import { dataObjectConverter } from 'app/shared/firebase/firestore-helper';
@@ -68,9 +68,17 @@ export class ClubStore {
       }
     });
 
+    const sortedFleets = [...allFleets].sort((a, b) =>
+      getFleetName(a).localeCompare(getFleetName(b)),
+    );
+    const sortedClasses = [...club.classes].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+
     return {
       ...club,
-      fleets: allFleets,
+      fleets: sortedFleets,
+      classes: sortedClasses,
       suspectTimeThresholds: {
         ...DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES,
         ...(club.suspectTimeThresholds ?? {}),

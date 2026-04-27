@@ -1,21 +1,10 @@
 import { getStorage } from "firebase-admin/storage";
 import { getFirestore } from "firebase-admin/firestore";
-import { logScan } from "./types";
-
-const storage = getStorage();
-const db = getFirestore();
+import { logScan } from "./ai-scan-types.js";
 
 export interface StoredResultsSheetImage {
   storagePath: string;
   gsUri: string;
-}
-
-export function resultsSheetStoragePath(clubId: string, raceId: string): string {
-  return `clubs/${clubId}/results-sheets/sheet-${raceId}`;
-}
-
-export function raceCalendarDocPath(clubId: string, raceId: string): string {
-  return `clubs/${clubId}/calendar/${raceId}`;
 }
 
 export async function storeResultsSheetImage(
@@ -26,6 +15,7 @@ export async function storeResultsSheetImage(
   requestId: string,
 ): Promise<StoredResultsSheetImage> {
   const storagePath = resultsSheetStoragePath(clubId, raceId);
+  const storage = getStorage();
   const bucket = storage.bucket();
   const file = bucket.file(storagePath);
 
@@ -65,6 +55,7 @@ export async function updateRaceResultsSheetImagePath(
   requestId: string,
 ): Promise<void> {
   const raceDocPath = raceCalendarDocPath(clubId, raceId);
+  const db = getFirestore();
   logScan(requestId, "update_race_doc", "Updating race with results sheet image path", {
     raceDocPath,
     storagePath,
@@ -76,4 +67,11 @@ export async function updateRaceResultsSheetImagePath(
     },
     { merge: true },
   );
+}
+export function resultsSheetStoragePath(clubId: string, raceId: string): string {
+  return `clubs/${clubId}/results-sheets/sheet-${raceId}`;
+}
+
+export function raceCalendarDocPath(clubId: string, raceId: string): string {
+  return `clubs/${clubId}/calendar/${raceId}`;
 }
