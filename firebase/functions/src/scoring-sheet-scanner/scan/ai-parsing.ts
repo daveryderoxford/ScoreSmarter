@@ -1,5 +1,5 @@
 import { ApiError, GoogleGenAI, Type, type GenerateContentResponse } from "@google/genai";
-import { ScannerContext, ScannerTimeFormat, httpsWithDetails, logScan, logScanError } from "./ai-scan-types.js";
+import { ScannerContext, ScannerTimeFormat, httpsWithDetails, logScan, logScanError } from "../ai-scan-types.js";
 import { buildPrompt } from "./prompt-builder.js";
 
 const GCP_PROJECT = process.env.GCLOUD_PROJECT || "sailbrowser-efef0";

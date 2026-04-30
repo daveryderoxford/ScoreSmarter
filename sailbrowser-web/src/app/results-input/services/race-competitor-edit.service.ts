@@ -243,19 +243,29 @@ export class RaceCompetitorEditService {
 
     const proposed: PerHullIdentity = { helm, boatClass, sailNumber };
 
-    // Duplicate across the same series (rename collision). This catches any
-    // combination of helm / class / sail changes in one go so editing two
-    // fields together can't smuggle the entry into a sibling's slot.
+    // Same series: another SeriesEntry with this (helm, class, sail) tuple.
+    // If it exists, we either error (already represented in this race), run
+    // merged-hull/helm checks, then re-point this race row at that entry
+    // (same model as EntryService.findOrCreateSeriesEntry on reuse), or — if
+    // there is no collision — rename the current entry in place.
     const sameSeriesEntries = this.seriesEntries
       .selectedEntries()
       .filter(e => e.seriesId === entry.seriesId);
     const collision = findCollidingEntry(sameSeriesEntries, proposed, entry.id);
     if (collision) {
-      throw new ScoreSmarterError(
-        `Cannot rename: another series entry already exists for ` +
-        `${describeIdentity(proposed)} (id ${collision.id}). ` +
-        `Delete or merge that entry before renaming.`,
-      );
+      const alreadyInThisRace = this.competitors
+        .selectedCompetitors()
+        .some(
+          c =>
+            c.raceId === target.raceId &&
+            c.id !== target.id &&
+            c.seriesEntryId === collision.id,
+        );
+      if (alreadyInThisRace) {
+        throw new ScoreSmarterError(
+          `${describeIdentity(proposed)} is already entered in this race.`,
+        );
+      }
     }
 
     // In-race conflict against other competitors in the same race under the
@@ -277,28 +287,52 @@ export class RaceCompetitorEditService {
       }
     }
 
+    let workingEntry = entry;
+    let competitorForCrew = target;
+    if (collision) {
+      const oldEntryId = entry.id;
+      await this.competitors.updateResult(target.id, { seriesEntryId: collision.id });
+      workingEntry = collision;
+      const refreshed = this.competitors.selectedCompetitors().find(c => c.id === target.id);
+      if (!refreshed) {
+        throw new Error(`RaceCompetitor vanished after reassociation: ${target.id}`);
+      }
+      competitorForCrew = refreshed;
+      const stillReferenced = this.competitors
+        .selectedCompetitors()
+        .some(c => c.id !== target.id && c.seriesEntryId === oldEntryId);
+      if (!stillReferenced) {
+        await this.seriesEntries.deleteEntry(oldEntryId);
+      }
+    }
+
     // Crew: the only field with per-race scope. We apply it first so a
     // downstream entry-write failure can't leave the race row mutated in a
     // way that contradicts the entry's crew.
-    const crewScopeChanged = await this.applyCrewEdit(target, entry, crew, command.crewScope);
+    const crewScopeChanged = await this.applyCrewEdit(
+      competitorForCrew,
+      workingEntry,
+      crew,
+      command.crewScope,
+    );
 
     // Entry field changes. Handicaps are re-resolved *only* when the boat
     // class or personal band actually changed; a bare helm/crew correction
     // must not silently rewrite handicaps and republish every race in the
     // series.
     const personalHandicapBand = command.personalHandicapBand;
-    const classChanged = entry.boatClass !== boatClass;
+    const classChanged = workingEntry.boatClass !== boatClass;
     const bandChanged =
-      (entry.personalHandicapBand ?? undefined) !== (personalHandicapBand ?? undefined);
+      (workingEntry.personalHandicapBand ?? undefined) !== (personalHandicapBand ?? undefined);
 
     const entryUpdate: Partial<SeriesEntry> = {};
-    if (entry.helm !== helm) entryUpdate.helm = helm;
+    if (workingEntry.helm !== helm) entryUpdate.helm = helm;
     if (classChanged) entryUpdate.boatClass = boatClass;
-    if (entry.sailNumber !== sailNumber) entryUpdate.sailNumber = sailNumber;
+    if (workingEntry.sailNumber !== sailNumber) entryUpdate.sailNumber = sailNumber;
     if (bandChanged) entryUpdate.personalHandicapBand = personalHandicapBand;
 
     if (classChanged || bandChanged) {
-      // When the hull's class changes, do not pass the old `entry.handicaps`
+      // When the hull's class changes, do not pass the old `workingEntry.handicaps`
       // into the resolver: valid PY (etc.) on the entry are treated as user
       // overrides and would otherwise stick to the previous class's numbers.
       // A class change means "take handicaps from the new club class (+ band
@@ -308,24 +342,24 @@ export class RaceCompetitorEditService {
         series,
         {
           boatClassName: boatClass,
-          handicaps: classChanged ? undefined : entry.handicaps,
+          handicaps: classChanged ? undefined : workingEntry.handicaps,
           personalHandicapBand,
           personalHandicapUnknown: !personalHandicapBand,
         },
         this.clubStore.club().classes,
       );
-      if (!handicapsEqual(entry.handicaps, recomputed)) {
+      if (!handicapsEqual(workingEntry.handicaps, recomputed)) {
         entryUpdate.handicaps = recomputed;
       }
-      const nextTags = applyPersonalBandTag(entry.tags, personalHandicapBand);
-      if (!tagsEqual(entry.tags, nextTags)) {
+      const nextTags = applyPersonalBandTag(workingEntry.tags, personalHandicapBand);
+      if (!tagsEqual(workingEntry.tags, nextTags)) {
         entryUpdate.tags = nextTags;
       }
     }
 
     const entryChanged = Object.keys(entryUpdate).length > 0;
     if (entryChanged) {
-      await this.seriesEntries.updateEntry(entry.id, entryUpdate);
+      await this.seriesEntries.updateEntry(workingEntry.id, entryUpdate);
     }
 
     // Dirty marking: every race that references this entry is now stale for
@@ -333,12 +367,15 @@ export class RaceCompetitorEditService {
     // current race. The set is always a superset of the current race when
     // any entry field changed.
     const raceIdsToMark = new Set<string>();
+    if (collision) {
+      raceIdsToMark.add(target.raceId);
+    }
     if (crewScopeChanged === 'race') {
       raceIdsToMark.add(target.raceId);
     }
     if (entryChanged || crewScopeChanged === 'series') {
       for (const comp of this.competitors.selectedCompetitors()) {
-        if (comp.seriesEntryId === entry.id) raceIdsToMark.add(comp.raceId);
+        if (comp.seriesEntryId === workingEntry.id) raceIdsToMark.add(comp.raceId);
       }
     }
     for (const raceId of raceIdsToMark) {

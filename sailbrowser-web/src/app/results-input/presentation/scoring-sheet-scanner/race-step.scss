@@ -1,0 +1,33 @@
+.form-card form {
+   display: flex;
+   flex-direction: column;
+   gap: 1rem;
+   padding-left: 25px;
+   padding-right: 25px;
+   padding-top: 15px;
+}
+
+.form-card mat-form-field {
+   width: 100%;
+}
+
+.race-summary {
+   border: 1px solid var(--mat-sys-outline-variant);
+   border-radius: 12px;
+   padding: 16px;
+   margin: 0.25rem 0 1.1rem;
+   background: var(--mat-sys-surface-container-lowest);
+}
+
+.race-summary-title {
+   font-weight: 600;
+   margin-bottom: 0.35rem;
+}
+
+.race-summary-meta {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 0.5rem 1rem;
+   font-size: 0.85rem;
+   color: var(--mat-sys-on-surface-variant);
+}

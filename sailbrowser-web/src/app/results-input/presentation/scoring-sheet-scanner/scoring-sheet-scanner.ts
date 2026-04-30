@@ -8,7 +8,9 @@ import { MatSelectChange } from '@angular/material/select';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BoatsStore } from 'app/boats';
+import { ClubStore } from 'app/club-tenant';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
+import { getFleetName } from 'app/club-tenant/model/fleet';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
 import { RacePickerDialog } from 'app/race-calender/presentation/race-picker-dialog/race-picker-dialog';
@@ -28,6 +30,7 @@ import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-e
 import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step';
 import { ScanResponse, ScannedResultRow, ScannerContext } from './scan-model';
 import { ScannerOrchestrationService } from './scanner-orchestration.service';
+import { RaceStep } from './race-step';
 import { SetupStep } from './setup-step';
 import type { ScannerTimeFormat } from '@shared/scanner-context';
 
@@ -37,6 +40,7 @@ import type { ScannerTimeFormat } from '@shared/scanner-context';
     ReactiveFormsModule,
     MatDialogModule,
     MatStepperModule,
+    RaceStep,
     SetupStep,
     CaptureStep,
     ReviewStep,
@@ -94,6 +98,7 @@ export class ScoringSheetScanner {
   private readonly entryStore = inject(SeriesEntryStore);
   private readonly boatsStore = inject(BoatsStore);
   private readonly clubTenant = inject(ClubTenant);
+  private readonly clubStore = inject(ClubStore);
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -109,8 +114,8 @@ export class ScoringSheetScanner {
     timeFormat: this.fb.nonNullable.control<ScannerTimeFormat>('clock_hms', Validators.required),
     lapsPresentOnSheet: this.fb.nonNullable.control(true, Validators.required),
     lapFormat: ['numbers', Validators.required],
-    defaultHour: [14],
-    defaultLaps: [1],
+    defaultHour: [10, [Validators.min(0), Validators.max(23)]],
+    defaultLaps: [1, [Validators.min(1), Validators.max(100)]],
   });
   captureForm = this.fb.nonNullable.group({
     hasImage: [false, Validators.requiredTrue],
@@ -122,6 +127,10 @@ export class ScoringSheetScanner {
   );
   readonly selectedRace = computed(() => this.raceCalendarStore.allRaces().find((r: Race) => r.id === this.selectedRaceId()));
   readonly hasExistingImage = computed(() => !!this.selectedRace()?.resultsSheetImage);
+  readonly hasConfiguredStartTimes = computed(() => {
+    const race = this.selectedRace();
+    return !!race && this.hasConfiguredStarts(race);
+  });
   readonly todaysRaceOptions = computed(() =>
     this.raceCalendarStore.allRaces().filter((r: Race) => isToday(r.scheduledStart)).map((r: Race) => ({
       id: r.id,
@@ -135,6 +144,65 @@ export class ScoringSheetScanner {
     const r = this.raceCalendarStore.allRaces().find((x: Race) => x.id === pId);
     if (!r) return null;
     return { id: r.id, label: `${r.seriesName} — Race ${r.index} (${format(r.scheduledStart, 'yyyy-MM-dd')})` };
+  });
+  readonly selectedRaceSummary = computed(() => {
+    const race = this.selectedRace();
+    if (race) {
+      return {
+        title: `${race.seriesName} - Race ${race.index}`,
+        meta: [
+          this.formatRaceDateTime(race.scheduledStart),
+          `Status: ${race.status}`,
+          `Type: ${race.type}`,
+        ],
+      };
+    }
+    const raceId = this.selectedRaceId();
+    if (!raceId) return null;
+    const picked = this.pickedRaceOption();
+    if (picked?.id === raceId) {
+      return {
+        title: picked.label,
+        meta: [`Race ID: ${raceId}`],
+      };
+    }
+    return {
+      title: `Selected race (${raceId})`,
+      meta: [],
+    };
+  });
+  readonly startTimesSummary = computed(() => {
+    const race = this.selectedRace();
+    if (!race) {
+      return {
+        title: 'Start Times',
+        configured: false,
+        lines: ['Select a race to configure start times.'],
+      };
+    }
+    const starts = race.starts ?? [];
+    if (starts.length > 0) {
+      return {
+        title: 'Start Times',
+        configured: true,
+        lines: starts.map((start, index) => {
+          const fleetLabel = start.fleetId ? this.getFleetName(start.fleetId) : `Start ${index + 1}`;
+          return `${fleetLabel}: ${this.formatTimeOnly(start.timeOfDay)}`;
+        }),
+      };
+    }
+    if (race.actualStart) {
+      return {
+        title: 'Start Times',
+        configured: true,
+        lines: [`Actual start: ${this.formatTimeOnly(race.actualStart)}`],
+      };
+    }
+    return {
+      title: 'Start Times',
+      configured: false,
+      lines: ['No start times configured.'],
+    };
   });
 
   imageBase64 = signal<string | null>(null);
@@ -194,16 +262,44 @@ export class ScoringSheetScanner {
     }
   }
 
+  private formatRaceDateTime(value: Date): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Scheduled time unavailable';
+    return format(date, 'EEE d MMM, HH:mm');
+  }
+
+  private formatTimeOnly(value: Date): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Time unavailable';
+    return format(date, 'HH:mm:ss');
+  }
+
+  private getFleetName(fleetId: string): string {
+    const fleet = this.clubStore.club().fleets.find(f => f.id === fleetId);
+    return fleet ? getFleetName(fleet) : `Fleet ${fleetId}`;
+  }
+
   async onRaceSelect(event: MatSelectChange): Promise<void> {
     if (event.value !== '__MORE__') return;
-    this.form.controls.raceId.setValue('', { emitEvent: false });
     const dialogRef = this.dialog.open(RacePickerDialog, {
       width: '500px',
-      data: { title: 'Select Race', maxSelections: 1, requireSelection: true },
+      data: {
+        title: 'Select Race',
+        maxSelections: 1,
+        requireSelection: true,
+        mode: 'scanner',
+        defaultPeriod: 'past',
+        availablePeriods: ['past'],
+        hideIncompleteDefault: true,
+      },
     });
     dialogRef.afterClosed().subscribe(selection => {
       const id = selection?.[0];
-      if (!id) return;
+      if (!id) {
+        this.form.controls.raceId.setValue('');
+        this.pickedRaceId.set(null);
+        return;
+      }
       this.form.patchValue({ raceId: id });
       this.pickedRaceId.set(id);
       this.currentRacesStore.addRaceId(id);
@@ -263,7 +359,7 @@ export class ScoringSheetScanner {
   }
 
   async onStepChange(event: { selectedIndex: number; }): Promise<void> {
-    if (event.selectedIndex !== 2) return;
+    if (event.selectedIndex !== 3) return;
     if (!this.isMockScanMode() && (!this.imageBase64() || !this.imageMimeType())) return;
     if (this.loading()) return;
     if (this.result()) return;

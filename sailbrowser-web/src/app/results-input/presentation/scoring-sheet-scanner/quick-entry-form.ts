@@ -40,13 +40,13 @@ import { SubmitButton } from 'app/shared/components/submit-button';
               Adding <strong>{{ boatClass() }} #{{ sailNumber() }}</strong> to the race entries.
             </p>
             
-            <mat-form-field appearance="outline">
+            <mat-form-field>
               <mat-label>Helm Name</mat-label>
               <input matInput formControlName="helm" placeholder="e.g. John Doe">
               <mat-error>Helm is required</mat-error>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field>
               <mat-label>Crew Name (Optional)</mat-label>
               <input matInput formControlName="crew">
             </mat-form-field>

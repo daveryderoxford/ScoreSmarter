@@ -7,6 +7,19 @@
    padding-top: 15px;
 }
 
+.form-card mat-form-field {
+   width: 100%;
+}
+
+.race-summary {
+   border: 1px solid var(--mat-sys-outline-variant);
+   border-bottom: 2px solid var(--mat-sys-outline);
+   border-radius: 12px;
+   padding: 1rem;
+   margin: 0.25rem 0 0.5rem;
+   background: var(--mat-sys-surface-container-lowest);
+}
+
 .toggle-group-container {
    margin-top: 0px;
    margin-bottom: 1.5rem;
@@ -17,8 +30,52 @@
       color: var(--mat-sys-on-surface-variant);
       margin-bottom: 8px;
    }
+
+   .time-format-toggle-group {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+   }
+
+   .time-format-toggle-group :global(.mat-button-toggle-button) {
+      padding-inline: 0.25rem;
+   }
+
+   .time-format-toggle-group :global(.mat-button-toggle-label-content) {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      white-space: nowrap;
+      font-size: 0.8rem;
+      line-height: 1.2;
+   }
+
+   .time-format-toggle-group mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      vertical-align: middle;
+   }
+
+   .time-format-text {
+      letter-spacing: 0.01em;
+   }
 }
 
 .margin-bottom {
    margin-bottom: 1.5rem;
+}
+
+.laps-row {
+   display: grid;
+   grid-template-columns: 1fr 1fr;
+   gap: 0.75rem;
+}
+
+@media (max-width: 680px) {
+   .laps-row {
+      grid-template-columns: 1fr;
+   }
 }

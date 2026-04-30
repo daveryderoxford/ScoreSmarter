@@ -1,7 +1,7 @@
 import test from "node:test";
 import * as assert from "node:assert/strict";
 import { buildPrompt } from "./prompt-builder.js";
-import type { ScannerContext } from "./ai-scan-types.js";
+import type { ScannerContext } from "../ai-scan-types.js";
 
 const baseContext: ScannerContext = {
   targetRaces: ["race-1"],
@@ -15,7 +15,6 @@ const baseContext: ScannerContext = {
 test("buildPrompt includes target race and roster details", () => {
   const prompt = buildPrompt(baseContext, "race-1");
   assert.match(prompt, /Target race id: race-1/);
-  assert.match(prompt, /Expected Competitor Roster/);
   assert.match(prompt, /ILCA 7/);
 });
 

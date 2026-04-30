@@ -1,5 +1,5 @@
 <form [formGroup]="form" class="edit-form" (ngSubmit)="onSubmit()">
-  <mat-form-field appearance="outline" class="field-full">
+  <mat-form-field class="field-full">
     <mat-label>Helm</mat-label>
     <input matInput formControlName="helm" autocomplete="name" autocapitalize="words" />
     @if (form.controls.helm.hasError('required')) {
@@ -7,14 +7,14 @@
     }
   </mat-form-field>
 
-  <mat-form-field appearance="outline" class="field-full">
+  <mat-form-field class="field-full">
     <mat-label>Crew</mat-label>
     <input matInput formControlName="crew" autocomplete="off" />
     <mat-hint>Applies to this race only</mat-hint>
   </mat-form-field>
 
   <div class="row class-and-sail">
-    <mat-form-field appearance="outline" class="field-class">
+    <mat-form-field class="field-class">
       <mat-label>Boat class</mat-label>
       <mat-select formControlName="boatClass">
         @for (name of classOptions(); track name) {
@@ -26,7 +26,7 @@
       }
     </mat-form-field>
 
-    <mat-form-field appearance="outline" class="field-sail">
+    <mat-form-field class="field-sail">
       <mat-label>Sail #</mat-label>
       <input
         matInput
@@ -44,7 +44,7 @@
   </div>
 
   @if (supportsPersonalBand()) {
-    <mat-form-field appearance="outline" class="field-full">
+    <mat-form-field class="field-full">
       <mat-label>Personal handicap band</mat-label>
       <mat-select formControlName="personalHandicapBand">
         <mat-option value="unknown">Unknown / request allocation</mat-option>

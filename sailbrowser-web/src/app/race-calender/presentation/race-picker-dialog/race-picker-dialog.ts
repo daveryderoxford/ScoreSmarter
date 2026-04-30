@@ -2,10 +2,21 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatChipsModule } from '@angular/material/chips';
 import type { Race } from '../../model/race';
+import type { RaceStatus } from '../../model/race-status';
 import { RaceCalendarStore } from '../../services/full-race-calander';
 import { RaceTitlePipe } from 'app/shared/pipes/race-title-pipe';
 import { groupBy } from 'app/shared/utils/group-by';
+import {
+  dayGroupSortDirection,
+  DEFAULT_PERIODS_BY_MODE,
+  DEFAULT_PERIOD_BY_MODE,
+  includesRace,
+  pickInitialPeriod,
+  type RacePickerMode,
+  type RacePickerPeriod,
+} from './race-picker-filters';
 
 export interface RacePickerDialogData {
   title: string;
@@ -15,16 +26,18 @@ export interface RacePickerDialogData {
   maxSelections?: number;
   /** If true (default), OK stays disabled until at least one race is selected. */
   requireSelection?: boolean;
+  mode?: RacePickerMode;
+  defaultPeriod?: RacePickerPeriod;
+  availablePeriods?: RacePickerPeriod[];
+  hideIncompleteDefault?: boolean;
+  /** Explicit status allow-list (overrides statusFilter mapping when provided). */
+  includeStatuses?: RaceStatus[];
 }
 
 interface DayGroup {
   readonly dateKey: string;
   readonly heading: string;
   readonly races: Race[];
-}
-
-function isScheduledToday(race: Race): boolean {
-  return new Date(race.scheduledStart).toDateString() === new Date().toDateString();
 }
 
 function sortRacesByTimeThenIndex(a: Race, b: Race): number {
@@ -45,15 +58,35 @@ function dayHeading(d: Date): string {
   template: `
     <h2 mat-dialog-title>{{ data.title }}</h2>
     <mat-dialog-content class="picker-content">
-      @if (todayRaces().length === 0 && !showMoreDays() && otherDayGroups().length === 0) {
-        <p class="hint">No upcoming races in calendar.</p>
-      } @else if (todayRaces().length === 0 && !showMoreDays()) {
-        <p class="hint">No races scheduled today.</p>
+      @if (availablePeriods().length > 0) {
+        <div class="chip-row">
+          <mat-chip-listbox class="period-chips" [multiple]="false">
+            @for (period of availablePeriods(); track period) {
+              <mat-chip-option
+                [selected]="selectedPeriod() === period"
+                (selectionChange)="onPeriodChipChange(period, $event.selected)">
+                {{ periodLabel(period) }}
+              </mat-chip-option>
+            }
+          </mat-chip-listbox>
+          @if (showHideIncompleteToggle()) {
+            <mat-chip-listbox class="single-chip" [multiple]="false">
+              <mat-chip-option
+                [selected]="hideIncomplete()"
+                (selectionChange)="onHideIncompleteChipChange($event.selected)">
+                Hide complete
+              </mat-chip-option>
+            </mat-chip-listbox>
+          }
+        </div>
       }
 
-      @if (todayRaces().length > 0) {
-        <h3 class="group-heading">{{ todayHeading() }}</h3>
-        @for (race of todayRaces(); track race.id) {
+      @if (dayGroups().length === 0) {
+        <p class="hint">No races found for the selected filters.</p>
+      } @else {
+        @for (group of dayGroups(); track group.dateKey) {
+          <h3 class="group-heading">{{ group.heading }}</h3>
+          @for (race of group.races; track race.id) {
           <mat-checkbox
             class="race-option"
             [checked]="isSelected(race.id)"
@@ -62,25 +95,6 @@ function dayHeading(d: Date): string {
           </mat-checkbox>
         }
       }
-
-      @if (showMoreDays()) {
-        @for (group of otherDayGroups(); track group.dateKey) {
-          <h3 class="group-heading">{{ group.heading }}</h3>
-          @for (race of group.races; track race.id) {
-            <mat-checkbox
-              class="race-option"
-              [checked]="isSelected(race.id)"
-              (change)="onToggle(race.id, $event.checked)">
-              {{ race | racetitle }}
-            </mat-checkbox>
-          }
-        }
-      }
-
-      @if (!showMoreDays() && otherDayGroups().length > 0) {
-        <button type="button" mat-button class="more-dates" (click)="showMoreDays.set(true)">
-          More races…
-        </button>
       }
     </mat-dialog-content>
     <mat-dialog-actions align="end">
@@ -94,10 +108,25 @@ function dayHeading(d: Date): string {
     .picker-content {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      max-height: min(60vh, 520px);
+      gap: 10px;
+      height: min(60vh, 520px);
       min-width: min(92vw, 420px);
       overflow-y: auto;
+    }
+    .period-chips {
+      width: 100%;
+    }
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .period-chips {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .single-chip {
+      flex: 0 0 auto;
     }
     .hint {
       margin: 0 0 4px;
@@ -118,50 +147,93 @@ function dayHeading(d: Date): string {
       line-height: 1.35;
       display: block;
     }
-    .more-dates {
-      align-self: flex-start;
-      margin-top: 4px;
-    }
   `,
-  imports: [MatDialogModule, MatButtonModule, MatCheckboxModule, RaceTitlePipe],
+  imports: [
+    MatDialogModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatChipsModule,
+    RaceTitlePipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RacePickerDialog {
   protected readonly data = inject<RacePickerDialogData>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject(MatDialogRef<RacePickerDialog, string[] | undefined>);
   protected readonly raceStore = inject(RaceCalendarStore);
-
-  protected readonly showMoreDays = signal(false);
-
   private readonly maxSelections = this.data.maxSelections;
   private readonly requireSelection = this.data.requireSelection ?? true;
+  private readonly mode: RacePickerMode = this.data.mode ?? 'results';
+  private readonly now = signal(new Date());
 
   private readonly selectedIds = signal<Set<string>>(
     new Set(this.data.preselectedRaceIds?.filter(Boolean) ?? []),
   );
-
-  protected readonly todayRaces = computed(() =>
-    this.raceStore.allRaces().filter(isScheduledToday).sort(sortRacesByTimeThenIndex),
+  protected readonly availablePeriods = computed(() => {
+    return this.data.availablePeriods ?? DEFAULT_PERIODS_BY_MODE[this.mode];
+  });
+  protected readonly showHideIncompleteToggle = computed(() => this.mode === 'results' || this.mode === 'scanner');
+  protected readonly hideIncomplete = signal<boolean>(this.data.hideIncompleteDefault ?? this.showHideIncompleteToggle());
+  protected readonly selectedPeriod = signal<RacePickerPeriod>(
+    pickInitialPeriod(
+      this.availablePeriods(),
+      this.data.defaultPeriod ?? DEFAULT_PERIOD_BY_MODE[this.mode],
+      this.raceStore.allRaces(),
+      this.data.preselectedRaceIds ?? [],
+      this.now(),
+    ),
   );
 
-  protected readonly todayHeading = computed(() => dayHeading(new Date()));
-
-  protected readonly otherDayGroups = computed((): DayGroup[] => {
-    const races = this.raceStore
+  protected readonly filteredRaces = computed(() => {
+    const period = this.selectedPeriod();
+    return this.raceStore
       .allRaces()
-      .filter(r => !isScheduledToday(r))
+      .filter(race =>
+        includesRace(
+          race,
+          period,
+          this.now(),
+          this.showHideIncompleteToggle() ? this.hideIncomplete() : false,
+          this.data.includeStatuses,
+        ),
+      )
       .sort(sortRacesByTimeThenIndex);
+  });
 
-    const byDay = groupBy(races, race => new Date(race.scheduledStart).toDateString());
-
+  protected readonly dayGroups = computed((): DayGroup[] => {
+    const byDay = groupBy(this.filteredRaces(), race => new Date(race.scheduledStart).toDateString());
+    const direction = dayGroupSortDirection(this.selectedPeriod());
     return [...byDay.entries()]
-      .sort((a, b) => new Date(a[1][0].scheduledStart).getTime() - new Date(b[1][0].scheduledStart).getTime())
+      .sort((a, b) => {
+        const diff = new Date(a[1][0].scheduledStart).getTime() - new Date(b[1][0].scheduledStart).getTime();
+        return direction === 'asc' ? diff : -diff;
+      })
       .map(([dateKey, dayRaces]) => ({
         dateKey,
         heading: dayHeading(dayRaces[0].scheduledStart),
         races: dayRaces,
       }));
   });
+
+  protected periodLabel(period: RacePickerPeriod): string {
+    switch (period) {
+      case 'today': return 'Today';
+      case 'last7Days': return 'Last 7 days';
+      case 'next7Days': return 'Next 7 days';
+      case 'future': return 'Future';
+      case 'past': return 'Past';
+      case 'all': return 'All';
+    }
+  }
+
+  protected onPeriodChipChange(period: RacePickerPeriod, selected: boolean): void {
+    if (!selected) return;
+    this.selectedPeriod.set(period);
+  }
+
+  protected onHideIncompleteChipChange(selected: boolean): void {
+    this.hideIncomplete.set(selected);
+  }
 
   protected isSelected(id: string): boolean {
     return this.selectedIds().has(id);

@@ -8,7 +8,7 @@ import { RESULT_CODE_DEFINITIONS, ResultCode, getResultCodeDefinition } from 'ap
 @Component({
   selector: 'app-result-code-select',
   template: `
-    <mat-form-field appearance="outline" class="w-full">
+    <mat-form-field class="w-full">
       <mat-label>Result Code</mat-label>
       <mat-select [value]="value()" [disabled]="disabled()" (selectionChange)="onSelectionChange($event.value)">
         @for (code of resultCodes; track code.id) {

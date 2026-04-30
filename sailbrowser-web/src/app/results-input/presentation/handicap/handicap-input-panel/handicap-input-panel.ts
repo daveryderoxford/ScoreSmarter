@@ -33,7 +33,7 @@ import { manualRaceTableSort, ManualResultsService } from '../../../services/man
 import { ClubStore } from 'app/club-tenant';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getCorrectedTime } from 'app/scoring/services/scorer-times';
-import { isSuspectIncludingCorrected, resolveSuspectTimeRules } from '../../../services/suspect-time-rules';
+import { isSuspectTime, resolveSuspectTimeRules } from '../../../services/suspect-time-rules';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-time-dialog';
 import { RaceTimeInput } from '../race-time-input';
 import { ResultCodeSelect } from '../../result-code-select';
@@ -145,7 +145,7 @@ export class HandicapInputPanel {
       scheme,
     );
     const rules = resolveSuspectTimeRules(this.clubStore.club().suspectTimeThresholds);
-    const isSuspicious = isSuspectIncludingCorrected(
+    const isSuspicious = isSuspectTime(
       stats.elapsedSeconds,
       stats.avgLapTime,
       scheme === 'Level Rating' ? undefined : correctedTime,

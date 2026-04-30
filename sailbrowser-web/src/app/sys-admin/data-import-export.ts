@@ -26,7 +26,7 @@ import { ScoreSmarterError } from '../shared/utils/scoresmarter-error';
         Enter the path to the collection (e.g. <code>systemdata</code> or <code>systemdata/config/settings</code>).
       </p>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field class="full-width">
         <mat-label>Collection Path</mat-label>
         <input matInput [(ngModel)]="path" placeholder="e.g. systemdata">
       </mat-form-field>

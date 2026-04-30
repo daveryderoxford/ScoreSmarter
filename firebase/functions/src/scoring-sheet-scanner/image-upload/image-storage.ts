@@ -1,10 +1,18 @@
 import { getStorage } from "firebase-admin/storage";
-import { getFirestore } from "firebase-admin/firestore";
-import { logScan } from "./ai-scan-types.js";
+import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
+import { randomUUID } from "crypto";
+import { logScan } from "../ai-scan-types.js";
 
 export interface StoredResultsSheetImage {
   storagePath: string;
   gsUri: string;
+}
+
+export type StoredResultsSheetImageStatus = "uploaded" | "scanned";
+
+export interface StoredResultsSheetImageRecord extends StoredResultsSheetImage {
+  status: StoredResultsSheetImageStatus;
+  createdAt: Timestamp;
 }
 
 export async function storeResultsSheetImage(
@@ -68,10 +76,44 @@ export async function updateRaceResultsSheetImagePath(
     { merge: true },
   );
 }
+
+export async function appendResultsSheetImageRecord(
+  clubId: string,
+  raceId: string,
+  image: StoredResultsSheetImage,
+  status: StoredResultsSheetImageStatus,
+  requestId: string,
+): Promise<void> {
+  const scanDocPath = resultsSheetScanDocPath(clubId, raceId);
+  const record: StoredResultsSheetImageRecord = {
+    ...image,
+    status,
+    createdAt: Timestamp.now(),
+  };
+  logScan(requestId, "update_race_doc", "Updating latest stored image set", {
+    scanDocPath,
+    raceId,
+    storagePath: image.storagePath,
+    status,
+  });
+  await getFirestore().doc(scanDocPath).set(
+    {
+      raceId,
+      updatedAt: FieldValue.serverTimestamp(),
+      images: [record],
+    },
+    { merge: true },
+  );
+}
+
 export function resultsSheetStoragePath(clubId: string, raceId: string): string {
-  return `clubs/${clubId}/results-sheets/sheet-${raceId}`;
+  return `clubs/${clubId}/results-sheets/${raceId}/${Date.now()}-${randomUUID()}.jpg`;
 }
 
 export function raceCalendarDocPath(clubId: string, raceId: string): string {
   return `clubs/${clubId}/calendar/${raceId}`;
+}
+
+export function resultsSheetScanDocPath(clubId: string, raceId: string): string {
+  return `clubs/${clubId}/results-sheet-scans/${raceId}`;
 }

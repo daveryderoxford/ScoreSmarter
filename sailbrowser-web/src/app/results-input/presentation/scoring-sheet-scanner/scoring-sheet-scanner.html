@@ -4,16 +4,17 @@
 
   <mat-stepper class="stepper" [linear]="true" #stepper [orientation]="isMobile() ? 'vertical' : 'horizontal'" (selectionChange)="onStepChange($event)">
     <mat-step [stepControl]="form" [completed]="form.valid">
-      <ng-template matStepLabel>Setup</ng-template>
+      <ng-template matStepLabel>Race</ng-template>
       <div class="step-container">
-        <form [formGroup]="form" class="stepper-form">
-          <app-setup-step
+        <form [formGroup]="form" class="stepper-form stepper-form-narrow">
+          <app-race-step
             [form]="form"
             [todaysRaceOptions]="todaysRaceOptions()"
             [pickedRaceOption]="pickedRaceOption()"
+            [selectedRaceSummary]="selectedRaceSummary()"
             (raceSelect)="onRaceSelect($event)" />
           <div class="step-actions">
-            <button matButton="filled" type="submit" matStepperNext [disabled]="form.invalid" style="margin-left:auto;">Next</button>
+            <button matButton="filled" type="submit" matStepperNext [disabled]="!form.controls.raceId.valid" style="margin-left:auto;">Next</button>
           </div>
         </form>
       </div>
@@ -37,6 +38,44 @@
       </div>
     </mat-step>
 
+    <mat-step [stepControl]="form">
+      <ng-template matStepLabel>Details</ng-template>
+      <div class="step-container">
+        <form [formGroup]="form" class="stepper-form stepper-form-narrow">
+          <app-setup-step [form]="form" />
+          <div class="detail-panel">
+            <div class="detail-panel-header">
+              <div class="detail-panel-title">{{ startTimesSummary().title }}</div>
+              <span class="detail-panel-status" [class.missing]="!startTimesSummary().configured">
+                {{ startTimesSummary().configured ? 'Configured' : 'Required' }}
+              </span>
+            </div>
+            <div class="detail-panel-lines">
+              @for (line of startTimesSummary().lines; track line) {
+                <div>{{ line }}</div>
+              }
+            </div>
+            <div class="detail-panel-actions">
+              <button matButton="outlined" type="button" (click)="setStartTimesForSelectedRace()">
+                Set Start Time(s)
+              </button>
+            </div>
+          </div>
+          <div class="step-actions">
+            <button matButton matStepperPrevious>Previous</button>
+            <button
+              matButton="filled"
+              type="button"
+              matStepperNext
+              [disabled]="form.invalid || !hasConfiguredStartTimes()"
+              style="margin-left:auto;">
+              Next
+            </button>
+          </div>
+        </form>
+      </div>
+    </mat-step>
+
     <mat-step>
       <ng-template matStepLabel>Review</ng-template>
       <div class="step-container review-container">
@@ -50,7 +89,6 @@
           [displayedColumns]="displayedColumns"
           [unmatchedColumns]="unmatchedColumns"
           (backRequested)="stepper.previous()"
-          (startTimeRequested)="setStartTimesForSelectedRace()"
           (retryRequested)="scan()"
           (saveRequested)="saveResults()"
           (knownBoatEntryRequested)="openKnownBoatEntry($event)"

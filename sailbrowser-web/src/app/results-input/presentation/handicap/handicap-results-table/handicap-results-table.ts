@@ -8,7 +8,7 @@ import { getCorrectedTime } from 'app/scoring/services/scorer-times';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { ResolvedRaceCompetitor } from '../../../model/resolved-race-competitor';
 import { ClubStore } from 'app/club-tenant';
-import { isSuspectIncludingCorrected, resolveSuspectTimeRules } from 'app/results-input/services/suspect-time-rules';
+import { isSuspectTime, resolveSuspectTimeRules } from 'app/results-input/services/suspect-time-rules';
 
 @Component({
   selector: 'app-handicap-results-table',
@@ -73,7 +73,7 @@ export class HandicapResultsTable {
       const data = new ExtendedRaceCompetitor(c, c.entry);
       const scheme = this.handicapScheme();
       data.correctedTime = this.corrected(data, maxLaps);
-      data.isSuspect = isSuspectIncludingCorrected(
+      data.isSuspect = isSuspectTime(
         data.elapsedTime,
         data.averageLapTime,
         scheme === 'Level Rating' ? undefined : data.correctedTime,

@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto";
 import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { onCall } from "firebase-functions/v2/https";
 import {
-  ParseResultsSheetRequest,
   RaceCompetitorDoc,
   ScannerContext,
   ScannerTimeFormat,
@@ -10,11 +10,22 @@ import {
   httpsWithDetails,
   logScan,
   logScanError,
-} from "./ai-scan-types.js";
-import { storeResultsSheetImage, updateRaceResultsSheetImagePath } from "./image-storage.js";
+} from "../ai-scan-types.js";
+import {
+  raceCalendarDocPath,
+} from "../image-upload/image-storage.js";
 import { parseWithAi } from "./ai-parsing.js";
 
-const db = getFirestore();
+function db() {
+  return getFirestore();
+}
+
+interface ParseStoredResultsSheetRequest {
+  scannerContext: ScannerContext;
+  clubId: string;
+  raceId: string;
+  storagePath?: string;
+}
 
 function normalizeScannerTimeFormat(value: unknown): ScannerTimeFormat {
   if (value === "clock_hms" || value === "stopwatch_hms_elapsed" || value === "stopwatch_ms_elapsed") {
@@ -54,7 +65,7 @@ async function buildRosterFromRace(
 ): Promise<Array<{ id: string; class: string; sailNumber: string; name?: string }>> {
   logScan(requestId, "build_roster", "Querying race-results for race", { clubId, raceId });
 
-  const compSnap = await db
+  const compSnap = await db()
     .collection(`clubs/${clubId}/race-results`)
     .where("raceId", "==", raceId)
     .get();
@@ -78,8 +89,8 @@ async function buildRosterFromRace(
       .filter((id): id is string => typeof id === "string" && id.length > 0),
   )];
 
-  const entryRefs = entryIds.map((id) => db.doc(`clubs/${clubId}/series-entries/${id}`));
-  const entrySnaps = entryRefs.length > 0 ? await db.getAll(...entryRefs) : [];
+  const entryRefs = entryIds.map((id) => db().doc(`clubs/${clubId}/series-entries/${id}`));
+  const entrySnaps = entryRefs.length > 0 ? await db().getAll(...entryRefs) : [];
 
   const entryById = new Map<string, SeriesEntryDoc>();
   for (const snap of entrySnaps) {
@@ -133,23 +144,10 @@ async function buildRosterFromRace(
   return roster;
 }
 
-export function validateRequest(data: unknown, requestId: string): ParseResultsSheetRequest {
-  const requestData = data as ParseResultsSheetRequest;
-  const {
-    imageBase64,
-    imageMimeType = "image/jpeg",
-    scannerContext,
-    clubId,
-    raceId,
-  } = requestData;
+export function validateStoredRequest(data: unknown, requestId: string): ParseStoredResultsSheetRequest {
+  const requestData = data as ParseStoredResultsSheetRequest;
+  const { scannerContext, clubId, raceId, storagePath } = requestData;
 
-  if (!imageBase64 || typeof imageBase64 !== "string") {
-    throw httpsWithDetails("invalid-argument", "Missing image base64 data.", {
-      requestId,
-      stage: "validate_input",
-      cause: "missing_image",
-    });
-  }
   if (!scannerContext) {
     throw httpsWithDetails("invalid-argument", "Missing scanner context.", {
       requestId,
@@ -171,65 +169,50 @@ export function validateRequest(data: unknown, requestId: string): ParseResultsS
       cause: "missing_race_id",
     });
   }
-
+  if (storagePath != null && typeof storagePath !== "string") {
+    throw httpsWithDetails("invalid-argument", "storagePath must be a string when provided.", {
+      requestId,
+      stage: "validate_input",
+      cause: "invalid_storage_path_type",
+    });
+  }
   return {
-    imageBase64,
-    imageMimeType,
     scannerContext,
     clubId,
     raceId,
+    storagePath,
   };
 }
 
-export const parseResultsSheet = onCall({
-  memory: "512MiB",
-  timeoutSeconds: 300,
-}, async (request) => {
-  const requestId = randomUUID();
-
-  if (!request.auth) {
-    logScanError(requestId, "validate_input", "Unauthenticated call");
-    throw httpsWithDetails("unauthenticated", "Only authenticated users can scan results sheets.", {
-      requestId,
-      stage: "validate_input",
-      cause: "no_auth",
-    });
+async function resolveStoragePath(clubId: string, raceId: string, requestId: string): Promise<string> {
+  const raceSnap = await db().doc(raceCalendarDocPath(clubId, raceId)).get();
+  const path = raceSnap.get("resultsSheetImage");
+  if (typeof path === "string" && path.length > 0) {
+    return path;
   }
-
-  const uid = request.auth.uid;
-  const { imageBase64, imageMimeType, scannerContext, clubId, raceId } = validateRequest(request.data, requestId);
-
-  logScan(requestId, "validate_input", "parseResultsSheet invoked", {
-    uid,
-    clubId,
-    raceId,
-    imageMimeType,
-    imageBase64Length: imageBase64.length,
-    hasScannerContext: !!scannerContext,
-  });
-
-  assertCallerHasClubAccess(request.auth.token as Record<string, unknown>, clubId, requestId);
-  const roster = await buildRosterFromRace(clubId, raceId, requestId);
-
-  let imageBuffer: Buffer;
-  try {
-    imageBuffer = Buffer.from(imageBase64, "base64");
-  } catch (_e) {
-    throw httpsWithDetails("invalid-argument", "imageBase64 is not valid base64.", {
-      requestId,
-      stage: "validate_input",
-      cause: "invalid_base64",
-    });
-  }
-
-  const { storagePath, gsUri } = await storeResultsSheetImage(
-    clubId,
-    raceId,
-    imageBuffer,
-    imageMimeType,
+  throw httpsWithDetails("not-found", "No stored results sheet image found for race.", {
     requestId,
-  );
-  await updateRaceResultsSheetImagePath(clubId, raceId, storagePath, requestId);
+    stage: "validate_input",
+    cause: "missing_stored_image_path",
+    clubId,
+    raceId,
+  });
+}
+
+async function parseFromStoredImage(
+  requestId: string,
+  clubId: string,
+  raceId: string,
+  scannerContext: ScannerContext,
+  storagePath: string,
+) {
+  const roster = await buildRosterFromRace(clubId, raceId, requestId);
+  const bucket = getStorage().bucket();
+  const file = bucket.file(storagePath);
+  const [buffer] = await file.download();
+  const [metadata] = await file.getMetadata();
+  const imageMimeType = metadata.contentType || "image/jpeg";
+  const imageBase64 = buffer.toString("base64");
 
   const mergedContext: ScannerContext = {
     ...scannerContext,
@@ -248,13 +231,41 @@ export const parseResultsSheet = onCall({
     defaultLaps: mergedContext.defaultLaps,
     lapsPresentOnSheet: mergedContext.lapsPresentOnSheet ?? true,
     timeFormat: mergedContext.timeFormat ?? "clock_hms",
+    storagePath,
   });
 
   const parsed = await parseWithAi(requestId, imageBase64, imageMimeType, mergedContext, raceId);
-
   return {
     ...((typeof parsed === "object" && parsed !== null) ? parsed as Record<string, unknown> : { parsed }),
     storedImagePath: storagePath,
-    storedImageUri: gsUri,
+    storedImageUri: `gs://${bucket.name}/${storagePath}`,
   };
+}
+
+export const parseStoredResultsSheet = onCall({
+  memory: "512MiB",
+  timeoutSeconds: 300,
+}, async (request) => {
+  const requestId = randomUUID();
+
+  if (!request.auth) {
+    logScanError(requestId, "validate_input", "Unauthenticated call");
+    throw httpsWithDetails("unauthenticated", "Only authenticated users can scan results sheets.", {
+      requestId,
+      stage: "validate_input",
+      cause: "no_auth",
+    });
+  }
+
+  const { scannerContext, clubId, raceId, storagePath } = validateStoredRequest(request.data, requestId);
+  assertCallerHasClubAccess(request.auth.token as Record<string, unknown>, clubId, requestId);
+
+  const resolvedStoragePath = storagePath || await resolveStoragePath(clubId, raceId, requestId);
+  logScan(requestId, "validate_input", "parseStoredResultsSheet invoked", {
+    uid: request.auth.uid,
+    clubId,
+    raceId,
+    storagePath: resolvedStoragePath,
+  });
+  return parseFromStoredImage(requestId, clubId, raceId, scannerContext, resolvedStoragePath);
 });

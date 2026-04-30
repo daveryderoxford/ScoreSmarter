@@ -1,7 +1,7 @@
 <app-toolbar title="User Admin" style="grid-area: toolbar">
    <div center>
       @if (auth.isSysAdmin()) {
-      <mat-form-field subscriptSizing="dynamic" appearance="outline" class="role-filter">
+      <mat-form-field subscriptSizing="dynamic" class="role-filter">
          <mat-label>Min Role</mat-label>
          <mat-select [value]="uas.roleFilter()" (selectionChange)="uas.filterRole($event.value)">
             <mat-option [value]="null">All</mat-option>
@@ -45,7 +45,7 @@
          <div matListItemLine>Club: {{ $any(user).clubId }}</div>
          }
          <div matListItemMeta>
-            <mat-form-field appearance="outline" class="dense-form role-select">
+            <mat-form-field class="dense-form role-select">
                <mat-label>Role</mat-label>
                <mat-select [value]="user.role || 'user'" (selectionChange)="updateRole(user.id, $event.value)">
                   <mat-option value="user">User</mat-option>
