@@ -132,7 +132,6 @@
 
 <div class="review-actions" style="margin-top: 3rem; padding-bottom: 3rem;">
   <button matButton (click)="backRequested.emit()" [disabled]="loading()">Previous</button>
-  <button matButton="outlined" (click)="startTimeRequested.emit()" [disabled]="loading()">Set Start Time(s)</button>
   <button matButton="filled" (click)="saveRequested.emit()" [disabled]="loading() || acceptedMatchedCount() === 0">
     {{ loading() ? 'Saving...' : 'Save Accepted Results' }}
   </button>

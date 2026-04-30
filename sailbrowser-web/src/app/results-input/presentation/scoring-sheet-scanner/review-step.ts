@@ -47,7 +47,6 @@ export class ReviewStep {
   readonly acceptedMatchedCount = computed(() => this.matchedRows().filter(vm => !!vm.row.accepted).length);
 
   backRequested = output<void>();
-  startTimeRequested = output<void>();
   saveRequested = output<void>();
   retryRequested = output<void>();
   knownBoatEntryRequested = output<ScannedResultRow>();

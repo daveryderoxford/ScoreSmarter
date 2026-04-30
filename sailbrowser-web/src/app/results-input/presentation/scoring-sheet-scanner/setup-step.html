@@ -1,20 +1,5 @@
 <mat-card appearance="outlined" class="form-card">
   <form [formGroup]="form()">
-    <mat-form-field>
-      <mat-label>Select race</mat-label>
-      <mat-select formControlName="raceId" required (selectionChange)="raceSelect.emit($event)">
-        @if (todaysRaceOptions().length) {
-          @for (opt of todaysRaceOptions(); track opt.id) {
-            <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
-          }
-        }
-        @if (pickedRaceOption(); as pickedOpt) {
-          <mat-option [value]="pickedOpt.id">{{ pickedOpt.label }}</mat-option>
-        }
-        <mat-option value="__MORE__">More races...</mat-option>
-      </mat-select>
-    </mat-form-field>
-
     <mat-form-field subscriptSizing="dynamic">
       <mat-label>Results ordering</mat-label>
       <mat-select formControlName="listOrder">
@@ -64,18 +49,20 @@
     </mat-slide-toggle>
 
     @if (form().value.lapsPresentOnSheet) {
-    <mat-form-field>
-      <mat-label>Lap format</mat-label>
-      <mat-select formControlName="lapFormat">
-        <mat-option value="numbers">Numbers (1, 2, 3)</mat-option>
-        <mat-option value="ticks">Ticks/Tallies (|||)</mat-option>
-      </mat-select>
-    </mat-form-field>
-    <mat-form-field>
-      <mat-label>Default laps</mat-label>
-      <input matInput type="number" formControlName="defaultLaps">
-      <mat-error>Must be between 1 and 100</mat-error>
-    </mat-form-field>
+    <div class="laps-row">
+      <mat-form-field>
+        <mat-label>Lap format</mat-label>
+        <mat-select formControlName="lapFormat">
+          <mat-option value="numbers">Numbers (1, 2, 3)</mat-option>
+          <mat-option value="ticks">Ticks/Tallies (|||)</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Default laps</mat-label>
+        <input matInput type="number" formControlName="defaultLaps">
+        <mat-error>Must be between 1 and 100</mat-error>
+      </mat-form-field>
+    </div>
     }
   </form>
 </mat-card>
