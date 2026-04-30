@@ -9,6 +9,7 @@ import { Observable } from 'rxjs';
 import { ScanResponse, ScanRunRequest, ScanRunState, ScannedResultRow } from './scan-model';
 
 const PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS = 318_000;
+const UPLOAD_RESULTS_SHEET_IMAGE_CALLABLE_TIMEOUT_MS = 120_000;
 
 @Injectable({ providedIn: 'root' })
 export class ScannerOrchestrationService {
@@ -146,16 +147,25 @@ export class ScannerOrchestrationService {
       try { connectFunctionsEmulator(functions, 'localhost', 5001); } catch { /* already configured */ }
     }
 
-    const parseFn = httpsCallable(functions, 'parseResultsSheet', {
+    const uploadFn = httpsCallable(functions, 'uploadResultsSheetImage', {
+      timeout: UPLOAD_RESULTS_SHEET_IMAGE_CALLABLE_TIMEOUT_MS,
+    });
+    const parseFn = httpsCallable(functions, 'parseStoredResultsSheet', {
       timeout: PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS,
     });
 
-    const res = await parseFn({
+    const uploadRes = await uploadFn({
       imageBase64: request.imageBase64,
       imageMimeType: request.imageMimeType,
       clubId: request.clubId,
       raceId: request.raceId,
+    });
+    const storedImagePath = (uploadRes.data as { storagePath?: string } | null)?.storagePath;
+    const res = await parseFn({
       scannerContext: request.scannerContext,
+      clubId: request.clubId,
+      raceId: request.raceId,
+      storagePath: storedImagePath,
     });
 
     return res.data as ScanResponse;

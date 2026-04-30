@@ -10,7 +10,7 @@ if (getApps().length === 0) {
 }
 
 export { seriesChanged, seriesCreated } from "./results/results.js";
-export { parseResultsSheet } from "./scoring-sheet-scanner/scoring-sheet-scanner.js";
+export { parseStoredResultsSheet, uploadResultsSheetImage } from "./scoring-sheet-scanner/scoring-sheet-scanner.js";
 export { createNewTenant } from "./sys-admin/club.js";
 export { assignRole } from "./sys-admin/roles.js";
 export { ensureUserData } from "./user/user.js";

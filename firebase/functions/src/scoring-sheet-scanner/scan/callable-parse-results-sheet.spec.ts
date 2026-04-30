@@ -6,11 +6,10 @@ if (getApps().length === 0) {
   initializeApp();
 }
 
-test("validateRequest defaults imageMimeType to image/jpeg", async () => {
-  const { validateRequest } = await import("./callable-parse-results-sheet.js");
-  const data = validateRequest(
+test("validateStoredRequest accepts required fields", async () => {
+  const { validateStoredRequest } = await import("./callable-parse-results-sheet.js");
+  const data = validateStoredRequest(
     {
-      imageBase64: "ZmFrZS1pbWFnZQ==",
       scannerContext: { targetRaces: [], lapFormat: "numbers", hasHours: false, listOrder: "unsorted", roster: [] },
       clubId: "club-1",
       raceId: "race-1",
@@ -18,17 +17,15 @@ test("validateRequest defaults imageMimeType to image/jpeg", async () => {
     "req-1",
   );
 
-  assert.equal(data.imageMimeType, "image/jpeg");
   assert.equal(data.clubId, "club-1");
   assert.equal(data.raceId, "race-1");
 });
 
-test("validateRequest throws when raceId is missing", async () => {
-  const { validateRequest } = await import("./callable-parse-results-sheet.js");
+test("validateStoredRequest throws when raceId is missing", async () => {
+  const { validateStoredRequest } = await import("./callable-parse-results-sheet.js");
   assert.throws(
-    () => validateRequest(
+    () => validateStoredRequest(
       {
-        imageBase64: "ZmFrZS1pbWFnZQ==",
         scannerContext: { targetRaces: [], lapFormat: "numbers", hasHours: false, listOrder: "unsorted", roster: [] },
         clubId: "club-1",
       },

@@ -1,5 +1,5 @@
 import { defaultClassAliases } from "./class-aliases.js";
-import { ScannerContext } from "./ai-scan-types.js";
+import { ScannerContext } from "../ai-scan-types.js";
 
 export function buildPrompt(ctx: ScannerContext, raceId: string): string {
 

@@ -3,7 +3,7 @@ import type { ScannerContext, ScannerTimeFormat } from "@shared/scanner-context"
 
 export type { ScannerContext, ScannerTimeFormat };
 
-export const LOG = "parseResultsSheet";
+export const LOG = "resultsSheetScanner";
 
 /** Stages for logs and HttpsError.details.stage (client-visible). */
 export type ScanStage =
@@ -33,14 +33,6 @@ export interface SeriesEntryDoc {
 
 export interface RaceCompetitorDoc {
   seriesEntryId: string;
-  raceId: string;
-}
-
-export interface ParseResultsSheetRequest {
-  imageBase64: string;
-  imageMimeType: string;
-  scannerContext: ScannerContext;
-  clubId: string;
   raceId: string;
 }
 
