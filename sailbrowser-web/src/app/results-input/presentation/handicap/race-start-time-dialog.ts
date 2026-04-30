@@ -53,7 +53,7 @@ function formatElapsedOffsetInput(offsetMinutes: number): string {
           <mat-radio-button value="elapsed">Stopwatch (Elapsed)</mat-radio-button>
         </mat-radio-group>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field>
           <mat-label>Number of starts</mat-label>
           <input matInput type="number" min="1" formControlName="startCount">
         </mat-form-field>
@@ -62,18 +62,18 @@ function formatElapsedOffsetInput(offsetMinutes: number): string {
           @for (group of starts.controls; track $index; let i = $index) {
             <div [formGroupName]="i" class="start-row">
               @if (form.value.mode === 'tod') {
-                <mat-form-field appearance="outline">
+                <mat-form-field>
                   <mat-label>Start Time (HH:mm:ss)</mat-label>
                   <input matInput type="time" step="1" formControlName="time">
                 </mat-form-field>
               } @else {
-                <mat-form-field appearance="outline">
+                <mat-form-field>
                   <mat-label>Stopwatch reading (minutes)</mat-label>
                   <input matInput type="number" step="any" formControlName="time">
                   <mat-hint>Reading at start time.</mat-hint>
                 </mat-form-field>
               }
-              <mat-form-field appearance="outline">
+              <mat-form-field>
                 <mat-label>Fleet (optional)</mat-label>
                 <mat-select formControlName="fleetId">
                   <mat-option [value]="''">Default</mat-option>

@@ -4,45 +4,58 @@
       <mat-label>Select race</mat-label>
       <mat-select formControlName="raceId" required (selectionChange)="raceSelect.emit($event)">
         @if (todaysRaceOptions().length) {
-        <mat-optgroup label="Today's Races">
           @for (opt of todaysRaceOptions(); track opt.id) {
-          <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
+            <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
           }
-        </mat-optgroup>
         }
         @if (pickedRaceOption(); as pickedOpt) {
-        <mat-optgroup label="Selected Race">
           <mat-option [value]="pickedOpt.id">{{ pickedOpt.label }}</mat-option>
-        </mat-optgroup>
         }
-        <mat-optgroup label="More Options">
-          <mat-option value="__MORE__">More races...</mat-option>
-        </mat-optgroup>
+        <mat-option value="__MORE__">More races...</mat-option>
       </mat-select>
     </mat-form-field>
 
     <mat-form-field subscriptSizing="dynamic">
       <mat-label>Results ordering</mat-label>
       <mat-select formControlName="listOrder">
-        <mat-option value="chronological">Chronological (Times generally increase)</mat-option>
+        <mat-option value="chronological">Finish order (approximate)</mat-option>
         <mat-option value="firstLap">First lap order</mat-option>
         <mat-option value="unsorted">Unsorted / random</mat-option>
       </mat-select>
     </mat-form-field>
 
     <div class="toggle-group-container">
-      <div class="toggle-label">Time format</div>
-      <mat-button-toggle-group formControlName="timeFormat" aria-label="Time format">
-        <mat-button-toggle value="clock_hms">Clock HH:MM:SS</mat-button-toggle>
-        <mat-button-toggle value="stopwatch_hms_elapsed">Stopwatch H:MM:SS</mat-button-toggle>
-        <mat-button-toggle value="stopwatch_ms_elapsed">Stopwatch MM:SS</mat-button-toggle>
+      <div class="toggle-label">Time recording format - Clock/Stopwatch</div>
+      <mat-button-toggle-group hideSingleSelectionIndicator class="time-format-toggle-group" formControlName="timeFormat" aria-label="Time format">
+        <mat-button-toggle
+          value="clock_hms"
+          aria-label="Clock hh:mm:ss"
+          matTooltip="Clock hours, minutes,seconds">
+          <mat-icon aria-hidden="true">schedule</mat-icon>
+          <span class="time-format-text"> hh:mm:ss</span>
+        </mat-button-toggle>
+        <mat-button-toggle
+          value="stopwatch_hms_elapsed"
+          aria-label="Stopwatch h:mm:ss"
+          matTooltip="Stopwatch hours, minutes, seconds">
+          <mat-icon aria-hidden="true">timer</mat-icon>
+          <span class="time-format-text"> h:mm:ss</span>
+        </mat-button-toggle>
+        <mat-button-toggle
+          value="stopwatch_ms_elapsed"
+          aria-label="Stopwatch mm:ss"
+          matTooltip="Stopwatch decimal minutes">
+          <mat-icon aria-hidden="true">timer</mat-icon>
+          <span class="time-format-text"> mm:ss</span>
+        </mat-button-toggle>
       </mat-button-toggle-group>
     </div>
 
     @if (form().value.timeFormat === 'clock_hms') {
     <mat-form-field>
-      <mat-label>Default hour</mat-label>
+      <mat-label>Hour if not recorded</mat-label>
       <input matInput type="number" formControlName="defaultHour">
+      <mat-error>Must be between 0 and 23</mat-error>
     </mat-form-field>
     }
 
@@ -61,6 +74,7 @@
     <mat-form-field>
       <mat-label>Default laps</mat-label>
       <input matInput type="number" formControlName="defaultLaps">
+      <mat-error>Must be between 1 and 100</mat-error>
     </mat-form-field>
     }
   </form>

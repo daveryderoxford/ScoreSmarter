@@ -5,26 +5,33 @@
       <ng-template matStepLabel>Details</ng-template>
 
       <div class="boat-selection">
-        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-field">
+        <mat-form-field subscriptSizing="dynamic" class="search-field">
           <mat-label>Search For Boat</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
           <input
             matInput
             [formControl]="boatSearchControl"
             [matAutocomplete]="auto"
-            placeholder="Class, Helm or Sail No"
+            placeholder="Helm, Class or Sail No"
           >
           <mat-autocomplete #auto="matAutocomplete" 
             [displayWith]="displayBoatFn" 
             (optionSelected)="onBoatSelected($event)"
           >
-            @for (boat of filteredBoats(); track boat.id) {
-              <mat-option [value]="boat">
-                @if (boat.isClub) {
-                  Club {{ boat.boatClass }} Club Boat {{ boat.sailNumber }}
-                } @else {
-                  {{ boat.boatClass }} {{ boat.sailNumber }} - ({{ boat.helm }})
+            @for (group of filteredBoatsByHelm(); track group.key) {
+              <mat-optgroup [label]="group.key">
+                @for (boat of group.boats; track boat.id) {
+                  <mat-option [value]="boat">
+                    <span [classList]="boat.isClub ? 'muted' : ''">
+                      @if (boat.isClub) {
+                        {{ boat.boatClass }} - {{ boat.sailNumber }}
+                      } @else {
+                        {{ boat.boatClass }} {{ boat.sailNumber }}
+                      }
+                    </span>
+                  </mat-option>
                 }
-              </mat-option>
+              </mat-optgroup>
             }
           </mat-autocomplete>
           @if (boatSearchControl.value) {
@@ -36,7 +43,6 @@
         <button matButton="tonal" type="button" class="dense-button" (click)="createNewBoat()">New Boat</button>
       </div>
       
-
       @if (selectedBoat(); as boat) {
 
         @if (displayHandicaps().length > 0) {
@@ -55,7 +61,7 @@
         
         <div class="helm-crew-row">
           @if (boat.isClub) {
-            <mat-form-field appearance="outline">
+            <mat-form-field>
               <mat-label>Helm</mat-label>
               <input
                 matInput
@@ -65,7 +71,7 @@
               <mat-error>Helm name required</mat-error>
             </mat-form-field>
           }
-          <mat-form-field appearance="outline">
+          <mat-form-field>
             <mat-label>Crew</mat-label>
             <input matInput formControlName="crew" placeholder="Optional" autocomplete="off" />
           </mat-form-field>

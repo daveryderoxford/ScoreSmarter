@@ -25,7 +25,8 @@ interface Series {
     scoringScheme: Object;
 }
 
-const db = getFirestore();
+const db = () => getFirestore();
+
 
 export const seriesCreated = onDocumentCreated(
     {
@@ -48,7 +49,7 @@ export const seriesCreated = onDocumentCreated(
     }
 
     try {
-        await db.doc(path).set(update);
+        await db().doc(path).set(update);
     } catch (err: unknown) {
         if (err instanceof Object) {
             console.error('createUser: Error encountered synncing series and resuklts.  Series Id: ' + series.id + "  " + err.toString());
@@ -86,7 +87,7 @@ export const seriesChanged = onDocumentUpdated(
 
         const update = createCommonData(series);
         try {
-            await db.doc(path).set(update, { merge: true });
+            await db().doc(path).set(update, { merge: true });
         } catch (err: unknown) {
             if (err instanceof Object) {
                 console.error('createUser: Error encountered synncing series and resuklts.  Series Id: ' + series.id + "  " + err.toString());

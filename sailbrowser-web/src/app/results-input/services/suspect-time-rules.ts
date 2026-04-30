@@ -36,30 +36,20 @@ export function resolveSuspectTimeRules(
   };
 }
 
-export function isOutsideRange(value: number | undefined, min: number, max: number): boolean {
+function isOutsideRange(value: number | undefined, min: number, max: number): boolean {
   if (value == null || !Number.isFinite(value)) return false;
   return value < min || value > max;
 }
 
-export function isSuspectElapsedOrLapTime(
-  elapsedSeconds: number | undefined,
-  averageLapSeconds: number | undefined,
-  rules: SuspectTimeRules,
-): boolean {
-  return (
-    isOutsideRange(elapsedSeconds, rules.minElapsedSeconds, rules.maxElapsedSeconds) ||
-    isOutsideRange(averageLapSeconds, rules.minLapSeconds, rules.maxLapSeconds)
-  );
-}
-
-export function isSuspectIncludingCorrected(
+export function isSuspectTime(
   elapsedSeconds: number | undefined,
   averageLapSeconds: number | undefined,
   correctedSeconds: number | undefined,
   rules: SuspectTimeRules,
 ): boolean {
   return (
-    isSuspectElapsedOrLapTime(elapsedSeconds, averageLapSeconds, rules) ||
+    isOutsideRange(elapsedSeconds, rules.minElapsedSeconds, rules.maxElapsedSeconds) ||
+    isOutsideRange(averageLapSeconds, rules.minLapSeconds, rules.maxLapSeconds) ||
     isOutsideRange(correctedSeconds, rules.minElapsedSeconds, rules.maxElapsedSeconds)
   );
 }

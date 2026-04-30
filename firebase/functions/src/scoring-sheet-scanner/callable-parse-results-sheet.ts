@@ -14,7 +14,9 @@ import {
 import { storeResultsSheetImage, updateRaceResultsSheetImagePath } from "./image-storage.js";
 import { parseWithAi } from "./ai-parsing.js";
 
-const db = getFirestore();
+function db() {
+  return getFirestore();
+}
 
 function normalizeScannerTimeFormat(value: unknown): ScannerTimeFormat {
   if (value === "clock_hms" || value === "stopwatch_hms_elapsed" || value === "stopwatch_ms_elapsed") {
@@ -54,7 +56,7 @@ async function buildRosterFromRace(
 ): Promise<Array<{ id: string; class: string; sailNumber: string; name?: string }>> {
   logScan(requestId, "build_roster", "Querying race-results for race", { clubId, raceId });
 
-  const compSnap = await db
+  const compSnap = await db()
     .collection(`clubs/${clubId}/race-results`)
     .where("raceId", "==", raceId)
     .get();
@@ -78,8 +80,8 @@ async function buildRosterFromRace(
       .filter((id): id is string => typeof id === "string" && id.length > 0),
   )];
 
-  const entryRefs = entryIds.map((id) => db.doc(`clubs/${clubId}/series-entries/${id}`));
-  const entrySnaps = entryRefs.length > 0 ? await db.getAll(...entryRefs) : [];
+  const entryRefs = entryIds.map((id) => db().doc(`clubs/${clubId}/series-entries/${id}`));
+  const entrySnaps = entryRefs.length > 0 ? await db().getAll(...entryRefs) : [];
 
   const entryById = new Map<string, SeriesEntryDoc>();
   for (const snap of entrySnaps) {

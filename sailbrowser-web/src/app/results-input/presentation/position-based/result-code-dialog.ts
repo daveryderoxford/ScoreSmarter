@@ -31,7 +31,7 @@ export interface ManualResultCodeDialogResult {
         <app-result-code-select formControlName="resultCode" />
 
         @if (data.race.type === 'Level Rating') {
-          <mat-form-field appearance="outline">
+          <mat-form-field>
             <mat-label>Finish time (optional)</mat-label>
             <app-race-time-input
               formControlName="finishTime"

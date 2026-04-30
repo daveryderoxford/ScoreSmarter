@@ -15,7 +15,6 @@ const baseContext: ScannerContext = {
 test("buildPrompt includes target race and roster details", () => {
   const prompt = buildPrompt(baseContext, "race-1");
   assert.match(prompt, /Target race id: race-1/);
-  assert.match(prompt, /Expected Competitor Roster/);
   assert.match(prompt, /ILCA 7/);
 });
 

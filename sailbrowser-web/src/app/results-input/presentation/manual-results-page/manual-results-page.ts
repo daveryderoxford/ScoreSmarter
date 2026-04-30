@@ -118,6 +118,10 @@ export class ManualResultsPage {
         preselectedRaceIds: preselected ? [preselected] : [],
         maxSelections: 1,
         requireSelection: true,
+        mode: 'results',
+        defaultPeriod: 'today',
+        availablePeriods: ['today', 'past'],
+        hideIncompleteDefault: true,
       },
     });
 

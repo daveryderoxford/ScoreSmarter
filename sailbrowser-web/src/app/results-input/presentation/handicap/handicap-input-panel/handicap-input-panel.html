@@ -19,8 +19,9 @@
 
 <form [formGroup]="form" (ngSubmit)="save()">
   <div style="display: flex; align-items: center; gap: 8px;">
-    <mat-form-field appearance="outline" style="flex: 1;">
-      <mat-label>Competitor</mat-label>
+    <mat-form-field style="flex: 1;">
+      <mat-label>Competitor Search</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
       <input #searchInput matInput [formControl]="searchControl" [matAutocomplete]="auto" placeholder="Class, Sail No or Helm">
       <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn"
         (optionSelected)="onCompetitorSelected($event)">
@@ -45,7 +46,7 @@
     </button>
   </div>
 
-  <mat-form-field appearance="outline">
+  <mat-form-field>
     <mat-label>Finish Time</mat-label>
     <app-race-time-input formControlName="finishTime" [mode]="timeInputContext().mode"
       [baseTime]="timeInputContext().baseTime" [scheduledStart]="race().scheduledStart"
@@ -62,7 +63,7 @@
     }
   </mat-form-field>
 
-  <mat-form-field appearance="outline">
+  <mat-form-field>
     <mat-label>Laps</mat-label>
     <input matInput type="number" formControlName="laps" (keydown.enter)="save(); $event.preventDefault()">
   </mat-form-field>
@@ -70,9 +71,9 @@
   <app-result-code-select formControlName="resultCode"></app-result-code-select>
 
   <div class="actions" style="display: flex; align-items: center; gap: 8px; justify-content: flex-start;">
-    <button matButton type="button" [disabled]="!hasSelectedCompetitor()" (click)="editSelectedCompetitor()">Edit</button>
+    <button matButton type="button" [disabled]="!hasSelectedCompetitor()" (click)="editSelectedCompetitor()">Edit Entry</button>
     <span style="flex: 1;"></span>
     <button matButton type="button" [disabled]="!hasSelectedCompetitor()" (click)="setSelectedCompetitor(undefined)">Clear</button>
-    <button matButton="filled" type="submit" [disabled]="!hasSelectedCompetitor()">Record</button>
+    <button matButton="filled" type="submit" [disabled]="!hasSelectedCompetitor()">Save</button>
   </div>
 </form>

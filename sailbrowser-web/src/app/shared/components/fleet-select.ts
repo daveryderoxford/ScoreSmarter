@@ -19,7 +19,7 @@ import { getFleetName } from 'app/club-tenant/model/fleet';
     }
   `,
   template: `
-    <mat-form-field appearance="outline">
+    <mat-form-field>
       <mat-label>{{ label() }}</mat-label>
       <mat-select [value]="fleetId()" (selectionChange)="onSelectionChange($event)">
         @if (includeAllOption()) {

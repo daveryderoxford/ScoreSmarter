@@ -109,8 +109,8 @@ export class ScoringSheetScanner {
     timeFormat: this.fb.nonNullable.control<ScannerTimeFormat>('clock_hms', Validators.required),
     lapsPresentOnSheet: this.fb.nonNullable.control(true, Validators.required),
     lapFormat: ['numbers', Validators.required],
-    defaultHour: [14],
-    defaultLaps: [1],
+    defaultHour: [10, [Validators.min(0), Validators.max(23)]],
+    defaultLaps: [1, [Validators.min(1), Validators.max(100)]],
   });
   captureForm = this.fb.nonNullable.group({
     hasImage: [false, Validators.requiredTrue],
@@ -199,7 +199,15 @@ export class ScoringSheetScanner {
     this.form.controls.raceId.setValue('', { emitEvent: false });
     const dialogRef = this.dialog.open(RacePickerDialog, {
       width: '500px',
-      data: { title: 'Select Race', maxSelections: 1, requireSelection: true },
+      data: {
+        title: 'Select Race',
+        maxSelections: 1,
+        requireSelection: true,
+        mode: 'scanner',
+        defaultPeriod: 'today',
+        availablePeriods: ['today', 'past'],
+        hideIncompleteDefault: true,
+      },
     });
     dialogRef.afterClosed().subscribe(selection => {
       const id = selection?.[0];

@@ -38,6 +38,11 @@ interface EntryRaceDayGroup {
   readonly races: Race[];
 }
 
+interface BoatAutocompleteGroup {
+  readonly key: string;
+  readonly boats: Boat[];
+}
+
 function sortRacesByTimeThenIndex(a: Race, b: Race): number {
   return a.scheduledStart.getTime() - b.scheduledStart.getTime() || a.index - b.index;
 }
@@ -49,6 +54,22 @@ function raceEntryDayHeading(d: Date): string {
     month: 'long',
     year: 'numeric',
   }).format(d);
+}
+
+function isScheduledToday(race: Race): boolean {
+  return new Date(race.scheduledStart).toDateString() === new Date().toDateString();
+}
+
+function boatGroupKey(boat: Boat): string {
+  const helm = boat.helm?.trim();
+  if (helm) return helm;
+  return boat.isClub ? 'Club' : 'Unknown helm';
+}
+
+function sortBoatsInGroup(a: Boat, b: Boat): number {
+  const classCmp = (a.boatClass ?? '').localeCompare(b.boatClass ?? '');
+  if (classCmp !== 0) return classCmp;
+  return (a.sailNumber ?? 0) - (b.sailNumber ?? 0);
 }
 
 @Component({
@@ -269,9 +290,7 @@ export class EntryPage {
     const candidate = this.candidateBoat();
     if (!candidate) return [];
     const seriesById = new Map(this.rc.allSeries().map(s => [s.id, s]));
-    const scopedRaceId = this.scopedRaceId;
     return this.selectedRacesForEntry().filter(race => {
-      if (scopedRaceId && race.id !== scopedRaceId) return false;
       const series = seriesById.get(race.seriesId);
       if (!series) return false;
 
@@ -329,9 +348,26 @@ export class EntryPage {
     this.bs.boats().filter(boat => boatFilter(boat, this.searchTerm()))
   );
 
-  readonly selectedRacesForEntry = this.currentRacesStore.selectedRaces;
+  readonly filteredBoatsByHelm = computed((): BoatAutocompleteGroup[] => {
+    const grouped = groupBy(this.filteredBoats(), boat => boatGroupKey(boat));
+    return [...grouped.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, boats]) => ({
+        key,
+        boats: [...boats].sort(sortBoatsInGroup),
+      }));
+  });
+
+  private readonly sessionExtraRaceIds = signal<Set<string>>(new Set<string>());
+  readonly selectedRacesForEntry = computed(() => {
+    const extras = this.sessionExtraRaceIds();
+    return this.rc.allRaces()
+      .filter(race => isScheduledToday(race) || extras.has(race.id))
+      .sort(sortRacesByTimeThenIndex);
+  });
   private readonly scopedRaceId = this.route.snapshot.queryParamMap.get('raceId') ?? undefined;
   private readonly returnTo = this.route.snapshot.queryParamMap.get('returnTo');
+  private readonly scopedRacePreselected = signal(false);
 
   async openAddRacesDialog(): Promise<void> {
     const dialogRef = this.dialog.open<RacePickerDialog, RacePickerDialogData, string[] | undefined>(RacePickerDialog, {
@@ -340,6 +376,9 @@ export class EntryPage {
       data: {
         title: 'Add races to enter',
         requireSelection: false,
+        mode: 'entry',
+        defaultPeriod: 'next7Days',
+        availablePeriods: ['next7Days', 'future', 'last7Days'],
       },
     });
     const result = await firstValueFrom(dialogRef.afterClosed());
@@ -347,12 +386,14 @@ export class EntryPage {
       return;
     }
     for (const id of result) {
+      this.sessionExtraRaceIds.update(prev => new Set(prev).add(id));
       this.currentRacesStore.addRaceId(id);
     }
   }
 
   constructor() {
     if (this.scopedRaceId) {
+      this.sessionExtraRaceIds.update(prev => new Set(prev).add(this.scopedRaceId!));
       this.currentRacesStore.addRaceId(this.scopedRaceId);
     }
 
@@ -395,11 +436,11 @@ export class EntryPage {
     effect(() => {
       const scopedRaceId = this.scopedRaceId;
       if (!scopedRaceId) return;
+      if (this.scopedRacePreselected()) return;
       const scopedRace = this.eligibleRaces().find(r => r.id === scopedRaceId);
       if (!scopedRace) return;
-      const selected = this.enteredRacesSig() ?? [];
-      if (selected.length === 1 && selected[0].id === scopedRaceId) return;
       this.raceSelectionGroup.get('enteredRaces')?.setValue([scopedRace]);
+      this.scopedRacePreselected.set(true);
     });
 
     // Replace temporary locally-selected new boat with the persisted store record once loaded.
@@ -421,7 +462,7 @@ export class EntryPage {
     } else if (boat.isClub) {
       return `Club ${boat.boatClass} Club Boat ${boat.sailNumber}`;
     } else {
-      return `${boat.boatClass} ${boat.sailNumber} (${boat.helm})`;
+      return `${boat.helm} - ${boat.boatClass} ${boat.sailNumber}`;
     }
   }
 

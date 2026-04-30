@@ -359,7 +359,7 @@ describe('RaceCompetitorEditService', () => {
       expect(e.handicaps.find(h => h.scheme === 'PY')!.value).toBe(1100);
     });
 
-    it('rejects an edit when the new identity collides with another entry', async () => {
+    it('reassociates to an existing series entry when that hull is not in this race', async () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1')];
       entryStore.entries = [
@@ -370,18 +370,45 @@ describe('RaceCompetitorEditService', () => {
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
       ];
 
+      await service.applyEdit({
+        competitorId: 'c1',
+        helm: 'Sam',
+        crew: '',
+        crewScope: 'raceOnly',
+        boatClass: 'ILCA 7',
+        sailNumber: 100,
+      });
+
+      expect(compStore.comps.find(c => c.id === 'c1')!.seriesEntryId).toBe('se-1');
+      expect(entryStore.entries.some(e => e.id === 'se-2')).toBe(false);
+      expect(entryStore.entries.find(e => e.id === 'se-1')!.helm).toBe('Sam');
+      expect(raceCalendar.races[0].dirty).toBe(true);
+    });
+
+    it('rejects when proposed identity is already represented in this race', async () => {
+      raceCalendar.series = [pySeries('s1')];
+      raceCalendar.races = [testRace('r1', 's1')];
+      entryStore.entries = [
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+      ];
+      compStore.comps = [
+        new RaceCompetitor({ id: 'c-edit', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
+        new RaceCompetitor({ id: 'c-other', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
+      ];
+
       await expect(
         service.applyEdit({
-          competitorId: 'c1',
+          competitorId: 'c-edit',
           helm: 'Sam',
           crew: '',
           crewScope: 'raceOnly',
           boatClass: 'ILCA 7',
           sailNumber: 100,
         }),
-      ).rejects.toThrowError(/Cannot rename/);
+      ).rejects.toThrowError(/already entered in this race/);
 
-      // No partial write - entry keeps its old identity, race stays clean.
+      expect(compStore.comps.find(c => c.id === 'c-edit')!.seriesEntryId).toBe('se-2');
       expect(entryStore.entries.find(e => e.id === 'se-2')!.helm).toBe('Bob');
       expect(raceCalendar.races[0].dirty).toBe(false);
     });

@@ -30,7 +30,7 @@ import { getFleetName } from 'app/club-tenant/model/fleet';
 
     <div class="content">
       <div class="search-bar">
-        <mat-form-field appearance="outline" class="search">
+        <mat-form-field class="search">
             <mat-label>Search</mat-label>
             <input matInput [formControl]="searchControl" placeholder="Search">
             @if(searchControl.value) {

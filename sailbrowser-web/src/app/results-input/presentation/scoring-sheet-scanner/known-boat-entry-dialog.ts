@@ -27,7 +27,7 @@ export interface KnownBoatEntryDialogResult {
     <h2 mat-dialog-title>Known boat found</h2>
     <mat-dialog-content>
       <p>Select helm/boat to create a race entry for {{ data.boatClass }} #{{ data.sailNumber }}.</p>
-      <mat-form-field appearance="outline" style="width:100%">
+      <mat-form-field style="width:100%">
         <mat-label>Helm</mat-label>
         <mat-select [value]="selectedBoatId()" (valueChange)="selectedBoatId.set($event)">
           @for (boat of data.boats; track boat.id) {
