@@ -290,7 +290,7 @@ export class ScoringSheetScanner {
         mode: 'scanner',
         defaultPeriod: 'past',
         availablePeriods: ['past'],
-        hideIncompleteDefault: true,
+        hideCompleteDefault: true,
       },
     });
     dialogRef.afterClosed().subscribe(selection => {

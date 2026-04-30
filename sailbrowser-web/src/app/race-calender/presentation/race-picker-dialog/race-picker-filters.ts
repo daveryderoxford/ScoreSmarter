@@ -57,8 +57,8 @@ export function matchesPeriod(
   }
 }
 
-export function statusesForHideIncomplete(hideIncomplete: boolean): RaceStatus[] {
-  if (hideIncomplete) {
+export function statusesForHideComplete(hideComplete: boolean): RaceStatus[] {
+  if (hideComplete) {
     return ['Future', 'In progress', 'Canceled', 'Postponed'];
   }
   return ['Future', 'In progress', 'Canceled', 'Postponed', 'Completed', 'Published', 'Verified'];
@@ -73,12 +73,12 @@ export function includesRace(
   race: Race,
   period: RacePickerPeriod,
   now: Date,
-  hideIncomplete?: boolean,
+  hideComplete?: boolean,
   includeStatuses?: RaceStatus[],
 ): boolean {
   if (!matchesPeriod(race, period, now)) return false;
 
-  const statuses = includeStatuses ?? statusesForHideIncomplete(!!hideIncomplete);
+  const statuses = includeStatuses ?? statusesForHideComplete(!!hideComplete);
   if (!statuses) return true;
   return statuses.includes(race.status);
 }

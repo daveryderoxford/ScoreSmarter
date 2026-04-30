@@ -77,7 +77,7 @@ export async function updateRaceResultsSheetImagePath(
   );
 }
 
-export async function appendResultsSheetImageRecord(
+export async function writeResultsSheetImageRecord(
   clubId: string,
   raceId: string,
   image: StoredResultsSheetImage,

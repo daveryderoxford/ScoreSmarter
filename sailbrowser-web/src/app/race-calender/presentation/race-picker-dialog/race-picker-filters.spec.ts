@@ -5,7 +5,7 @@ import {
   includesRace,
   matchesPeriod,
   pickInitialPeriod,
-  statusesForHideIncomplete,
+  statusesForHideComplete,
 } from './race-picker-filters';
 
 function race(overrides: Partial<Race>): Race {
@@ -45,12 +45,12 @@ describe('race-picker-filters', () => {
     expect(matchesPeriod(r, 'future', now)).toBe(true);
   });
 
-  it('maps hideIncomplete status behaviour', () => {
-    expect(statusesForHideIncomplete(true)).toEqual(['Future', 'In progress', 'Canceled', 'Postponed']);
-    expect(statusesForHideIncomplete(false)).toContain('Completed');
+  it('maps hideComplete status behaviour', () => {
+    expect(statusesForHideComplete(true)).toEqual(['Future', 'In progress', 'Canceled', 'Postponed']);
+    expect(statusesForHideComplete(false)).toContain('Completed');
   });
 
-  it('applies period + hideIncomplete filter together', () => {
+  it('applies period + hideComplete filter together', () => {
     const r = race({ scheduledStart: new Date('2026-04-28T09:00:00'), status: 'Completed' });
     expect(includesRace(r, 'last7Days', now, true)).toBe(false);
     expect(includesRace(r, 'last7Days', now, false)).toBe(true);

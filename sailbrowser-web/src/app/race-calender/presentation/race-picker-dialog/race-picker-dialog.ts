@@ -29,7 +29,7 @@ export interface RacePickerDialogData {
   mode?: RacePickerMode;
   defaultPeriod?: RacePickerPeriod;
   availablePeriods?: RacePickerPeriod[];
-  hideIncompleteDefault?: boolean;
+  hideCompleteDefault?: boolean;
   /** Explicit status allow-list (overrides statusFilter mapping when provided). */
   includeStatuses?: RaceStatus[];
 }
@@ -69,11 +69,11 @@ function dayHeading(d: Date): string {
               </mat-chip-option>
             }
           </mat-chip-listbox>
-          @if (showHideIncompleteToggle()) {
+          @if (showHideCompleteToggle()) {
             <mat-chip-listbox class="single-chip" [multiple]="false">
               <mat-chip-option
-                [selected]="hideIncomplete()"
-                (selectionChange)="onHideIncompleteChipChange($event.selected)">
+                [selected]="hideComplete()"
+                (selectionChange)="onHideCompleteChipChange($event.selected)">
                 Hide complete
               </mat-chip-option>
             </mat-chip-listbox>
@@ -172,8 +172,8 @@ export class RacePickerDialog {
   protected readonly availablePeriods = computed(() => {
     return this.data.availablePeriods ?? DEFAULT_PERIODS_BY_MODE[this.mode];
   });
-  protected readonly showHideIncompleteToggle = computed(() => this.mode === 'results' || this.mode === 'scanner');
-  protected readonly hideIncomplete = signal<boolean>(this.data.hideIncompleteDefault ?? this.showHideIncompleteToggle());
+  protected readonly showHideCompleteToggle = computed(() => this.mode === 'results' || this.mode === 'scanner');
+  protected readonly hideComplete = signal<boolean>(this.data.hideCompleteDefault ?? this.showHideCompleteToggle());
   protected readonly selectedPeriod = signal<RacePickerPeriod>(
     pickInitialPeriod(
       this.availablePeriods(),
@@ -193,7 +193,7 @@ export class RacePickerDialog {
           race,
           period,
           this.now(),
-          this.showHideIncompleteToggle() ? this.hideIncomplete() : false,
+          this.showHideCompleteToggle() ? this.hideComplete() : false,
           this.data.includeStatuses,
         ),
       )
@@ -231,8 +231,8 @@ export class RacePickerDialog {
     this.selectedPeriod.set(period);
   }
 
-  protected onHideIncompleteChipChange(selected: boolean): void {
-    this.hideIncomplete.set(selected);
+  protected onHideCompleteChipChange(selected: boolean): void {
+    this.hideComplete.set(selected);
   }
 
   protected isSelected(id: string): boolean {

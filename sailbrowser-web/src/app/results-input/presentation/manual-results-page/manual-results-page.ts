@@ -121,7 +121,7 @@ export class ManualResultsPage {
         mode: 'results',
         defaultPeriod: 'today',
         availablePeriods: ['today', 'past'],
-        hideIncompleteDefault: true,
+        hideCompleteDefault: true,
       },
     });
 

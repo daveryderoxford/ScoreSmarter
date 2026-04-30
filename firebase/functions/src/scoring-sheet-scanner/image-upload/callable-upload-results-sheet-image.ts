@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { onCall } from "firebase-functions/v2/https";
 import { httpsWithDetails, logScan, logScanError } from "../ai-scan-types.js";
 import {
-  appendResultsSheetImageRecord,
+  writeResultsSheetImageRecord,
   storeResultsSheetImage,
   updateRaceResultsSheetImagePath,
 } from "./image-storage.js";
@@ -96,7 +96,7 @@ export const uploadResultsSheetImage = onCall({
   );
 
   await updateRaceResultsSheetImagePath(clubId, raceId, image.storagePath, requestId);
-  await appendResultsSheetImageRecord(clubId, raceId, image, "uploaded", requestId);
+  await writeResultsSheetImageRecord(clubId, raceId, image, "uploaded", requestId);
 
   return {
     ...image,
