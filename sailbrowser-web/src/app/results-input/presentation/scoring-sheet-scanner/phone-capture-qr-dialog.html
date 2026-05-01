@@ -1,0 +1,41 @@
+<h2 mat-dialog-title>Capture sheet with your phone</h2>
+
+<mat-dialog-content class="dialog-body">
+  @if (loadError(); as err) {
+    <div class="dialog-phase dialog-phase--error">
+      <p class="error-text">{{ err }}</p>
+      <p class="hint">Try again later or capture the sheet another way.</p>
+    </div>
+  } @else if (!captureUrl()) {
+    <div class="dialog-phase generating">
+      <app-loading-centered message="Generating phone link" />
+    </div>
+  } @else {
+    <div class="dialog-phase dialog-phase--qr">
+      <p class="intro">Scan this code with your phone camera.</p>
+      <div class="qr-wrap">
+        <qrcode [qrdata]="captureUrl()!" [width]="220" [errorCorrectionLevel]="'M'"></qrcode>
+      </div>
+      <p class="status-line">
+        @switch (sessionStatus()) {
+          @case ('pending') {
+            Waiting for photo from phone…
+          }
+          @case ('uploaded') {
+            Received — closing…
+          }
+          @default {
+            Status: {{ sessionStatus() }}
+          }
+        }
+      </p>
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button matButton type="button" (click)="cancel()">
+    <mat-icon>close</mat-icon>
+    Cancel
+  </button>
+</mat-dialog-actions>

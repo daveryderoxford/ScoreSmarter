@@ -41,6 +41,7 @@ export interface ScanRunRequest {
   scannerContext: ScannerContext;
   imageBase64?: string | null;
   imageMimeType?: string | null;
+  storagePath?: string | null;
   mockMode?: boolean;
 }
 

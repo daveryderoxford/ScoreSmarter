@@ -18,4 +18,5 @@ export class CaptureStep {
   openCamera = output<void>();
   useExisting = output<void>();
   clearImage = output<void>();
+  startPhoneCapture = output<void>();
 }
