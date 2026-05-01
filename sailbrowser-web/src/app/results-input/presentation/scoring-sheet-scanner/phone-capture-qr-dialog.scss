@@ -1,0 +1,58 @@
+.dialog-body {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  /* Stable footprint while generating and after QR appears (no layout jump). */
+  min-width: 340px;
+  width: 100%;
+  min-height: 380px;
+  padding-top: 0.25rem;
+}
+
+.dialog-phase {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dialog-phase--error {
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.generating {
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog-phase--qr {
+  gap: 1rem;
+}
+
+.intro {
+  margin: 0;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.95rem;
+}
+
+.qr-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.status-line {
+  margin: 0;
+  font-weight: 600;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.error-text {
+  margin: 0;
+  color: var(--mat-sys-error);
+}

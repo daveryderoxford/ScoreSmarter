@@ -1,5 +1,5 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { Component, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -27,6 +27,7 @@ import { RaceStartTimeDialog, RaceStartTimeResult } from '../handicap/race-start
 import { CameraCaptureDialog } from './camera-capture-dialog';
 import { CaptureStep } from './capture-step';
 import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
+import { PhoneCaptureQrDialog, PhoneCaptureQrDialogResult } from './phone-capture-qr-dialog';
 import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step';
 import { ScanResponse, ScannedResultRow, ScannerContext } from './scan-model';
 import { ScannerOrchestrationService } from './scanner-orchestration.service';
@@ -104,6 +105,7 @@ export class ScoringSheetScanner {
   private readonly route = inject(ActivatedRoute);
   private readonly scannerOrchestration = inject(ScannerOrchestrationService);
   private readonly manualResultsService = inject(ManualResultsService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly isMobile = computed(() => this.breakpointObserver.isMatched('(max-width: 599px)'));
   stepper = viewChild.required<MatStepper>('stepper');
@@ -207,6 +209,7 @@ export class ScoringSheetScanner {
 
   imageBase64 = signal<string | null>(null);
   imageMimeType = signal<string | null>(null);
+  storedImagePath = signal<string | null>(null);
   imagePreview = signal<string | null>(null);
   loading = signal(false);
   result = signal<ScanResponse | null>(null);
@@ -245,7 +248,6 @@ export class ScoringSheetScanner {
   readonly unmatchedColumns = ['sailNumber', 'boatClass', 'time', 'status', 'laps', 'enter'];
   readonly hasCapturedImage = computed(() => !!this.imageBase64() && !!this.imageMimeType());
   readonly isMockScanMode = computed(() => this.scannerOrchestration.isMockMode(this.route.snapshot.queryParamMap.get('mockScan')));
-
   private findBoatMatches(row: ScannedResultRow) {
     const boatClass = row.boatClass?.value?.trim();
     const sailNumber = Number(row.sailNumber?.value);
@@ -325,6 +327,7 @@ export class ScoringSheetScanner {
   clearImage(): void {
     this.imageBase64.set(null);
     this.imageMimeType.set(null);
+    this.storedImagePath.set(null);
     this.imagePreview.set(null);
     this.captureForm.controls.hasImage.setValue(this.isMockScanMode());
     this.result.set(null);
@@ -364,6 +367,48 @@ export class ScoringSheetScanner {
     if (this.loading()) return;
     if (this.result()) return;
     await this.scan();
+  }
+
+  async startPhoneCapture(): Promise<void> {
+    const raceId = this.form.controls.raceId.value;
+    if (!raceId) {
+      this.error.set('Select a race before starting phone capture.');
+      return;
+    }
+    const ref = this.dialog.open<PhoneCaptureQrDialog, { clubId: string; raceId: string }, PhoneCaptureQrDialogResult | undefined>(
+      PhoneCaptureQrDialog,
+      {
+        width: '420px',
+        maxWidth: '95vw',
+        disableClose: true,
+        data: { clubId: this.clubTenant.clubId, raceId },
+      },
+    );
+    const result = await firstValueFrom(ref.afterClosed());
+    if (result?.outcome === 'uploaded') this.applyUploadedImageFromPhoneSession(result.storagePath);
+  }
+
+  private applyUploadedImageFromPhoneSession(storagePath: string): void {
+    this.result.set(null);
+    this.error.set(null);
+    this.storedImagePath.set(storagePath);
+    this.imageBase64.set(null);
+    this.imageMimeType.set(null);
+    this.imagePreview.set(null);
+    this.captureForm.controls.hasImage.setValue(true);
+    this.advanceCaptureStepAfterPhoneUpload();
+  }
+
+  /** Move to Details after phone upload — user already saw the image on the phone. */
+  private advanceCaptureStepAfterPhoneUpload(): void {
+    if (this.stepper().selectedIndex !== 1) return;
+    queueMicrotask(() => {
+      const stepper = this.stepper();
+      if (stepper.selectedIndex !== 1) return;
+      if (this.captureForm.invalid) return;
+      this.cdr.markForCheck();
+      stepper.next();
+    });
   }
 
   private parseScannedTime(timeStr: string): Date | null {
@@ -499,7 +544,7 @@ export class ScoringSheetScanner {
   }
 
   async scan(): Promise<void> {
-    if (!this.isMockScanMode() && (!this.imageBase64() || !this.imageMimeType())) return;
+    if (!this.isMockScanMode() && !this.imageBase64() && !this.storedImagePath()) return;
     if (this.form.invalid) return this.error.set('Select a race and complete the context form.');
 
     this.error.set(null);
@@ -525,6 +570,7 @@ export class ScoringSheetScanner {
         scannerContext,
         imageBase64: this.imageBase64(),
         imageMimeType: this.imageMimeType(),
+        storagePath: this.storedImagePath(),
         mockMode: this.isMockScanMode(),
       }).subscribe(state => {
         if (state.status === 'running') {

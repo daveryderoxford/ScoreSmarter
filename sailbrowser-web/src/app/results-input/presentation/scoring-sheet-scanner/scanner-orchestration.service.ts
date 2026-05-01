@@ -1,11 +1,13 @@
 import { inject, Injectable } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
+import { Firestore, doc, docData } from '@angular/fire/firestore';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
 import { RaceCalendarStore } from 'app/race-calender';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
 import { SeriesEntryStore } from '../../services/series-entry-store';
 import { environment } from '../../../../environments/environment';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
+import { CaptureSessionUploadService } from 'app/results-sheet-phone-capture/capture-session-upload.service';
 import { ScanResponse, ScanRunRequest, ScanRunState, ScannedResultRow } from './scan-model';
 
 const PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS = 318_000;
@@ -14,9 +16,11 @@ const UPLOAD_RESULTS_SHEET_IMAGE_CALLABLE_TIMEOUT_MS = 120_000;
 @Injectable({ providedIn: 'root' })
 export class ScannerOrchestrationService {
   private readonly app = inject(FirebaseApp);
+  private readonly firestore = inject(Firestore);
   private readonly raceCalendarStore = inject(RaceCalendarStore);
   private readonly competitorStore = inject(RaceCompetitorStore);
   private readonly entryStore = inject(SeriesEntryStore);
+  private readonly captureSessionUpload = inject(CaptureSessionUploadService);
 
   private readonly scanActivityMessages = [
     'Loading scan...',
@@ -34,6 +38,55 @@ export class ScannerOrchestrationService {
 
   isMockMode(rawFlag: string | null | undefined): boolean {
     return rawFlag === '1';
+  }
+
+  async createCaptureSession(clubId: string, raceId: string): Promise<{
+    sessionId: string;
+    token: string;
+    clubId: string;
+    raceId: string;
+    expiresAt: string;
+  }> {
+    const functions = getFunctions(this.app, 'europe-west1');
+    if (environment.useEmulators) {
+      try { connectFunctionsEmulator(functions, 'localhost', 5001); } catch { /* already configured */ }
+    }
+    const createFn = httpsCallable(functions, 'createResultsSheetCaptureSession', { timeout: 60_000 });
+    const res = await createFn({ clubId, raceId });
+    return res.data as {
+      sessionId: string;
+      token: string;
+      clubId: string;
+      raceId: string;
+      expiresAt: string;
+    };
+  }
+
+  async uploadFromCaptureSession(payload: {
+    clubId: string;
+    sessionId: string;
+    token: string;
+    imageBase64: string;
+    imageMimeType: string;
+  }): Promise<{ status: string; storagePath?: string }> {
+    return this.captureSessionUpload.uploadFromCaptureSession(payload);
+  }
+
+  watchCaptureSession(clubId: string, sessionId: string): Observable<{
+    status?: string;
+    storagePath?: string;
+    uploadedAt?: Date;
+    expiresAt?: Date;
+  } | null> {
+    const ref = doc(this.firestore, `clubs/${clubId}/results-sheet-capture-sessions/${sessionId}`);
+    return docData(ref).pipe(
+      map(v => (v ?? null) as {
+        status?: string;
+        storagePath?: string;
+        uploadedAt?: Date;
+        expiresAt?: Date;
+      } | null),
+    );
   }
 
   runScan(request: ScanRunRequest): Observable<ScanRunState> {
@@ -138,9 +191,9 @@ export class ScannerOrchestrationService {
   }
 
   private async runCallableScan(request: ScanRunRequest): Promise<ScanResponse> {
-    if (!request.imageBase64 || !request.imageMimeType) {
-      throw new Error('Missing image data for scan.');
-    }
+    const hasImage = !!request.imageBase64 && !!request.imageMimeType;
+    const hasStoredPath = !!request.storagePath;
+    if (!hasImage && !hasStoredPath) throw new Error('Missing image data for scan.');
 
     const functions = getFunctions(this.app, 'europe-west1');
     if (environment.useEmulators) {
@@ -154,13 +207,16 @@ export class ScannerOrchestrationService {
       timeout: PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS,
     });
 
-    const uploadRes = await uploadFn({
-      imageBase64: request.imageBase64,
-      imageMimeType: request.imageMimeType,
-      clubId: request.clubId,
-      raceId: request.raceId,
-    });
-    const storedImagePath = (uploadRes.data as { storagePath?: string } | null)?.storagePath;
+    let storedImagePath = request.storagePath ?? undefined;
+    if (!storedImagePath) {
+      const uploadRes = await uploadFn({
+        imageBase64: request.imageBase64,
+        imageMimeType: request.imageMimeType,
+        clubId: request.clubId,
+        raceId: request.raceId,
+      });
+      storedImagePath = (uploadRes.data as { storagePath?: string } | null)?.storagePath;
+    }
     const res = await parseFn({
       scannerContext: request.scannerContext,
       clubId: request.clubId,

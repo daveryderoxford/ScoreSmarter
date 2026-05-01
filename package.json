@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@angular/platform-browser": "^19.2.21",
+    "angularx-qrcode": "^19.0.0"
+  }
+}

@@ -7,6 +7,10 @@ export const APP_ROUTES: Routes = [
    { path: "boats", loadChildren: () => import('./boats/boats.routes').then(r => r.BOATS_ROUTES) },
    { path: "race-calender", loadChildren: () => import('./race-calender/race-calender.routes').then(r => r.RACE_CALENDER_ROUTES) },
    { path: "results-input", loadChildren: () => import('./results-input/race-results.routes').then(r => r.RESULTS_ENTRY_ROUTES) },
+   {
+      path: "results-sheet-phone-capture",
+      loadChildren: () => import('./results-sheet-phone-capture/results-sheet-phone-capture.routes').then(r => r.RESULTS_SHEET_PHONE_CAPTURE_ROUTES),
+    },
    { path: "results", loadChildren: () => import('./published-results/published-result.routes').then(r => r.PUBLISHED_RESULTS_ROUTES) },
    { path: "sys-admin", loadChildren: () => import('./sys-admin/sys-admin.routes').then(r => r.SYS_ADMIN_ROUTES) },
    { path: "club", loadChildren: () => import('./club-tenant/club.routes').then(r => r.CLUB_ROUTES) },
