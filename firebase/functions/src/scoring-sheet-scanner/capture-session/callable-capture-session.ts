@@ -5,7 +5,6 @@ import { httpsWithDetails, logScan, logScanError } from "../ai-scan-types.js";
 import {
   storeResultsSheetImage,
   updateRaceResultsSheetImagePath,
-  writeResultsSheetImageRecord,
 } from "../image-upload/image-storage.js";
 
 const CAPTURE_SESSION_TTL_MS = 10 * 60 * 1000;
@@ -169,7 +168,6 @@ export const uploadResultsSheetImageFromSession = onCall({
 
   const image = await storeResultsSheetImage(clubId, raceId, imageBuffer, imageMimeType, requestId);
   await updateRaceResultsSheetImagePath(clubId, raceId, image.storagePath, requestId);
-  await writeResultsSheetImageRecord(clubId, raceId, image, "uploaded", requestId);
   await sessionSnap.ref.set({
     status: "uploaded",
     uploadedAt: FieldValue.serverTimestamp(),

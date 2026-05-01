@@ -216,6 +216,7 @@ export class ScannerOrchestrationService {
         raceId: request.raceId,
       });
       storedImagePath = (uploadRes.data as { storagePath?: string } | null)?.storagePath;
+      if (!storedImagePath) throw new Error('Upload succeeded but no storagePath was returned.');
     }
     const res = await parseFn({
       scannerContext: request.scannerContext,

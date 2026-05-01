@@ -37,7 +37,7 @@ service cloud.firestore {
     //   - seriesId: string (required)
     //   - boatId: string (required)
     //
-    // Collection: clubs/{clubId}/calendar
+    // Collection: clubs/{clubId}/races
     // Document ID: {raceId}
     // Fields: 
     //   - name: string (required)
@@ -49,6 +49,11 @@ service cloud.firestore {
     // Fields: 
     //   - name: string (required)
     //   - seasonId: string
+    //
+    // Collection: clubs/{clubId}/results-sheet-capture-sessions
+    // Document ID: {sessionId}
+    // Fields (written only by Cloud Functions / Admin SDK):
+    //   - clubId, raceId, tokenHash, expiresAt, status, storagePath, etc.
     //
     // Collection: users
     // Document ID: {uid}
@@ -207,9 +212,9 @@ service cloud.firestore {
         allow delete: if isRO(clubId);
       }
 
-      // Race Calendar
-      match /calendar/{raceId} {
-        allow read: if true; // All users can see calendar
+      // Race Data
+      match /races/{raceId} {
+        allow read: if true; // All users can see race metadata
         allow create, update: if isRO(clubId) && isValidRace(request.resource.data);
         allow delete: if isClubAdmin(clubId);
       }
@@ -232,6 +237,13 @@ service cloud.firestore {
       match /published-series/{seriesId} {
         allow read: if true;
         allow write: if isRO(clubId);
+      }
+
+      // Ephemeral QR phone-capture sessions: desktop observes status via docData().
+      match /results-sheet-capture-sessions/{sessionId} {
+        allow read: if true;
+        // Creates/updates are performed by Cloud Functions (Admin SDK bypasses rules).
+        allow create, update, delete: if false;
       }
     }
 

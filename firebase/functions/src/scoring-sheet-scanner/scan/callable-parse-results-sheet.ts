@@ -11,9 +11,6 @@ import {
   logScan,
   logScanError,
 } from "../ai-scan-types.js";
-import {
-  raceCalendarDocPath,
-} from "../image-upload/image-storage.js";
 import { parseWithAi } from "./ai-parsing.js";
 
 function db() {
@@ -24,7 +21,7 @@ interface ParseStoredResultsSheetRequest {
   scannerContext: ScannerContext;
   clubId: string;
   raceId: string;
-  storagePath?: string;
+  storagePath: string;
 }
 
 function normalizeScannerTimeFormat(value: unknown): ScannerTimeFormat {
@@ -39,8 +36,8 @@ function assertCallerHasClubAccess(
   clubId: string,
   requestId: string,
 ): void {
-/*  
-if (authToken["sysAdmin"] === true) {
+  /*
+  if (authToken["sysAdmin"] === true) {
     return;
   }
   const clubs = authToken["clubs"] as Record<string, string> | undefined;
@@ -53,9 +50,9 @@ if (authToken["sysAdmin"] === true) {
     stage: "assert_club_access",
     cause: "club_claim_missing",
     clubId,
-  }); */
-  // TODO temp allow to run without club auth token.
-  return;
+  });
+  */
+  // Enable by uncommenting the block above once Auth custom claims (e.g. clubs map) are assigned for scanner users.
 }
 
 async function buildRosterFromRace(
@@ -169,11 +166,11 @@ export function validateStoredRequest(data: unknown, requestId: string): ParseSt
       cause: "missing_race_id",
     });
   }
-  if (storagePath != null && typeof storagePath !== "string") {
-    throw httpsWithDetails("invalid-argument", "storagePath must be a string when provided.", {
+  if (!storagePath || typeof storagePath !== "string") {
+    throw httpsWithDetails("invalid-argument", "Missing storagePath.", {
       requestId,
       stage: "validate_input",
-      cause: "invalid_storage_path_type",
+      cause: "missing_storage_path",
     });
   }
   return {
@@ -182,21 +179,6 @@ export function validateStoredRequest(data: unknown, requestId: string): ParseSt
     raceId,
     storagePath,
   };
-}
-
-async function resolveStoragePath(clubId: string, raceId: string, requestId: string): Promise<string> {
-  const raceSnap = await db().doc(raceCalendarDocPath(clubId, raceId)).get();
-  const path = raceSnap.get("resultsSheetImage");
-  if (typeof path === "string" && path.length > 0) {
-    return path;
-  }
-  throw httpsWithDetails("not-found", "No stored results sheet image found for race.", {
-    requestId,
-    stage: "validate_input",
-    cause: "missing_stored_image_path",
-    clubId,
-    raceId,
-  });
 }
 
 async function parseFromStoredImage(
@@ -260,12 +242,11 @@ export const parseStoredResultsSheet = onCall({
   const { scannerContext, clubId, raceId, storagePath } = validateStoredRequest(request.data, requestId);
   assertCallerHasClubAccess(request.auth.token as Record<string, unknown>, clubId, requestId);
 
-  const resolvedStoragePath = storagePath || await resolveStoragePath(clubId, raceId, requestId);
   logScan(requestId, "validate_input", "parseStoredResultsSheet invoked", {
     uid: request.auth.uid,
     clubId,
     raceId,
-    storagePath: resolvedStoragePath,
+    storagePath,
   });
-  return parseFromStoredImage(requestId, clubId, raceId, scannerContext, resolvedStoragePath);
+  return parseFromStoredImage(requestId, clubId, raceId, scannerContext, storagePath);
 });

@@ -1,5 +1,6 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { ChangeDetectorRef, Component, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { FirebaseApp } from '@angular/fire/app';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,7 +26,7 @@ import { RaceCompetitorStore } from '../../services/race-competitor-store';
 import { SeriesEntryStore } from '../../services/series-entry-store';
 import { RaceStartTimeDialog, RaceStartTimeResult } from '../handicap/race-start-time-dialog';
 import { CameraCaptureDialog } from './camera-capture-dialog';
-import { CaptureStep } from './capture-step';
+import { CaptureStep, CaptureStepViewModel } from './capture-step';
 import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
 import { PhoneCaptureQrDialog, PhoneCaptureQrDialogResult } from './phone-capture-qr-dialog';
 import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step';
@@ -33,6 +34,7 @@ import { ScanResponse, ScannedResultRow, ScannerContext } from './scan-model';
 import { ScannerOrchestrationService } from './scanner-orchestration.service';
 import { RaceStep } from './race-step';
 import { SetupStep } from './setup-step';
+import { getDownloadURL, getStorage, ref as storageRef } from 'firebase/storage';
 import type { ScannerTimeFormat } from '@shared/scanner-context';
 
 @Component({
@@ -106,6 +108,7 @@ export class ScoringSheetScanner {
   private readonly scannerOrchestration = inject(ScannerOrchestrationService);
   private readonly manualResultsService = inject(ManualResultsService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly firebaseApp = inject(FirebaseApp);
 
   readonly isMobile = computed(() => this.breakpointObserver.isMatched('(max-width: 599px)'));
   stepper = viewChild.required<MatStepper>('stepper');
@@ -128,7 +131,53 @@ export class ScoringSheetScanner {
     { initialValue: this.form.controls.raceId.value }
   );
   readonly selectedRace = computed(() => this.raceCalendarStore.allRaces().find((r: Race) => r.id === this.selectedRaceId()));
-  readonly hasExistingImage = computed(() => !!this.selectedRace()?.resultsSheetImage);
+  readonly hasExistingImage = computed(() => !!this.selectedRace()?.resultsSheetImage?.trim());
+  /** Hide “reuse race sheet image” strip after user taps Capture new until race clears or race id changes. */
+  preferNewCaptureOverRaceSheet = signal(false);
+  raceSheetImageUrl = signal<string | null>(null);
+  raceSheetImageLoadError = signal<string | null>(null);
+  private raceSheetImageResolveVersion = 0;
+
+  readonly showRaceSheetReuseOffer = computed(() => {
+    if (!this.hasExistingImage()) return false;
+    if (this.storedImagePath()) return false;
+    if (this.imagePreview()) return false;
+    if (this.imageBase64() || this.imageMimeType()) return false;
+    return !this.preferNewCaptureOverRaceSheet();
+  });
+
+  readonly captureViewModel = computed((): CaptureStepViewModel => {
+    const storedImageError = this.raceSheetImageLoadError();
+    const isMobile = this.isMobile();
+    const reuseUrl =
+      this.showRaceSheetReuseOffer() ? (this.raceSheetImageUrl()?.trim() || null) : null;
+    if (reuseUrl) {
+      return {
+        layout: 'reuse',
+        isMobile,
+        reuseImageUrl: reuseUrl,
+        previewSrc: null,
+        storedImageError,
+      };
+    }
+    const previewSrc = this.imagePreview();
+    if (previewSrc) {
+      return {
+        layout: 'preview',
+        isMobile,
+        reuseImageUrl: null,
+        previewSrc,
+        storedImageError,
+      };
+    }
+    return {
+      layout: 'capture',
+      isMobile,
+      reuseImageUrl: null,
+      previewSrc: null,
+      storedImageError,
+    };
+  });
   readonly hasConfiguredStartTimes = computed(() => {
     const race = this.selectedRace();
     return !!race && this.hasConfiguredStarts(race);
@@ -262,6 +311,33 @@ export class ScoringSheetScanner {
       // Allow capture step completion without image while testing review flow.
       this.captureForm.controls.hasImage.setValue(true);
     }
+    this.form.controls.raceId.valueChanges.subscribe(() => {
+      this.preferNewCaptureOverRaceSheet.set(false);
+    });
+    effect(() => {
+      const imageRef = this.selectedRace()?.resultsSheetImage?.trim() ?? '';
+      void this.resolveRaceSheetImageUrl(imageRef);
+    });
+  }
+
+  private async resolveRaceSheetImageUrl(imageRef: string): Promise<void> {
+    const resolveVersion = ++this.raceSheetImageResolveVersion;
+    if (!imageRef) {
+      this.raceSheetImageUrl.set(null);
+      this.raceSheetImageLoadError.set(null);
+      return;
+    }
+    try {
+      const url = await getDownloadURL(storageRef(getStorage(this.firebaseApp), imageRef));
+      if (resolveVersion !== this.raceSheetImageResolveVersion) return;
+      this.raceSheetImageUrl.set(url);
+      this.raceSheetImageLoadError.set(null);
+    } catch (err: unknown) {
+      if (resolveVersion !== this.raceSheetImageResolveVersion) return;
+      this.raceSheetImageUrl.set(null);
+      this.raceSheetImageLoadError.set("Could not load race image from storage path: " + imageRef);
+      console.error("ScoringSheetScanner: Failed to resolve resultsSheetImage to download URL", { imageRef, err });
+    }
   }
 
   private formatRaceDateTime(value: Date): string {
@@ -330,6 +406,7 @@ export class ScoringSheetScanner {
     this.storedImagePath.set(null);
     this.imagePreview.set(null);
     this.captureForm.controls.hasImage.setValue(this.isMockScanMode());
+    this.preferNewCaptureOverRaceSheet.set(false);
     this.result.set(null);
     this.error.set(null);
   }
@@ -345,25 +422,35 @@ export class ScoringSheetScanner {
     });
   }
 
-  useExistingImage(): void {
-    const img = this.selectedRace()?.resultsSheetImage;
-    if (!img) return;
-    this.imagePreview.set(img);
-    if (img.startsWith('data:')) {
-      this.imageBase64.set(img.split(',')[1]);
-      this.imageMimeType.set(img.split(';')[0].split(':')[1]);
-    } else {
-      this.imageBase64.set(img);
-      this.imageMimeType.set('image/jpeg');
-    }
-    this.captureForm.controls.hasImage.setValue(true);
-    this.result.set(null);
-    this.error.set(null);
+  captureNewInsteadOfReuse(): void {
+    this.preferNewCaptureOverRaceSheet.set(true);
   }
 
-  async onStepChange(event: { selectedIndex: number; }): Promise<void> {
+  useExistingImage(): void {
+    const img = this.selectedRace()?.resultsSheetImage?.trim();
+    if (!img) return;
+
+    this.result.set(null);
+    this.error.set(null);
+
+    this.storedImagePath.set(img);
+    this.imageBase64.set(null);
+    this.imageMimeType.set(null);
+    this.imagePreview.set(this.raceSheetImageUrl());
+
+
+    this.captureForm.controls.hasImage.setValue(true);
+  }
+
+  async onStepChange(event: { selectedIndex: number; previouslySelectedIndex?: number; }): Promise<void> {
+    if (event.selectedIndex === 1 && event.previouslySelectedIndex === 0) {
+      this.preferNewCaptureOverRaceSheet.set(false);
+    }
+
     if (event.selectedIndex !== 3) return;
-    if (!this.isMockScanMode() && (!this.imageBase64() || !this.imageMimeType())) return;
+    const hasInline = !!this.imageBase64() && !!this.imageMimeType();
+    const hasStored = !!this.storedImagePath();
+    if (!this.isMockScanMode() && !hasInline && !hasStored) return;
     if (this.loading()) return;
     if (this.result()) return;
     await this.scan();

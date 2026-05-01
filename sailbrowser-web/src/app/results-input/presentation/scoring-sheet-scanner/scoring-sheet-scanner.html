@@ -24,9 +24,8 @@
       <ng-template matStepLabel>Capture</ng-template>
       <div class="step-container">
         <app-capture-step
-          [isMobile]="isMobile()"
-          [hasExistingImage]="hasExistingImage()"
-          [imagePreview]="imagePreview()"
+          [vm]="captureViewModel()"
+          (captureNewInstead)="captureNewInsteadOfReuse()"
           (fileChanged)="onFileChange($event)"
           (openCamera)="openCameraDialog()"
           (startPhoneCapture)="startPhoneCapture()"

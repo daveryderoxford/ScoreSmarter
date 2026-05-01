@@ -116,9 +116,13 @@
       "schema": "SeriesEntry",
       "description": "Series entries."
     },
-    "/clubs/{clubId}/calendar/{raceId}": {
+    "/clubs/{clubId}/races/{raceId}": {
       "schema": "Race",
-      "description": "Race calendar."
+      "description": "Scheduled races for the club (includes resultsSheetImage storage path when set)."
+    },
+    "/clubs/{clubId}/results-sheet-capture-sessions/{sessionId}": {
+      "schema": "ResultsSheetCaptureSession",
+      "description": "Ephemeral phone-capture QR sessions (read by desktop; writes via Cloud Functions only)."
     },
     "/clubs/{clubId}/series/{seriesId}": {
       "schema": "Series",

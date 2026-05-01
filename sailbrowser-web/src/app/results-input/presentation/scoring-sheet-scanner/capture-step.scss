@@ -12,6 +12,51 @@
   padding: 2rem 2rem 4rem 2rem !important;
 }
 
+.race-image-error-banner {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  border: 1px solid var(--mat-sys-error);
+  color: var(--mat-sys-on-error-container);
+  background: var(--mat-sys-error-container);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+
+  mat-icon {
+    margin-top: 0.1rem;
+    color: var(--mat-sys-error);
+  }
+
+  strong {
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+}
+
+.race-sheet-reuse {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+}
+
+.reuse-caption {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  color: var(--mat-sys-on-surface-variant);
+  text-align: center;
+  max-width: 42ch;
+  line-height: 1.4;
+}
+
+.reuse-preview {
+  margin-bottom: 0;
+  width: 100%;
+  max-width: 400px;
+}
+
 .capture-zone {
   width: 100%;
   display: flex;

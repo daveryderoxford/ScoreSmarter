@@ -1,44 +1,53 @@
 <mat-card appearance="outlined" class="form-card capture-card">
-  <input #mobileFileInput type="file" accept="image/*" capture="environment" style="display:none;" (change)="fileChanged.emit($event)">
+  <input #mobileFileInput type="file" accept="image/*" style="display:none;" (change)="fileChanged.emit($event)">
 
-  @if (hasExistingImage() && !imagePreview()) {
-    <div class="stepper-form" style="width: 100%;">
-      <button matButton="filled" class="large-capture-btn" (click)="useExisting.emit()">
-        <mat-icon>image</mat-icon>
-        Use Existing Image
+  @if (vm().storedImageError; as raceImageError) {
+    <div class="race-image-error-banner" role="status">
+      <mat-icon>warning</mat-icon>
+      <div>
+        <strong>Stored race image is unavailable.</strong>
+        <div>{{ raceImageError }}</div>
+      </div>
+    </div>
+  }
+
+  @if (vm().layout === 'reuse' && vm().reuseImageUrl; as existingUrl) {
+    <div class="stepper-form race-sheet-reuse" style="width: 100%;">
+      <p class="reuse-caption">There is already a results sheet photo on file for this race.</p>
+      <div class="preview-container reuse-preview">
+        <img [src]="existingUrl" alt="Existing results sheet for this race">
+      </div>
+      <button matButton="filled" class="large-capture-btn" type="button" (click)="useExisting.emit()">
+        <mat-icon>check_circle</mat-icon>
+        Use this image
       </button>
-      @if (!isMobile()) {
-        <button matButton="outlined" class="large-capture-btn" (click)="openCamera.emit()">
-          <mat-icon>camera_alt</mat-icon>
-          Capture New Image
-        </button>
-      } @else {
-        <button matButton="outlined" class="large-capture-btn" (click)="mobileFileInput.click()">
-          <mat-icon>camera_alt</mat-icon>
-          Capture New Image
-        </button>
-      }
+      <button matButton="outlined" class="large-capture-btn" type="button" (click)="captureNewInstead.emit()">
+        <mat-icon>add_a_photo</mat-icon>
+        Capture a new image
+      </button>
+    </div>
+  } @else if (vm().layout === 'preview' && vm().previewSrc; as previewUrl) {
+    <div class="capture-zone">
+      <div class="preview-container">
+        <img [src]="previewUrl" alt="Preview">
+      </div>
+      <div class="capture-actions">
+        <button matButton="outlined" type="button" (click)="clearImage.emit()">Retake/Upload Another</button>
+      </div>
     </div>
   } @else {
     <div class="capture-zone">
-      @if (imagePreview()) {
-        <div class="preview-container">
-          <img [src]="imagePreview()" alt="Preview">
-        </div>
-        <div class="capture-actions">
-          <button matButton="outlined" (click)="clearImage.emit()">Retake/Upload Another</button>
-        </div>
-      } @else if (isMobile()) {
-        <button matButton="filled" class="large-capture-btn" (click)="mobileFileInput.click()">
+      @if (vm().isMobile) {
+        <button matButton="filled" class="large-capture-btn" type="button" (click)="mobileFileInput.click()">
           <mat-icon>camera_alt</mat-icon>
           Take Photo
         </button>
       } @else {
-        <button matButton="filled" class="large-capture-btn" (click)="openCamera.emit()">
+        <button matButton="filled" class="large-capture-btn" type="button" (click)="openCamera.emit()">
           <mat-icon>camera_alt</mat-icon>
           Capture from Camera
         </button>
-        <button matButton="outlined" class="large-capture-btn" (click)="startPhoneCapture.emit()">
+        <button matButton="outlined" class="large-capture-btn" type="button" (click)="startPhoneCapture.emit()">
           <mat-icon>smartphone</mat-icon>
           Capture Using Phone
         </button>
