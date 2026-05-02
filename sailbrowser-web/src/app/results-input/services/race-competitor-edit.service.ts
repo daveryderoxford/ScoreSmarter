@@ -163,14 +163,17 @@ export class RaceCompetitorEditService {
         break;
       }
       case 'setPersonalHandicapBand':
+        // UI uses `undefined` for unknown; persisted clear is explicit `null` (merge → deleteField).
         if ((entry.personalHandicapBand ?? null) === (op.band ?? null)) return;
-        update.personalHandicapBand = op.band;
+        (update as { personalHandicapBand?: PersonalHandicapBand | null }).personalHandicapBand =
+          op.band === undefined ? null : op.band;
         break;
     }
     if (Object.keys(update).length === 0) return;
 
+    const next: SeriesEntry = { ...entry, ...update } as SeriesEntry;
     try {
-      await this.mutator.updateSeriesEntryById(entry.id, update);
+      await this.mutator.updateSeriesEntryFromEdit(entry, next);
     } catch (err) {
       if (err instanceof SeriesEntryIdentityConflictError) {
         throw new ScoreSmarterError(
@@ -294,16 +297,22 @@ export class RaceCompetitorEditService {
     // class or personal band actually changed; a bare helm/crew correction
     // must not silently rewrite handicaps and republish every race in the
     // series.
+    /** When absent, callers are not intending to edit the saved band — avoid spurious clears. */
+    const commandSpecifiesBand = Object.prototype.hasOwnProperty.call(command, 'personalHandicapBand');
     const personalHandicapBand = command.personalHandicapBand;
     const classChanged = workingEntry.boatClass !== boatClass;
     const bandChanged =
+      commandSpecifiesBand &&
       (workingEntry.personalHandicapBand ?? undefined) !== (personalHandicapBand ?? undefined);
 
     const entryUpdate: Partial<SeriesEntry> = {};
     if (workingEntry.helm !== helm) entryUpdate.helm = helm;
     if (classChanged) entryUpdate.boatClass = boatClass;
     if (workingEntry.sailNumber !== sailNumber) entryUpdate.sailNumber = sailNumber;
-    if (bandChanged) entryUpdate.personalHandicapBand = personalHandicapBand;
+    if (bandChanged) {
+      (entryUpdate as { personalHandicapBand?: PersonalHandicapBand | null }).personalHandicapBand =
+        personalHandicapBand === undefined ? null : personalHandicapBand;
+    }
 
     if (classChanged || bandChanged) {
       // When the hull's class changes, do not pass the old `workingEntry.handicaps`
@@ -333,8 +342,9 @@ export class RaceCompetitorEditService {
 
     const entryChanged = Object.keys(entryUpdate).length > 0;
     if (entryChanged) {
+      const next: SeriesEntry = { ...workingEntry, ...entryUpdate } as SeriesEntry;
       try {
-        await this.mutator.updateSeriesEntryById(workingEntry.id, entryUpdate);
+        await this.mutator.updateSeriesEntryFromEdit(workingEntry, next);
       } catch (err) {
         if (err instanceof SeriesEntryIdentityConflictError) {
           throw new ScoreSmarterError(

@@ -2,16 +2,23 @@
  * Aggregate mutations for RaceCompetitor + SeriesEntry: race-scoped vs series-scoped
  * updates, repoint, delete with orphan cleanup, batched per-race writes,
  * and structural enforcement of the per-hull uniqueness invariant.
+ *
+ * **Patch contract for `RaceScopedCompetitorPatch`** (converter partial / merge rules):
+ * - key absent or value `undefined` → leave unchanged
+ * - value `null` → clear field (`deleteField()` via `dataObjectConverter` / class converter)
+ * - otherwise → set field
+ *
+ * Series entry updates use `updateSeriesEntryFromEdit(previous, next)` with a full proposed
+ * `SeriesEntry` so optional clears (e.g. `personalHandicapBand: null`) are explicit.
  */
 import { inject, Injectable } from '@angular/core';
-import { Firestore, writeBatch } from '@angular/fire/firestore';
+import { Firestore, setDoc, writeBatch } from '@angular/fire/firestore';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Handicap } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
-import { deleteField } from 'firebase/firestore';
 import { RaceCompetitor } from '../model/race-competitor';
 import { SeriesEntry } from '../model/series-entry';
 import { RaceCompetitorStore } from './race-competitor-store';
@@ -53,16 +60,6 @@ export interface RaceScopedCompetitorPatch {
   resultCode?: ResultCode;
 }
 
-export interface SeriesEntryPatch {
-  helm?: string;
-  crew?: string;
-  boatClass?: string;
-  sailNumber?: number;
-  handicaps?: Handicap[];
-  personalHandicapBand?: PersonalHandicapBand | null;
-  tags?: string[] | null;
-}
-
 export interface CreateSeriesEntryInput {
   seriesId: string;
   helm: string;
@@ -84,43 +81,48 @@ const RACE_PATCH_KEYS: (keyof RaceScopedCompetitorPatch)[] = [
   'resultCode',
 ];
 
-const ENTRY_PATCH_KEYS: (keyof SeriesEntryPatch)[] = [
-  'helm',
-  'crew',
-  'boatClass',
-  'sailNumber',
-  'handicaps',
-  'personalHandicapBand',
-  'tags',
-];
-
-/** Identity-relevant fields whose change requires uniqueness validation. */
-const IDENTITY_KEYS: (keyof SeriesEntryPatch)[] = ['helm', 'boatClass', 'sailNumber'];
-
-/**
- * Build Firestore update data:
- *   key absent  -> field not touched
- *   value null  -> deleteField()
- *   else        -> set
- */
-export function firestoreDataFromRacePatch(patch: RaceScopedCompetitorPatch): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
+function mergePayloadFromRacePatch(patch: RaceScopedCompetitorPatch): Partial<RaceCompetitor> {
+  const out: Partial<RaceCompetitor> = {};
   for (const k of RACE_PATCH_KEYS) {
     if (!(k in patch)) continue;
-    const v = patch[k];
-    out[k] = v === null ? deleteField() : v;
+    const v = patch[k as keyof RaceScopedCompetitorPatch];
+    if (v === undefined) continue;
+    (out as Record<string, unknown>)[k] = v;
   }
   return out;
 }
 
-function firestoreDataFromEntryPatch(patch: SeriesEntryPatch): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const k of ENTRY_PATCH_KEYS) {
-    if (!(k in patch)) continue;
-    const v = patch[k];
-    out[k] = v === null ? deleteField() : v;
+function handicapListsEqual(a: Handicap[] | undefined, b: Handicap[] | undefined): boolean {
+  const ax = [...(a ?? [])].sort((x, y) => x.scheme.localeCompare(y.scheme));
+  const bx = [...(b ?? [])].sort((x, y) => x.scheme.localeCompare(y.scheme));
+  if (ax.length !== bx.length) return false;
+  for (let i = 0; i < ax.length; i++) {
+    if (ax[i].scheme !== bx[i].scheme || ax[i].value !== bx[i].value) return false;
   }
-  return out;
+  return true;
+}
+
+function tagListsEqual(a: string[] | undefined, b: string[] | undefined): boolean {
+  const ax = [...(a ?? [])].sort();
+  const bx = [...(b ?? [])].sort();
+  if (ax.length !== bx.length) return false;
+  return ax.every((t, i) => t === bx[i]);
+}
+
+/** True when persisted entry fields match (including optional band as null vs absent). */
+function seriesEntriesEqual(a: SeriesEntry, b: SeriesEntry): boolean {
+  return (
+    a.id === b.id &&
+    a.seriesId === b.seriesId &&
+    a.helm === b.helm &&
+    (a.crew ?? '') === (b.crew ?? '') &&
+    (a.club ?? '') === (b.club ?? '') &&
+    a.boatClass === b.boatClass &&
+    a.sailNumber === b.sailNumber &&
+    (a.personalHandicapBand ?? null) === (b.personalHandicapBand ?? null) &&
+    handicapListsEqual(a.handicaps, b.handicaps) &&
+    tagListsEqual(a.tags, b.tags)
+  );
 }
 
 @Injectable({ providedIn: 'root' })
@@ -138,13 +140,19 @@ export class RaceCompetitorMutator {
 
   // --- Race-scoped writes ----------------------------------------------------
 
+  /**
+   * Single merge write: `setDoc` is enough (no transaction with other docs).
+   * Multi-row updates use `writeBatch` in `updateRaceCompetitorsBulk`.
+   */
   async updateRaceCompetitor(competitorId: string, patch: RaceScopedCompetitorPatch): Promise<void> {
-    const data = firestoreDataFromRacePatch(patch);
-    if (Object.keys(data).length === 0) return;
+    const mergePayload = mergePayloadFromRacePatch(patch);
+    if (Object.keys(mergePayload).length === 0) return;
 
-    await this.runInBatch(batch => {
-      batch.update(this.raceCompetitors.raceResultDocRef(competitorId), data);
-    });
+    await setDoc(
+      this.raceCompetitors.raceResultDocRef(competitorId),
+      mergePayload as RaceCompetitor,
+      { merge: true },
+    );
 
     const comp = this.raceCompetitors.selectedCompetitors().find(c => c.id === competitorId);
     if (comp) {
@@ -153,7 +161,7 @@ export class RaceCompetitorMutator {
   }
 
   /**
-   * Per-row race-scoped patches for one race in one atomic batch.
+   * Per-row race-scoped merges for one race in one atomic batch.
    * Validates each competitor belongs to `raceId`.
    */
   async updateRaceCompetitorsBulk(
@@ -172,10 +180,12 @@ export class RaceCompetitorMutator {
             `RaceCompetitorMutator: competitor ${competitorId} not in race ${raceId} or not in current selection.`,
           );
         }
-        const data = firestoreDataFromRacePatch(patch);
-        if (Object.keys(data).length === 0) continue;
+        const mergePayload = mergePayloadFromRacePatch(patch);
+        if (Object.keys(mergePayload).length === 0) continue;
         wroteAny = true;
-        batch.update(this.raceCompetitors.raceResultDocRef(competitorId), data);
+        batch.set(this.raceCompetitors.raceResultDocRef(competitorId), mergePayload as RaceCompetitor, {
+          merge: true,
+        });
       }
     });
 
@@ -211,46 +221,48 @@ export class RaceCompetitorMutator {
     return await this.seriesEntries.addEntry(entry);
   }
 
-  async updateSeriesEntryForCompetitor(competitorId: string, patch: SeriesEntryPatch): Promise<void> {
-    const comp = this.raceCompetitors.selectedCompetitors().find(c => c.id === competitorId);
-    if (!comp) {
-      throw new ScoreSmarterError(`RaceCompetitorMutator: competitor ${competitorId} not found in selection`);
-    }
-    await this.updateSeriesEntryById(comp.seriesEntryId, patch);
-  }
-
   /**
-   * Direct series entry update by id. Identity-changing patches are validated
-   * against all current entries in the series.
+   * Writes the full proposed `SeriesEntry` with merge semantics. Identity-changing
+   * updates are validated against all current entries in the series.
    */
-  async updateSeriesEntryById(entryId: string, patch: SeriesEntryPatch): Promise<void> {
-    const data = firestoreDataFromEntryPatch(patch);
-    if (Object.keys(data).length === 0) return;
+  async updateSeriesEntryFromEdit(previous: SeriesEntry, next: SeriesEntry): Promise<void> {
+    if (previous.id !== next.id) {
+      throw new ScoreSmarterError(
+        `RaceCompetitorMutator.updateSeriesEntryFromEdit: entry id mismatch ${previous.id} vs ${next.id}.`,
+      );
+    }
+    if (previous.seriesId !== next.seriesId) {
+      throw new ScoreSmarterError(
+        `RaceCompetitorMutator.updateSeriesEntryFromEdit: cannot change seriesId for entry ${previous.id}.`,
+      );
+    }
+    if (seriesEntriesEqual(previous, next)) return;
 
-    if (this.touchesIdentity(patch)) {
-      const current = await this.seriesEntries.getSeriesEntry(entryId);
-      if (!current) {
-        throw new ScoreSmarterError(
-          `RaceCompetitorMutator: series entry ${entryId} not found while validating identity update.`,
-        );
-      }
+    const identityChanged =
+      previous.helm !== next.helm ||
+      previous.boatClass !== next.boatClass ||
+      previous.sailNumber !== next.sailNumber;
+
+    if (identityChanged) {
       const proposed: PerHullIdentity = {
-        helm: patch.helm ?? current.helm,
-        boatClass: patch.boatClass ?? current.boatClass,
-        sailNumber: patch.sailNumber ?? current.sailNumber,
+        helm: next.helm,
+        boatClass: next.boatClass,
+        sailNumber: next.sailNumber,
       };
-      const sameSeries = await this.seriesEntries.getSeriesEntries(current.seriesId);
-      const collision = findCollidingEntry(sameSeries, proposed, entryId);
+      const sameSeries = await this.seriesEntries.getSeriesEntries(previous.seriesId);
+      const collision = findCollidingEntry(sameSeries, proposed, previous.id);
       if (collision) {
-        throw new SeriesEntryIdentityConflictError(collision.id, current.seriesId, proposed);
+        throw new SeriesEntryIdentityConflictError(collision.id, previous.seriesId, proposed);
       }
     }
+
+    const { id: _omitId, ...payload } = next;
 
     await this.runInBatch(batch => {
-      batch.update(this.seriesEntries.seriesEntryDocRef(entryId), data);
+      batch.set(this.seriesEntries.seriesEntryDocRef(previous.id), payload as SeriesEntry, { merge: true });
     });
 
-    const refs = await this.raceCompetitors.getCompetitorsForSeriesEntry(entryId);
+    const refs = await this.raceCompetitors.getCompetitorsForSeriesEntry(previous.id);
     const raceIds = [...new Set(refs.map(c => c.raceId))];
     for (const rid of raceIds) {
       await this.raceCalendar.ensureRaceDirty(rid);
@@ -302,7 +314,11 @@ export class RaceCompetitorMutator {
     );
 
     await this.runInBatch(batch => {
-      batch.update(this.raceCompetitors.raceResultDocRef(competitor.id), { seriesEntryId: nextSeriesEntryId });
+      batch.set(
+        this.raceCompetitors.raceResultDocRef(competitor.id),
+        { seriesEntryId: nextSeriesEntryId } as RaceCompetitor,
+        { merge: true },
+      );
       if (cleanup === 'ifOrphan' && othersOnOld.length === 0) {
         batch.delete(this.seriesEntries.seriesEntryDocRef(oldEntryId));
       }
@@ -325,10 +341,6 @@ export class RaceCompetitorMutator {
   }
 
   // --- Internal helpers ------------------------------------------------------
-
-  private touchesIdentity(patch: SeriesEntryPatch): boolean {
-    return IDENTITY_KEYS.some(k => k in patch);
-  }
 
   private async assertIdentityFreeInSeries(seriesId: string, identity: PerHullIdentity): Promise<void> {
     const entries = await this.seriesEntries.getSeriesEntries(seriesId);

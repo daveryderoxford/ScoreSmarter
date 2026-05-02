@@ -94,6 +94,32 @@ describe('RaceCompetitorEditService', () => {
     ).toBe(true);
   });
 
+  it('clears persisted personalHandicapBand when operation band is undefined (unknown)', async () => {
+    entryStore.entries = [
+      {
+        id: 'se-1',
+        seriesId: 's1',
+        helm: 'Sam',
+        boatClass: 'ILCA 7',
+        sailNumber: 100,
+        handicaps: [],
+        personalHandicapBand: 'Band2',
+      },
+    ];
+    compStore.comps = [
+      new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
+    ];
+
+    await service.apply({
+      competitorId: 'c1',
+      operation: { type: 'setPersonalHandicapBand', band: undefined },
+    });
+
+    const e = entryStore.entries[0];
+    expect(e.personalHandicapBand).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(e, 'personalHandicapBand')).toBe(false);
+  });
+
   it('records crewOverride on RaceCompetitor for raceOnly crew change', async () => {
     entryStore.entries = [
       { id: 'se-1', seriesId: 's1', helm: 'Old', crew: 'A', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] },
