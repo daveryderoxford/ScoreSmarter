@@ -8,18 +8,18 @@ import { MatListModule } from '@angular/material/list';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from "@angular/router";
+import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { CenteredText } from "app/shared/components/centered-text";
 import { LoadingCentered } from 'app/shared/components/loading-centered';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
-import { RaceCompetitor } from '../../results-input/model/race-competitor';
-import { ResolvedRaceCompetitor, resolveRaceCompetitors } from '../../results-input/model/resolved-race-competitor';
-import { CurrentRaces } from '../../results-input/services/current-races-store';
-import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
-import { SeriesEntryStore } from '../../results-input/services/series-entry-store';
-import { CenteredText } from "app/shared/components/centered-text";
-import { BoatEntrySummaryComponent } from "./entry-summary";
 import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
-import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { RaceCompetitor } from '../../results-input/model/race-competitor';
+import { ResolvedRaceCompetitor } from '../../results-input/model/resolved-race-competitor';
+import { CurrentRaces } from '../../results-input/services/current-races-store';
+import { RaceCompetitorMutator } from '../../results-input/services/race-competitor-mutator';
+import { RaceCompetitorReader } from '../../results-input/services/race-competitor-reader';
+import { BoatEntrySummaryComponent } from "./entry-summary";
 
 @Component({
   selector: 'app-entries-list-page',
@@ -55,7 +55,7 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
           </mat-select>
         </mat-form-field>
 
-      @if (competitorStore.loading()) {
+      @if (reader.loading()) {
         <app-loading-centered/>
       } @else if (filtered().length === 0) {
           <app-centered-text>No entries for this selection</app-centered-text>
@@ -120,8 +120,8 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EntriesListPage {
-  protected readonly competitorStore = inject(RaceCompetitorStore);
-  protected readonly entryStore = inject(SeriesEntryStore);
+  protected readonly reader = inject(RaceCompetitorReader);
+  private readonly mutator = inject(RaceCompetitorMutator);
   protected currentRaces = inject(CurrentRaces);
   protected ds = inject(DialogsService);
   protected snackbar = inject(MatSnackBar);
@@ -132,11 +132,7 @@ export class EntriesListPage {
 
   raceFilter = toSignal(this.raceSelector.valueChanges, { initialValue: 'all' });
 
-  competitors = this.competitorStore.selectedCompetitors;
-
-  resolved = computed(() =>
-    resolveRaceCompetitors(this.competitors(), this.entryStore.selectedEntries()),
-  );
+  resolved = this.reader.selectedResolvedCompetitors;
 
   filtered = computed(() =>
     this.resolved().filter(c => filter(c, this.raceFilter()!))
@@ -148,16 +144,16 @@ export class EntriesListPage {
 
   async delete(comp: RaceCompetitor) {
     if (comp.manualFinishTime || comp.recordedFinishTime) {
-      this.snackbar.open("Can not delete an entry who has finished", "Dismiss", { duration: 3000 });
+      this.snackbar.open('Cannot delete an entry who has finished', "Dismiss", { duration: 3000 });
       return;
     }
-    const ok = await this.ds.confirm("Delete competitor", "Delete competitor");
-    if (ok) {
+    const confirmed = await this.ds.confirm("Delete competitor", "Delete competitor");
+    if (confirmed) {
       try {
-        await this.competitorStore.deleteResult(comp.id);
+        await this.mutator.deleteRaceCompetitor(comp);
       } catch (error: any) {
-        this.snackbar.open("Error encountered deleting task", "Dismiss", { duration: 3000 });
-        console.log('UpdateTask. Error deleting task: ' + error.toString());
+        this.snackbar.open("Error encountered deleting entry", "Dismiss", { duration: 3000 });
+        console.log('EntriesListPage. Error deleting entry: ' + error.toString());
       }
     }
   }

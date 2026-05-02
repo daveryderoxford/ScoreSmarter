@@ -1,5 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { RaceCalendarStore } from 'app/race-calender';
+import {
+  RaceCompetitorMutator,
+  SeriesEntryIdentityConflictError,
+} from 'app/results-input/services/race-competitor-mutator';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
 import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
 import { ClubStore } from '../../club-tenant';
@@ -59,6 +63,7 @@ export class EntryService {
   private raceResultsStore = inject(RaceCompetitorStore);
   private seriesEntryStore = inject(SeriesEntryStore);
   private raceCalanderStore = inject(RaceCalendarStore);
+  private mutator = inject(RaceCompetitorMutator);
 
   /** Enter a race
    * throws a ScoreSmarterError exception if any conflict is detected.
@@ -153,17 +158,18 @@ export class EntryService {
   }
 
   /**
-   * Boat-swap path: delete every conflicting race competitor (and any
-   * SeriesEntry that becomes orphaned in *this* series as a result), then
-   * proceed with the requested entry. The caller is expected to have already
+   * Boat-swap path: delete every conflicting race competitor, then proceed
+   * with the requested entry. The caller is expected to have already
    * obtained the user's consent via the conflict dialog.
    *
    * The deletion is per-race: an existing entry that is also used in OTHER
    * races stays put and only loses its row in the conflicting race(s).
+   * Orphaned `SeriesEntry` documents are removed atomically by the mutator's
+   * batched `deleteRaceCompetitor` (per-conflict authoritative orphan check).
    */
   async swapAndEnter(details: EntryDetails, conflicts: EntryConflict[]): Promise<void> {
     for (const conflict of conflicts) {
-      await this.raceResultsStore.deleteResult(conflict.existingCompetitor.id);
+      await this.mutator.deleteRaceCompetitor(conflict.existingCompetitor);
     }
 
     // Re-evaluate after the deletions so we don't sign in twice if the same
@@ -179,33 +185,6 @@ export class EntryService {
     }
 
     await this.enterRaces(details);
-
-    // Best-effort cleanup: if the swap left a SeriesEntry with no race
-    // competitors anywhere, drop it so it doesn't haunt the entry list. We do
-    // this after `enterRaces` so we never delete an entry the new sign-on is
-    // about to reuse (findOrCreateSeriesEntry matches on identity, so the
-    // entry id we deleted from would only be reused if identity matched the
-    // incoming entry — which it can't, since that would have been a
-    // `sameEntry` conflict and consumed by `enterRaces` above).
-    await this.cleanupOrphanedEntries(conflicts);
-  }
-
-  private async cleanupOrphanedEntries(conflicts: EntryConflict[]): Promise<void> {
-    const candidateIds = new Set(conflicts.map(c => c.existingEntry.id));
-    const stillReferenced = new Set(
-      this.raceResultsStore.selectedCompetitors().map(c => c.seriesEntryId),
-    );
-    for (const entryId of candidateIds) {
-      if (!stillReferenced.has(entryId)) {
-        try {
-          await this.seriesEntryStore.deleteEntry(entryId);
-        } catch (err) {
-          // Don't fail the whole swap if cleanup fails — the new entry is
-          // already in place. Just log so we can spot leaking entries later.
-          console.warn(`EntryService: orphaned SeriesEntry cleanup failed for ${entryId}`, err);
-        }
-      }
-    }
   }
 
   /**
@@ -256,15 +235,30 @@ export class EntryService {
 
     console.log(`EntryService: Adding series entry ${race.seriesName} index: ${race.index}`);
 
-    return this.seriesEntryStore.addEntry({
-      seriesId: race.seriesId,
-      helm: details.helm,
-      crew: details.crew,
-      boatClass: details.boatClass,
-      sailNumber: details.sailNumber,
-      handicaps,
-      personalHandicapBand: details.personalHandicapBand,
-      tags: applyPersonalBandTag([], details.personalHandicapBand),
-    });
+    try {
+      return await this.mutator.createSeriesEntry({
+        seriesId: race.seriesId,
+        helm: details.helm,
+        crew: details.crew,
+        boatClass: details.boatClass,
+        sailNumber: details.sailNumber,
+        handicaps,
+        personalHandicapBand: details.personalHandicapBand,
+        tags: applyPersonalBandTag([], details.personalHandicapBand),
+      });
+    } catch (err) {
+      // The mutator runs an authoritative collision check that may surface a
+      // duplicate the cached `findAllMatchingEntries` above missed (e.g. a
+      // concurrent sign-on, or a stale store snapshot). Translate it to the
+      // same `ScoreSmarterError` shape callers already handle.
+      if (err instanceof SeriesEntryIdentityConflictError) {
+        throw new ScoreSmarterError(
+          `Cannot create series entry: another entry already exists for ` +
+          `${describeIdentity(identity)} in series ${race.seriesId} ` +
+          `(id ${err.collidingEntryId}).`,
+        );
+      }
+      throw err;
+    }
   }
 }

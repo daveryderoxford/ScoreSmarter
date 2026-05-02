@@ -7,13 +7,7 @@ import { Router } from '@angular/router';
 import { ScoringEngine } from 'app/published-results';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { RacePickerDialog, type RacePickerDialogData } from 'app/race-calender/presentation/race-picker-dialog/race-picker-dialog';
-import {
-  CurrentRaces,
-  RaceCompetitorStore,
-  ResolvedRaceCompetitor,
-  resolveRaceCompetitors,
-  SeriesEntryStore,
-} from 'app/results-input';
+import { CurrentRaces, RaceCompetitorReader, ResolvedRaceCompetitor } from 'app/results-input';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { BusyButton } from 'app/shared/components/busy-button';
 import { Toolbar } from 'app/shared/components/toolbar';
@@ -44,8 +38,7 @@ import { PositionBasedInputPanel } from '../position-based/position-based-input-
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ManualResultsPage {
-  private readonly store = inject(RaceCompetitorStore);
-  private readonly entryStore = inject(SeriesEntryStore);
+  private readonly reader = inject(RaceCompetitorReader);
   private readonly dialog = inject(MatDialog);
   protected readonly currentRacesStore = inject(CurrentRaces);
   private readonly raceCalendarStore = inject(RaceCalendarStore);
@@ -69,12 +62,13 @@ export class ManualResultsPage {
 
   readonly sortedCompetitors = computed(() => {
     const raceId = this.selectedRace()?.id;
-    const comps = this.store.selectedCompetitors().filter(comp => raceId === comp.raceId);
-    const resolved = resolveRaceCompetitors(comps, this.entryStore.selectedEntries());
+    if (!raceId) return [];
+    const resolved = this.reader.resolvedForRace(raceId);
     return [...resolved].sort((a, b) => manualRaceTableSort(a, b, 'elapsedTime', 'asc'));
   });
 
   readonly handicapSelectedCompetitor = linkedSignal<ResolvedRaceCompetitor | undefined>(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     this.selectedRace()?.id;
     return undefined;
   });

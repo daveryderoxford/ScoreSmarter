@@ -1,12 +1,12 @@
 import { computed, Injectable, Signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { Series } from '../model/series';
-import { Race } from '../model/race';
-import { collectionData, query, where, writeBatch, doc, getDoc, getDocs } from '@angular/fire/firestore';
-import { Observable, map, tap } from 'rxjs';
-import { isSameDay } from 'date-fns';
-import { RaceCalendarStoreBase, RaceSeriesDetails, seriesSort, sortRaces } from './race-calendar-store-base';
+import { collectionData, getDoc, getDocs, query, where, writeBatch } from '@angular/fire/firestore';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
+import { isSameDay } from 'date-fns';
+import { map, Observable, tap } from 'rxjs';
+import { Race } from '../model/race';
+import { Series } from '../model/series';
+import { RaceCalendarStoreBase, RaceSeriesDetails, seriesSort, sortRaces } from './race-calendar-store-base';
 
 /** Service that returns the complete race calander 
  * Used for race calander administration and planning
@@ -85,6 +85,17 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
       const raceDocRef = this.raceRef(id);
       const snapshot = await getDoc(raceDocRef);
       return snapshot.exists() ? { ...snapshot.data(), id: snapshot.id } : undefined;
+   }
+
+   /**
+    * Marks the race as needing attention for scoring/publish workflows.
+    * Skips the Firestore write when the race is already dirty (safe default, fewer writes).
+    */
+   async ensureRaceDirty(raceId: string): Promise<void> {
+      const race = await this.getRaceById(raceId);
+      if (!race) return;
+      if (race.dirty === true) return;
+      await this.updateRace(raceId, { dirty: true });
    }
 
    /**

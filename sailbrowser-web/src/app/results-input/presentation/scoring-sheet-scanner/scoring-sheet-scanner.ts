@@ -22,8 +22,8 @@ import { startWith } from 'rxjs/operators';
 import { Toolbar } from "../../../shared/components/toolbar";
 import { CurrentRaces } from '../../services/current-races-store';
 import { ManualResultsService } from '../../services/manual-results.service';
+import { RaceCompetitorReader } from '../../services/race-competitor-reader';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
-import { SeriesEntryStore } from '../../services/series-entry-store';
 import { RaceStartTimeDialog, RaceStartTimeResult } from '../handicap/race-start-time-dialog';
 import { CameraCaptureDialog } from './camera-capture-dialog';
 import { CaptureStep, CaptureStepViewModel } from './capture-step';
@@ -98,7 +98,7 @@ export class ScoringSheetScanner {
   private readonly raceCalendarStore = inject(RaceCalendarStore);
   private readonly currentRacesStore = inject(CurrentRaces);
   private readonly competitorStore = inject(RaceCompetitorStore);
-  private readonly entryStore = inject(SeriesEntryStore);
+  private readonly competitorReader = inject(RaceCompetitorReader);
   private readonly boatsStore = inject(BoatsStore);
   private readonly clubTenant = inject(ClubTenant);
   private readonly clubStore = inject(ClubStore);
@@ -267,19 +267,14 @@ export class ScoringSheetScanner {
 
   readonly matchedResults = computed(() => this.result()?.scannedResults.filter(r => !!r.matchedCompetitorId) ?? []);
   
-  private readonly matchedCompetitorById = computed(() =>
-    new Map(this.competitorStore.selectedCompetitors().map(c => [c.id, c] as const)),
-  );
-
-  private readonly helmBySeriesEntryId = computed(() =>
-    new Map(this.entryStore.selectedEntries().map(e => [e.id, e.helm] as const)),
+  private readonly resolvedByCompetitorId = computed(() =>
+    new Map(this.competitorReader.selectedResolvedCompetitors().map(r => [r.id, r] as const)),
   );
 
   readonly matchedRows = computed<MatchedRowVm[]>(() =>
     this.matchedResults().map(row => {
-      const competitor = row.matchedCompetitorId ? this.matchedCompetitorById().get(row.matchedCompetitorId) : undefined;
-      const helm = competitor?.seriesEntryId ? this.helmBySeriesEntryId().get(competitor.seriesEntryId) : undefined;
-      return { row, helm, competitor };
+      const competitor = row.matchedCompetitorId ? this.resolvedByCompetitorId().get(row.matchedCompetitorId) : undefined;
+      return { row, helm: competitor?.helm, competitor };
     }),
   );
 
@@ -522,14 +517,10 @@ export class ScoringSheetScanner {
   private refreshScanRowMatch(row: ScannedResultRow, boatClass: string, sailNumber: number, helm?: string): void {
     const raceId = this.form.value.raceId;
     if (!raceId) return;
-    const comps = this.competitorStore.selectedCompetitors().filter(c => c.raceId === raceId);
-    const entries = this.entryStore.selectedEntries();
-    const match = comps.find(c => {
-      const e = entries.find(se => se.id === c.seriesEntryId);
-      if (!e) return false;
-      const classMatch = e.boatClass?.toLowerCase() === boatClass.toLowerCase();
-      const sailMatch = e.sailNumber === sailNumber;
-      const helmMatch = !helm || e.helm?.toLowerCase() === helm.toLowerCase();
+    const match = this.competitorReader.resolvedForRace(raceId).find(r => {
+      const classMatch = r.boatClass.toLowerCase() === boatClass.toLowerCase();
+      const sailMatch = r.sailNumber === sailNumber;
+      const helmMatch = !helm || r.helm.toLowerCase() === helm.toLowerCase();
       return classMatch && sailMatch && helmMatch;
     });
     if (!match) return;

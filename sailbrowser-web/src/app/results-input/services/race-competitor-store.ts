@@ -4,10 +4,21 @@
 */
 import { inject, Injectable } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { collectionData, deleteDoc, doc, Firestore, getDocs, query, updateDoc, where, setDoc } from '@angular/fire/firestore';
-import { generateSecureID } from 'app/shared/firebase/firestore-helper';
+import {
+  collectionData,
+  deleteDoc,
+  doc,
+  DocumentReference,
+  Firestore,
+  getDocs,
+  query,
+  setDoc,
+  updateDoc,
+  where,
+} from '@angular/fire/firestore';
 import { FirestoreTenantService } from 'app/club-tenant';
-import { map, of, tap } from 'rxjs';
+import { generateSecureID } from 'app/shared/firebase/firestore-helper';
+import { of, tap } from 'rxjs';
 import { RaceCompetitor } from '../model/race-competitor';
 import { CurrentRaces } from './current-races-store';
 
@@ -29,6 +40,21 @@ export class RaceCompetitorStore {
     const q = query(this.collection, where('seriesId', '==', seriesId));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => doc.data());
+  }
+
+  /**
+   * All `race-results` rows referencing a series entry (club-wide query).
+   * Used for orphan detection; not limited to currently selected races.
+   */
+  async getCompetitorsForSeriesEntry(seriesEntryId: string): Promise<RaceCompetitor[]> {
+    const q = query(this.collection, where('seriesEntryId', '==', seriesEntryId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(d => d.data());
+  }
+
+  /** Document ref for batch updates/deletes (same path as `addResult` / `updateResult`). */
+  raceResultDocRef(id: string): DocumentReference<RaceCompetitor> {
+    return doc(this.collection, id);
   }
 
   /** Race competitors in selected races */
