@@ -15,11 +15,10 @@ import { Toolbar } from 'app/shared/components/toolbar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
-import { ResolvedRaceCompetitor, resolveRaceCompetitors } from '../../results-input/model/resolved-race-competitor';
+import { ResolvedRaceCompetitor } from '../../results-input/model/resolved-race-competitor';
 import { CurrentRaces } from '../../results-input/services/current-races-store';
 import { RaceCompetitorMutator } from '../../results-input/services/race-competitor-mutator';
-import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
-import { SeriesEntryStore } from '../../results-input/services/series-entry-store';
+import { RaceCompetitorReader } from '../../results-input/services/race-competitor-reader';
 import { BoatEntrySummaryComponent } from "./entry-summary";
 
 @Component({
@@ -56,7 +55,7 @@ import { BoatEntrySummaryComponent } from "./entry-summary";
           </mat-select>
         </mat-form-field>
 
-      @if (competitorStore.loading()) {
+      @if (reader.loading()) {
         <app-loading-centered/>
       } @else if (filtered().length === 0) {
           <app-centered-text>No entries for this selection</app-centered-text>
@@ -121,8 +120,7 @@ import { BoatEntrySummaryComponent } from "./entry-summary";
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EntriesListPage {
-  protected readonly competitorStore = inject(RaceCompetitorStore);
-  protected readonly entryStore = inject(SeriesEntryStore);
+  protected readonly reader = inject(RaceCompetitorReader);
   private readonly mutator = inject(RaceCompetitorMutator);
   protected currentRaces = inject(CurrentRaces);
   protected ds = inject(DialogsService);
@@ -134,11 +132,7 @@ export class EntriesListPage {
 
   raceFilter = toSignal(this.raceSelector.valueChanges, { initialValue: 'all' });
 
-  competitors = this.competitorStore.selectedCompetitors;
-
-  resolved = computed(() =>
-    resolveRaceCompetitors(this.competitors(), this.entryStore.selectedEntries()),
-  );
+  resolved = this.reader.selectedResolvedCompetitors;
 
   filtered = computed(() =>
     this.resolved().filter(c => filter(c, this.raceFilter()!))
@@ -150,11 +144,11 @@ export class EntriesListPage {
 
   async delete(comp: RaceCompetitor) {
     if (comp.manualFinishTime || comp.recordedFinishTime) {
-      this.snackbar.open("Can not delete an entry who has finished", "Dismiss", { duration: 3000 });
+      this.snackbar.open('Cannot delete an entry who has finished', "Dismiss", { duration: 3000 });
       return;
     }
-    const ok = await this.ds.confirm("Delete competitor", "Delete competitor");
-    if (ok) {
+    const confirmed = await this.ds.confirm("Delete competitor", "Delete competitor");
+    if (confirmed) {
       try {
         await this.mutator.deleteRaceCompetitor(comp);
       } catch (error: any) {

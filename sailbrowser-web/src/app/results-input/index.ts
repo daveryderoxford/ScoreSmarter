@@ -13,4 +13,7 @@ export { SeriesEntryStore } from './services/series-entry-store';
 
 export { CurrentRaces } from './services/current-races-store';
 
+
+export { RaceCompetitorReader } from './services/race-competitor-reader';
+
 export { RaceCompetitorStore } from './services/race-competitor-store';

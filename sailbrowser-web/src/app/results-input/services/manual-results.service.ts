@@ -6,9 +6,9 @@ import type { RaceStatus } from 'app/race-calender/model/race-status';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { differenceInSeconds } from 'date-fns';
-import { deleteField } from 'firebase/firestore';
 import { RaceCompetitor } from '../model/race-competitor';
 import { ResolvedRaceCompetitor, sortResolvedCompetitors } from '../model/resolved-race-competitor';
+import { RaceCompetitorMutator, type RaceScopedCompetitorPatch } from './race-competitor-mutator';
 import { RaceCompetitorStore } from './race-competitor-store';
 import { resolveStartTimeForEntry } from './race-start-resolver';
 import { SeriesEntryStore } from './series-entry-store';
@@ -224,6 +224,7 @@ export type TimeRecordingMode = 'tod' | 'elapsed';
 })
 export class ManualResultsService {
   private readonly competitorStore = inject(RaceCompetitorStore);
+  private readonly mutator = inject(RaceCompetitorMutator);
   private readonly raceStore = inject(RaceCalendarStore);
   private readonly seriesEntryStore = inject(SeriesEntryStore);
   private readonly clubStore = inject(ClubStore);
@@ -278,15 +279,19 @@ export class ManualResultsService {
     const fleetsById = new Map(this.clubStore.club().fleets.map(f => [f.id, f] as const));
 
     const comps = this.competitorStore.selectedCompetitors().filter(comp => comp.raceId === raceId);
+    const rows: { competitorId: string; patch: RaceScopedCompetitorPatch }[] = [];
 
     for (const comp of comps) {
       const entry = entryById.get(comp.seriesEntryId);
       if (!entry) continue;
       const resolvedStart = resolveStartTimeForEntry(entry, starts, fleetsById, primaryStart);
       if (!resolvedStart) continue;
-      await this.competitorStore.updateResult(comp.id, { startTime: resolvedStart });
+      rows.push({ competitorId: comp.id, patch: { startTime: resolvedStart } });
     }
 
+    if (rows.length > 0) {
+      await this.mutator.updateRaceCompetitorsBulk(raceId, rows);
+    }
   }
 
   /**
@@ -358,7 +363,7 @@ export class ManualResultsService {
     const processedSet = new Set(processedIds);
     const positions = computeManualPositionsForOrderEntry(processedIds, rowState);
 
-    const updates: { id: string; patch: Record<string, unknown> }[] = [];
+    const rows: { competitorId: string; patch: RaceScopedCompetitorPatch }[] = [];
 
     for (const comp of competitors) {
       const inProcessed = processedSet.has(comp.id);
@@ -371,10 +376,10 @@ export class ManualResultsService {
       const targetMp =
         inProcessed && row && isFinishedComp(targetCode) ? positions.get(comp.id) : undefined;
 
-      const patch: Record<string, unknown> = {};
+      const patch: RaceScopedCompetitorPatch = {};
 
       if (comp.resultCode !== targetCode) {
-        patch['resultCode'] = targetCode;
+        patch.resultCode = targetCode;
       }
 
       const prevTime = comp.manualFinishTime?.getTime();
@@ -382,24 +387,24 @@ export class ManualResultsService {
       if (prevTime !== nextTime) {
         if (targetManualFinish === undefined || targetManualFinish === null) {
           if (prevTime !== undefined) {
-            patch['manualFinishTime'] = deleteField();
+            patch.manualFinishTime = null;
           }
         } else {
-          patch['manualFinishTime'] = targetManualFinish;
+          patch.manualFinishTime = targetManualFinish;
         }
       }
 
       const prevMp = comp.manualPosition;
       if (targetMp === undefined) {
         if (prevMp !== undefined && prevMp !== null) {
-          patch['manualPosition'] = deleteField();
+          patch.manualPosition = null;
         }
       } else if (prevMp !== targetMp) {
-        patch['manualPosition'] = targetMp;
+        patch.manualPosition = targetMp;
       }
 
       if (Object.keys(patch).length > 0) {
-        updates.push({ id: comp.id, patch });
+        rows.push({ competitorId: comp.id, patch });
       }
     }
 
@@ -410,20 +415,14 @@ export class ManualResultsService {
     });
     const nextStatus = this.statusFromResultCodes(nextCodes);
 
-    if (updates.length === 0) {
+    if (rows.length === 0) {
       if (nextStatus && race.status !== nextStatus) {
         await this.raceStore.updateRace(race.id, { status: nextStatus });
       }
       return;
     }
 
-    if (!race.dirty) {
-      await this.raceStore.updateRace(race.id, { dirty: true });
-    }
-
-    for (const { id, patch } of updates) {
-      await this.competitorStore.updateResult(id, patch as Partial<RaceCompetitor>);
-    }
+    await this.mutator.updateRaceCompetitorsBulk(race.id, rows);
 
     if (nextStatus && race.status !== nextStatus) {
       await this.raceStore.updateRace(race.id, { status: nextStatus });
