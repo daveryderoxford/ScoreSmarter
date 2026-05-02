@@ -1,17 +1,17 @@
 import { Injectable, inject } from '@angular/core';
-import { Race, RaceCalendarStore } from 'app/race-calender';
 import { ClubStore } from 'app/club-tenant';
+import { Race, RaceCalendarStore } from 'app/race-calender';
+import type { RaceStart } from 'app/race-calender/model/race-start';
 import type { RaceStatus } from 'app/race-calender/model/race-status';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { differenceInSeconds } from 'date-fns';
 import { deleteField } from 'firebase/firestore';
-import { RaceCompetitorStore } from './race-competitor-store';
 import { RaceCompetitor } from '../model/race-competitor';
 import { ResolvedRaceCompetitor, sortResolvedCompetitors } from '../model/resolved-race-competitor';
-import { SeriesEntryStore } from './series-entry-store';
+import { RaceCompetitorStore } from './race-competitor-store';
 import { resolveStartTimeForEntry } from './race-start-resolver';
-import type { RaceStart } from 'app/race-calender/model/race-start';
+import { SeriesEntryStore } from './series-entry-store';
 
 /**
  * View model used by the manual results table. Adds a derived `correctedTime`

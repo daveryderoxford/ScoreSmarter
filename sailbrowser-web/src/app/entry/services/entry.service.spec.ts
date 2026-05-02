@@ -1,51 +1,39 @@
+/** Must load before services that import `RaceCompetitorMutator` (registers `writeBatch` mock). */
 import { TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it } from 'vitest';
-
+import {
+  installMutatorWriteBatchHarness,
+  MutatorTestRaceCompetitorStore,
+  MutatorTestSeriesEntryStore,
+} from '@testing/race-competitor-mutator-test-harness';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { Firestore } from '@angular/fire/firestore';
 import { ClubStore } from 'app/club-tenant';
+import type { SeriesEntryMatchingStrategy } from 'app/entry/model/entry-grouping';
 import { RaceCalendarStore } from 'app/race-calender';
 import type { Race } from 'app/race-calender/model/race';
 import type { Series } from 'app/race-calender/model/series';
 import { RaceCompetitor } from 'app/results-input/model/race-competitor';
 import { SeriesEntry } from 'app/results-input/model/series-entry';
+import { RaceCompetitorMutator } from 'app/results-input/services/race-competitor-mutator';
 import { RaceCompetitorStore } from 'app/results-input/services/race-competitor-store';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
-import type { SeriesEntryMatchingStrategy } from 'app/entry/model/entry-grouping';
 
 import { EntryDetails, EntryService } from './entry.service';
 
-class FakeRaceCompetitorStore {
-  comps: RaceCompetitor[] = [];
-  readonly selectedCompetitors = () => this.comps;
-  async addResult(result: Partial<RaceCompetitor>): Promise<string> {
-    const id = `rc-${this.comps.length + 1}`;
-    this.comps.push(new RaceCompetitor({ ...(result as RaceCompetitor), id }));
-    return id;
-  }
-  async deleteResult(id: string): Promise<void> {
-    this.comps = this.comps.filter(c => c.id !== id);
-  }
-}
-
-class FakeSeriesEntryStore {
-  entries: SeriesEntry[] = [];
-  readonly selectedEntries = () => this.entries;
-  async addEntry(entry: Partial<SeriesEntry>): Promise<string> {
-    const id = `se-${this.entries.length + 1}`;
-    this.entries.push({ ...(entry as SeriesEntry), id });
-    return id;
-  }
-  async updateEntry(id: string, changes: Partial<SeriesEntry>): Promise<void> {
-    const idx = this.entries.findIndex(e => e.id === id);
-    this.entries[idx] = { ...this.entries[idx], ...changes };
-  }
-  async deleteEntry(id: string): Promise<void> {
-    this.entries = this.entries.filter(e => e.id !== id);
-  }
-}
-
 class FakeRaceCalendarStore {
   series: Series[] = [];
+  races: Race[] = [];
   readonly allSeries = () => this.series;
+  readonly allRaces = () => this.races;
+  async updateRace(raceId: string, data: Partial<Race>): Promise<void> {
+    const idx = this.races.findIndex(r => r.id === raceId);
+    if (idx >= 0) this.races[idx] = { ...this.races[idx], ...data } as Race;
+  }
+  async ensureRaceDirty(raceId: string): Promise<void> {
+    const r = this.races.find(x => x.id === raceId);
+    if (!r || r.dirty === true) return;
+    await this.updateRace(raceId, { dirty: true });
+  }
 }
 
 class FakeClubStore {
@@ -111,23 +99,28 @@ function makeComp(seriesEntryId: string, raceId: string, id: string): RaceCompet
 
 describe('EntryService.findEntryConflicts', () => {
   let service: EntryService;
-  let comps: FakeRaceCompetitorStore;
-  let entries: FakeSeriesEntryStore;
+  let comps: MutatorTestRaceCompetitorStore;
+  let entries: MutatorTestSeriesEntryStore;
   let cal: FakeRaceCalendarStore;
 
   beforeEach(() => {
+    const raceCompetitors = new MutatorTestRaceCompetitorStore();
+    const seriesEntries = new MutatorTestSeriesEntryStore();
+    installMutatorWriteBatchHarness({ raceCompetitors, seriesEntries }, afterEach);
     TestBed.configureTestingModule({
       providers: [
         EntryService,
-        { provide: RaceCompetitorStore, useClass: FakeRaceCompetitorStore },
-        { provide: SeriesEntryStore, useClass: FakeSeriesEntryStore },
+        { provide: RaceCompetitorStore, useValue: raceCompetitors },
+        { provide: SeriesEntryStore, useValue: seriesEntries },
         { provide: RaceCalendarStore, useClass: FakeRaceCalendarStore },
         { provide: ClubStore, useClass: FakeClubStore },
+        { provide: Firestore, useValue: {} },
+        RaceCompetitorMutator,
       ],
     });
     service = TestBed.inject(EntryService);
-    comps = TestBed.inject(RaceCompetitorStore) as unknown as FakeRaceCompetitorStore;
-    entries = TestBed.inject(SeriesEntryStore) as unknown as FakeSeriesEntryStore;
+    comps = raceCompetitors;
+    entries = seriesEntries;
     cal = TestBed.inject(RaceCalendarStore) as unknown as FakeRaceCalendarStore;
   });
 
@@ -220,23 +213,28 @@ describe('EntryService.findEntryConflicts', () => {
 
 describe('EntryService.swapAndEnter', () => {
   let service: EntryService;
-  let comps: FakeRaceCompetitorStore;
-  let entries: FakeSeriesEntryStore;
+  let comps: MutatorTestRaceCompetitorStore;
+  let entries: MutatorTestSeriesEntryStore;
   let cal: FakeRaceCalendarStore;
 
   beforeEach(() => {
+    const raceCompetitors = new MutatorTestRaceCompetitorStore();
+    const seriesEntries = new MutatorTestSeriesEntryStore();
+    installMutatorWriteBatchHarness({ raceCompetitors, seriesEntries }, afterEach);
     TestBed.configureTestingModule({
       providers: [
         EntryService,
-        { provide: RaceCompetitorStore, useClass: FakeRaceCompetitorStore },
-        { provide: SeriesEntryStore, useClass: FakeSeriesEntryStore },
+        { provide: RaceCompetitorStore, useValue: raceCompetitors },
+        { provide: SeriesEntryStore, useValue: seriesEntries },
         { provide: RaceCalendarStore, useClass: FakeRaceCalendarStore },
         { provide: ClubStore, useClass: FakeClubStore },
+        { provide: Firestore, useValue: {} },
+        RaceCompetitorMutator,
       ],
     });
     service = TestBed.inject(EntryService);
-    comps = TestBed.inject(RaceCompetitorStore) as unknown as FakeRaceCompetitorStore;
-    entries = TestBed.inject(SeriesEntryStore) as unknown as FakeSeriesEntryStore;
+    comps = raceCompetitors;
+    entries = seriesEntries;
     cal = TestBed.inject(RaceCalendarStore) as unknown as FakeRaceCalendarStore;
   });
 

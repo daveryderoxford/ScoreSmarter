@@ -1,20 +1,24 @@
-import { inject, Injectable } from '@angular/core';
-import { SeriesEntryStore } from './series-entry-store';
-import { RaceCompetitorStore } from './race-competitor-store';
+import { Injectable, inject } from '@angular/core';
 import { ClubStore } from 'app/club-tenant';
-import { RaceCalendarStore } from 'app/race-calender';
 import { applyPersonalBandTag, resolveHandicapsForSeries } from 'app/entry/services/entry-helpers';
+import { RaceCalendarStore } from 'app/race-calender';
 import { Handicap, getHandicapValue } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
 import { RaceCompetitor } from '../model/race-competitor';
 import { SeriesEntry } from '../model/series-entry';
 import {
+  RaceCompetitorMutator,
+  SeriesEntryIdentityConflictError,
+} from './race-competitor-mutator';
+import { RaceCompetitorStore } from './race-competitor-store';
+import {
   PerHullIdentity,
   describeIdentity,
   detectInRaceConflict,
   findCollidingEntry,
 } from './series-entry-identity';
+import { SeriesEntryStore } from './series-entry-store';
 
 /**
  * Per-race overrides are now intentionally minimal. Only `crew` may differ
@@ -71,6 +75,7 @@ export class RaceCompetitorEditService {
   private readonly seriesEntries = inject(SeriesEntryStore);
   private readonly raceCalendar = inject(RaceCalendarStore);
   private readonly clubStore = inject(ClubStore);
+  private readonly mutator = inject(RaceCompetitorMutator);
 
   async apply(command: EditRaceCompetitorCommand): Promise<void> {
     const target = this.competitors.selectedCompetitors().find(c => c.id === command.competitorId);
@@ -132,14 +137,10 @@ export class RaceCompetitorEditService {
     entry: SeriesEntry,
     op: Exclude<EditOperation, { type: 'setCrew' | 'deleteCompetitor' }>,
   ): Promise<void> {
-    // setHelm / setBoatClass / setSailNumber rewrite the per-hull identity
-    // tuple and could collide with another existing SeriesEntry. Guard against
-    // that here so we never break the "one entry per (helm, class, sail)"
-    // invariant via a rename - the user must resolve the duplicate first.
-    if (op.type === 'setHelm' || op.type === 'setBoatClass' || op.type === 'setSailNumber') {
-      this.assertRenameDoesNotCollide(entry, op);
-    }
-
+    // Per-hull identity uniqueness is enforced authoritatively by the
+    // mutator (it queries series-entries and throws
+    // SeriesEntryIdentityConflictError on collision). We translate that to
+    // the friendly rename message expected by callers.
     const update: Partial<SeriesEntry> = {};
     switch (op.type) {
       case 'setHelm':
@@ -166,48 +167,24 @@ export class RaceCompetitorEditService {
         update.personalHandicapBand = op.band;
         break;
     }
-    if (Object.keys(update).length > 0) {
-      await this.seriesEntries.updateEntry(entry.id, update);
-    }
-  }
+    if (Object.keys(update).length === 0) return;
 
-  /**
-   * Throws if applying `op` to `entry` would produce a per-hull identity that
-   * already exists on a different SeriesEntry in the same series. Excludes
-   * the entry being edited itself so a no-op rename is allowed.
-   */
-  private assertRenameDoesNotCollide(
-    entry: SeriesEntry,
-    op: Extract<EditOperation, { type: 'setHelm' | 'setBoatClass' | 'setSailNumber' }>,
-  ): void {
-    const next: PerHullIdentity = {
-      helm: op.type === 'setHelm' ? op.value : entry.helm,
-      boatClass: op.type === 'setBoatClass' ? op.value : entry.boatClass,
-      sailNumber: op.type === 'setSailNumber' ? op.value : entry.sailNumber,
-    };
-    const sameSeries = this.seriesEntries
-      .selectedEntries()
-      .filter(e => e.seriesId === entry.seriesId);
-    const collision = findCollidingEntry(sameSeries, next, entry.id);
-    if (collision) {
-      throw new ScoreSmarterError(
-        `Cannot rename: another series entry already exists for ` +
-        `${describeIdentity(next)} (id ${collision.id}). ` +
-        `Delete or merge that entry before renaming.`,
-      );
+    try {
+      await this.mutator.updateSeriesEntryById(entry.id, update);
+    } catch (err) {
+      if (err instanceof SeriesEntryIdentityConflictError) {
+        throw new ScoreSmarterError(
+          `Cannot rename: another series entry already exists for ` +
+          `${describeIdentity(err.identity)} (id ${err.collidingEntryId}). ` +
+          `Delete or merge that entry before renaming.`,
+        );
+      }
+      throw err;
     }
   }
 
   private async deleteCompetitor(target: RaceCompetitor): Promise<void> {
-    await this.competitors.deleteResult(target.id);
-    // If no other RaceCompetitor still references the SeriesEntry, drop the
-    // entry too so it doesn't haunt the series with a phantom DNC row.
-    const stillReferenced = this.competitors
-      .selectedCompetitors()
-      .some(c => c.id !== target.id && c.seriesEntryId === target.seriesEntryId);
-    if (!stillReferenced) {
-      await this.seriesEntries.deleteEntry(target.seriesEntryId);
-    }
+    await this.mutator.deleteRaceCompetitor(target);
   }
 
   /**
@@ -290,20 +267,17 @@ export class RaceCompetitorEditService {
     let workingEntry = entry;
     let competitorForCrew = target;
     if (collision) {
-      const oldEntryId = entry.id;
-      await this.competitors.updateResult(target.id, { seriesEntryId: collision.id });
+      // Atomic repoint + orphan-cleanup of the now-unused old entry. The
+      // mutator validates the target entry belongs to the same series.
+      await this.mutator.repointRaceCompetitorToEntry(target, collision.id, {
+        cleanupOldEntry: 'ifOrphan',
+      });
       workingEntry = collision;
       const refreshed = this.competitors.selectedCompetitors().find(c => c.id === target.id);
-      if (!refreshed) {
-        throw new Error(`RaceCompetitor vanished after reassociation: ${target.id}`);
-      }
-      competitorForCrew = refreshed;
-      const stillReferenced = this.competitors
-        .selectedCompetitors()
-        .some(c => c.id !== target.id && c.seriesEntryId === oldEntryId);
-      if (!stillReferenced) {
-        await this.seriesEntries.deleteEntry(oldEntryId);
-      }
+      // Live store may not yet reflect the write; fall back to a synthesised
+      // row whose `seriesEntryId` matches the new target so crew-scope
+      // comparisons against `workingEntry` stay correct.
+      competitorForCrew = refreshed ?? new RaceCompetitor({ ...target, seriesEntryId: collision.id });
     }
 
     // Crew: the only field with per-race scope. We apply it first so a
@@ -359,7 +333,17 @@ export class RaceCompetitorEditService {
 
     const entryChanged = Object.keys(entryUpdate).length > 0;
     if (entryChanged) {
-      await this.seriesEntries.updateEntry(workingEntry.id, entryUpdate);
+      try {
+        await this.mutator.updateSeriesEntryById(workingEntry.id, entryUpdate);
+      } catch (err) {
+        if (err instanceof SeriesEntryIdentityConflictError) {
+          throw new ScoreSmarterError(
+            `Cannot update: another series entry already exists for ` +
+            `${describeIdentity(err.identity)} (id ${err.collidingEntryId}).`,
+          );
+        }
+        throw err;
+      }
     }
 
     // Dirty marking: every race that references this entry is now stale for

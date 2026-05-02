@@ -8,18 +8,19 @@ import { MatListModule } from '@angular/material/list';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from "@angular/router";
+import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { CenteredText } from "app/shared/components/centered-text";
 import { LoadingCentered } from 'app/shared/components/loading-centered';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { ResolvedRaceCompetitor, resolveRaceCompetitors } from '../../results-input/model/resolved-race-competitor';
 import { CurrentRaces } from '../../results-input/services/current-races-store';
+import { RaceCompetitorMutator } from '../../results-input/services/race-competitor-mutator';
 import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
 import { SeriesEntryStore } from '../../results-input/services/series-entry-store';
-import { CenteredText } from "app/shared/components/centered-text";
 import { BoatEntrySummaryComponent } from "./entry-summary";
-import { RaceTitlePipe } from "app/shared/pipes/race-title-pipe";
-import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 
 @Component({
   selector: 'app-entries-list-page',
@@ -122,6 +123,7 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 export class EntriesListPage {
   protected readonly competitorStore = inject(RaceCompetitorStore);
   protected readonly entryStore = inject(SeriesEntryStore);
+  private readonly mutator = inject(RaceCompetitorMutator);
   protected currentRaces = inject(CurrentRaces);
   protected ds = inject(DialogsService);
   protected snackbar = inject(MatSnackBar);
@@ -154,10 +156,10 @@ export class EntriesListPage {
     const ok = await this.ds.confirm("Delete competitor", "Delete competitor");
     if (ok) {
       try {
-        await this.competitorStore.deleteResult(comp.id);
+        await this.mutator.deleteRaceCompetitor(comp);
       } catch (error: any) {
-        this.snackbar.open("Error encountered deleting task", "Dismiss", { duration: 3000 });
-        console.log('UpdateTask. Error deleting task: ' + error.toString());
+        this.snackbar.open("Error encountered deleting entry", "Dismiss", { duration: 3000 });
+        console.log('EntriesListPage. Error deleting entry: ' + error.toString());
       }
     }
   }

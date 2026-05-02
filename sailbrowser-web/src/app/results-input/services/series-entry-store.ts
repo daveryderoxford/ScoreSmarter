@@ -4,9 +4,21 @@
 */
 import { computed, inject, Injectable } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { collectionData, deleteDoc, doc, Firestore, query, updateDoc, where, setDoc, getDocs } from '@angular/fire/firestore';
-import { generateSecureID } from 'app/shared/firebase/firestore-helper';
+import {
+  collectionData,
+  deleteDoc,
+  doc,
+  DocumentReference,
+  Firestore,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  updateDoc,
+  where,
+} from '@angular/fire/firestore';
 import { FirestoreTenantService } from 'app/club-tenant';
+import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { map, of, tap } from 'rxjs';
 import { SeriesEntry } from '../model/series-entry';
 import { CurrentRaces } from './current-races-store';
@@ -29,6 +41,16 @@ export class SeriesEntryStore {
     const q = query(this.collection, where('seriesId', '==', seriesId));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+  }
+
+  /**
+   * Fetch one series entry by id without subscribing. Returns `null` if missing.
+   * Used by mutation paths that need authoritative state before writing.
+   */
+  async getSeriesEntry(id: string): Promise<SeriesEntry | null> {
+    const snapshot = await getDoc(this.ref(id));
+    if (!snapshot.exists()) return null;
+    return { ...snapshot.data(), id: snapshot.id };
   }
 
   private readonly selectedSeriesIds = computed(() => this.currentRaces.selectedSeries().map(s => s.id));
@@ -87,6 +109,11 @@ export class SeriesEntryStore {
 
   async deleteEntry(id: string) {
     await deleteDoc(this.ref(id));
+  }
+
+  /** Document ref for batch updates/deletes */
+  seriesEntryDocRef(id: string): DocumentReference<SeriesEntry> {
+    return this.ref(id);
   }
 }
 
