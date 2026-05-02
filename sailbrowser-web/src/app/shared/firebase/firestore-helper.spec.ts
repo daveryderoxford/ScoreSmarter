@@ -1,4 +1,11 @@
-import { DocumentData, QueryDocumentSnapshot, Timestamp } from '@angular/fire/firestore';
+import {
+  DocumentData,
+  FieldValue,
+  PartialWithFieldValue,
+  QueryDocumentSnapshot,
+  Timestamp,
+  deleteField,
+} from '@angular/fire/firestore';
 import { dataObjectConverter } from './firestore-helper';
 
 // A test interface to represent our application's data model.
@@ -119,6 +126,22 @@ describe('FirestoreHelper', () => {
 
         expect(result).toEqual(expectedFirestoreData);
         expect(Object.keys(result)).not.toContain('fieldToBeUndefined');
+      });
+
+      it('should translate explicit null to deleteField() for a partial write (merge)', () => {
+        const partial = { optionalField: null } as unknown as PartialWithFieldValue<TestModel>;
+        const result = converter.toFirestore(partial, { merge: true });
+        expect(result['optionalField']).toEqual(deleteField());
+        expect(result['optionalField']).toBeInstanceOf(FieldValue);
+      });
+
+      it('should translate nested null to deleteField in partial write', () => {
+        const partial = {
+          nested: { value: 1, anotherDate: null },
+        } as unknown as PartialWithFieldValue<TestModel>;
+        const result = converter.toFirestore(partial, { merge: true });
+        expect(result['nested'].value).toBe(1);
+        expect(result['nested'].anotherDate).toEqual(deleteField());
       });
     });
   });

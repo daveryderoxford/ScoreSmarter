@@ -1,4 +1,3 @@
-
 import {
    PartialWithFieldValue,
    QueryDocumentSnapshot,
@@ -8,12 +7,18 @@ import {
    FirestoreDataConverter,
    FieldValue,
    SnapshotOptions,
+   deleteField,
 } from '@angular/fire/firestore';
 
-/** Generic Firestore converter that converts data objects (that do not contain any methods)
- * to/from Firebase. 
- * It handles conversion of Date/Timestamps and null/undefined
- * It performs a deep conversion and handles embedded array objects 
+/** Generic Firestore converter for plain data objects (no methods).
+ *
+ * App contract:
+ * - **Read:** stored `null` becomes app `undefined` (`toAppModelRecursive`).
+ * - **Full write** (`options` omitted): top-level `undefined` becomes stored `null`.
+ * - **Merge / partial write** (`options` passed, e.g. `{ merge: true }`):
+ *   - `undefined` omitted (leave field unchanged).
+ *   - explicitly `null` becomes `deleteField()` (clear optional field).
+ * - Dates become `Timestamp`s; nested plain objects recurse with the same rules.
  */
 export const dataObjectConverter = <T>(): FirestoreDataConverter<T> => ({
    toFirestore(data: PartialWithFieldValue<T>, options?: SetOptions): DocumentData {
@@ -34,9 +39,10 @@ export const dataObjectConverter = <T>(): FirestoreDataConverter<T> => ({
  */
 export function classInstanceConverter<T>(constructor: new (data: Partial<T>) => T): FirestoreDataConverter<T> {
   return {
-    toFirestore(instance: T): DocumentData {
+    toFirestore(modelObject: T, options?: SetOptions): DocumentData {
+      const partialObject = options !== undefined;
       // toDbModel strips functions in addition to converting types.
-      return toDbModel(instance, false, true);
+      return toDbModel(modelObject as PartialWithFieldValue<T>, partialObject, true);
     },
     fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): T {
       const appData = toAppModel<Partial<T>>(snapshot.data(options));
@@ -49,10 +55,10 @@ const isObject = (value: any) => (value !== null && typeof value === 'object' &&
 
 /**
  * Recursively converts properties of an object from App-space to DB-space.
- * - `undefined` values are converted to `null` for full writes. For partial
- *   writes, they are skipped as Firestore does not support `undefined`.
- * - `Date` objects are converted to `Timestamp` objects.
- * - Nested objects and arrays are recursively converted.
+ * - `undefined`: full writes store `null`; partial writes omit the key (no change).
+ * - `null`: full writes store `null`; partial writes use `deleteField()` (explicit clear).
+ * - `Date` → `Timestamp`.
+ * - Nested plain objects recurse; arrays map elements (Firestore does not allow `undefined` in arrays).
  */
 export function toDbModel<T>(data: PartialWithFieldValue<T>, partialUpdate: boolean, stripId = false): DocumentData {
    const result: DocumentData = {};
@@ -65,9 +71,14 @@ export function toDbModel<T>(data: PartialWithFieldValue<T>, partialUpdate: bool
       // Strip functions that should not be serialised. 
       if (typeof value === 'function') continue;
 
-      if (value === undefined) {
+      if (value === null) {
          if (partialUpdate) {
-            // For partial writes, `undefined` means "don't touch this field", so we do not include it in the written object.
+            result[key] = deleteField();
+         } else {
+            result[key] = null;
+         }
+      } else if (value === undefined) {
+         if (partialUpdate) {
             continue;
          } else {
             result[key] = null;

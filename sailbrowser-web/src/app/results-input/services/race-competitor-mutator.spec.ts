@@ -1,47 +1,11 @@
 /**
- * Focused unit tests for the pure helpers exported from `race-competitor-mutator.ts`
- * and for the `SeriesEntryIdentityConflictError` shape. The mutator's coupled
- * Firestore behaviour is exercised end-to-end through `RaceCompetitorEditService`
- * and `EntryService` specs using `@testing/race-competitor-mutator-test-harness`
- * (real mutator + in-memory stores + mocked `writeBatch`).
+ * Focused unit tests for the `SeriesEntryIdentityConflictError` shape.
+ * Behaviour of merge writes lives in `@testing/race-competitor-mutator-test-harness`
+ * (`race-competitor-mutator.behavior.spec.ts`) plus `FirestoreHelper` partial-mode specs.
  */
 import { describe, expect, it } from 'vitest';
 
-import {
-  SeriesEntryIdentityConflictError,
-  firestoreDataFromRacePatch,
-} from './race-competitor-mutator';
-
-describe('firestoreDataFromRacePatch', () => {
-  it('omits keys that are absent from the patch', () => {
-    const data = firestoreDataFromRacePatch({});
-    expect(data).toEqual({});
-  });
-
-  it('passes plain values through unchanged', () => {
-    const data = firestoreDataFromRacePatch({ manualLaps: 4, resultCode: 'OCS' });
-    expect(data['manualLaps']).toBe(4);
-    expect(data['resultCode']).toBe('OCS');
-  });
-
-  it('translates explicit null to a Firestore deleteField sentinel', () => {
-    const data = firestoreDataFromRacePatch({ manualFinishTime: null });
-    // `deleteField()` returns a `FieldValue` instance — not strictly equal to
-    // null and not a primitive. The mutator never lets a raw null reach the
-    // wire; that's the whole point of the patch translation.
-    expect(data['manualFinishTime']).not.toBeNull();
-    expect(typeof data['manualFinishTime']).toBe('object');
-  });
-
-  it('round-trips a mixed patch (absent / value / null) without coupling fields', () => {
-    const data = firestoreDataFromRacePatch({
-      manualLaps: 7,
-      manualFinishTime: null,
-    });
-    expect(Object.keys(data).sort()).toEqual(['manualFinishTime', 'manualLaps']);
-    expect(data['manualLaps']).toBe(7);
-  });
-});
+import { SeriesEntryIdentityConflictError } from './race-competitor-mutator';
 
 describe('SeriesEntryIdentityConflictError', () => {
   it('preserves the colliding entry id and proposed identity for callers', () => {
