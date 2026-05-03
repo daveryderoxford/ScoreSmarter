@@ -176,6 +176,69 @@ describe('scoreSeries', () => {
     expect(final101.rank).toBe(2);
   });
 
+  it('A8.2 compares next-to-last race when last race points are equal (RRS A8.2)', () => {
+    const keys = ['Helm 101-101-TestClass', 'Helm 102-102-TestClass'];
+    const entries = createMockEntries(keys);
+    const races: PublishedRace[] = [
+      createMockRace(0, [
+        { seriesEntryId: 'entry101', helm: 'Helm 101', sailNumber: 101, points: 2 },
+        { seriesEntryId: 'entry102', helm: 'Helm 102', sailNumber: 102, points: 3 },
+      ]),
+      createMockRace(1, [
+        { seriesEntryId: 'entry101', helm: 'Helm 101', sailNumber: 101, points: 3 },
+        { seriesEntryId: 'entry102', helm: 'Helm 102', sailNumber: 102, points: 2 },
+      ]),
+      createMockRace(2, [
+        { seriesEntryId: 'entry101', helm: 'Helm 101', sailNumber: 101, points: 4 },
+        { seriesEntryId: 'entry102', helm: 'Helm 102', sailNumber: 102, points: 4 },
+      ]),
+    ];
+    const config: ScoringConfig = { seriesType: 'short', discards: 1 };
+    const out = scoreSeries(races, entries, config, 'PY', 'classSailNumberHelm');
+    const h101 = out.find(r => r.sailNumber === 101)!;
+    const h102 = out.find(r => r.sailNumber === 102)!;
+    // Both discard race 3 (4 pts); net 2+3 vs 3+2 = 5; A8.1 lists [2,3] vs [2,3].
+    expect(h101.netPoints).toBe(5);
+    expect(h102.netPoints).toBe(5);
+    expect(h101.scoresForTiebreak).toEqual([2, 3]);
+    expect(h102.scoresForTiebreak).toEqual([2, 3]);
+    // Last race equal (4); next-to-last: 102 has 2, 101 has 3 → 102 first.
+    expect(h102.rank).toBe(1);
+    expect(h101.rank).toBe(2);
+  });
+
+  it('A8.2 uses last-race points even when that race is discarded (excluded from net)', () => {
+    const keys = ['Helm 101-101-TestClass', 'Helm 102-102-TestClass'];
+    const entries = createMockEntries(keys);
+    const races: PublishedRace[] = [
+      createMockRace(0, [
+        { seriesEntryId: 'entry101', helm: 'Helm 101', sailNumber: 101, points: 10 },
+        { seriesEntryId: 'entry102', helm: 'Helm 102', sailNumber: 102, points: 1 },
+      ]),
+      createMockRace(1, [
+        { seriesEntryId: 'entry101', helm: 'Helm 101', sailNumber: 101, points: 1 },
+        { seriesEntryId: 'entry102', helm: 'Helm 102', sailNumber: 102, points: 2 },
+      ]),
+      createMockRace(2, [
+        { seriesEntryId: 'entry101', helm: 'Helm 101', sailNumber: 101, points: 2 },
+        { seriesEntryId: 'entry102', helm: 'Helm 102', sailNumber: 102, points: 10 },
+      ]),
+    ];
+    const config: ScoringConfig = { seriesType: 'short', discards: 1 };
+    const out = scoreSeries(races, entries, config, 'PY', 'classSailNumberHelm');
+    const h101 = out.find(r => r.sailNumber === 101)!;
+    const h102 = out.find(r => r.sailNumber === 102)!;
+    expect(h101.netPoints).toBe(3);
+    expect(h102.netPoints).toBe(3);
+    expect(h101.scoresForTiebreak).toEqual([1, 2]);
+    expect(h102.scoresForTiebreak).toEqual([1, 2]);
+    expect(h101.raceScores.find(rs => rs.raceIndex === 0)?.isDiscard).toBe(true);
+    expect(h102.raceScores.find(rs => rs.raceIndex === 2)?.isDiscard).toBe(true);
+    // RRS A8.2: last race scores 2 vs 10 count even though 102’s race 2 is excluded from net.
+    expect(h101.rank).toBe(1);
+    expect(h102.rank).toBe(2);
+  });
+
   describe('RDG Scoring (applyIsafRedress)', () => {
     const rdgCompetitorKeys = ['Helm 101-101-TestClass', 'Helm 102-102-TestClass'];
     const rdgEntries = createMockEntries(rdgCompetitorKeys);

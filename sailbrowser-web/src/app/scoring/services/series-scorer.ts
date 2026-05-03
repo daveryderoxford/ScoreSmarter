@@ -289,43 +289,74 @@ function applyClubOod(result: IntermediateSeriesResult, dncPoints: number, confi
   }
 }
 
+/**
+ * RRS A8.2: last race, then next-to-last, etc., until the tie breaks.
+ * Points are as recorded for that race (including scores that are later excluded from the net).
+ */
+function compareA8RacesLastToFirst(a: IntermediateSeriesResult, b: IntermediateSeriesResult): number {
+  const indices = new Set<number>();
+  for (const s of a.raceScores) {
+    indices.add(s.raceIndex);
+  }
+  for (const s of b.raceScores) {
+    indices.add(s.raceIndex);
+  }
+  const descending = [...indices].sort((x, y) => y - x);
+  for (const raceIndex of descending) {
+    const pa = a.raceScores.find(s => s.raceIndex === raceIndex)?.points;
+    const pb = b.raceScores.find(s => s.raceIndex === raceIndex)?.points;
+    const na = Number(pa);
+    const nb = Number(pb);
+    if (!Number.isFinite(na) && !Number.isFinite(nb)) {
+      continue;
+    }
+    if (!Number.isFinite(na)) {
+      return 1;
+    }
+    if (!Number.isFinite(nb)) {
+      return -1;
+    }
+    if (na !== nb) {
+      return na - nb;
+    }
+  }
+  return 0;
+}
+
+/** Full series ordering: net points, then RRS A8.1, then A8.2. Negative ⇒ `a` ranks ahead of `b`. */
+function compareSeriesStandings(a: IntermediateSeriesResult, b: IntermediateSeriesResult): number {
+  if (a.netPoints !== b.netPoints) {
+    return a.netPoints - b.netPoints;
+  }
+
+  // A8.1: best-to-worst lists of counting (non-excluded) scores; first difference wins.
+  const maxLen = Math.max(a.scoresForTiebreak.length, b.scoresForTiebreak.length);
+  for (let i = 0; i < maxLen; i++) {
+    const av = a.scoresForTiebreak[i] ?? Number.POSITIVE_INFINITY;
+    const bv = b.scoresForTiebreak[i] ?? Number.POSITIVE_INFINITY;
+    if (av !== bv) {
+      return av - bv;
+    }
+  }
+
+  return compareA8RacesLastToFirst(a, b);
+}
+
 function rankCompetitors(results: IntermediateSeriesResult[]): IntermediateSeriesResult[] {
-  // For tie-breaking (A8.1), create a sorted list of scores for each competitor
+  // A8.1: sorted counting scores (no excluded / discarded races), best → worst.
   results.forEach(result => {
     result.scoresForTiebreak = result.raceScores.filter(r => !r.isDiscard).map(r => r.points).sort((a, b) => a - b);
   });
 
-  results.sort((a, b) => {
-    // Primary sort by net points (ascending)
-    if (a.netPoints !== b.netPoints) {
-      return a.netPoints - b.netPoints;
-    }
-
-    // Tie-break A8.1: most firsts, seconds, etc.
-    for (let i = 0; i < Math.min(a.scoresForTiebreak.length, b.scoresForTiebreak.length); i++) {
-      if (a.scoresForTiebreak[i] !== b.scoresForTiebreak[i]) {
-        return a.scoresForTiebreak[i] - b.scoresForTiebreak[i];
-      }
-    }
-
-    // Tie-break A8.2: score in the last race
-    if (a.raceScores.length > 0 && b.raceScores.length > 0) {
-      // Find the score from the most recent race (highest raceIndex)
-      const lastRaceA = a.raceScores.reduce((prev, current) => (prev.raceIndex > current.raceIndex) ? prev : current);
-      const lastRaceB = b.raceScores.find(s => s.raceIndex === lastRaceA.raceIndex)!;
-      return lastRaceA.points - lastRaceB.points;
-    }
-
-    return 0;
-  });
+  results.sort(compareSeriesStandings);
 
   // Assign ranks
   let currentRank = 1;
   for (let i = 0; i < results.length; i++) {
-    if (i > 0 && isTied(results[i - 1], results[i])) {
-      results[i].rank = results[i - 1].rank;
+    if (i > 0 && isSeriesStandingsTied(results[i - 1]!, results[i]!)) {
+      results[i]!.rank = results[i - 1]!.rank;
     } else {
-      results[i].rank = currentRank;
+      results[i]!.rank = currentRank;
     }
     currentRank++;
   }
@@ -333,20 +364,6 @@ function rankCompetitors(results: IntermediateSeriesResult[]): IntermediateSerie
   return results;
 }
 
-function isTied(a: IntermediateSeriesResult, b: IntermediateSeriesResult): boolean {
-  if (a.netPoints !== b.netPoints) {
-    return false;
-  }
-
-  if (a.scoresForTiebreak.length !== b.scoresForTiebreak.length) {
-    return false;
-  }
-
-  for (let i = 0; i < a.scoresForTiebreak.length; i++) {
-    if (a.scoresForTiebreak[i] !== b.scoresForTiebreak[i]) {
-      return false;
-    }
-  }
-
-  return true;
+function isSeriesStandingsTied(a: IntermediateSeriesResult, b: IntermediateSeriesResult): boolean {
+  return compareSeriesStandings(a, b) === 0;
 }
