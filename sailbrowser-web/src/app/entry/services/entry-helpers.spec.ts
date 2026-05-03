@@ -4,6 +4,7 @@ import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import type { Series } from 'app/race-calender';
 import type { HandicapConfiguration, LevelRatingConfiguration } from '../../scoring/model/scoring-configuration';
 import { getHandicapSchemeMetadata } from '../../scoring/model/handicap-scheme-metadata';
+import { defaultShortSeriesDiscardTable } from 'app/scoring/model/discard-profile';
 import { meetsPrimaryFleetEligibility, resolveHandicapsForSeries } from './entry-helpers';
 
 const testFleet: Fleet = { type: 'GeneralHandicap', id: 'f-general', name: 'General Handicap' };
@@ -46,8 +47,7 @@ function minimalSeries(overrides: Partial<Series> = {}): Series {
     archived: false,
     scoringAlgorithm: 'short',
     entryAlgorithm: 'classSailNumberHelm',
-    initialDiscardAfter: 0,
-    subsequentDiscardsEveryN: 999,
+    discards: defaultShortSeriesDiscardTable(),
     primaryScoringConfiguration: pyPrimary(),
     ...overrides,
   } as Series;
@@ -133,8 +133,7 @@ function eligibilitySeries(fleet: Fleet, handicapScheme: HandicapConfiguration['
     archived: false,
     scoringAlgorithm: 'short',
     entryAlgorithm: 'classSailNumberHelm',
-    initialDiscardAfter: 0,
-    subsequentDiscardsEveryN: 999,
+    discards: defaultShortSeriesDiscardTable(),
     primaryScoringConfiguration: {
       id: 'cfg-1',
       name: 'Primary',

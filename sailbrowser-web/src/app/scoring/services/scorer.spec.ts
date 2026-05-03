@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Race } from '../../race-calender/model/race';
 import { Series } from '../../race-calender/model/series';
+import { DISCARD_PROFILE_CAP, discardTableFromLegacy } from '../model/discard-profile';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { SeriesEntry } from '../../results-input/model/series-entry';
 import { ResultCode } from '../model/result-code';
@@ -43,8 +44,7 @@ function createMockSeries(): Series {
     name: 'Test Series',
     scoringAlgorithm: 'short',
     entryAlgorithm: 'classSailNumberHelm',
-    initialDiscardAfter: 3,
-    subsequentDiscardsEveryN: 2,
+    discards: discardTableFromLegacy(3, 2, DISCARD_PROFILE_CAP),
     primaryScoringConfiguration: {
       id: 'overall',
       name: 'Overall',

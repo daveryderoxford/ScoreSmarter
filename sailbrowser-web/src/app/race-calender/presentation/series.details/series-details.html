@@ -39,9 +39,7 @@
 
           <div class="detail-item">
             <span class="detail-label">Discards:</span>
-            <span class="detail-value">
-              Initial after {{ s.initialDiscardAfter}} races then every {{ s.subsequentDiscardsEveryN}}
-            </span>
+            <span class="detail-value">{{ discardSummary() }}</span>
           </div>
 
           <div class="detail-item">

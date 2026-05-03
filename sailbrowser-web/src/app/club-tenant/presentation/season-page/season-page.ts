@@ -28,7 +28,6 @@ import { Season } from 'app/race-calender/model/season';
     @use "mixins" as mix;
 
     @include mix.centered-column-page(".content", 600px);
-
   `
 })
 export class SeasonPage {

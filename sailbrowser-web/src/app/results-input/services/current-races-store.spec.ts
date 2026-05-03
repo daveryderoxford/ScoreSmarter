@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Race } from 'app/race-calender';
 import type { Series } from 'app/race-calender';
+import { defaultShortSeriesDiscardTable } from 'app/scoring/model/discard-profile';
 import { RaceCalendarStore } from '../../race-calender/services/full-race-calander';
 import { CurrentRaces } from './current-races-store';
 
@@ -29,8 +30,7 @@ function minimalSeries(overrides: Partial<Series> = {}): Series {
     archived: false,
     scoringAlgorithm: 'short',
     entryAlgorithm: 'classSailNumberHelm',
-    initialDiscardAfter: 0,
-    subsequentDiscardsEveryN: 999,
+    discards: defaultShortSeriesDiscardTable(),
     primaryScoringConfiguration: {
       id: 'cfg-py',
       name: 'PY',

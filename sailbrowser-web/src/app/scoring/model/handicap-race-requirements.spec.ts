@@ -8,6 +8,7 @@ import {
   handicapSchemesRequiredForSeries,
   schemesRequiredAndSupportedByClub,
 } from './handicap-race-requirements';
+import { defaultShortSeriesDiscardTable } from './discard-profile';
 
 const testFleet: Fleet = { type: 'GeneralHandicap', id: 'f-general', name: 'General Handicap' };
 
@@ -49,8 +50,7 @@ function minimalSeries(overrides: Partial<Series> = {}): Series {
     archived: false,
     scoringAlgorithm: 'short',
     entryAlgorithm: 'classSailNumberHelm',
-    initialDiscardAfter: 0,
-    subsequentDiscardsEveryN: 999,
+    discards: defaultShortSeriesDiscardTable(),
     primaryScoringConfiguration: pyPrimary(),
     ...overrides,
   } as Series;

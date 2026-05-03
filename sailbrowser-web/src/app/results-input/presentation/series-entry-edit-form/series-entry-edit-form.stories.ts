@@ -6,6 +6,7 @@ import { RaceCompetitor } from 'app/results-input/model/race-competitor';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
 import { SeriesEntry } from 'app/results-input/model/series-entry';
 import type { HandicapConfiguration } from 'app/scoring/model/scoring-configuration';
+import { DISCARD_PROFILE_DEFAULT_ROWS, discardTableFromLegacy } from 'app/scoring/model/discard-profile';
 import { SeriesEntryEditForm } from './series-entry-edit-form';
 
 const pyConfig: HandicapConfiguration = {
@@ -30,8 +31,7 @@ const storySeries: Series = {
   archived: false,
   scoringAlgorithm: 'short',
   entryAlgorithm: 'classSailNumberHelm',
-  initialDiscardAfter: 4,
-  subsequentDiscardsEveryN: 999,
+  discards: discardTableFromLegacy(4, 999, DISCARD_PROFILE_DEFAULT_ROWS),
   primaryScoringConfiguration: pyConfig,
 };
 

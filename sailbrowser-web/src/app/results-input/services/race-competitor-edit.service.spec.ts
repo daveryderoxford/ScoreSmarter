@@ -11,6 +11,7 @@ import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
 import { Series } from 'app/race-calender/model/series';
+import { DISCARD_PROFILE_CAP, discardTableFromLegacy } from 'app/scoring/model/discard-profile';
 import { afterEach } from 'vitest';
 import { RaceCompetitor } from '../model/race-competitor';
 import { RaceCompetitorEditService } from './race-competitor-edit.service';
@@ -275,8 +276,7 @@ describe('RaceCompetitorEditService', () => {
         archived: false,
         scoringAlgorithm: 'short',
         entryAlgorithm: 'classSailNumberHelm',
-        initialDiscardAfter: 99,
-        subsequentDiscardsEveryN: 99,
+        discards: discardTableFromLegacy(99, 99, DISCARD_PROFILE_CAP),
         primaryScoringConfiguration: {
           id: 'p1',
           name: 'primary',

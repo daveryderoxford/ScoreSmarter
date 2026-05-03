@@ -13,6 +13,8 @@ import { Router } from '@angular/router';
 import { addDays, isAfter, startOfDay } from 'date-fns';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Race, RaceCalendarStore } from 'app/race-calender';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import { padDiscardTableToLength, seriesDiscardProfileNeedsExtension } from 'app/scoring/model/discard-profile';
 
 @Component({
   selector: 'app-add-race',
@@ -59,6 +61,7 @@ export class RaceAdd {
   private readonly router = inject(Router);
   private readonly rcs = inject(RaceCalendarStore);
   private snackbar = inject(MatSnackBar);
+  private readonly dialogs = inject(DialogsService);
 
   seriesId = input.required<string>(); // Route parameter
 
@@ -139,6 +142,21 @@ export class RaceAdd {
       try {
         this.busy.set(true);
         const series = this.series()!;
+        const existingRaces = await this.rcs.getSeriesRacesById(series.id);
+        const newTotal = existingRaces.length + races.length;
+        let seriesSnap = await this.rcs.getSeriesById(series.id);
+        seriesSnap ??= series;
+        if (seriesDiscardProfileNeedsExtension(seriesSnap, newTotal)) {
+          const seeded = padDiscardTableToLength(seriesSnap.discards ?? [], newTotal);
+          const next = await this.dialogs.editDiscardProfile({
+            title: `${series.name}: extend discard profile`,
+            raceCount: newTotal,
+            discards: seeded,
+          });
+          if (!next) return;
+          await this.rcs.updateSeries(series.id, { discards: next });
+        }
+
         await this.rcs.addRaces({
           id: series.id,
           name: series.name,

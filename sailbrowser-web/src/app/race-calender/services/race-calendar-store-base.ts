@@ -36,8 +36,7 @@ export class RaceCalendarStoreBase {
     const scoringCriticalFields: (keyof Series)[] = [
       'scoringAlgorithm',
       'entryAlgorithm',
-      'initialDiscardAfter',
-      'subsequentDiscardsEveryN',
+      'discards',
       'primaryScoringConfiguration',
       'secondaryScoringConfigurations'
     ];
