@@ -8,6 +8,10 @@ import {
 } from './entry-conflict-dialog';
 import { MessageDialog } from "./message-dialog";
 import { UnsavedChangesChoice, UnsavedChangesDialog } from './unsaved-changes-dialog';
+import {
+  DiscardProfileDialogData,
+  DiscardProfileEditDialog,
+} from './discard-profile-edit-dialog';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom, lastValueFrom } from 'rxjs';
 
@@ -50,6 +54,15 @@ export class DialogsService {
         dialogRef.componentInstance.conflicts = conflicts;
         const result = await firstValueFrom(dialogRef.afterClosed());
         return result ?? 'cancel';
+    }
+
+    public async editDiscardProfile(data: DiscardProfileDialogData): Promise<number[] | undefined> {
+        const dialogRef = this.dialog.open(DiscardProfileEditDialog, {
+            width: '560px',
+            maxWidth: '95vw',
+            data,
+        });
+        return await firstValueFrom(dialogRef.afterClosed());
     }
 
     public async promptUnsavedChanges(

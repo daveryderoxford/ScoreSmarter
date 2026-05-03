@@ -10,6 +10,7 @@ import { SeriesEntry } from 'app/results-input/model/series-entry';
 import { ManualResultsService, OrderEntryPersistInput } from '../../services/manual-results.service';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { HandicapConfiguration, LevelRatingConfiguration } from 'app/scoring/model/scoring-configuration';
+import { DISCARD_PROFILE_DEFAULT_ROWS, discardTableFromLegacy } from 'app/scoring/model/discard-profile';
 import { ManualResultsPage } from './manual-results-page';
 
 const RACE_H_ID = 'story-race-handicap';
@@ -113,8 +114,7 @@ const seriesHandicap: Series = {
   archived: false,
   scoringAlgorithm: 'short',
   entryAlgorithm: 'helm',
-  initialDiscardAfter: 4,
-  subsequentDiscardsEveryN: 999,
+  discards: discardTableFromLegacy(4, 999, DISCARD_PROFILE_DEFAULT_ROWS),
   primaryScoringConfiguration: primaryHandicap,
 };
 

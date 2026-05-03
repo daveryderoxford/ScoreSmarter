@@ -7,6 +7,7 @@ import { RaceCompetitorStore } from 'app/results-input/services/race-competitor-
 import { score } from 'app/scoring';
 import { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import { getHandicapValue } from 'app/scoring/model/handicap';
+import { discardAllowanceAfterRaceCount } from 'app/scoring/model/discard-profile';
 import { isInFleet } from 'app/scoring/services/fleet-scoring';
 import { mergeKeyFor } from 'app/scoring/services/merge-key';
 import { groupBy } from 'app/shared/utils/group-by';
@@ -169,9 +170,7 @@ export class ScoringEngine {
   }
 
   private calculateDiscards(series: Series, raceCount: number): number {
-    const { initialDiscardAfter, subsequentDiscardsEveryN } = series;
-    if (raceCount < initialDiscardAfter) return 0;
-    return 1 + Math.floor((raceCount - initialDiscardAfter) / subsequentDiscardsEveryN);
+    return discardAllowanceAfterRaceCount(series, raceCount);
   }
 
   private async rescoreAllRacesForConfig(

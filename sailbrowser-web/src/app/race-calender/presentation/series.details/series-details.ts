@@ -83,6 +83,14 @@ export class SeriesDetails {
       return seriesEntryGroupingDetails.find(a => a.name === algorithm)?.displayName ?? '';
    });
 
+   /** Short label; full per-race ladder is edited in the series form. */
+   discardSummary = computed(() => {
+      const d = this.series()?.discards;
+      if (!d?.length) return '—';
+      const cap = d[d.length - 1]!;
+      return `Table of ${d.length} races; up to ${cap} discard(s) once the table ends (edit series for full ladder).`;
+   });
+
    races = this.rc.getSeriesRaces(this.id);
 
    isRacePublished(race: Race): boolean {

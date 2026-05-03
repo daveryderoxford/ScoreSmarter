@@ -18,8 +18,11 @@ export interface Series {
     * sign-on regardless of this setting.
     */
    entryAlgorithm: SeriesEntryMatchingStrategy;
-   initialDiscardAfter: number;
-   subsequentDiscardsEveryN: number;
+   /**
+    * Discard allowance after each race sailed: index `k` applies after `k + 1` races (`raceCount === k + 1` in scoring).
+    * Populated on read via {@link hydrateSeriesFromFirestore}; never rely on Firestore-only legacy fields in app code.
+    */
+   discards: number[];
 
    // Scoring configurations
    primaryScoringConfiguration: ScoringConfiguration;
