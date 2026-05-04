@@ -7,7 +7,7 @@ import { RaceCompetitorStore } from 'app/results-input/services/race-competitor-
 import { score } from 'app/scoring';
 import { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import { getHandicapValue } from 'app/scoring/model/handicap';
-import { discardAllowanceAfterRaceCount } from 'app/scoring/model/discard-profile';
+import { discardsForRaceIndex } from 'app/scoring/model/discard-profile';
 import { isInFleet } from 'app/scoring/services/fleet-scoring';
 import { mergeKeyFor } from 'app/scoring/services/merge-key';
 import { groupBy } from 'app/shared/utils/group-by';
@@ -170,7 +170,7 @@ export class ScoringEngine {
   }
 
   private calculateDiscards(series: Series, raceCount: number): number {
-    return discardAllowanceAfterRaceCount(series, raceCount);
+    return discardsForRaceIndex(series, raceCount);
   }
 
   private async rescoreAllRacesForConfig(
@@ -185,9 +185,9 @@ export class ScoringEngine {
     seriesEntries: SeriesEntry[]
   ): Promise<void> {
     if (racesToScore.length === 0) {
-      this.batchSavePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, []);
+      this.savePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, []);
       const existingRaces = await this.readPublishedRaces(publishedSeriesId);
-      this.batchSavePublishedRaces(batch, publishedSeriesId, [], existingRaces);
+      this.savePublishedRaces(batch, publishedSeriesId, [], existingRaces);
       await this.prepareSeasonUpdate(
         seasonUpdates,
         series,
@@ -226,11 +226,11 @@ export class ScoringEngine {
 
       const filteredCompetitors = competitorsForConfigRace(race, config, allSeriesCompetitors, seriesEntries);
 
-      const raceCount = i + 1;
+      const raceIndex = i + 1;
 
       const { scoredRaces, seriesResults } = score(race, filteredCompetitors, existingPublishedRaces, filteredSeriesEntries, {
         seriesType: series.scoringAlgorithm,
-        discards: this.calculateDiscards(series, raceCount),
+        discards: this.calculateDiscards(series, raceIndex),
       }, config, mergeStrategy, distinctMergeGroups);
 
       scoredRaces.forEach((r: PublishedRace) => {
@@ -242,9 +242,9 @@ export class ScoringEngine {
       currentSeriesResults = seriesResults;
     }
 
-    this.batchSavePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, currentSeriesResults);
+    this.savePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, currentSeriesResults);
     const existingRaces = await this.readPublishedRaces(publishedSeriesId);
-    this.batchSavePublishedRaces(batch, publishedSeriesId, existingPublishedRaces, existingRaces);
+    this.savePublishedRaces(batch, publishedSeriesId, existingPublishedRaces, existingRaces);
     await this.prepareSeasonUpdate(
       seasonUpdates,
       series,
@@ -263,7 +263,7 @@ export class ScoringEngine {
     return snapshot.docs.map(doc => doc.data());
   }
 
-  private batchSavePublishedSeries(batch: WriteBatch, publishedSeriesId: string, publishedSeriesName: string, fleetId: string, results: any[]): void {
+  private savePublishedSeries(batch: WriteBatch, publishedSeriesId: string, publishedSeriesName: string, fleetId: string, results: any[]): void {
     const seriesDoc = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, publishedSeriesId);
     const publishedSeries: PublishedSeries = {
       id: publishedSeriesId,
@@ -274,7 +274,7 @@ export class ScoringEngine {
     batch.set(seriesDoc, publishedSeries);
   }
 
-  private batchSavePublishedRaces(batch: WriteBatch, publishedSeriesId: string, scoredRaces: PublishedRace[], existingRaces: PublishedRace[]): void {
+  private savePublishedRaces(batch: WriteBatch, publishedSeriesId: string, scoredRaces: PublishedRace[], existingRaces: PublishedRace[]): void {
     // Save all scored races
     scoredRaces.forEach(race => {
       const raceDoc = this.tenant.docRef<PublishedRace>(PUBLISHED_SERIES_PATH, publishedSeriesId, 'races', race.id);
@@ -298,7 +298,7 @@ export class ScoringEngine {
     configsToScore: ScoringConfiguration[]
   ): void {
     const currentConfigIds = new Set(configsToScore.map(c => c.id === series.primaryScoringConfiguration.id ? series.id : `${series.id}_${c.id}`));
-    for (const [seasonId, seasonData] of seasonUpdates) {
+    for (const [, seasonData] of seasonUpdates) {
       const staleSeries = seasonData.series.filter(s => s.baseSeriesId === series.id && !currentConfigIds.has(s.id));
       for (const stale of staleSeries) {
         console.log(`ScoringEngine: Cleaning up stale series ${stale.id}`);

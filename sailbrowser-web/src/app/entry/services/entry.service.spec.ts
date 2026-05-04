@@ -12,7 +12,6 @@ import type { SeriesEntryMatchingStrategy } from 'app/entry/model/entry-grouping
 import { RaceCalendarStore } from 'app/race-calender';
 import type { Race } from 'app/race-calender/model/race';
 import type { Series } from 'app/race-calender/model/series';
-import { DISCARD_PROFILE_CAP, discardTableFromLegacy } from 'app/scoring/model/discard-profile';
 import { RaceCompetitor } from 'app/results-input/model/race-competitor';
 import { SeriesEntry } from 'app/results-input/model/series-entry';
 import { RaceCompetitorMutator } from 'app/results-input/services/race-competitor-mutator';
@@ -65,7 +64,8 @@ function makeSeries(strategy: SeriesEntryMatchingStrategy, id = 's1'): Series {
     archived: false,
     scoringAlgorithm: 'short',
     entryAlgorithm: strategy,
-    discards: discardTableFromLegacy(4, 1, DISCARD_PROFILE_CAP),
+    /** One milestone per race from 4..104 */
+    discards: Array.from({ length: 101 }, (_, i) => i + 4),
     primaryScoringConfiguration: {
       id: 'cfg-py',
       name: 'PY',

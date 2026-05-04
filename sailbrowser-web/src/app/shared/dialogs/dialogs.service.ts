@@ -56,6 +56,7 @@ export class DialogsService {
         return result ?? 'cancel';
     }
 
+    /** Opens the editor; resolves to stored **trigger** milestones (same as `Series.discards`), or undefined when cancelled. */
     public async editDiscardProfile(data: DiscardProfileDialogData): Promise<number[] | undefined> {
         const dialogRef = this.dialog.open(DiscardProfileEditDialog, {
             width: '560px',
