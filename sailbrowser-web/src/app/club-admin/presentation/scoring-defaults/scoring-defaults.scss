@@ -32,8 +32,23 @@
 }
 
 .config-card {
+  border-top:5px;
+  border-bottom: 5px;
   border-radius: 12px;
   background-color: var(--mat-sys-surface-container-lowest);
+  padding: 8px;
+}
+
+.dnc-ws-preset {
+  margin-bottom: 16px;
+}
+
+.dnc-ws-hint {
+  margin: 8px 0 0 0;
+  max-width: 42rem;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--mat-sys-outline);
 }
 
 .form-row {
@@ -65,22 +80,31 @@
   margin-top: 16px;
 }
 
-.discards-display {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  
-  mat-label {
-    font-size: 0.875rem;
-    color: var(--mat-sys-on-surface-variant);
-  }
+.discard-panel {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 10px;
+  background: var(--mat-sys-surface-container-low);
+}
 
-  .value {
-    font-size: 1.125rem;
-    font-family: var(--mat-sys-body-large-font);
-    color: var(--mat-sys-on-surface);
-  }
+.discard-panel-header {
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+  margin-bottom: 8px;
+}
+
+.discard-panel-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.discard-summary {
+  color: var(--mat-sys-on-surface);
+  font-size: 0.95rem;
 }
 
 .form-section-title {

@@ -1,465 +1,370 @@
 [
   {
-    "id": "ibrsc",
-    "name": "Island Barn Sailing Club",
-    "shortName": "IBSC",
-    "contactEmail": "dave@theryderclan.co.uk",
-    "contactName": "Dave Ryder",
-    "logoUrl": null,
+    "id": "demo",
+    "shortName": "DEMO",
+    "supportedHandicapSchemes": [
+      "PY",
+      "Personal"
+    ],
+    "contactName": "Demo Contact",
+    "contactEmail": "contact@democlub.org",
+    "name": "Demo Club",
     "seasons": [
       {
-        "id": "2526",
-        "name": "2025-26",
-        "status": "current"
+        "status": "current",
+        "id": "2425",
+        "name": "2025-26"
       }
     ],
     "fleets": [
       {
-        "type": "HandicapRange",
+        "max": 1000,
         "id": "fasthandicap",
+        "type": "HandicapRange",
         "name": "Fast handicap",
-        "min": 0,
-        "max": 1000
+        "min": 0
       },
       {
-        "type": "HandicapRange",
+        "max": 9999,
         "id": "slowhandicap",
         "name": "Slow handicap",
         "min": 1000,
-        "max": 9999
+        "type": "HandicapRange"
       },
       {
-        "type": "BoatClass",
+        "boatClassId": "Topper",
         "id": "topper",
-        "boatClassId": "Topper"
+        "type": "BoatClass"
       },
       {
-        "type": "BoatClass",
+        "boatClassId": "ILCA 7",
         "id": "ilca7",
-        "boatClassId": "ILCA 7"
+        "type": "BoatClass"
       }
     ],
+    "logoUrl": null,
     "classes": [
       {
-        "id": "29er",
         "name": "29er",
+        "id": "29er",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 900
+            "value": 900,
+            "scheme": "PY"
           }
         ]
       },
       {
-        "id": "Blaze",
         "name": "Blaze",
+        "id": "Blaze",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1030
+            "value": 1030,
+            "scheme": "PY"
           }
         ]
       },
       {
-        "id": "Enterprise",
         "name": "Enterprise",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1137
+            "value": 1137,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "id": "Enterprise"
       },
       {
-        "id": "Hartley 12",
-        "name": "Hartley 12",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1250
+            "value": 1250,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "id": "Hartley 12",
+        "name": "Hartley 12"
       },
       {
-        "id": "ILCA 4",
         "name": "ILCA 4",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1216
+            "value": 1216,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "id": "ILCA 4"
       },
       {
-        "id": "ILCA 6",
         "name": "ILCA 6",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1154
+            "value": 1154,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "id": "ILCA 6"
       },
       {
         "id": "ILCA 7",
-        "name": "ILCA 7",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1104
+            "value": 1104,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "name": "ILCA 7"
       },
       {
-        "id": "Phantom",
         "name": "Phantom",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 998
+            "value": 998,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "id": "Phantom"
       },
       {
         "id": "ROOSTER 8.1",
-        "name": "ROOSTER 8.1",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1021
+            "value": 1021,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "name": "ROOSTER 8.1"
       },
       {
-        "id": "Aero 5",
         "name": "Aero 5",
+        "id": "Aero 5",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1139
+            "value": 1139,
+            "scheme": "PY"
           }
         ]
       },
       {
         "id": "Aero 6",
-        "name": "Aero 6",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1099
+            "value": 1099,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "name": "Aero 6"
       },
       {
-        "id": "Aero 7",
         "name": "Aero 7",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1063
+            "value": 1063,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "id": "Aero 7"
       },
       {
+        "handicaps": [
+          {
+            "value": 1005,
+            "scheme": "PY"
+          }
+        ],
         "id": "Aero 9",
-        "name": "Aero 9",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1005
-          }
-        ]
+        "name": "Aero 9"
       },
       {
+        "handicaps": [
+          {
+            "value": 1280,
+            "scheme": "PY"
+          }
+        ],
         "id": "RS Feva",
-        "name": "RS Feva",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1280
-          }
-        ]
+        "name": "RS Feva"
       },
       {
+        "handicaps": [
+          {
+            "value": 1244,
+            "scheme": "PY"
+          }
+        ],
         "id": "RS Feva XL",
-        "name": "RS Feva XL",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1244
-          }
-        ]
+        "name": "RS Feva XL"
       },
       {
-        "id": "RS Vaero",
-        "name": "RS Vaero",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1095
+            "value": 1095,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "id": "RS Vaero",
+        "name": "RS Vaero"
       },
       {
         "id": "RS300",
-        "name": "RS300",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 965
+            "value": 965,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "name": "RS300"
       },
       {
-        "id": "RS200",
         "name": "RS200",
+        "id": "RS200",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1050
+            "value": 1050,
+            "scheme": "PY"
           }
         ]
       },
       {
         "id": "RS400",
-        "name": "RS400",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 942
+            "value": 942,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "name": "RS400"
       },
       {
-        "id": "RS600",
         "name": "RS600",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 921
+            "value": 921,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "id": "RS600"
       },
       {
-        "id": "Rooster 8.1",
         "name": "Rooster 8.1",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1021
+            "value": 1021,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "id": "Rooster 8.1"
       },
       {
         "id": "Solo",
-        "name": "Solo",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1139
+            "value": 1139,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "name": "Solo"
       },
       {
         "id": "Streaker",
-        "name": "Streaker",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1124
+            "value": 1124,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "name": "Streaker"
       },
       {
-        "id": "Topper",
         "name": "Topper",
+        "id": "Topper",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1363
+            "value": 1363,
+            "scheme": "PY"
           }
         ]
       },
       {
-        "id": "Topper 4.2",
         "name": "Topper 4.2",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1440
+            "value": 1440,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "id": "Topper 4.2"
       }
     ],
-    "supportedHandicapSchemes": [
-      "PY",
-      "Personal"
-    ]
+    "laps": false,
+    "oodScoring": {
+      "calculationCode": "AvgAll",
+      "maxDuties": 1
+    },
+    "longSeriesDefaults": {
+      "discards": [],
+      "dncCalculation": {
+        "worldSailingStandard": true,
+        "offset": 1,
+        "basis": "SeriesEntries",
+        "excludeNeverRaced": false
+      }
+    },
+    "shortSeriesDefaults": {
+      "discards": [],
+      "dncCalculation": {
+        "worldSailingStandard": true,
+        "offset": 1,
+        "basis": "SeriesEntries",
+        "excludeNeverRaced": false
+      }
+    }
   },
   {
-    "id": "demo",
-    "name": "Demo Club",
-    "shortName": "DEMO",
-    "contactEmail": "contact@democlub.org",
-    "contactName": "Demo Contact",
-    "logoUrl": null,
-    "seasons": [
-      {
-        "id": "2425",
-        "name": "2025-26",
-        "status": "current"
-      }
-    ],
-    "fleets": [
-      {
-        "type": "HandicapRange",
-        "id": "fasthandicap",
-        "name": "Fast handicap",
-        "min": 0,
-        "max": 1000
-      },
-      {
-        "type": "HandicapRange",
-        "id": "slowhandicap",
-        "name": "Slow handicap",
-        "min": 1000,
-        "max": 9999
-      },
-      {
-        "type": "BoatClass",
-        "id": "topper",
-        "boatClassId": "Topper"
-      },
-      {
-        "type": "BoatClass",
-        "id": "ilca7",
-        "boatClassId": "ILCA 7"
-      }
-    ],
+    "id": "ibrsc",
     "classes": [
       {
         "id": "29er",
-        "name": "29er",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 900
+            "value": 900,
+            "scheme": "PY"
           }
-        ]
-      },
-      {
-        "id": "Blaze",
-        "name": "Blaze",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1030
-          }
-        ]
-      },
-      {
-        "id": "Enterprise",
-        "name": "Enterprise",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1137
-          }
-        ]
-      },
-      {
-        "id": "Hartley 12",
-        "name": "Hartley 12",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1250
-          }
-        ]
-      },
-      {
-        "id": "ILCA 4",
-        "name": "ILCA 4",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1216
-          }
-        ]
-      },
-      {
-        "id": "ILCA 6",
-        "name": "ILCA 6",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1154
-          }
-        ]
-      },
-      {
-        "id": "ILCA 7",
-        "name": "ILCA 7",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1104
-          }
-        ]
-      },
-      {
-        "id": "Phantom",
-        "name": "Phantom",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 998
-          }
-        ]
-      },
-      {
-        "id": "ROOSTER 8.1",
-        "name": "ROOSTER 8.1",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1021
-          }
-        ]
+        ],
+        "name": "29er"
       },
       {
         "id": "Aero 5",
-        "name": "Aero 5",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1139
+            "value": 1139,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "name": "Aero 5"
       },
       {
+        "handicaps": [
+          {
+            "value": 1099,
+            "scheme": "PY"
+          }
+        ],
         "id": "Aero 6",
-        "name": "Aero 6",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1099
-          }
-        ]
+        "name": "Aero 6"
       },
       {
-        "id": "Aero 7",
-        "name": "Aero 7",
         "handicaps": [
           {
             "scheme": "PY",
             "value": 1063
           }
-        ]
+        ],
+        "id": "Aero 7",
+        "name": "Aero 7"
       },
       {
-        "id": "Aero 9",
         "name": "Aero 9",
+        "id": "Aero 9",
         "handicaps": [
           {
             "scheme": "PY",
@@ -468,78 +373,118 @@
         ]
       },
       {
-        "id": "RS Feva",
-        "name": "RS Feva",
+        "name": "Blaze",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1280
+            "value": 1030,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "id": "Blaze"
       },
       {
-        "id": "RS Feva XL",
-        "name": "RS Feva XL",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1244
-          }
-        ]
-      },
-      {
-        "id": "RS Vaero",
-        "name": "RS Vaero",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1095
-          }
-        ]
-      },
-      {
-        "id": "RS300",
-        "name": "RS300",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 965
-          }
-        ]
-      },
-      {
-        "id": "RS200",
-        "name": "RS200",
+        "id": "Blaze Fire",
         "handicaps": [
           {
             "scheme": "PY",
             "value": 1050
           }
-        ]
+        ],
+        "name": "Blaze Fire"
       },
       {
-        "id": "RS400",
-        "name": "RS400",
+        "id": "Enterprise",
         "handicaps": [
           {
             "scheme": "PY",
-            "value": 942
+            "value": 1137
+          }
+        ],
+        "name": "Enterprise"
+      },
+      {
+        "name": "Fireball",
+        "id": "Fireball",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 960
           }
         ]
       },
       {
-        "id": "RS600",
-        "name": "RS600",
+        "name": "Hadron",
+        "handicaps": [
+          {
+            "value": 1045,
+            "scheme": "PY"
+          }
+        ],
+        "id": "Hadron"
+      },
+      {
+        "name": "Hartley 12",
+        "id": "Hartley 12",
         "handicaps": [
           {
             "scheme": "PY",
-            "value": 921
+            "value": 1250
           }
         ]
       },
       {
-        "id": "Rooster 8.1",
+        "name": "ILCA 4",
+        "handicaps": [
+          {
+            "value": 1216,
+            "scheme": "PY"
+          }
+        ],
+        "id": "ILCA 4"
+      },
+      {
+        "name": "ILCA 6",
+        "id": "ILCA 6",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1154
+          }
+        ]
+      },
+      {
+        "name": "ILCA 7",
+        "handicaps": [
+          {
+            "value": 1104,
+            "scheme": "PY"
+          }
+        ],
+        "id": "ILCA 7"
+      },
+      {
+        "name": "Phantom",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 998
+          }
+        ],
+        "id": "Phantom"
+      },
+      {
+        "id": "Pico",
+        "handicaps": [
+          {
+            "value": 1330,
+            "scheme": "PY"
+          }
+        ],
+        "name": "Pico"
+      },
+      {
         "name": "Rooster 8.1",
+        "id": "Rooster 8.1",
         "handicaps": [
           {
             "scheme": "PY",
@@ -548,38 +493,118 @@
         ]
       },
       {
-        "id": "Solo",
-        "name": "Solo",
+        "name": "ROOSTER 8.1",
+        "id": "ROOSTER 8.1",
+        "handicaps": [
+          {
+            "value": 1021,
+            "scheme": "PY"
+          }
+        ]
+      },
+      {
+        "id": "RS Feva",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1280
+          }
+        ],
+        "name": "RS Feva"
+      },
+      {
+        "name": "RS Feva XL",
+        "handicaps": [
+          {
+            "value": 1244,
+            "scheme": "PY"
+          }
+        ],
+        "id": "RS Feva XL"
+      },
+      {
+        "handicaps": [
+          {
+            "value": 1095,
+            "scheme": "PY"
+          }
+        ],
+        "id": "RS Vaero",
+        "name": "RS Vaero"
+      },
+      {
+        "handicaps": [
+          {
+            "value": 1050,
+            "scheme": "PY"
+          }
+        ],
+        "id": "RS200",
+        "name": "RS200"
+      },
+      {
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 965
+          }
+        ],
+        "id": "RS300",
+        "name": "RS300"
+      },
+      {
+        "id": "RS400",
+        "handicaps": [
+          {
+            "value": 942,
+            "scheme": "PY"
+          }
+        ],
+        "name": "RS400"
+      },
+      {
+        "id": "RS600",
+        "handicaps": [
+          {
+            "value": 921,
+            "scheme": "PY"
+          }
+        ],
+        "name": "RS600"
+      },
+      {
         "handicaps": [
           {
             "scheme": "PY",
             "value": 1139
           }
-        ]
+        ],
+        "id": "Solo",
+        "name": "Solo"
       },
       {
-        "id": "Streaker",
         "name": "Streaker",
+        "id": "Streaker",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1124
+            "value": 1124,
+            "scheme": "PY"
           }
         ]
       },
       {
-        "id": "Topper",
-        "name": "Topper",
         "handicaps": [
           {
             "scheme": "PY",
             "value": 1363
           }
-        ]
+        ],
+        "id": "Topper",
+        "name": "Topper"
       },
       {
-        "id": "Topper 4.2",
         "name": "Topper 4.2",
+        "id": "Topper 4.2",
         "handicaps": [
           {
             "scheme": "PY",
@@ -588,175 +613,191 @@
         ]
       }
     ],
+    "logoUrl": null,
+    "fleets": [
+      {
+        "id": "fasthandicap",
+        "max": 1094,
+        "min": 0,
+        "scheme": "PY",
+        "name": "Fast handicap",
+        "type": "HandicapRange"
+      },
+      {
+        "scheme": "PY",
+        "min": 1095,
+        "name": "Slow handicap",
+        "type": "HandicapRange",
+        "id": "slowhandicap",
+        "max": 9999
+      },
+      {
+        "boatClassId": "Topper",
+        "id": "topper",
+        "type": "BoatClass"
+      },
+      {
+        "id": "ilca7",
+        "boatClassId": "ILCA 7",
+        "type": "BoatClass"
+      },
+      {
+        "type": "Tag",
+        "name": "Youth",
+        "id": "youth-xWgxDxw0J",
+        "value": "Youth"
+      }
+    ],
+    "seasons": [
+      {
+        "name": "2025-26",
+        "id": "2526",
+        "status": "current"
+      }
+    ],
+    "name": "Island Barn Sailing Club",
+    "contactEmail": "dave@theryderclan.co.uk",
+    "contactName": "Dave Ryder",
     "supportedHandicapSchemes": [
       "PY",
       "Personal"
-    ]
+    ],
+    "shortName": "IBSC",
+    "laps": false,
+    "oodScoring": {
+      "calculationCode": "AvgAll",
+      "maxDuties": 1
+    },
+    "longSeriesDefaults": {
+      "discards": [3, 5, 6, 7, 9, 11, 13, 15, 17, 19, 21, 23],
+      "dncCalculation": {
+        "worldSailingStandard": false,
+        "offset": 1,
+        "basis": " MaxRaceCompetitors",
+        "excludeNeverRaced": true
+      }
+    },
+    "shortSeriesDefaults": {
+      "discards": [3, 6 ],
+      "dncCalculation": {
+        "worldSailingStandard": true,
+        "offset": 1,
+        "basis": "SeriesEntries",
+        "excludeNeverRaced": false
+      }
+    }
   },
   {
     "id": "test",
-    "name": "Test Club",
     "shortName": "TEST",
-    "contactEmail": "contact@testclub.org",
-    "contactName": "Test Contact",
-    "logoUrl": null,
-    "seasons": [
-      {
-        "id": "2526",
-        "name": "2025-26",
-        "status": "current"
-      }
+    "contactName": "test Contact",
+    "contactEmail": "contact@democlub.org",
+    "name": "Test Club",
+    "laps": false,
+    "oodScoring": {
+      "calculationCode": "AvgAll",
+      "maxDuties": 1
+    },
+    "supportedHandicapSchemes": [
+      "PY",
+      "Personal"
     ],
+    "longSeriesDefaults": {
+      "discards": [],
+      "dncCalculation": {
+        "worldSailingStandard": true,
+        "offset": 1,
+        "basis": "SeriesEntries",
+        "excludeNeverRaced": false
+      }
+    },
+    "shortSeriesDefaults": {
+      "discards": [],
+      "dncCalculation": {
+        "worldSailingStandard": true,
+        "offset": 1,
+        "basis": "SeriesEntries",
+        "excludeNeverRaced": false
+      }
+    },
     "fleets": [
       {
-        "type": "HandicapRange",
         "id": "fasthandicap",
-        "name": "Fast handicap",
+        "max": 1094,
         "min": 0,
-        "max": 1000
+        "scheme": "PY",
+        "name": "Fast handicap",
+        "type": "HandicapRange"
       },
       {
+        "scheme": "PY",
+        "min": 1095,
+        "name": "Slow handicap",
         "type": "HandicapRange",
         "id": "slowhandicap",
-        "name": "Slow handicap",
-        "min": 1000,
         "max": 9999
       },
       {
-        "type": "BoatClass",
+        "boatClassId": "Topper",
         "id": "topper",
-        "boatClassId": "Topper"
+        "type": "BoatClass"
       },
       {
-        "type": "BoatClass",
         "id": "ilca7",
-        "boatClassId": "ILCA 7"
+        "boatClassId": "ILCA 7",
+        "type": "BoatClass"
+      },
+      {
+        "type": "Tag",
+        "name": "Youth",
+        "id": "youth-xWgxDxw0J",
+        "value": "Youth"
       }
     ],
     "classes": [
       {
         "id": "29er",
-        "name": "29er",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 900
+            "value": 900,
+            "scheme": "PY"
           }
-        ]
-      },
-      {
-        "id": "Blaze",
-        "name": "Blaze",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1030
-          }
-        ]
-      },
-      {
-        "id": "Enterprise",
-        "name": "Enterprise",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1137
-          }
-        ]
-      },
-      {
-        "id": "Hartley 12",
-        "name": "Hartley 12",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1250
-          }
-        ]
-      },
-      {
-        "id": "ILCA 4",
-        "name": "ILCA 4",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1216
-          }
-        ]
-      },
-      {
-        "id": "ILCA 6",
-        "name": "ILCA 6",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1154
-          }
-        ]
-      },
-      {
-        "id": "ILCA 7",
-        "name": "ILCA 7",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1104
-          }
-        ]
-      },
-      {
-        "id": "Phantom",
-        "name": "Phantom",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 998
-          }
-        ]
-      },
-      {
-        "id": "ROOSTER 8.1",
-        "name": "ROOSTER 8.1",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1021
-          }
-        ]
+        ],
+        "name": "29er"
       },
       {
         "id": "Aero 5",
-        "name": "Aero 5",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1139
+            "value": 1139,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "name": "Aero 5"
       },
       {
+        "handicaps": [
+          {
+            "value": 1099,
+            "scheme": "PY"
+          }
+        ],
         "id": "Aero 6",
-        "name": "Aero 6",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1099
-          }
-        ]
+        "name": "Aero 6"
       },
       {
-        "id": "Aero 7",
-        "name": "Aero 7",
         "handicaps": [
           {
             "scheme": "PY",
             "value": 1063
           }
-        ]
+        ],
+        "id": "Aero 7",
+        "name": "Aero 7"
       },
-      {
-        "id": "Aero 9",
+      { 
         "name": "Aero 9",
+        "id": "Aero 9",
         "handicaps": [
           {
             "scheme": "PY",
@@ -765,78 +806,118 @@
         ]
       },
       {
-        "id": "RS Feva",
-        "name": "RS Feva",
+        "name": "Blaze",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1280
+            "value": 1030,
+            "scheme": "PY"
           }
-        ]
+        ],
+        "id": "Blaze"
       },
       {
-        "id": "RS Feva XL",
-        "name": "RS Feva XL",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1244
-          }
-        ]
-      },
-      {
-        "id": "RS Vaero",
-        "name": "RS Vaero",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 1095
-          }
-        ]
-      },
-      {
-        "id": "RS300",
-        "name": "RS300",
-        "handicaps": [
-          {
-            "scheme": "PY",
-            "value": 965
-          }
-        ]
-      },
-      {
-        "id": "RS200",
-        "name": "RS200",
+        "id": "Blaze Fire",
         "handicaps": [
           {
             "scheme": "PY",
             "value": 1050
           }
-        ]
+        ],
+        "name": "Blaze Fire"
       },
       {
-        "id": "RS400",
-        "name": "RS400",
+        "id": "Enterprise",
         "handicaps": [
           {
             "scheme": "PY",
-            "value": 942
+            "value": 1137
+          }
+        ],
+        "name": "Enterprise"
+      },
+      {
+        "name": "Fireball",
+        "id": "Fireball",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 960
           }
         ]
       },
       {
-        "id": "RS600",
-        "name": "RS600",
+        "name": "Hadron",
+        "handicaps": [
+          {
+            "value": 1045,
+            "scheme": "PY"
+          }
+        ],
+        "id": "Hadron"
+      },
+      {
+        "name": "Hartley 12",
+        "id": "Hartley 12",
         "handicaps": [
           {
             "scheme": "PY",
-            "value": 921
+            "value": 1250
           }
         ]
       },
       {
-        "id": "Rooster 8.1",
+        "name": "ILCA 4",
+        "handicaps": [
+          {
+            "value": 1216,
+            "scheme": "PY"
+          }
+        ],
+        "id": "ILCA 4"
+      },
+      {
+        "name": "ILCA 6",
+        "id": "ILCA 6",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1154
+          }
+        ]
+      },
+      {
+        "name": "ILCA 7",
+        "handicaps": [
+          {
+            "value": 1104,
+            "scheme": "PY"
+          }
+        ],
+        "id": "ILCA 7"
+      },
+      {
+        "name": "Phantom",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 998
+          }
+        ],
+        "id": "Phantom"
+      },
+      {
+        "id": "Pico",
+        "handicaps": [
+          {
+            "value": 1330,
+            "scheme": "PY"
+          }
+        ],
+        "name": "Pico"
+      },
+      {
         "name": "Rooster 8.1",
+        "id": "Rooster 8.1",
         "handicaps": [
           {
             "scheme": "PY",
@@ -845,38 +926,118 @@
         ]
       },
       {
-        "id": "Solo",
-        "name": "Solo",
+        "name": "ROOSTER 8.1",
+        "id": "ROOSTER 8.1",
+        "handicaps": [
+          {
+            "value": 1021,
+            "scheme": "PY"
+          }
+        ]
+      },
+      {
+        "id": "RS Feva",
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 1280
+          }
+        ],
+        "name": "RS Feva"
+      },
+      {
+        "name": "RS Feva XL",
+        "handicaps": [
+          {
+            "value": 1244,
+            "scheme": "PY"
+          }
+        ],
+        "id": "RS Feva XL"
+      },
+      {
+        "handicaps": [
+          {
+            "value": 1095,
+            "scheme": "PY"
+          }
+        ],
+        "id": "RS Vaero",
+        "name": "RS Vaero"
+      },
+      {
+        "handicaps": [
+          {
+            "value": 1050,
+            "scheme": "PY"
+          }
+        ],
+        "id": "RS200",
+        "name": "RS200"
+      },
+      {
+        "handicaps": [
+          {
+            "scheme": "PY",
+            "value": 965
+          }
+        ],
+        "id": "RS300",
+        "name": "RS300"
+      },
+      {
+        "id": "RS400",
+        "handicaps": [
+          {
+            "value": 942,
+            "scheme": "PY"
+          }
+        ],
+        "name": "RS400"
+      },
+      {
+        "id": "RS600",
+        "handicaps": [
+          {
+            "value": 921,
+            "scheme": "PY"
+          }
+        ],
+        "name": "RS600"
+      },
+      {
         "handicaps": [
           {
             "scheme": "PY",
             "value": 1139
           }
-        ]
+        ],
+        "id": "Solo",
+        "name": "Solo"
       },
       {
-        "id": "Streaker",
         "name": "Streaker",
+        "id": "Streaker",
         "handicaps": [
           {
-            "scheme": "PY",
-            "value": 1124
+            "value": 1124,
+            "scheme": "PY"
           }
         ]
       },
       {
-        "id": "Topper",
-        "name": "Topper",
         "handicaps": [
           {
             "scheme": "PY",
             "value": 1363
           }
-        ]
+        ],
+        "id": "Topper",
+        "name": "Topper"
       },
       {
-        "id": "Topper 4.2",
         "name": "Topper 4.2",
+        "id": "Topper 4.2",
         "handicaps": [
           {
             "scheme": "PY",
@@ -885,9 +1046,13 @@
         ]
       }
     ],
-    "supportedHandicapSchemes": [
-      "PY",
-      "Personal"
-    ]
+    "seasons": [
+      {
+        "name": "2025-26",
+        "id": "2526",
+        "status": "current"
+      }
+    ],
+    "logoUrl": null
   }
 ]

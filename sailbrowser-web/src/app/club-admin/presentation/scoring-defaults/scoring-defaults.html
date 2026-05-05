@@ -2,19 +2,42 @@
 
 <div class="defaults-container" [formGroup]="form">
   <div class="page-header">
-    <h1>Scoring & Handicap Configurations</h1>
+    <h3>Scoring & Handicap Configurations</h3>
     <p>Configure supported handicap schemes and scoring defaults for long and short series.</p>
   </div>
 
   <mat-tab-group animationDuration="0ms">
-    <!-- Handicap Schemes Tab -->
-    <mat-tab label="Handicap Schemes">
+    <!-- General Settings Tab -->
+    <mat-tab label="General Settings">
       <div class="tab-content">
+        <mat-card appearance="outlined" class="config-card">
+          <mat-card-content>
+            <div class="form-row">
+              <mat-checkbox formControlName="laps">
+                Default to multi-lap races
+              </mat-checkbox>
+            </div>
+            <div class="form-section-title">OOD (Duty) Scoring</div>
+            <div class="form-row" formGroupName="oodScoring">
+              <mat-form-field appearance="outline" class="flex-2">
+                <mat-label>OOD Calculation</mat-label>
+                <mat-select formControlName="calculationCode">
+                  <mat-option value="AvgAll">Average of all races</mat-option>
+                  <mat-option value="AvgExcludingDiscards">Average excluding discards</mat-option>
+                  <mat-option value="FixedScore">Fixed Score</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="flex-1">
+                <mat-label>Max Duties</mat-label>
+                <input matInput type="number" formControlName="maxDuties" min="0">
+              </mat-form-field>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
         <mat-card appearance="outlined">
           <mat-card-header>
-            <mat-icon mat-card-avatar color="primary">settings_suggest</mat-icon>
-            <mat-card-title>Supported Handicap Schemes</mat-card-title>
-            <mat-card-subtitle>Select all handicap schemes used by your club.</mat-card-subtitle>
+            <mat-card-title>Handicap schemes used</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <mat-selection-list formControlName="supportedHandicapSchemes">
@@ -33,57 +56,64 @@
     <mat-tab label="Long Series Defaults">
       <div class="tab-content" formGroupName="longSeriesDefaults">
         <mat-card appearance="outlined" class="config-card">
+
           <mat-card-header>
-            <mat-card-title>Long Series Settings</mat-card-title>
+            <mat-card-title>Long Series Defaults</mat-card-title>
             <mat-card-subtitle>Default rules applied when creating a new long series.</mat-card-subtitle>
           </mat-card-header>
           <mat-card-content>
             
-            <div class="form-row">
-              <div class="discards-display">
-                <mat-label>Default Discard Profile</mat-label>
-                <div class="value">
-                  {{ form.value.longSeriesDefaults?.discards?.length ? form.value.longSeriesDefaults?.discards?.join(', ') : 'None' }}
-                </div>
+            <div class="discard-panel">
+              <div class="discard-panel-header">Default Discard Profile</div>
+              <div class="discard-panel-body">
+                <div class="discard-summary">{{ discardSummary('long') }}</div>
+                <button mat-stroked-button type="button" (click)="editDiscards('long')">
+                  <mat-icon>edit</mat-icon>
+                  Edit Discards
+                </button>
               </div>
-              <button mat-stroked-button type="button" (click)="editDiscards('long')">
-                <mat-icon>edit</mat-icon>
-                Edit Discards
-              </button>
             </div>
 
-            <div class="form-row">
-              <mat-form-field appearance="outline" class="full-width">
+            <div class="dnc-ws-preset">
+              <mat-slide-toggle
+                color="primary"
+                [checked]="isWorldSailingPreset('long')"
+                (change)="setWorldSailingPresetMode('long', $event.checked)">
+                Apply World Sailing DNC preset
+              </mat-slide-toggle>
+              <p class="dnc-ws-hint">
+                When on, the saved DNC rule is the usual World Sailing case (series entrants + 1, no “never raced” exclusion).
+                Only those calculation options are stored; this switch does not add a separate flag in the database.
+                Turn off to show custom options.
+              </p>
+            </div>
+
+            @if (!isWorldSailingPreset('long')) {
+            <div class="form-row" formGroupName="dncCalculation">
+              <mat-form-field appearance="outline" class="flex-2">
                 <mat-label>DNC Score Calculation</mat-label>
-                <mat-select formControlName="dncCalculation">
+                <mat-select formControlName="basis">
                   <mat-option value="SeriesEntries">Series Entries + 1</mat-option>
-                  <mat-option value="MaxRaceCompetitors">Maximum Competitors in Any Race + 1</mat-option>
-                </mat-select>
-              </mat-form-field>
-            </div>
-
-            <div class="form-section-title">OOD (Duty) Scoring</div>
-            <div class="form-row" formGroupName="oodScoring">
-               <mat-form-field appearance="outline" class="flex-2">
-                <mat-label>OOD Calculation</mat-label>
-                <mat-select formControlName="calculationCode">
-                  <mat-option value="AvgAll">Average of all races</mat-option>
-                  <mat-option value="AvgExcludingDiscards">Average excluding discards</mat-option>
-                  <mat-option value="FixedScore">Fixed Score</mat-option>
+                  <mat-option value="MaxRaceCompetitors">Max starters in any Race</mat-option>
                 </mat-select>
               </mat-form-field>
 
+              @if (isMaxRaceBasis('long')) {
               <mat-form-field appearance="outline" class="flex-1">
-                <mat-label>Max Duties</mat-label>
-                <input matInput type="number" formControlName="maxDuties" min="0">
+                <mat-label>Plus value</mat-label>
+                <mat-select formControlName="offset">
+                  <mat-option [value]="1">1</mat-option>
+                  <mat-option [value]="2">2</mat-option>
+                </mat-select>
               </mat-form-field>
+              }
             </div>
-
-            <div class="form-row mt-4">
-              <mat-slide-toggle formControlName="laps" color="primary">
-                Enable multi-lap races by default
+            <div class="form-row" formGroupName="dncCalculation">
+              <mat-slide-toggle formControlName="excludeNeverRaced" color="primary">
+                Exclude competitors who never raced from DNC count
               </mat-slide-toggle>
             </div>
+            }
 
           </mat-card-content>
         </mat-card>
@@ -100,51 +130,57 @@
           </mat-card-header>
           <mat-card-content>
             
-            <div class="form-row">
-              <div class="discards-display">
-                <mat-label>Default Discard Profile</mat-label>
-                <div class="value">
-                  {{ form.value.shortSeriesDefaults?.discards?.length ? form.value.shortSeriesDefaults?.discards?.join(', ') : 'None' }}
-                </div>
+            <div class="discard-panel">
+              <div class="discard-panel-header">Default Discard Profile</div>
+              <div class="discard-panel-body">
+                <div class="discard-summary">{{ discardSummary('short') }}</div>
+                <button mat-stroked-button type="button" (click)="editDiscards('short')">
+                  <mat-icon>edit</mat-icon>
+                  Edit Discards
+                </button>
               </div>
-              <button mat-stroked-button type="button" (click)="editDiscards('short')">
-                <mat-icon>edit</mat-icon>
-                Edit Discards
-              </button>
             </div>
 
-            <div class="form-row">
-              <mat-form-field appearance="outline" class="full-width">
+            <div class="dnc-ws-preset">
+              <mat-slide-toggle
+                color="primary"
+                [checked]="isWorldSailingPreset('short')"
+                (change)="setWorldSailingPresetMode('short', $event.checked)">
+                Apply World Sailing DNC preset
+              </mat-slide-toggle>
+              <p class="dnc-ws-hint">
+                When on, the saved DNC rule is the usual World Sailing case (series entrants + 1, no “never raced” exclusion).
+                Only those calculation options are stored; this switch does not add a separate flag in the database.
+                Turn off to show custom options.
+              </p>
+            </div>
+
+            @if (!isWorldSailingPreset('short')) {
+            <div class="form-row" formGroupName="dncCalculation">
+              <mat-form-field appearance="outline" class="flex-2">
                 <mat-label>DNC Score Calculation</mat-label>
-                <mat-select formControlName="dncCalculation">
+                <mat-select formControlName="basis">
                   <mat-option value="SeriesEntries">Series Entries + 1</mat-option>
-                  <mat-option value="MaxRaceCompetitors">Maximum Competitors in Any Race + 1</mat-option>
-                </mat-select>
-              </mat-form-field>
-            </div>
-
-            <div class="form-section-title">OOD (Duty) Scoring</div>
-            <div class="form-row" formGroupName="oodScoring">
-               <mat-form-field appearance="outline" class="flex-2">
-                <mat-label>OOD Calculation</mat-label>
-                <mat-select formControlName="calculationCode">
-                  <mat-option value="AvgAll">Average of all races</mat-option>
-                  <mat-option value="AvgExcludingDiscards">Average excluding discards</mat-option>
-                  <mat-option value="FixedScore">Fixed Score</mat-option>
+                  <mat-option value="MaxRaceCompetitors">Max starters in any Race</mat-option>
                 </mat-select>
               </mat-form-field>
 
+              @if (isMaxRaceBasis('short')) {
               <mat-form-field appearance="outline" class="flex-1">
-                <mat-label>Max Duties</mat-label>
-                <input matInput type="number" formControlName="maxDuties" min="0">
+                <mat-label>Plus value</mat-label>
+                <mat-select formControlName="offset">
+                  <mat-option [value]="1">1</mat-option>
+                  <mat-option [value]="2">2</mat-option>
+                </mat-select>
               </mat-form-field>
+              }
             </div>
-
-            <div class="form-row mt-4">
-              <mat-slide-toggle formControlName="laps" color="primary">
-                Enable multi-lap races by default
+            <div class="form-row" formGroupName="dncCalculation">
+              <mat-slide-toggle formControlName="excludeNeverRaced">
+                Exclude competitors who never raced from DNC count
               </mat-slide-toggle>
             </div>
+            }
 
           </mat-card-content>
         </mat-card>

@@ -74,7 +74,7 @@ describe('scoreSeries', () => {
       ]),
     ];
 
-    const config: ScoringConfig = { seriesType: 'short', discards: 1 };
+    const config: ScoringConfig = { seriesType: 'short', discards: 1, dncPoints: 3 };
     const seriesResults = scoreSeries(races, allEntries, config, 'PY', 'classSailNumberHelm');
 
     const helm101 = seriesResults.find(r => r.sailNumber === 101)!;
@@ -111,7 +111,7 @@ describe('scoreSeries', () => {
       ]),
     ];
 
-    const config: ScoringConfig = { seriesType: 'short', discards: 1 };
+    const config: ScoringConfig = { seriesType: 'short', discards: 1, dncPoints: 3 };
     const seriesResults = scoreSeries(races, allEntries, config, 'PY', 'classSailNumberHelm');
 
     const helm101 = seriesResults.find(r => r.sailNumber === 101)!;
@@ -141,7 +141,7 @@ describe('scoreSeries', () => {
       createMockRace(3, [{ seriesEntryId: 'entry101', helm: 'Helm 101', sailNumber: 101, points: 2 }, { seriesEntryId: 'entry102', helm: 'Helm 102', sailNumber: 102, points: 1 }]),
     ];
 
-    const config: ScoringConfig = { seriesType: 'short', discards: 1 };
+    const config: ScoringConfig = { seriesType: 'short', discards: 1, dncPoints: 4 };
     const seriesResults = scoreSeries(races, tieBreakEntries, config, 'PY', 'classSailNumberHelm');
 
     const helm101 = seriesResults.find(r => r.sailNumber === 101)!;
@@ -193,7 +193,7 @@ describe('scoreSeries', () => {
         { seriesEntryId: 'entry102', helm: 'Helm 102', sailNumber: 102, points: 4 },
       ]),
     ];
-    const config: ScoringConfig = { seriesType: 'short', discards: 1 };
+    const config: ScoringConfig = { seriesType: 'short', discards: 1, dncPoints: 4 };
     const out = scoreSeries(races, entries, config, 'PY', 'classSailNumberHelm');
     const h101 = out.find(r => r.sailNumber === 101)!;
     const h102 = out.find(r => r.sailNumber === 102)!;
@@ -224,7 +224,7 @@ describe('scoreSeries', () => {
         { seriesEntryId: 'entry102', helm: 'Helm 102', sailNumber: 102, points: 10 },
       ]),
     ];
-    const config: ScoringConfig = { seriesType: 'short', discards: 1 };
+    const config: ScoringConfig = { seriesType: 'short', discards: 1, dncPoints: 3 };
     const out = scoreSeries(races, entries, config, 'PY', 'classSailNumberHelm');
     const h101 = out.find(r => r.sailNumber === 101)!;
     const h102 = out.find(r => r.sailNumber === 102)!;
@@ -275,7 +275,7 @@ describe('scoreSeries', () => {
       ]),
     ];
 
-    const config: ScoringConfig = { seriesType: 'short', discards: 1 };
+    const config: ScoringConfig = { seriesType: 'short', discards: 1, dncPoints: 3 };
     const seriesResults = scoreSeries(races, rdgEntries, config, 'PY', 'classSailNumberHelm');
     const helm101 = seriesResults.find(r => r.sailNumber === 101)!;
 
@@ -304,7 +304,7 @@ describe('scoreSeries', () => {
       const raceWithOnlyRdg: PublishedRace[] = [
         createMockRace(0, [{ seriesEntryId: 'entry101', helm: 'Helm 101', sailNumber: 101, points: 99, resultCode: 'RDGB' }]),
       ];
-      const results = scoreSeries(raceWithOnlyRdg, createMockEntries(['Helm 101-101-TestClass']), { seriesType: 'short', discards: 0 }, 'PY', 'classSailNumberHelm');
+      const results = scoreSeries(raceWithOnlyRdg, createMockEntries(['Helm 101-101-TestClass']), { seriesType: 'short', discards: 0, dncPoints: 2 }, 'PY', 'classSailNumberHelm');
       const dncPoints = 1 + 1; // 1 competitor in series + 1
       expect(results[0].raceScores[0].points).toBe(dncPoints);
     });
@@ -329,7 +329,7 @@ describe('scoreSeries', () => {
     ];
 
     it('should calculate OOD points based on the finished pool and cap at maxOodPerSeries', () => {
-      const config: ScoringConfig = { seriesType: 'short', discards: 0, maxOodPerSeries: 2, oodAveragePool: 'finished' };
+      const config: ScoringConfig = { seriesType: 'short', discards: 0, dncPoints: 3, maxOodPerSeries: 2, oodAveragePool: 'finished' };
       const seriesResults = scoreSeries(races, oodEntries, config, 'PY', 'classSailNumberHelm');
       const helm101 = seriesResults.find(r => r.sailNumber === 101)!;
 
@@ -351,12 +351,12 @@ describe('scoreSeries', () => {
       // Add a DNF race to test 'started' pool
       const racesWithDnf = [...races, createMockRace(6, [{ seriesEntryId: 'entry101', helm: 'Helm 101', sailNumber: 101, points: 3, resultCode: 'DNF' }])];
       
-      const configFinished: ScoringConfig = { seriesType: 'short', discards: 0, maxOodPerSeries: 2, oodAveragePool: 'finished' };
+      const configFinished: ScoringConfig = { seriesType: 'short', discards: 0, dncPoints: 3, maxOodPerSeries: 2, oodAveragePool: 'finished' };
       const resultsFinished = scoreSeries(racesWithDnf, oodEntries, configFinished, 'PY', 'classSailNumberHelm').find(r => r.sailNumber === 101)!;
       // Finished pool: 2, 4. Avg = 3.
       expect(resultsFinished.raceScores.find(rs => rs.resultCode === 'OOD')!.points).toBe(3);
 
-      const configStarted: ScoringConfig = { seriesType: 'short', discards: 0, maxOodPerSeries: 2, oodAveragePool: 'started' };
+      const configStarted: ScoringConfig = { seriesType: 'short', discards: 0, dncPoints: 3, maxOodPerSeries: 2, oodAveragePool: 'started' };
       const resultsStarted = scoreSeries(racesWithDnf, oodEntries, configStarted, 'PY', 'classSailNumberHelm').find(r => r.sailNumber === 101)!;
       // Started pool: 2, 4, 3 (DNF). Avg = (2+4+3)/3 = 3.
       expect(resultsStarted.raceScores.find(rs => rs.resultCode === 'OOD')!.points).toBe(3);

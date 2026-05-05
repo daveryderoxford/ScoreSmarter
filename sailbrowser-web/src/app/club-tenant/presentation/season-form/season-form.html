@@ -6,6 +6,15 @@
     <mat-error>Season name is required</mat-error>
   </mat-form-field>
 
+  <mat-form-field>
+    <mat-label>Status</mat-label>
+    <mat-select formControlName="status">
+      <mat-option value="current">Current</mat-option>
+      <mat-option value="archived">Archived</mat-option>
+    </mat-select>
+    <mat-error>Status is required</mat-error>
+  </mat-form-field>
+
   <div class="button-row">
     <app-submit-button [disabled]="form.invalid || !form.dirty" [busy]="busy()">
       Save

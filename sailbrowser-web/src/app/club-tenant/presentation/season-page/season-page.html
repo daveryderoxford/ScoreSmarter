@@ -21,6 +21,7 @@
     @for (season of filteredSeasons(); track season.id) {
     <mat-list-item [routerLink]="['edit', season.id]">
       <span matListItemTitle>{{ season.name }}</span>
+      <span matListItemLine>{{ season.status === 'archived' ? 'Archived' : 'Current' }}</span>
       <span matListItemMeta>
         <button matIconButton [routerLink]="['edit', season.id]" (click)="$event.stopPropagation()">
           <mat-icon class="green">edit</mat-icon>

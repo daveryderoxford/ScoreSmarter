@@ -12,7 +12,7 @@ interface ClubMaintenanceStats {
 
 export const cleanupOrphanSeriesEntriesWeekly = onSchedule(
   {
-    schedule: "every monday 03:00",
+    schedule: "every tuesday 13:30",
     timeZone: "Europe/London",
     memory: "512MiB",
     timeoutSeconds: 540,
@@ -74,6 +74,9 @@ export const cancelStaleFutureRacesWeekly = onSchedule(
 );
 
 async function cleanupOrphanSeriesEntriesForClub(db: Firestore, clubId: string): Promise<ClubMaintenanceStats> {
+  
+  // Read all series entries for club - This does not scale going forwards. 
+  // Move to adding a trigger when a race competitor is deleted. 
   const seriesEntriesSnapshot = await db.collection(`clubs/${clubId}/series-entries`).get();
 
   let batch = db.batch();

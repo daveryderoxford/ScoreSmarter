@@ -107,7 +107,7 @@ function mergeEntries(...lists: SeriesEntry[][]): SeriesEntry[] {
 }
 
 describe('score (Orchestrator)', () => {
-  const config: ScoringConfig = { seriesType: 'short', discards: 1 };
+  const config: ScoringConfig = { seriesType: 'short', discards: 1, dncPoints: 3 };
   const series = createMockSeries();
   const mergeStrategy = series.entryAlgorithm;
 
@@ -124,8 +124,8 @@ describe('score (Orchestrator)', () => {
     let seriesResults;
 
     ({ scoredRaces, seriesResults } = score(
-      race1, competitors1, scoredRaces, entries, config,
-      series.primaryScoringConfiguration, mergeStrategy, distinctMergeGroups(entries),
+      race1, competitors1, scoredRaces, entries, { ...config, dncPoints: distinctMergeGroups(entries) + 1 },
+      series.primaryScoringConfiguration, mergeStrategy,
     ));
 
     let race1Result = scoredRaces.find(r => r.id === 'race1')!;
@@ -142,8 +142,8 @@ describe('score (Orchestrator)', () => {
     entries = mergeEntries(entries, buildSeriesEntries(seeds2));
 
     ({ scoredRaces, seriesResults } = score(
-      race2, competitors2, scoredRaces, entries, config,
-      series.primaryScoringConfiguration, mergeStrategy, distinctMergeGroups(entries),
+      race2, competitors2, scoredRaces, entries, { ...config, dncPoints: distinctMergeGroups(entries) + 1 },
+      series.primaryScoringConfiguration, mergeStrategy,
     ));
 
     const dncPoints = 3 + 1;
@@ -169,8 +169,8 @@ describe('score (Orchestrator)', () => {
     let entries = buildSeriesEntries(seeds1);
 
     let { scoredRaces } = score(
-      race1, competitors1, [], entries, config,
-      series.primaryScoringConfiguration, mergeStrategy, distinctMergeGroups(entries),
+      race1, competitors1, [], entries, { ...config, dncPoints: distinctMergeGroups(entries) + 1 },
+      series.primaryScoringConfiguration, mergeStrategy,
     );
 
     let race1Result = scoredRaces.find(r => r.id === 'race1')!;
@@ -184,8 +184,8 @@ describe('score (Orchestrator)', () => {
     entries = mergeEntries(entries, buildSeriesEntries(seeds2));
 
     ({ scoredRaces } = score(
-      race2, competitors2, scoredRaces, entries, config,
-      series.primaryScoringConfiguration, mergeStrategy, distinctMergeGroups(entries),
+      race2, competitors2, scoredRaces, entries, { ...config, dncPoints: distinctMergeGroups(entries) + 1 },
+      series.primaryScoringConfiguration, mergeStrategy,
     ));
 
     race1Result = scoredRaces.find(r => r.id === 'race1')!;
@@ -202,8 +202,8 @@ describe('score (Orchestrator)', () => {
     let entries = buildSeriesEntries(seeds1);
 
     let { scoredRaces } = score(
-      race1, competitors1, [], entries, config,
-      series.primaryScoringConfiguration, mergeStrategy, distinctMergeGroups(entries),
+      race1, competitors1, [], entries, { ...config, dncPoints: distinctMergeGroups(entries) + 1 },
+      series.primaryScoringConfiguration, mergeStrategy,
     );
 
     const race2 = createMockRace('race2', 1);
@@ -215,8 +215,8 @@ describe('score (Orchestrator)', () => {
     entries = mergeEntries(entries, buildSeriesEntries(seeds2));
 
     ({ scoredRaces } = score(
-      race2, competitors2, scoredRaces, entries, config,
-      series.primaryScoringConfiguration, mergeStrategy, distinctMergeGroups(entries),
+      race2, competitors2, scoredRaces, entries, { ...config, dncPoints: distinctMergeGroups(entries) + 1 },
+      series.primaryScoringConfiguration, mergeStrategy,
     ));
 
     const race2Result = scoredRaces.find(r => r.id === 'race2')!;

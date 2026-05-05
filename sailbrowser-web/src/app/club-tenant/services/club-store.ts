@@ -2,14 +2,46 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FirebaseApp } from '@angular/fire/app';
-import { arrayRemove, arrayUnion, doc, docData, DocumentReference, getFirestore, setDoc, updateDoc, } from '@angular/fire/firestore';
+import {
+  arrayRemove,
+  arrayUnion,
+  doc,
+  docData,
+  DocumentReference,
+  getFirestore,
+  setDoc,
+  updateDoc,
+} from '@angular/fire/firestore';
 import { firstValueFrom, filter } from 'rxjs';
-import { Club } from '../model/club';
+import { Club, ScoringDefaults } from '../model/club';
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 import { BoatClass } from '../model/boat-class';
-import { Season } from 'app/race-calender/model/season';
+import { Season, SeasonStatus } from 'app/race-calender/model/season';
+
+function normalizeSeasonStatus(value: SeasonStatus | string | undefined): SeasonStatus {
+  return value === 'archived' ? 'archived' : 'current';
+}
 import { dataObjectConverter } from 'app/shared/firebase/firestore-helper';
 import { DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES } from 'app/results-input/services/suspect-time-rules';
+
+
+const DEFAULT_LONG_SERIES_DEFAULTS: ScoringDefaults = {
+  discards: [3, 5, 7, 9, 11, 13, 15],
+  dncCalculation: {
+    basis: 'SeriesEntries',
+    offset: 1,
+    excludeNeverRaced: true,
+  },
+};
+
+const DEFAULT_SHORT_SERIES_DEFAULTS: ScoringDefaults = {
+  discards: [3, 5, 7, 9, 11, 13, 15],
+  dncCalculation: {
+    basis: 'SeriesEntries',
+    offset: 1,
+    excludeNeverRaced: false,
+  },
+};
 
 @Injectable({
   providedIn: 'root',
@@ -44,7 +76,11 @@ export class ClubStore {
       classes: [], 
       seasons: [],
       supportedHandicapSchemes: [],
+      laps: false,
+      oodScoring: { calculationCode: 'AvgAll', maxDuties: 1 },
       suspectTimeThresholds: DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES,
+      longSeriesDefaults: DEFAULT_LONG_SERIES_DEFAULTS,
+      shortSeriesDefaults: DEFAULT_SHORT_SERIES_DEFAULTS,
     }
   });
 
@@ -74,11 +110,20 @@ export class ClubStore {
     const sortedClasses = [...club.classes].sort((a, b) =>
       a.name.localeCompare(b.name),
     );
+    const seasons = club.seasons.map((s) => ({
+      ...s,
+      status: normalizeSeasonStatus(s.status as SeasonStatus | string | undefined),
+    }));
 
     return {
       ...club,
+      laps: club.laps ?? false,
+      oodScoring: club.oodScoring ?? { calculationCode: 'AvgAll', maxDuties: 1 },
       fleets: sortedFleets,
       classes: sortedClasses,
+      seasons,
+      longSeriesDefaults: club.longSeriesDefaults ?? DEFAULT_LONG_SERIES_DEFAULTS,
+      shortSeriesDefaults: club.shortSeriesDefaults ?? DEFAULT_SHORT_SERIES_DEFAULTS, 
       suspectTimeThresholds: {
         ...DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES,
         ...(club.suspectTimeThresholds ?? {}),
@@ -104,7 +149,7 @@ export class ClubStore {
   }
 
   async update(update: Partial<Club>) {
-    return await setDoc(this.clubDoc()!, update);
+    return await setDoc(this.clubDoc()!, update, { merge: true });
   }
 
   async addFleet(fleet: Fleet) {

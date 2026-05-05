@@ -9,11 +9,15 @@ export interface OODScoring {
    maxDuties: number;
 }
 
+export interface DncCalculation {
+   basis: 'SeriesEntries' | 'MaxRaceCompetitors';
+   offset: number;
+   excludeNeverRaced: boolean;
+}
+
 export interface ScoringDefaults {
    discards: number[];
-   dncCalculation: 'SeriesEntries' | 'MaxRaceCompetitors';
-   oodScoring: OODScoring;
-   laps: boolean;
+   dncCalculation: DncCalculation;
 }
 
 export interface Club {
@@ -27,7 +31,9 @@ export interface Club {
    seasons: Season[];
    logoUrl?: string;
    supportedHandicapSchemes: HandicapScheme[];
-   longSeriesDefaults?: ScoringDefaults;
-   shortSeriesDefaults?: ScoringDefaults;
+   laps?: boolean;
+   oodScoring?: OODScoring;
+   longSeriesDefaults: ScoringDefaults;
+   shortSeriesDefaults: ScoringDefaults;
    suspectTimeThresholds?: SuspectTimeThresholdOverrides;
 }
