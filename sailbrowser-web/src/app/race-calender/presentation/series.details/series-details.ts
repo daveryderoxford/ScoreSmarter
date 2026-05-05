@@ -15,6 +15,7 @@ import { Race, RaceCalendarStore, Series } from 'app/race-calender';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { ClubStore } from 'app/club-tenant';
 import { getFleetName } from 'app/club-tenant/model/fleet';
+import { formatDiscardScheduleSummary } from 'app/scoring/model/discard-profile';
 
 /** Displays series details with a list of races 
  * Includes buttons to add/edit races and duplicate the series
@@ -83,12 +84,11 @@ export class SeriesDetails {
       return seriesEntryGroupingDetails.find(a => a.name === algorithm)?.displayName ?? '';
    });
 
-   /** Short label; full per-race ladder is edited in the series form. */
+   /** Short label from stored milestone list; edit in series form. */
    discardSummary = computed(() => {
       const d = this.series()?.discards;
       if (!d?.length) return '—';
-      const cap = d[d.length - 1]!;
-      return `Table of ${d.length} races; up to ${cap} discard(s) once the table ends (edit series for full ladder).`;
+      return formatDiscardScheduleSummary(d);
    });
 
    races = this.rc.getSeriesRaces(this.id);

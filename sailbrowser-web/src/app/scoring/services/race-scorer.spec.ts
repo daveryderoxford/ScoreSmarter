@@ -83,7 +83,7 @@ function scoreRaceHelper(
   seriesCompetitorCount: number,
 ): RaceResult[] {
   const results = buildRaceResults(competitorsOf(fixtures), entriesOf(fixtures), scheme, 'classSailNumberHelm');
-  return scoreRace(race, results, scheme, seriesType, seriesCompetitorCount);
+  return scoreRace(race, results, scheme, seriesType, seriesCompetitorCount + 1);
 }
 
 describe('RaceScorer', () => {
@@ -462,12 +462,12 @@ describe('RaceScorer', () => {
     results[1].correctedTime = 700;
 
     // First scoring with 10 competitors
-    calculateRacePoints(results, mockRace.type, 'PY', 'short', 10);
+    calculateRacePoints(results, mockRace.type, 'PY', 'short', 11);
     // Penalty = 20% of 10 = 2. 2nd place (2 pts) + 2 = 4 pts.
     expect(results.find(r => r.sailNumber === 102)!.points).toBe(4);
 
     // Re-score with 20 competitors
-    calculateRacePoints(results, mockRace.type, 'PY', 'short', 20);
+    calculateRacePoints(results, mockRace.type, 'PY', 'short', 21);
     // Penalty = 20% of 20 = 4. 2nd place (2 pts) + 4 = 6 pts.
     expect(results.find(r => r.sailNumber === 102)!.points).toBe(6);
 

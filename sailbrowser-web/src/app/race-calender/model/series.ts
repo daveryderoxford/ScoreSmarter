@@ -19,8 +19,8 @@ export interface Series {
     */
    entryAlgorithm: SeriesEntryMatchingStrategy;
    /**
-    * Discard allowance after each race sailed: index `k` applies after `k + 1` races (`raceCount === k + 1` in scoring).
-    * Populated on read via {@link hydrateSeriesFromFirestore}; never rely on Firestore-only legacy fields in app code.
+    * Milestone race numbers (1-based, non-decreasing): each entry adds one allowed discard once that many races have been sailed.
+    * Scoring derives cumulative allowance with `generateDiscardArray` in `discard-profile`.
     */
    discards: number[];
 

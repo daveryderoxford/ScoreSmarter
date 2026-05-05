@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { startWith } from 'rxjs';
 import { ClubStore } from 'app/club-tenant';
+import { RaceCalendarStore } from '../services/full-race-calander';
 import { Series } from '../model/series';
 import { SeriesScoringScheme, seriesScoringSchemeDetails } from 'app/scoring/model/scoring-algotirhm';
 import { getConfigName, ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
@@ -19,11 +20,10 @@ import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-sch
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import {
-  DISCARD_PROFILE_DEFAULT_ROWS,
-  defaultLongSeriesDiscardTable,
-  defaultShortSeriesDiscardTable,
-  padDiscardTableToLength,
-  validateDiscardTable,
+  DEFAULT_LONG_DISCARDS,
+  DEFAULT_SHORT_DISCARDS,
+  formatDiscardScheduleSummary,
+  validateDiscardRaceSequence,
 } from 'app/scoring/model/discard-profile';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 
@@ -95,10 +95,7 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
         </mat-form-field>
 
         <div class="discard-box">
-          <p class="discard-summary">
-            Discards allowed by races sailed — {{ discardRows() }} races planned in table / last allowance
-            {{ lastDiscardAllowance() }}.
-          </p>
+          <p class="discard-summary">{{ discardScheduleBlurb() }}</p>
           <button matButton="outlined" type="button" (click)="editDiscardSchedule()">
             Edit discard schedule…
           </button>
@@ -204,8 +201,12 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 })
 export class SeriesForm {
   private readonly clubStore = inject(ClubStore);
+  private readonly calendarStore = inject(RaceCalendarStore);
   private readonly dialogs = inject(DialogsService);
   private readonly snackbar = inject(MatSnackBar);
+
+  /** When editing an existing series, used to count races on the calendar. */
+  private readonly calendarSeriesId = signal<string>('');
 
   series = input<Series | undefined>();
   busy = input<boolean>(false);
@@ -215,13 +216,18 @@ export class SeriesForm {
 
   save = output<Series>();
 
-  /** After n races sailed, cumulative allowed discards row (indexed 0 = race 1). */
-  readonly seriesDiscards = signal<number[]>(
-    padDiscardTableToLength(defaultShortSeriesDiscardTable(), DISCARD_PROFILE_DEFAULT_ROWS),
-  );
+  /**
+   * Stored milestone race numbers (same as `Series.discards`). New series seeds short default triggers; editing loads from series (may be empty).
+   */
+  readonly seriesDiscards = signal<number[]>([...DEFAULT_SHORT_DISCARDS]);
 
-  discardRows = computed(() => this.seriesDiscards().length);
-  lastDiscardAllowance = computed(() => this.seriesDiscards()[this.seriesDiscards().length - 1] ?? 0);
+  discardScheduleBlurb = computed(() => formatDiscardScheduleSummary(this.seriesDiscards()));
+
+  scheduledRaceCount = computed(() => {
+    const sid = this.calendarSeriesId();
+    if (!sid) return 0;
+    return this.calendarStore.allRaces().filter(r => r.seriesId === sid).length;
+  });
 
   form = new FormGroup({
     id: new FormControl('', { nonNullable: true }),
@@ -251,6 +257,7 @@ export class SeriesForm {
     effect(() => {
       const s = this.series();
       if (s) {
+        this.calendarSeriesId.set(s.id);
         this.patchFromSeries(s);
       }
     });
@@ -274,11 +281,11 @@ export class SeriesForm {
     });
   }
 
-  /** Until a club admin switchboard persists per-club ladders, apps use fixed defaults from `discard-profile`. */
+  /** Until a club admin switchboard persists per-club schedules, apps use fixed defaults from `discard-profile`. */
   private applyClubDefaultDiscards(alg: SeriesScoringScheme) {
-    const table =
-      alg === 'long' ? defaultLongSeriesDiscardTable() : defaultShortSeriesDiscardTable();
-    this.seriesDiscards.set(padDiscardTableToLength(table, DISCARD_PROFILE_DEFAULT_ROWS));
+    this.seriesDiscards.set([
+      ...(alg === 'long' ? DEFAULT_LONG_DISCARDS : DEFAULT_SHORT_DISCARDS),
+    ]);
   }
 
   private patchFromSeries(series: Series) {
@@ -287,7 +294,7 @@ export class SeriesForm {
       series.secondaryScoringConfigurations.forEach(config => this.addSecondaryConfig(config));
     }
 
-    this.seriesDiscards.set(padDiscardTableToLength(series.discards, DISCARD_PROFILE_DEFAULT_ROWS));
+    this.seriesDiscards.set([...(series.discards ?? [])]);
 
     this.form.patchValue({
       id: series.id,
@@ -303,13 +310,18 @@ export class SeriesForm {
 
   async editDiscardSchedule(): Promise<void> {
     const name = this.form.get('name')?.value || 'Series';
+    const raceCountForDialog = Math.max(
+      1,
+      this.seriesDiscards().length,
+      this.scheduledRaceCount(),
+    );
     const next = await this.dialogs.editDiscardProfile({
       title: `${name}: discard schedule`,
-      raceCount: DISCARD_PROFILE_DEFAULT_ROWS,
+      raceCount: raceCountForDialog,
       discards: this.seriesDiscards(),
     });
     if (next) {
-      if (validateDiscardTable(next).length > 0) {
+      if (validateDiscardRaceSequence(next).length > 0) {
         return;
       }
       this.seriesDiscards.set(next);
@@ -390,13 +402,14 @@ export class SeriesForm {
     this.secondaryConfigs.removeAt(index);
   }
 
-  onSubmit() {
+  async onSubmit() {
     if (!this.form.valid) return;
 
-    const issues = validateDiscardTable(this.seriesDiscards());
+    const triggers = this.seriesDiscards();
+    const issues = validateDiscardRaceSequence(triggers);
     if (issues.length > 0) {
       const f = issues[0];
-      this.snackbar.open(`Discard schedule invalid: Race ${f.raceIndex}: ${f.message}`, 'Dismiss', {
+      this.snackbar.open(`Discard schedule invalid: Row ${f.raceIndex}: ${f.message}`, 'Dismiss', {
         duration: 7000,
       });
       return;
@@ -435,7 +448,7 @@ export class SeriesForm {
       archived: formValue.archived,
       scoringAlgorithm: formValue.scoringAlgorithm,
       entryAlgorithm: formValue.entryAlgorithm as Series['entryAlgorithm'],
-      discards: this.seriesDiscards(),
+      discards: triggers,
       primaryScoringConfiguration,
       secondaryScoringConfigurations,
     };

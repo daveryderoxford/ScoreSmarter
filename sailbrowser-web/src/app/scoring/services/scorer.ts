@@ -15,10 +15,8 @@ import { IntermediateSeriesResult, scoreSeries, ScoringConfig } from './series-s
  * 3. Performs series scoring (handles discards and RDG).
  * 4. Applies series-dependent scores (like averages) back to the grid.
  *
- * `seriesCompetitorCount` is the count of *distinct merge groups* in the
- * series (NOT the count of per-hull entries) and must be supplied by the
- * caller. `mergeStrategy` controls how per-hull entries are collapsed into
- * competitors at series-aggregation time (see `mergeKeyFor`).
+ * `mergeStrategy` controls how per-hull entries are collapsed into competitors
+ * at series-aggregation time (see `mergeKeyFor`).
  *
  * @returns An object containing the final scored races and series results.
  */
@@ -30,7 +28,6 @@ export function score(
   config: ScoringConfig,
   scoringConfiguration: ScoringConfiguration,
   mergeStrategy: MergeStrategy,
-  seriesCompetitorCount: number,
 ): { scoredRaces: PublishedRace[], seriesResults: IntermediateSeriesResult[]; } {
 
   const handicapScheme = scoringConfiguration.handicapScheme || 'PY';
@@ -41,14 +38,14 @@ export function score(
   // 2. Score the current race and update it in the grid.
   if (raceToScore) {
     const initialResults = buildRaceResults(competitorsInRace, seriesEntries, handicapScheme, mergeStrategy);
-    const scoredResults = scoreRace(raceToScore, initialResults, handicapScheme, config.seriesType, seriesCompetitorCount);
+    const scoredResults = scoreRace(raceToScore, initialResults, handicapScheme, config.seriesType, config.dncPoints);
     updateGridWithRace(scoringGrid, raceToScore, scoredResults);
   }
 
   // 2.5 Re-score all races in the grid to ensure series-size
   // dependent penalties (SCP, ZFP, etc.) are correct in the othe races.
   for (const race of scoringGrid) {
-    calculateRacePoints(race.results, race.type, handicapScheme, config.seriesType, seriesCompetitorCount);
+    calculateRacePoints(race.results, race.type, handicapScheme, config.seriesType, config.dncPoints);
   }
 
   // 2.6 Sort by calendar race index before series scoring. Publish/score order may follow

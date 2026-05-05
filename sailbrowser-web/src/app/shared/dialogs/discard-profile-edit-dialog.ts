@@ -1,8 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormArray, FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,
@@ -11,21 +10,14 @@ import {
   MatDialogTitle,
 } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
-import {
-  DISCARD_PROFILE_CAP,
-  DISCARD_PROFILE_DEFAULT_ROWS,
-  discardLadderFromTriggerRaces,
-  formatDiscardScheduleSummary,
-  padDiscardTableToLength,
-  triggerRacesFromDiscardLadder,
-  validateDiscardTriggerRaceSequence,
-  validateDiscardTable,
-} from 'app/scoring/model/discard-profile';
+import { formatDiscardScheduleSummary, validateDiscardRaceSequence } from 'app/scoring/model/discard-profile';
 
+/** `discards` are milestone race numbers; returned value is the same shape (triggers). */
 export interface DiscardProfileDialogData {
   title: string;
-  /** Rows for races 1..raceCount inclusive when expanding the ladder */
+  /** Calendar / UI hint for sizing; does not change stored trigger list. */
   raceCount: number;
   discards: readonly number[];
 }
@@ -78,7 +70,6 @@ function ordinalEn(n: number): string {
                 type="number"
                 step="1"
                 [attr.min]="minAfterRaceAt(ri)"
-                [attr.max]="PROFILE_CAP"
                 inputmode="numeric"
                 class="bp-input bp-input-num"
                 [formControl]="triggerControlAt(ri)"
@@ -228,14 +219,10 @@ export class DiscardProfileEditDialog {
   readonly data = inject<DiscardProfileDialogData>(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
 
-  readonly PROFILE_CAP = DISCARD_PROFILE_CAP;
-
   readonly errorText = signal<string>('');
   readonly summaryText = signal<string>('');
 
   readonly displayedColumns: string[] = ['discardLabel', 'afterRace', 'delete'];
-
-  private readonly initialLadder = padDiscardTableToLength(this.data.discards, Math.max(1, this.data.raceCount));
 
   readonly triggerRows = this.fb.array<FormControl<number>>(this.buildInitialTriggers());
 
@@ -258,24 +245,23 @@ export class DiscardProfileEditDialog {
   minAfterRaceAt(rowIndex: number): number {
     if (rowIndex <= 0) return 1;
     const prev = Number(this.triggerRows.at(rowIndex - 1)?.value);
-    return Number.isFinite(prev) ? Math.min(DISCARD_PROFILE_CAP, Math.max(1, Math.floor(prev))) : 1;
+    return Number.isFinite(prev) ? Math.max(1, Math.floor(prev)) : 1;
   }
 
   private buildInitialTriggers(): FormControl<number>[] {
-    const races = triggerRacesFromDiscardLadder(this.initialLadder);
-    return races.map(r => this.newTriggerControl(Number(r)));
+    const triggers = [...this.data.discards].filter(
+      t => typeof t === 'number' && Number.isFinite(t) && t >= 1,
+    );
+    return triggers.map(r => this.newTriggerControl(Number(r)));
   }
 
   private newTriggerControl(initial: number): FormControl<number> {
     const v =
-      Number.isFinite(initial) && initial >= 1
-        ? Math.min(DISCARD_PROFILE_CAP, Math.floor(initial))
-        : 1;
+      Number.isFinite(initial) && initial >= 1 ? Math.floor(initial) : 1;
     return this.fb.nonNullable.control(v, {
       validators: [
         Validators.required,
         Validators.min(1),
-        Validators.max(DISCARD_PROFILE_CAP),
       ],
       updateOn: 'blur',
     });
@@ -293,7 +279,7 @@ export class DiscardProfileEditDialog {
   }
 
   canAddDiscard(): boolean {
-    return this.triggerRows.length < DISCARD_PROFILE_CAP;
+    return true;
   }
 
   addDiscard(): void {
@@ -301,7 +287,7 @@ export class DiscardProfileEditDialog {
     const lastIdx = this.triggerRows.length - 1;
     const next =
       lastIdx >= 0
-        ? Math.min(DISCARD_PROFILE_CAP, Math.max(1, Math.floor(Number(this.triggerRows.at(lastIdx)!.value))))
+        ? Math.max(1, Math.floor(Number(this.triggerRows.at(lastIdx)!.value)))
         : 1;
     this.triggerRows.push(this.newTriggerControl(next));
     this.rebuildIndices();
@@ -335,7 +321,7 @@ export class DiscardProfileEditDialog {
     if (i <= 0) return 1;
     const pv = Math.floor(Number(this.triggerRows.at(i - 1)!.value));
     const base = Number.isFinite(pv) ? pv : 1;
-    return Math.min(DISCARD_PROFILE_CAP, Math.max(1, base));
+    return Math.max(1, base);
   }
 
   /** Sets per-row validators; does not coerce values (coercion happens on blur / save). */
@@ -345,14 +331,13 @@ export class DiscardProfileEditDialog {
       this.triggerRows.at(i)!.setValidators([
         Validators.required,
         Validators.min(minV),
-        Validators.max(DISCARD_PROFILE_CAP),
       ]);
       this.triggerRows.at(i)!.updateValueAndValidity({ emitEvent: false });
     }
   }
 
   /**
-   * Forward pass from `startRow`: coerce each row to ≥ previous and ≤ cap.
+   * Forward pass from `startRow`: coerce each row to ≥ previous.
    * `normalizeEmpty`: on blur/save fill cleared/invalid fields with lawful min for that row.
    */
   private clampTriggersFromRow(startRow: number, opts: { normalizeEmpty: boolean }): void {
@@ -367,7 +352,7 @@ export class DiscardProfileEditDialog {
           : (() => {
               const p = Math.floor(Number(this.triggerRows.at(i - 1)!.value));
               const base = Number.isFinite(p) ? p : 1;
-              return Math.min(DISCARD_PROFILE_CAP, Math.max(1, base));
+              return Math.max(1, base);
             })();
       const c = this.triggerRows.at(i)!;
       const raw = Number(c.value);
@@ -377,7 +362,7 @@ export class DiscardProfileEditDialog {
         }
         continue;
       }
-      let v = Math.floor(Math.min(Math.max(raw, minV), DISCARD_PROFILE_CAP));
+      let v = Math.floor(Math.max(raw, minV));
       if (Number(c.value) !== v) {
         c.setValue(v, { emitEvent: false });
       }
@@ -386,9 +371,7 @@ export class DiscardProfileEditDialog {
 
   private refreshSummaryPreview(): void {
     const raw = this.readTriggerValues().filter(v => Number.isFinite(v));
-    const target = computeTargetTriggerLen(raw, this.data);
-    const expanded = discardLadderFromTriggerRaces(raw, target);
-    this.summaryText.set(formatDiscardScheduleSummary(expanded));
+    this.summaryText.set(formatDiscardScheduleSummary(raw));
   }
 
   cancel(): void {
@@ -407,34 +390,13 @@ export class DiscardProfileEditDialog {
     }
 
     const triggers = this.readTriggerValues();
-    const seqIssues = validateDiscardTriggerRaceSequence(triggers);
+    const seqIssues = validateDiscardRaceSequence(triggers);
     if (seqIssues.length > 0) {
       const f = seqIssues[0]!;
       this.errorText.set(`Row ${f.raceIndex}: ${f.message}`);
       return;
     }
 
-    const targetLen = computeTargetTriggerLen(triggers, this.data);
-    const ladder = discardLadderFromTriggerRaces(triggers, targetLen);
-
-    const tableIssues = validateDiscardTable(ladder);
-    if (tableIssues.length > 0) {
-      const f = tableIssues[0]!;
-      this.errorText.set(`Profile — race ${f.raceIndex}: ${f.message}`);
-      return;
-    }
-
-    this.dialogRef.close(ladder);
+    this.dialogRef.close(triggers);
   }
-}
-
-function computeTargetTriggerLen(triggers: readonly number[], data: DiscardProfileDialogData): number {
-  let maxTrig = 0;
-  for (const t of triggers) {
-    if (Number.isFinite(t) && t > maxTrig) maxTrig = t;
-  }
-  return Math.min(
-    DISCARD_PROFILE_CAP,
-    Math.max(1, data.raceCount, Math.floor(maxTrig), DISCARD_PROFILE_DEFAULT_ROWS),
-  );
 }

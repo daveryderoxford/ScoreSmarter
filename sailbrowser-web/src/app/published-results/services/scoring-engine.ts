@@ -7,7 +7,7 @@ import { RaceCompetitorStore } from 'app/results-input/services/race-competitor-
 import { score } from 'app/scoring';
 import { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import { getHandicapValue } from 'app/scoring/model/handicap';
-import { discardAllowanceAfterRaceCount } from 'app/scoring/model/discard-profile';
+import { discardsForRaceIndex } from 'app/scoring/model/discard-profile';
 import { isInFleet } from 'app/scoring/services/fleet-scoring';
 import { mergeKeyFor } from 'app/scoring/services/merge-key';
 import { groupBy } from 'app/shared/utils/group-by';
@@ -17,8 +17,10 @@ import { PublishedSeries } from '../model/published-series';
 import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH } from './published-results-store';
 
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
+import { DncCalculation } from 'app/club-tenant/model/club';
 import { competitorsForConfigRace, doesRaceRequireHandicap, isRaceScorable } from './scoring-publish-filters';
 import { startOfDay, subDays } from 'date-fns';
+import { computeDncPoints } from 'app/scoring/services/dnc-policy';
 
 const SCORING_CANDIDATE_STATUSES = new Set<Race['status']>([
   'In progress',
@@ -170,7 +172,16 @@ export class ScoringEngine {
   }
 
   private calculateDiscards(series: Series, raceCount: number): number {
-    return discardAllowanceAfterRaceCount(series, raceCount);
+    return discardsForRaceIndex(series, raceCount);
+  }
+
+  /** Fallback when club series defaults omit `dncCalculation` (e.g. club not loaded). */
+  private defaultDncPolicy(): DncCalculation {
+    return {
+      basis: 'SeriesEntries',
+      offset: 1,
+      excludeNeverRaced: false,
+    };
   }
 
   private async rescoreAllRacesForConfig(
@@ -185,9 +196,9 @@ export class ScoringEngine {
     seriesEntries: SeriesEntry[]
   ): Promise<void> {
     if (racesToScore.length === 0) {
-      this.batchSavePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, []);
+      this.savePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, []);
       const existingRaces = await this.readPublishedRaces(publishedSeriesId);
-      this.batchSavePublishedRaces(batch, publishedSeriesId, [], existingRaces);
+      this.savePublishedRaces(batch, publishedSeriesId, [], existingRaces);
       await this.prepareSeasonUpdate(
         seasonUpdates,
         series,
@@ -212,26 +223,63 @@ export class ScoringEngine {
     let existingPublishedRaces: PublishedRace[] = [];
     let currentSeriesResults: any[] = [];
 
-    // Distinct merge groups (after fleet/handicap filtering) drive penalty
-    // scores like DNF and SCP. With per-hull SeriesEntries this can be lower
-    // than `filteredSeriesEntries.length` whenever the strategy collapses
-    // hulls (e.g. score-by-helm).
     const mergeStrategy = series.entryAlgorithm;
-    const distinctMergeGroups = new Set(
-      filteredSeriesEntries.map(e => mergeKeyFor(e, mergeStrategy)),
-    ).size;
+    const club = this.clubStore.club();
+    const seriesDefaults = series.scoringAlgorithm === 'long'
+      ? club?.longSeriesDefaults
+      : club?.shortSeriesDefaults;
+    const dncPolicy = seriesDefaults?.dncCalculation ?? this.defaultDncPolicy();
+    const filteredEntriesById = new Map(filteredSeriesEntries.map(entry => [entry.id, entry]));
+    const dncBasisRaces: PublishedRace[] = racesToScore.map(race => {
+      const filteredCompetitors = competitorsForConfigRace(race, config, allSeriesCompetitors, seriesEntries);
+      return {
+        ...race,
+        results: filteredCompetitors
+          .map(comp => {
+            const entry = filteredEntriesById.get(comp.seriesEntryId);
+            if (!entry) return null;
+            return {
+              seriesEntryId: comp.seriesEntryId,
+              competitorKey: mergeKeyFor(entry, mergeStrategy),
+            };
+          })
+          .filter((result): result is { seriesEntryId: string; competitorKey: string } => result !== null)
+          .map(result => ({
+            seriesEntryId: result.seriesEntryId,
+            competitorKey: result.competitorKey,
+            rank: 0,
+            boatClass: '',
+            sailNumber: 0,
+            helm: '',
+            crew: '',
+            club: '',
+            personalHandicapBand: undefined,
+            handicap: 0,
+            laps: 0,
+            startTime: race.scheduledStart,
+            finishTime: race.scheduledStart,
+            elapsedTime: 0,
+            correctedTime: 0,
+            points: 0,
+            resultCode: 'DNC',
+          })),
+      };
+    });
+    const dncPoints = computeDncPoints(dncPolicy, dncBasisRaces, filteredSeriesEntries, mergeStrategy);
 
     for (let i = 0; i < racesToScore.length; i++) {
       const race = racesToScore[i];
 
       const filteredCompetitors = competitorsForConfigRace(race, config, allSeriesCompetitors, seriesEntries);
 
-      const raceCount = i + 1;
+      const raceIndex = i + 1;
 
       const { scoredRaces, seriesResults } = score(race, filteredCompetitors, existingPublishedRaces, filteredSeriesEntries, {
         seriesType: series.scoringAlgorithm,
-        discards: this.calculateDiscards(series, raceCount),
-      }, config, mergeStrategy, distinctMergeGroups);
+        discards: this.calculateDiscards(series, raceIndex),
+        dncPoints,
+        excludeNeverRaced: dncPolicy.excludeNeverRaced,
+      }, config, mergeStrategy);
 
       scoredRaces.forEach((r: PublishedRace) => {
         r.seriesId = publishedSeriesId;
@@ -242,9 +290,9 @@ export class ScoringEngine {
       currentSeriesResults = seriesResults;
     }
 
-    this.batchSavePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, currentSeriesResults);
+    this.savePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, currentSeriesResults);
     const existingRaces = await this.readPublishedRaces(publishedSeriesId);
-    this.batchSavePublishedRaces(batch, publishedSeriesId, existingPublishedRaces, existingRaces);
+    this.savePublishedRaces(batch, publishedSeriesId, existingPublishedRaces, existingRaces);
     await this.prepareSeasonUpdate(
       seasonUpdates,
       series,
@@ -263,7 +311,7 @@ export class ScoringEngine {
     return snapshot.docs.map(doc => doc.data());
   }
 
-  private batchSavePublishedSeries(batch: WriteBatch, publishedSeriesId: string, publishedSeriesName: string, fleetId: string, results: any[]): void {
+  private savePublishedSeries(batch: WriteBatch, publishedSeriesId: string, publishedSeriesName: string, fleetId: string, results: any[]): void {
     const seriesDoc = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, publishedSeriesId);
     const publishedSeries: PublishedSeries = {
       id: publishedSeriesId,
@@ -274,7 +322,7 @@ export class ScoringEngine {
     batch.set(seriesDoc, publishedSeries);
   }
 
-  private batchSavePublishedRaces(batch: WriteBatch, publishedSeriesId: string, scoredRaces: PublishedRace[], existingRaces: PublishedRace[]): void {
+  private savePublishedRaces(batch: WriteBatch, publishedSeriesId: string, scoredRaces: PublishedRace[], existingRaces: PublishedRace[]): void {
     // Save all scored races
     scoredRaces.forEach(race => {
       const raceDoc = this.tenant.docRef<PublishedRace>(PUBLISHED_SERIES_PATH, publishedSeriesId, 'races', race.id);
@@ -298,7 +346,7 @@ export class ScoringEngine {
     configsToScore: ScoringConfiguration[]
   ): void {
     const currentConfigIds = new Set(configsToScore.map(c => c.id === series.primaryScoringConfiguration.id ? series.id : `${series.id}_${c.id}`));
-    for (const [seasonId, seasonData] of seasonUpdates) {
+    for (const [, seasonData] of seasonUpdates) {
       const staleSeries = seasonData.series.filter(s => s.baseSeriesId === series.id && !currentConfigIds.has(s.id));
       for (const stale of staleSeries) {
         console.log(`ScoringEngine: Cleaning up stale series ${stale.id}`);

@@ -1,4 +1,6 @@
-<app-toolbar title="Fleets"></app-toolbar>
+<app-toolbar title="Fleets">
+  <app-import-export-menu context="fleets" (exportCsv)="exportCsv()" (importFile)="importCsv($event)" />
+</app-toolbar>
 
 <div class="content">
 

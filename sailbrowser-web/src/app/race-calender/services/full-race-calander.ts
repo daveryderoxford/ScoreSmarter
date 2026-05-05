@@ -6,7 +6,6 @@ import { isSameDay } from 'date-fns';
 import { map, Observable, tap } from 'rxjs';
 import { Race } from '../model/race';
 import { Series } from '../model/series';
-import { hydrateSeriesFromFirestore, type RawSeriesFirestoreDocument } from '../model/series-hydrate';
 import { RaceCalendarStoreBase, RaceSeriesDetails, seriesSort, sortRaces } from './race-calendar-store-base';
 
 /** Service that returns the complete race calander 
@@ -26,7 +25,7 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
          ).pipe(
             map(seriesList =>
                [...seriesList]
-                  .map(s => hydrateSeriesFromFirestore(s as RawSeriesFirestoreDocument))
+                  .map(s => s)
                   .sort(seriesSort),
             ),
             tap(seriesList => console.log(`FullRaceCalander. Loaded ${seriesList.length} series`))
@@ -76,9 +75,7 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
       // Fallback to fetching directly from Firestore
       const seriesDocRef = this.ref(id);
       const snapshot = await getDoc(seriesDocRef);
-      return snapshot.exists()
-         ? hydrateSeriesFromFirestore({ ...snapshot.data(), id: snapshot.id } as RawSeriesFirestoreDocument)
-         : undefined;
+      return snapshot.exists() ? snapshot.data() : undefined;
    }
 
    // Fallback fetch for a specific race if not in cache

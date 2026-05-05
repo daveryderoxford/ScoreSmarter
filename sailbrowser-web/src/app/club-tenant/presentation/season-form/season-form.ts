@@ -3,8 +3,9 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { SubmitButton } from 'app/shared/components/submit-button';
-import { Season } from 'app/race-calender/model/season';
+import { Season, SeasonStatus } from 'app/race-calender/model/season';
 
 @Component({
   selector: 'app-season-form',
@@ -21,7 +22,7 @@ import { Season } from 'app/race-calender/model/season';
       margin-top: 16px;
     }
   `,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule,
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule,
     MatButtonModule, SubmitButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -34,12 +35,17 @@ export class SeasonForm {
 
   form = new FormGroup({
     name: new FormControl('', { validators: [Validators.required] }),
+    status: new FormControl<SeasonStatus>('current', { validators: [Validators.required] }),
   });
 
   constructor() {
     effect(() => {
-      if (this.season()) {
-        this.form.patchValue(this.season()!);
+      const s = this.season();
+      if (s) {
+        this.form.patchValue({
+          name: s.name,
+          status: s.status === 'archived' ? 'archived' : 'current',
+        });
       }
     });
   }

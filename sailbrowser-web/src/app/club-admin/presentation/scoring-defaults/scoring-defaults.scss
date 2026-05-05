@@ -1,0 +1,131 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background-color: var(--mat-sys-surface);
+}
+
+.defaults-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--mat-sys-on-surface);
+  }
+
+  p {
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 1rem;
+    margin: 0;
+  }
+}
+
+.tab-content {
+  padding: 24px 0;
+}
+
+.config-card {
+  border-top:5px;
+  border-bottom: 5px;
+  border-radius: 12px;
+  background-color: var(--mat-sys-surface-container-lowest);
+  padding: 8px;
+}
+
+.dnc-ws-preset {
+  margin-bottom: 16px;
+}
+
+.dnc-ws-hint {
+  margin: 8px 0 0 0;
+  max-width: 42rem;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--mat-sys-outline);
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.flex-2 {
+  flex: 2;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.discard-panel {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 10px;
+  background: var(--mat-sys-surface-container-low);
+}
+
+.discard-panel-header {
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+  margin-bottom: 8px;
+}
+
+.discard-panel-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.discard-summary {
+  color: var(--mat-sys-on-surface);
+  font-size: 0.95rem;
+}
+
+.form-section-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 32px 0 16px;
+  color: var(--mat-sys-primary);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  padding-bottom: 8px;
+}
+
+.actions-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 24px;
+  background-color: var(--mat-sys-surface);
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 100;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+}

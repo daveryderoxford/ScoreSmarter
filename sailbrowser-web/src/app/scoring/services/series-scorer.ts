@@ -12,6 +12,8 @@ export const MERGED_BOAT_CLASS_SEPARATOR = '&';
 export interface ScoringConfig {
   seriesType: SeriesScoringScheme;
   discards: number;
+  dncPoints: number;
+  excludeNeverRaced?: boolean;
   maxOodPerSeries?: number;
   oodAveragePool?: 'finished' | 'started';
 }
@@ -38,7 +40,7 @@ export function scoreSeries(
   handicapScheme: HandicapScheme,
   mergeStrategy: MergeStrategy,
 ): IntermediateSeriesResult[] {
-  const competitorMap = aggregateCompetitorResults(races, seriesEntries, handicapScheme, mergeStrategy);
+  const competitorMap = aggregateCompetitorResults(races, seriesEntries, handicapScheme, mergeStrategy, config);
   const resultsWithTotals = calculateTotalsAndDiscards(Array.from(competitorMap.values()), config);
   const rankedResults = rankCompetitors(resultsWithTotals);
 
@@ -63,6 +65,7 @@ function aggregateCompetitorResults(
   seriesEntries: SeriesEntry[],
   handicapScheme: HandicapScheme,
   mergeStrategy: MergeStrategy,
+  config: ScoringConfig,
 ): Map<string, IntermediateSeriesResult> {
   const entryById = new Map(seriesEntries.map(e => [e.id, e]));
 
@@ -79,15 +82,22 @@ function aggregateCompetitorResults(
     }
   }
 
-  const dncPoints = groupMembers.size + 1;
-
   // Sort races chronologically by calendar index for "first appearance" lookups.
   const orderedRaces = [...races].sort((a, b) => a.index - b.index);
+  const racedKeys = new Set<string>();
+  for (const race of orderedRaces) {
+    for (const result of race.results) {
+      racedKeys.add(result.competitorKey);
+    }
+  }
 
   const competitorMap = new Map<string, IntermediateSeriesResult>();
 
   // Initialise every known merge group, even if they haven't yet raced.
   for (const [key, members] of groupMembers) {
+    if (config.excludeNeverRaced && !racedKeys.has(key)) {
+      continue;
+    }
     // Default seed: lowest-id member. Will be overridden when the group's
     // first actual race contribution is found below.
     const seed = members[0];
@@ -140,7 +150,7 @@ function aggregateCompetitorResults(
       } else {
         row.raceScores.push({
           raceIndex: race.index,
-          points: dncPoints,
+          points: config.dncPoints,
           resultCode: 'DNC',
           isDiscard: false,
         });
@@ -201,7 +211,7 @@ function calculateTotalsAndDiscards(
   results: IntermediateSeriesResult[], 
   config: ScoringConfig): IntermediateSeriesResult[] {
 
-  const dncPoints = results.length + 1;
+  const dncPoints = config.dncPoints;
 
   // Calculate total and net points after all races are processed
   for (const result of results) {

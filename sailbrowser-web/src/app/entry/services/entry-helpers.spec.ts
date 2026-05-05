@@ -1,10 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import type { Fleet } from 'app/club-tenant/model/fleet';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
+import type { Fleet } from 'app/club-tenant/model/fleet';
 import type { Series } from 'app/race-calender';
-import type { HandicapConfiguration, LevelRatingConfiguration } from '../../scoring/model/scoring-configuration';
+import { DEFAULT_SHORT_DISCARDS } from 'app/scoring/model/discard-profile';
+import { describe, expect, it } from 'vitest';
 import { getHandicapSchemeMetadata } from '../../scoring/model/handicap-scheme-metadata';
-import { defaultShortSeriesDiscardTable } from 'app/scoring/model/discard-profile';
+import type { HandicapConfiguration, LevelRatingConfiguration } from '../../scoring/model/scoring-configuration';
 import { meetsPrimaryFleetEligibility, resolveHandicapsForSeries } from './entry-helpers';
 
 const testFleet: Fleet = { type: 'GeneralHandicap', id: 'f-general', name: 'General Handicap' };
@@ -47,7 +47,7 @@ function minimalSeries(overrides: Partial<Series> = {}): Series {
     archived: false,
     scoringAlgorithm: 'short',
     entryAlgorithm: 'classSailNumberHelm',
-    discards: defaultShortSeriesDiscardTable(),
+    discards: [...DEFAULT_SHORT_DISCARDS],
     primaryScoringConfiguration: pyPrimary(),
     ...overrides,
   } as Series;
@@ -133,7 +133,7 @@ function eligibilitySeries(fleet: Fleet, handicapScheme: HandicapConfiguration['
     archived: false,
     scoringAlgorithm: 'short',
     entryAlgorithm: 'classSailNumberHelm',
-    discards: defaultShortSeriesDiscardTable(),
+    discards: [...DEFAULT_SHORT_DISCARDS],
     primaryScoringConfiguration: {
       id: 'cfg-1',
       name: 'Primary',

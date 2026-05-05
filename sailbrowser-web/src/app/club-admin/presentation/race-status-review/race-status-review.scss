@@ -1,0 +1,141 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background-color: var(--mat-sys-surface);
+}
+
+.review-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.page-header {
+  margin-bottom: 32px;
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--mat-sys-on-surface);
+  }
+
+  p {
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 1.125rem;
+    margin: 0;
+  }
+}
+
+.metrics {
+  margin-bottom: 32px;
+  display: flex;
+  gap: 16px;
+
+  .metric-card {
+    flex: 1;
+    max-width: 300px;
+    background-color: var(--mat-sys-surface-container-lowest);
+  }
+
+  .metric-value {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--mat-sys-primary);
+  }
+
+  .metric-label {
+    margin-top: 8px;
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.875rem;
+  }
+}
+
+.races-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.race-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-radius: 12px;
+  background-color: var(--mat-sys-surface-container-lowest);
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+
+.race-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--mat-sys-on-surface);
+  }
+}
+
+.race-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.875rem;
+
+  mat-icon {
+    font-size: 1.125rem;
+    height: 1.125rem;
+    width: 1.125rem;
+  }
+}
+
+.race-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.danger-text {
+  color: var(--mat-sys-error) !important;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    font-size: 48px;
+    height: 48px;
+    width: 48px;
+    margin-bottom: 16px;
+    color: var(--mat-sys-outline);
+  }
+
+  h2 {
+    margin: 0 0 8px;
+    font-size: 1.5rem;
+    color: var(--mat-sys-on-surface);
+  }
+
+  p {
+    margin: 0;
+  }
+}

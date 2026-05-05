@@ -6,8 +6,6 @@ export { RACE_TYPES } from './model/race-type';
 
 export type { Race } from './model/race';
 export type { Series } from './model/series';
-export { hydrateSeriesFromFirestore } from './model/series-hydrate';
-export type { RawSeriesFirestoreDocument } from './model/series-hydrate';
 
 export { RaceCalendarStore } from './services/full-race-calander';
 export { RaceCalendarStoreBase, seriesSort, sortRaces } from './services/race-calendar-store-base';

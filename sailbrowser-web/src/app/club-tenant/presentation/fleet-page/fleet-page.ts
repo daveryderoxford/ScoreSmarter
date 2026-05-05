@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,18 +12,20 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
+import { ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
 import { LoadingCentered } from "app/shared/components/loading-centered";
 import { Toolbar } from 'app/shared/components/toolbar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
 import { ClubStore } from '../../services/club-store';
+import { FleetsCsvService } from '../../services/fleets-csv.service';
 
 @Component({
   selector: 'app-fleet-page',
   imports: [Toolbar, MatListModule, MatMenuModule,
     MatButtonModule, MatIconModule, RouterModule, MatDividerModule,
     MatTooltipModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, LoadingCentered,
-    MatDividerModule],
+    MatDividerModule, ImportExportMenuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './fleet-page.html',
   styles: `
@@ -36,12 +38,7 @@ export class FleetPage {
   cs = inject(ClubStore);
   private ds = inject(DialogsService);
   private snackbar = inject(MatSnackBar);
-
-  debugEffect = effect( () =>{
-    console.log(JSON.stringify(this.filteredFleets()));
-    console.log('\n')
-
-  });
+  private fleetsCsv = inject(FleetsCsvService);
 
   searchControl = new FormControl('');
   searchTerm = toSignal(
@@ -58,7 +55,7 @@ export class FleetPage {
       if (fleet.type === 'GeneralHandicap') return false; // Hide system General Handicap fleet from the UI
       const name = getFleetName(fleet).toLowerCase();
       return name.includes(filter);
-    }).sort((a, b) => getFleetName(a).localeCompare(getFleetName(b)));
+    }).sort((a: Fleet, b: Fleet) => getFleetName(a).localeCompare(getFleetName(b)));
   });
 
   getFleetName = getFleetName;
@@ -72,6 +69,40 @@ export class FleetPage {
         this.snackbar.open("Error deleting fleet", "Dismiss", { duration: 3000 });
         console.error('Error deleting fleet:', error);
       }
+    }
+  }
+
+  exportCsv() {
+    const fleets = this.cs.club().fleets;
+    const csv = this.fleetsCsv.buildCsv(fleets);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fleets-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  async importCsv(event: { event: Event, context: any }) {
+    const input = event.event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = this.fleetsCsv.parseCsv(text);
+      if (parsed.errors.length > 0) {
+        this.snackbar.open(`Import failed: ${parsed.errors[0]}`, 'Dismiss', { duration: 5000 });
+        return;
+      }
+
+      await this.cs.update({ fleets: parsed.fleets as any });
+      this.snackbar.open(`Fleets imported: ${parsed.fleets.length} items.`, 'Dismiss', { duration: 3000 });
+    } catch (error: any) {
+      this.snackbar.open(`Import error: ${error.message}`, 'Dismiss', { duration: 5000 });
+    } finally {
+      input.value = '';
     }
   }
 }

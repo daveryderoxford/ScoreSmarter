@@ -81,7 +81,7 @@ function race(
   };
 }
 
-const config: ScoringConfig = { seriesType: 'short', discards: 0 };
+const config: ScoringConfig = { seriesType: 'short', discards: 0, dncPoints: 3 };
 
 describe("scoreSeries — strategy 'helm' (late merge)", () => {
   /**
@@ -210,6 +210,28 @@ describe("scoreSeries — strategy 'helm' (late merge)", () => {
     expect(other.raceScores).toHaveLength(1);
     expect(other.raceScores[0]?.points).toBe(3);
     expect(other.raceScores[0]?.resultCode).toBe('DNC');
+  });
+
+  it('can exclude merge groups that never raced when configured', () => {
+    const entries: SeriesEntry[] = [
+      entry({ id: 'eA', helm: 'Sam', sailNumber: 100, boatClass: 'ILCA 7' }),
+      entry({ id: 'eB', helm: 'Other', sailNumber: 300, boatClass: 'ILCA 6' }),
+    ];
+
+    const races = [
+      race(0, [{ entryId: 'eA', raceIndex: 0, points: 1 }], entries, 'helm'),
+    ];
+
+    const results = scoreSeries(
+      races,
+      entries,
+      { ...config, dncPoints: 3, excludeNeverRaced: true },
+      'PY',
+      'helm',
+    );
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.helm).toBe('Sam');
   });
 });
 

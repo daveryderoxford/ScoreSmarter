@@ -38,6 +38,7 @@ export class SeasonAdd {
       const newSeason: Season = {
         id,
         name: data.name!,
+        status: data.status === 'archived' ? 'archived' : 'current',
       };
       await this.cs.addSeason(newSeason);
       this.router.navigate(["/club/seasons"]);

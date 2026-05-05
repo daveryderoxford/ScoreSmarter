@@ -37,6 +37,7 @@ export class SeasonEdit {
         const newSeason: Season = {
           ...oldSeason,
           name: data.name!,
+          status: data.status === 'archived' ? 'archived' : 'current',
         };
         await this.cs.updateSeason(oldSeason, newSeason);
         this.router.navigate(["/club/seasons"]);

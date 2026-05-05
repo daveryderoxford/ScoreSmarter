@@ -22,14 +22,14 @@ export function scoreRace(
   results: RaceResult[],
   scheme: HandicapScheme,
   seriesType: SeriesScoringScheme,
-  seriesCompetitorCount: number,
+  dncPoints: number,
 ): RaceResult[] {
 
   // Calculate elapsed and corrected times for all results.
   calculateTimes(results, race.isAverageLap, scheme);
 
   // Calculate points and ranks.
-  calculateRacePoints(results, race.type, scheme, seriesType, seriesCompetitorCount);
+  calculateRacePoints(results, race.type, scheme, seriesType, dncPoints);
 
   return results;
 }
@@ -44,7 +44,7 @@ export function calculateRacePoints(
   raceType: RaceType,
   scheme: HandicapScheme,
   seriesType: SeriesScoringScheme,
-  seriesCompetitorCount: number,
+  dncPoints: number,
 ) {
   // Determine the ordering property for finishers and sort them
   const orderingProperty = determineOrdering(raceType, scheme, results);
@@ -52,11 +52,11 @@ export function calculateRacePoints(
   results.sort((a, b) => sortByFinishingOrder(a, b, orderingProperty));
 
   // Assign points to finishers based on their sorted order.
-  assignPointsForFinishers(results, orderingProperty, seriesType, seriesCompetitorCount);
+  assignPointsForFinishers(results, orderingProperty, seriesType, dncPoints);
 
   // Assign points for non-finishers 
   // Handless codes NOT based on series results (DNF, OCS, etc.).
-  applyStaticRacePenalties(results, seriesCompetitorCount, seriesType);
+  applyStaticRacePenalties(results, dncPoints, seriesType);
 
   // Sort all competitors by points to determine final race ranks.
   results.sort((a, b) => sortByPoints(a, b));
@@ -209,7 +209,7 @@ function assignPointsForFinishers(
   results: RaceResult[],
   key: keyof RaceResult,
   seriesType: SeriesScoringScheme,
-  seriesCompetitorCount: number,
+  dncPoints: number,
 ) {
   const finishers = results.filter((res) => isFinishedComp(res.resultCode));
   const resultsByValue = new Map<number, RaceResult[]>();
@@ -228,7 +228,7 @@ function assignPointsForFinishers(
   let pos = 1.0;
 
   const startAreaCount = results.filter(r => isStartAreaComp(r.resultCode)).length;
-  const dnfPoints = (seriesType === 'long' ? startAreaCount : seriesCompetitorCount) + 1;
+  const dnfPoints = (seriesType === 'long' ? startAreaCount + 1 : dncPoints);
 
   for (const value of sortedValues) {
     const resultsAtValue = resultsByValue.get(value)!;
@@ -247,7 +247,7 @@ function assignPointsForFinishers(
         // RRS 44.3(c): Finish position + (20% * Boats Entered)
         // The minimum penalty is two places.
         // Rounding to 1/10 of a point as per user requirement.
-        const penalty = Math.max(2, Math.round(seriesCompetitorCount * 0.2 * 10) / 10);
+        const penalty = Math.max(2, Math.round((dncPoints - 1) * 0.2 * 10) / 10);
         // The penalty is capped at the DNF score.
         res.points = Math.min(res.points + penalty, dnfPoints);
       }
@@ -260,7 +260,7 @@ function assignPointsForFinishers(
  * results in the series. 
  */
 function applyStaticRacePenalties(results: RaceResult[],
-  seriesCompetitorCount: number,
+  dncPoints: number,
   scheme: SeriesScoringScheme) {
 
   // 1. Calculate the number of boats that came to the start area for this specific race
@@ -278,7 +278,7 @@ function applyStaticRacePenalties(results: RaceResult[],
 
     switch (algorithm) {
       case ResultCodeAlgorithm.compInSeries:
-        result.points = seriesCompetitorCount + 1;
+        result.points = dncPoints;
         break;
       case ResultCodeAlgorithm.compInStartArea:
         result.points = startAreaCount + 1;
