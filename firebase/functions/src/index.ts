@@ -19,3 +19,7 @@ export {
 export { createNewTenant } from "./sys-admin/club.js";
 export { assignRole } from "./sys-admin/roles.js";
 export { ensureUserData } from "./user/user.js";
+export {
+  cleanupOrphanSeriesEntriesWeekly,
+  cancelStaleFutureRacesWeekly,
+} from "./maintenance/weekly-maintenance.js";
