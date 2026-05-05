@@ -4,6 +4,18 @@ import { Fleet } from 'app/club-tenant/model/fleet';
 import { HandicapScheme } from '../../scoring/model/handicap-scheme';
 import type { SuspectTimeThresholdOverrides } from 'app/results-input/services/suspect-time-rules';
 
+export interface OODScoring {
+   calculationCode: 'AvgAll' | 'AvgExcludingDiscards' | 'FixedScore';
+   maxDuties: number;
+}
+
+export interface ScoringDefaults {
+   discards: number[];
+   dncCalculation: 'SeriesEntries' | 'MaxRaceCompetitors';
+   oodScoring: OODScoring;
+   laps: boolean;
+}
+
 export interface Club {
    id: string;
    name: string;
@@ -15,5 +27,7 @@ export interface Club {
    seasons: Season[];
    logoUrl?: string;
    supportedHandicapSchemes: HandicapScheme[];
+   longSeriesDefaults?: ScoringDefaults;
+   shortSeriesDefaults?: ScoringDefaults;
    suspectTimeThresholds?: SuspectTimeThresholdOverrides;
 }

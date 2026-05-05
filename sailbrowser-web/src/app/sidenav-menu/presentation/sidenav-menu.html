@@ -17,15 +17,15 @@
 
    <mat-divider />
 
-      <button mat-list-item (click)='closeSidenav(["/results-input/manual"])'>
-         <mat-icon matListItemIcon>schedule</mat-icon>
-         <span matListItemTitle>Results Input</span>
-      </button>
+   <button mat-list-item (click)='closeSidenav(["/results-input/manual"])'>
+      <mat-icon matListItemIcon>schedule</mat-icon>
+      <span matListItemTitle>Results Input</span>
+   </button>
 
-      <button mat-list-item (click)='closeSidenav(["/results-input/scan-scoring-sheet"])'>
-         <mat-icon matListItemIcon>document_scanner</mat-icon>
-         <span matListItemTitle>Scan Scoring Sheet</span>
-      </button>
+   <button mat-list-item (click)='closeSidenav(["/results-input/scan-scoring-sheet"])'>
+      <mat-icon matListItemIcon>document_scanner</mat-icon>
+      <span matListItemTitle>Scan Scoring Sheet</span>
+   </button>
 
    <mat-divider />
 
@@ -56,11 +56,7 @@
          </mat-expansion-panel-header>
 
          <mat-nav-list>
-            <button mat-list-item (click)='closeSidenav(["/boats"])'>Boats</button>
-            <button mat-list-item (click)='closeSidenav(["/club/seasons"])'>Seasons</button>
-            <button mat-list-item (click)='closeSidenav(["/race-calender"])'>Race calendar</button>
-            <button mat-list-item (click)='closeSidenav(["/club/fleets"])'>Fleets</button>
-            <button mat-list-item (click)='closeSidenav(["/club/classes"])'>Classes</button>
+            <button mat-list-item (click)='closeSidenav(["/club-admin"])'>Club Admin</button>
 
             @if (auth.isSysAdmin()) {
             <button mat-list-item (click)='closeSidenav(["/sys-admin"])'>System Admin</button>

@@ -1,0 +1,58 @@
+<app-toolbar title="Club Administration"></app-toolbar>
+
+<div class="admin-container">
+  @if (seasonWarning()) {
+    <div class="alert-banner warning">
+      <mat-icon>warning</mat-icon>
+      <div class="alert-content">
+        <strong>Season Planning Alert:</strong> {{ seasonWarning() }}
+      </div>
+      <a matButton="elevated" routerLink="/club/seasons">Plan</a>
+    </div>
+  }
+
+  @if (pastUnverifiedRacesCount() > 0) {
+    <div class="alert-banner info">
+      <mat-icon>info</mat-icon>
+      <div class="alert-content">
+        <strong>Action Needed:</strong> There are {{ pastUnverifiedRacesCount() }} past races that have not yet been verified.
+      </div>
+      <a matButton="elevated" routerLink="/club-admin/race-review">Review Races</a>
+    </div>
+  }
+
+  <div class="action-grid">
+    @for (action of actions; track action.title) {
+      <mat-card class="action-card" appearance="outlined">
+        <mat-card-header>
+          <div mat-card-avatar class="icon-container">
+            <mat-icon>{{ action.icon }}</mat-icon>
+          </div>
+          <mat-card-title>{{ action.title }}</mat-card-title>
+          <div class="spacer"></div>
+          @if (action.importExportContexts) {
+            <app-import-export-menu 
+              [multiContext]="action.importExportContexts"
+              (exportICal)="handleExport('iCal', $event)"
+              (exportCsv)="handleExport('CSV', $event)"
+              (exportRya)="handleExport('RYA', $event)"
+              (exportWsXml)="handleExport('WS XML', $event)"
+              (importFile)="handleImport($event)" />
+          }
+        </mat-card-header>
+        
+        <mat-card-content>
+          <p class="description">{{ action.description }}</p>
+        </mat-card-content>
+
+        <mat-card-actions class="card-actions">
+          @for (res of action.resources; track res.label) {
+            <a [routerLink]="res.route" matButton>
+              {{ res.label }}
+            </a>
+          }
+        </mat-card-actions>
+      </mat-card>
+    }
+  </div>
+</div>

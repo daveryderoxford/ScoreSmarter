@@ -1,0 +1,62 @@
+<app-toolbar title="Race Status Review"></app-toolbar>
+
+<div class="review-container">
+  <header class="page-header">
+    <h1>Past Races Review</h1>
+    <p>Review and verify past races. Mark them as canceled, verified, or archived as appropriate.</p>
+  </header>
+
+  <div class="metrics">
+    <mat-card class="metric-card" appearance="outlined">
+      <mat-card-header>
+        <mat-card-title>Action Required</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="metric-value">{{ pastUnverifiedRaces().length }}</div>
+        <div class="metric-label">Past unverified races</div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div class="races-list">
+    @for (race of pastUnverifiedRaces(); track race.id) {
+      <mat-card class="race-card" appearance="outlined">
+        <div class="race-info">
+          <h3>{{ race.seriesName }} - Race {{ race.index }}</h3>
+          <div class="race-meta">
+            <mat-icon>calendar_today</mat-icon>
+            <span>{{ race.scheduledStart | date:'mediumDate' }} at {{ race.scheduledStart | date:'shortTime' }}</span>
+          </div>
+          <div class="race-status">
+            <mat-chip-set>
+              <mat-chip [class]="'status-' + race.status.toLowerCase().replace(' ', '-')">{{ race.status }}</mat-chip>
+            </mat-chip-set>
+          </div>
+        </div>
+
+        <div class="race-actions">
+          <button mat-button color="primary" [matMenuTriggerFor]="actionMenu">
+            Update Status
+            <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+          </button>
+          <mat-menu #actionMenu="matMenu">
+            <button mat-menu-item (click)="setStatus(race, 'Completed')">Mark as Completed</button>
+            <button mat-menu-item (click)="setStatus(race, 'Published')">Mark as Published</button>
+            <button mat-menu-item (click)="setStatus(race, 'Verified')">Mark as Verified</button>
+            <button mat-menu-item (click)="setStatus(race, 'Archived')">Mark as Archived</button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="setStatus(race, 'Postponed')">Mark as Postponed</button>
+            <button mat-menu-item class="danger-text" (click)="setStatus(race, 'Canceled')">Mark as Canceled</button>
+          </mat-menu>
+          <a mat-stroked-button [routerLink]="['/race-calender']">View in Series</a>
+        </div>
+      </mat-card>
+    } @empty {
+      <div class="empty-state">
+        <mat-icon>check_circle</mat-icon>
+        <h2>All Caught Up</h2>
+        <p>There are no past races requiring review.</p>
+      </div>
+    }
+  </div>
+</div>

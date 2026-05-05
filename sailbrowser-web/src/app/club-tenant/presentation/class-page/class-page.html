@@ -1,4 +1,6 @@
-<app-toolbar title="Classes"></app-toolbar>
+<app-toolbar title="Classes">
+  <app-import-export-menu context="classes" (exportCsv)="exportCsv()" (importFile)="importCsv($event)" />
+</app-toolbar>
 
 <div class="content">
 

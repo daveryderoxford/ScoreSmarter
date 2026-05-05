@@ -1,0 +1,161 @@
+<app-toolbar title="Scoring Defaults"></app-toolbar>
+
+<div class="defaults-container" [formGroup]="form">
+  <div class="page-header">
+    <h1>Scoring & Handicap Configurations</h1>
+    <p>Configure supported handicap schemes and scoring defaults for long and short series.</p>
+  </div>
+
+  <mat-tab-group animationDuration="0ms">
+    <!-- Handicap Schemes Tab -->
+    <mat-tab label="Handicap Schemes">
+      <div class="tab-content">
+        <mat-card appearance="outlined">
+          <mat-card-header>
+            <mat-icon mat-card-avatar color="primary">settings_suggest</mat-icon>
+            <mat-card-title>Supported Handicap Schemes</mat-card-title>
+            <mat-card-subtitle>Select all handicap schemes used by your club.</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-selection-list formControlName="supportedHandicapSchemes">
+              @for (scheme of handicapSchemes; track scheme) {
+                <mat-list-option [value]="scheme">
+                  {{ scheme }}
+                </mat-list-option>
+              }
+            </mat-selection-list>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Long Series Tab -->
+    <mat-tab label="Long Series Defaults">
+      <div class="tab-content" formGroupName="longSeriesDefaults">
+        <mat-card appearance="outlined" class="config-card">
+          <mat-card-header>
+            <mat-card-title>Long Series Settings</mat-card-title>
+            <mat-card-subtitle>Default rules applied when creating a new long series.</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            
+            <div class="form-row">
+              <div class="discards-display">
+                <mat-label>Default Discard Profile</mat-label>
+                <div class="value">
+                  {{ form.value.longSeriesDefaults?.discards?.length ? form.value.longSeriesDefaults?.discards?.join(', ') : 'None' }}
+                </div>
+              </div>
+              <button mat-stroked-button type="button" (click)="editDiscards('long')">
+                <mat-icon>edit</mat-icon>
+                Edit Discards
+              </button>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>DNC Score Calculation</mat-label>
+                <mat-select formControlName="dncCalculation">
+                  <mat-option value="SeriesEntries">Series Entries + 1</mat-option>
+                  <mat-option value="MaxRaceCompetitors">Maximum Competitors in Any Race + 1</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div class="form-section-title">OOD (Duty) Scoring</div>
+            <div class="form-row" formGroupName="oodScoring">
+               <mat-form-field appearance="outline" class="flex-2">
+                <mat-label>OOD Calculation</mat-label>
+                <mat-select formControlName="calculationCode">
+                  <mat-option value="AvgAll">Average of all races</mat-option>
+                  <mat-option value="AvgExcludingDiscards">Average excluding discards</mat-option>
+                  <mat-option value="FixedScore">Fixed Score</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="flex-1">
+                <mat-label>Max Duties</mat-label>
+                <input matInput type="number" formControlName="maxDuties" min="0">
+              </mat-form-field>
+            </div>
+
+            <div class="form-row mt-4">
+              <mat-slide-toggle formControlName="laps" color="primary">
+                Enable multi-lap races by default
+              </mat-slide-toggle>
+            </div>
+
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Short Series Tab -->
+    <mat-tab label="Short Series Defaults">
+       <div class="tab-content" formGroupName="shortSeriesDefaults">
+        <mat-card appearance="outlined" class="config-card">
+          <mat-card-header>
+            <mat-card-title>Short Series Settings</mat-card-title>
+            <mat-card-subtitle>Default rules applied when creating a new short series.</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            
+            <div class="form-row">
+              <div class="discards-display">
+                <mat-label>Default Discard Profile</mat-label>
+                <div class="value">
+                  {{ form.value.shortSeriesDefaults?.discards?.length ? form.value.shortSeriesDefaults?.discards?.join(', ') : 'None' }}
+                </div>
+              </div>
+              <button mat-stroked-button type="button" (click)="editDiscards('short')">
+                <mat-icon>edit</mat-icon>
+                Edit Discards
+              </button>
+            </div>
+
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>DNC Score Calculation</mat-label>
+                <mat-select formControlName="dncCalculation">
+                  <mat-option value="SeriesEntries">Series Entries + 1</mat-option>
+                  <mat-option value="MaxRaceCompetitors">Maximum Competitors in Any Race + 1</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div class="form-section-title">OOD (Duty) Scoring</div>
+            <div class="form-row" formGroupName="oodScoring">
+               <mat-form-field appearance="outline" class="flex-2">
+                <mat-label>OOD Calculation</mat-label>
+                <mat-select formControlName="calculationCode">
+                  <mat-option value="AvgAll">Average of all races</mat-option>
+                  <mat-option value="AvgExcludingDiscards">Average excluding discards</mat-option>
+                  <mat-option value="FixedScore">Fixed Score</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="flex-1">
+                <mat-label>Max Duties</mat-label>
+                <input matInput type="number" formControlName="maxDuties" min="0">
+              </mat-form-field>
+            </div>
+
+            <div class="form-row mt-4">
+              <mat-slide-toggle formControlName="laps" color="primary">
+                Enable multi-lap races by default
+              </mat-slide-toggle>
+            </div>
+
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+
+  <div class="actions-footer">
+    <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid || form.pristine || clubStore.isLoading()">
+      <mat-icon>save</mat-icon>
+      Save Configurations
+    </button>
+  </div>
+</div>

@@ -17,13 +17,16 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { BoatClass } from '../../model/boat-class';
 import { getHandicapValue } from 'app/scoring/model/handicap';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { ClassesCsvService } from '../../services/classes-csv.service';
+
+import { ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
 
 @Component({
   selector: 'app-class-page',
   imports: [Toolbar, MatListModule,
     MatButtonModule, MatIconModule, RouterModule, MatDividerModule,
     ReactiveFormsModule, MatFormFieldModule, MatInputModule, LoadingCentered,
-    MatDividerModule],
+    MatDividerModule, ImportExportMenuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './class-page.html',
   styles: `
@@ -37,6 +40,7 @@ export class ClassPage {
   cs = inject(ClubStore);
   private ds = inject(DialogsService);
   private snackbar = inject(MatSnackBar);
+  private classesCsv = inject(ClassesCsvService);
 
   searchControl = new FormControl('');
   searchTerm = toSignal(
@@ -67,6 +71,42 @@ export class ClassPage {
         this.snackbar.open("Error deleting class", "Dismiss", { duration: 3000 });
         console.error('Error deleting class:', error);
       }
+    }
+  }
+
+  exportCsv() {
+    const classes = this.cs.club().classes;
+    const schemes = this.cs.club().supportedHandicapSchemes;
+    const csv = this.classesCsv.buildCsv(classes, schemes);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `classes-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  async importCsv(event: { event: Event, context: any }) {
+    const input = event.event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const schemes = this.cs.club().supportedHandicapSchemes;
+      const parsed = this.classesCsv.parseCsv(text, schemes);
+      if (parsed.errors.length > 0) {
+        this.snackbar.open(`Import failed: ${parsed.errors[0]}`, 'Dismiss', { duration: 5000 });
+        return;
+      }
+
+      await this.cs.update({ classes: parsed.classes as any });
+      this.snackbar.open(`Classes imported: ${parsed.classes.length} items.`, 'Dismiss', { duration: 3000 });
+    } catch (error: any) {
+      this.snackbar.open(`Import error: ${error.message}`, 'Dismiss', { duration: 5000 });
+    } finally {
+      input.value = '';
     }
   }
 }
