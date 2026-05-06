@@ -1,6 +1,6 @@
 import type { Fleet } from 'app/club-tenant/model/fleet';
 import type { RaceStart } from 'app/race-calender/model/race-start';
-import { isInFleet } from 'app/scoring/services/fleet-scoring';
+import { isInFleet } from 'app/scoring/app-bridge/fleet';
 import type { SeriesEntry } from '../model/series-entry';
 
 const priority: Record<Fleet['type'], number> = {
