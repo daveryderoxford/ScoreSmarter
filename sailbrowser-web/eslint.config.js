@@ -69,6 +69,37 @@ module.exports = defineConfig([
     },
   },
   {
+    files: ["src/app/scoring/core/**/*.ts", "src/app/scoring/model/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            "@angular/*",
+            "@angular/fire/*",
+            "app/published-results/**",
+            "app/results-input/**",
+            "app/club-tenant/**",
+            "app/race-calender/**",
+            "app/club-admin/**",
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/app/**/*.ts"],
+    ignores: ["src/app/scoring/app-bridge/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: ["app/scoring/services/fleet-scoring"],
+        },
+      ],
+    },
+  },
+  {
     files: ["**/*.html"],
     extends: [
       angular.configs.templateRecommended,

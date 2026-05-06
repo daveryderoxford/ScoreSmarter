@@ -42,25 +42,30 @@
       <ng-template matStepLabel>Details</ng-template>
       <div class="step-container">
         <form [formGroup]="form" class="stepper-form stepper-form-narrow">
-          <app-setup-step [form]="form" />
-          <div class="detail-panel">
-            <div class="detail-panel-header">
-              <div class="detail-panel-title">{{ startTimesSummary().title }}</div>
-              <span class="detail-panel-status" [class.missing]="!startTimesSummary().configured">
-                {{ startTimesSummary().configured ? 'Configured' : 'Required' }}
-              </span>
-            </div>
-            <div class="detail-panel-lines">
-              @for (line of startTimesSummary().lines; track line) {
-                <div>{{ line }}</div>
-              }
-            </div>
-            <div class="detail-panel-actions">
-              <button matButton="outlined" type="button" (click)="setStartTimesForSelectedRace()">
-                Set Start Time(s)
-              </button>
-            </div>
+
+        <!-- Start time panel -->
+        <div class="detail-panel">
+          <div class="detail-panel-header">
+            <div class="detail-panel-title">{{ startTimesSummary().title }}</div>
+            <span class="detail-panel-status" [class.missing]="!startTimesSummary().configured">
+              {{ startTimesSummary().configured ? 'Configured' : 'Required' }}
+            </span>
           </div>
+          <div class="detail-panel-lines">
+            @for (line of startTimesSummary().lines; track line) {
+            <div>{{ line }}</div>
+            }
+          </div>
+          <div class="detail-panel-actions">
+            <button matButton="outlined" type="button" (click)="setStartTimesForSelectedRace()">
+              Set Start Time(s)
+            </button>
+          </div>
+        </div>
+
+          <app-setup-step [form]="form" />
+
+
           <div class="step-actions">
             <button matButton matStepperPrevious>Previous</button>
             <button

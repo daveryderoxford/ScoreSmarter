@@ -2,6 +2,7 @@ import { Component, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { ImageViewerComponent } from "app/shared/components/image-viewer";
 
 /** Parent-derived UI state for the capture card (single source for layout branching). */
 export interface CaptureStepViewModel {
@@ -17,7 +18,7 @@ export interface CaptureStepViewModel {
 
 @Component({
   selector: 'app-capture-step',
-  imports: [MatButtonModule, MatCardModule, MatIconModule],
+  imports: [MatButtonModule, MatCardModule, MatIconModule, ImageViewerComponent],
   templateUrl: './capture-step.html',
   styleUrl: './capture-step.scss'
 })

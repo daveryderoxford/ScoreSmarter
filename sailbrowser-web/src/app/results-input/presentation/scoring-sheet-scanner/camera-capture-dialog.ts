@@ -1,11 +1,12 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, signal, viewChild, output, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, signal, viewChild, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { ImageViewerComponent } from 'app/shared/components/image-viewer';
 
 @Component({
   selector: 'app-camera-capture-dialog',
-  imports: [MatButtonModule, MatIconModule, MatDialogModule],
+  imports: [MatButtonModule, MatIconModule, MatDialogModule, ImageViewerComponent],
   template: `
     <h2 mat-dialog-title>Capture Scoring Sheet</h2>
     <mat-dialog-content>
@@ -13,7 +14,7 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
         @if (!hasCaptured()) {
           <video #videoElement autoplay playsinline></video>
         } @else {
-          <img [src]="capturedImage()" class="captured-preview" alt="Captured sheet preview">
+          <app-image-viewer [src]="capturedImage()!" />
         }
       </div>
       @if (errorMsg()) {
@@ -37,7 +38,7 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
       position: relative;
       background: #000;
       width: 100%;
-      min-height: 300px;
+      height: 400px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -61,9 +62,9 @@ import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 })
 export class CameraCaptureDialog implements AfterViewInit, OnDestroy {
   private readonly dialogRef = inject(MatDialogRef<CameraCaptureDialog>);
-  
+
   videoElement = viewChild<ElementRef<HTMLVideoElement>>('videoElement');
-  
+
   hasCaptured = signal(false);
   isStreamReady = signal(false);
   capturedImage = signal<string | null>(null);

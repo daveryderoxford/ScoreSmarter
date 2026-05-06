@@ -19,23 +19,23 @@ import { RESULT_CODES, ResultCode } from 'app/scoring/model/result-code-scoring'
 import { format, isToday } from 'date-fns';
 import { firstValueFrom } from 'rxjs';
 import { startWith } from 'rxjs/operators';
-import { Toolbar } from "../../../shared/components/toolbar";
+import { Toolbar } from "app/shared/components/toolbar";
 import { CurrentRaces } from '../../services/current-races-store';
 import { ManualResultsService } from '../../services/manual-results.service';
 import { RaceCompetitorReader } from '../../services/race-competitor-reader';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
 import { RaceStartTimeDialog, RaceStartTimeResult } from '../handicap/race-start-time-dialog';
 import { CameraCaptureDialog } from './camera-capture-dialog';
-import { CaptureStep, CaptureStepViewModel } from './capture-step';
+import { CaptureStep, CaptureStepViewModel } from './capture-step/capture-step';
 import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
-import { PhoneCaptureQrDialog, PhoneCaptureQrDialogResult } from './phone-capture-qr-dialog';
-import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step';
 import { ScanResponse, ScannedResultRow, ScannerContext } from './scan-model';
 import { ScannerOrchestrationService } from './scanner-orchestration.service';
-import { RaceStep } from './race-step';
-import { SetupStep } from './setup-step';
+import { RaceStep } from './race-step/race-step';
 import { getDownloadURL, getStorage, ref as storageRef } from 'firebase/storage';
 import type { ScannerTimeFormat } from '@shared/scanner-context';
+import { SetupStep } from './setup-step/setup-step';
+import { PhoneCaptureQrDialog, PhoneCaptureQrDialogResult } from './phone-capture-qr-dialog/phone-capture-qr-dialog';
+import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step/review-step';
 
 @Component({
   selector: 'app-scoring-sheet-scanner',

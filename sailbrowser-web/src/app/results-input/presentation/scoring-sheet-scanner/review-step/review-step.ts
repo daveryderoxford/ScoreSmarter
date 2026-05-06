@@ -5,8 +5,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
-import { RaceCompetitor } from '../../model/race-competitor';
-import { ScannedResultRow, ScanResponse } from './scan-model';
+import { RaceCompetitor } from '../../../model/race-competitor';
+import { ScannedResultRow, ScanResponse } from '../scan-model';
 
 export interface MatchedRowVm {
   row: ScannedResultRow;
