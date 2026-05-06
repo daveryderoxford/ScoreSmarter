@@ -77,7 +77,7 @@
             <div class="dnc-ws-preset">
               <mat-slide-toggle
                 color="primary"
-                [checked]="isWorldSailingPreset('long')"
+                [checked]="isWorldSailingPresetMode('long')"
                 (change)="setWorldSailingPresetMode('long', $event.checked)">
                 Apply World Sailing DNC preset
               </mat-slide-toggle>
@@ -88,7 +88,7 @@
               </p>
             </div>
 
-            @if (!isWorldSailingPreset('long')) {
+            @if (!isWorldSailingPresetMode('long')) {
             <div class="form-row" formGroupName="dncCalculation">
               <mat-form-field appearance="outline" class="flex-2">
                 <mat-label>DNC Score Calculation</mat-label>
@@ -144,7 +144,7 @@
             <div class="dnc-ws-preset">
               <mat-slide-toggle
                 color="primary"
-                [checked]="isWorldSailingPreset('short')"
+                [checked]="isWorldSailingPresetMode('short')"
                 (change)="setWorldSailingPresetMode('short', $event.checked)">
                 Apply World Sailing DNC preset
               </mat-slide-toggle>
@@ -155,7 +155,7 @@
               </p>
             </div>
 
-            @if (!isWorldSailingPreset('short')) {
+            @if (!isWorldSailingPresetMode('short')) {
             <div class="form-row" formGroupName="dncCalculation">
               <mat-form-field appearance="outline" class="flex-2">
                 <mat-label>DNC Score Calculation</mat-label>

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -55,6 +55,8 @@ export class ScoringDefaultsComponent {
     offset: 1,
     excludeNeverRaced: false,
   };
+  private readonly longPresetMode = signal(false);
+  private readonly shortPresetMode = signal(false);
 
   form = this.fb.group({
     supportedHandicapSchemes: [[] as HandicapScheme[]],
@@ -95,6 +97,9 @@ export class ScoringDefaultsComponent {
           },
           { emitEvent: false },
         );
+        // Initialize preset mode from stored values once on load; later visibility is user-driven.
+        this.longPresetMode.set(this.isWorldSailingPreset('long'));
+        this.shortPresetMode.set(this.isWorldSailingPreset('short'));
       }
     });
   }
@@ -125,8 +130,15 @@ export class ScoringDefaultsComponent {
     );
   }
 
+  /** Whether preset mode is currently active in the UI for this series. */
+  isWorldSailingPresetMode(seriesType: 'long' | 'short'): boolean {
+    return seriesType === 'long' ? this.longPresetMode() : this.shortPresetMode();
+  }
+
   /** UI only: enabling applies the preset; disabling only reveals custom fields (values unchanged). */
   setWorldSailingPresetMode(seriesType: 'long' | 'short', enabled: boolean): void {
+    const mode = seriesType === 'long' ? this.longPresetMode : this.shortPresetMode;
+    mode.set(enabled);
     if (!enabled) {
       return;
     }
