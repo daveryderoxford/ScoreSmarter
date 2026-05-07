@@ -216,6 +216,10 @@ export class EntryPage {
     this.helmControl.valueChanges.pipe(startWith(this.helmControl.value)),
     { initialValue: this.helmControl.value }
   );
+  private readonly crewValue = toSignal(
+    this.crewControl.valueChanges.pipe(startWith(this.crewControl.value)),
+    { initialValue: this.crewControl.value }
+  );
 
   readonly canProceedToRaces = computed(() => {
     const boat = this.selectedBoat();
@@ -255,12 +259,12 @@ export class EntryPage {
     }
 
     const helm = boat.isClub
-      ? String(this.helmControl.value ?? '').trim()
+      ? String(this.helmValue() ?? '').trim()
       : String(boat.helm ?? '').trim();
 
     if (!helm) return undefined;
 
-    const crewTrim = String(this.crewControl.value ?? '').trim();
+    const crewTrim = String(this.crewValue() ?? '').trim();
     const crew = crewTrim || undefined;
 
     return {
