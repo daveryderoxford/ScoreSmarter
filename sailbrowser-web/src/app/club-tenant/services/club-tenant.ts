@@ -7,7 +7,7 @@ import { ClubStore } from './club-store';
   providedIn: 'root' 
 })
 export class ClubTenant {
-  private _clubId: string = '';
+  private _clubId = '';
 
   get clubId() { return this._clubId; }
 
