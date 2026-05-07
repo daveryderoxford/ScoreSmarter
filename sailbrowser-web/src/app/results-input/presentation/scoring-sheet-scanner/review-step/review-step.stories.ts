@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from '@storybook/angular';
-import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from '../review-step';
+import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from '../review-step/review-step';
 import { ScanResponse, ScannedResultRow } from '../scan-model';
 
 const displayedColumns = ['accept', 'sailNumber', 'boatClass', 'time', 'status', 'laps', 'overall'];
