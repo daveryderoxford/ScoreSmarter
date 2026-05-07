@@ -23,6 +23,8 @@ import { CommonModule } from '@angular/common';
       class="viewer-container"
       (mousedown)="onMouseDown($event)"
       (touchstart)="onTouchStart($event)"
+      (touchend)="onTouchEnd()"
+      (touchcancel)="onTouchEnd()"
       (wheel)="onWheel($event)"
     >
       <!-- The Image -->
@@ -37,7 +39,11 @@ import { CommonModule } from '@angular/common';
       />
 
       <!-- Controls Overlay -->
-      <div class="viewer-controls">
+      <div
+        class="viewer-controls"
+        (mousedown)="$event.stopPropagation()"
+        (touchstart)="$event.stopPropagation()"
+      >
         <button mat-icon-button (click)="zoomOut()" title="Zoom Out" class="control-btn">
           <mat-icon>remove</mat-icon>
         </button>
@@ -76,6 +82,7 @@ import { CommonModule } from '@angular/common';
       width: 100%;
       height: 100%;
       overflow: hidden;
+      touch-action: none;
       background-color: #18181b; /* zinc-900 */
       display: flex;
       align-items: center;

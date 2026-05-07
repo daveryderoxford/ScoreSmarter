@@ -26,9 +26,11 @@ export enum ResultCodeAlgorithm {
  */
 const NOT_IN_START_AREA: ResultCode[] = ['DNC', 'OOD', 'NOT FINISHED'];
 
+// OOD is included here because the boat did not sail; per-race rank/points logic
+// must not treat OOD as a finisher. OOD points are written later by applyClubOod.
 const NO_LEGAL_FINISH: ResultCode[] = [
   'DNC', 'DNS', 'DNF', 'RET', 'OCS',
-  'BFD', 'UFD', 'DSQ', 'DNE', 'NSC','NOT FINISHED',
+  'BFD', 'UFD', 'DSQ', 'DNE', 'NSC', 'NOT FINISHED', 'OOD',
 ];
 const REDRESS: ResultCode[] = [
   'RDG', 'RDGA', 'RDGB', 'OOD'

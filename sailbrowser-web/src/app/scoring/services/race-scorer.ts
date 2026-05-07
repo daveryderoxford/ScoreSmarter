@@ -58,27 +58,14 @@ export function calculateRacePoints(
   // Handless codes NOT based on series results (DNF, OCS, etc.).
   applyStaticRacePenalties(results, dncPoints, seriesType);
 
-  // Sort all competitors by points to determine final race ranks.
+  // Sort all competitors by points so the final array order matches what the UI displays.
+  // Ranks are NOT re-derived from array index here - they were already assigned by
+  // assignPointsForFinishers (RRS A8.1 ties + 44.3(c) penalised boats keep their finish
+  // rank). Rows without a rank (OOD / RDG-without-finish / DNF / DNC / RET / ...) keep
+  // rank = 0 as initialised in buildRaceResults; the rank-aware sortByPoints below
+  // pins them to the bottom regardless of any points written back later by the series
+  // scorer (e.g. applyClubOod).
   results.sort((a, b) => sortByPoints(a, b));
-
-  // Calcualte final ranks within race
-  calculateRanks(results);
-}
-
-/** 
- * Calculates competitor ranks within the race. 
- * Competitors tied on points will recieve the same rank.
- */
-export function calculateRanks(results: RaceResult[]) {
-  for (let i = 0; i < results.length; i++) {
-    if (i > 0 && results[i].points === results[i - 1].points) {
-      // Tied points, so assign the same rank
-      results[i].rank = results[i - 1].rank;
-    } else {
-      // Not tied, or first competitor, so rank is position in the sorted list
-      results[i].rank = i + 1;
-    }
-  }
 }
 
 /**
@@ -289,11 +276,23 @@ function applyStaticRacePenalties(results: RaceResult[],
   }
 }
 
-/** 
- * Sorts by points.  Any boat that does not have any points yet 
- * assigned is sorted to the bottom.
+/**
+ * Rank-aware points sort.
+ *
+ * Rows that have a rank (rank > 0 - real finishers, including those with a scoring
+ * penalty per RRS 44.3(c), and redress recipients who finished) sort above rows that
+ * do not (rank === 0 - OOD, RDG-without-finish, DNF, DNC, RET, OCS, ...). Within
+ * each group the order is by points ascending; rows with zero points yet are pushed
+ * to the bottom of their group.
+ *
+ * The rank check (rather than points) is what keeps OOD entries at the bottom of
+ * the race table even after applyClubOod writes back an average that happens to
+ * coincide with a real finisher's points.
  */
 export function sortByPoints(a: RaceResult, b: RaceResult): number {
+  const aRanked = a.rank > 0;
+  const bRanked = b.rank > 0;
+  if (aRanked !== bRanked) return aRanked ? -1 : 1;
   return (a.points || 9999) - (b.points || 9999);
 }
 

@@ -270,9 +270,10 @@ function applyClubOod(result: IntermediateSeriesResult, dncPoints: number, confi
   // Base pool: All races except average codes
   const basePool = result.raceScores.filter(s => includeInAveragePool(s.resultCode));
   
-  // OOD Pool: 'finished' (FINISHED_AND_SCORED) or 'started' (isStartAreaComp)
+  // OOD Pool: 'finished' (legal finishers) or 'started' (boats in start area).
+  // DNC and OOD are already excluded by isFinishedComp (both in NO_LEGAL_FINISH).
   const oodPool = basePool.filter(s => {
-    if (oodPoolType === 'finished') return isFinishedComp(s.resultCode) && s.resultCode !== 'DNC';
+    if (oodPoolType === 'finished') return isFinishedComp(s.resultCode);
     if (oodPoolType === 'started') return isStartAreaComp(s.resultCode);
     return false;
   });
