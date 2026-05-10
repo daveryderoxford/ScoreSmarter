@@ -22,19 +22,21 @@
 
 .toggle-group-container {
    margin-top: 0px;
-   margin-bottom: 1.5rem;
+   margin-bottom: 0.5rem;
+   display: flex;
+   flex-direction: column;
+   align-items: flex-start;
 
    .toggle-label {
       display: block;
       font-size: 12px;
       color: var(--mat-sys-on-surface-variant);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
    }
 
    .time-format-toggle-group {
-      width: 100%;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      width: auto;
+      display: inline-flex;
    }
 
    .time-format-toggle-group :global(.mat-button-toggle-button) {

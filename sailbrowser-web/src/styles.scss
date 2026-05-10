@@ -17,7 +17,7 @@
 html {
   height: 100%;
   @include mat.theme((color: (primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
+      //  tertiary: mat.$blue-palette,
       ),
       typography: Roboto,
       density: -1,
@@ -47,9 +47,6 @@ body {
 .filled-form-density {
   @include mat.form-field-density(-1);
 }
-.dense-form-field {
-  @include mat.form-field-density(-3);
-}
 
 .dense-list {
   @include mat.list-density(-2);
@@ -57,6 +54,49 @@ body {
 
 .dense-button {
   @include mat.button-density(-1);
+}
+
+/* Modern Segmented Control Style for Button Toggles */
+.mat-button-toggle-group {
+  border: none !important;
+  background-color: var(--mat-sys-surface-container) !important;
+  border-radius: 32px !important;
+  padding: 4px !important;
+  display: inline-flex !important;
+  align-items: stretch !important;
+  gap: 4px !important;
+}
+
+.mat-button-toggle {
+  border: none !important;
+  background: transparent !important;
+  border-radius: 28px !important;
+  color: var(--mat-sys-on-surface) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.mat-button-toggle-button {
+  height: 100% !important;
+  border-radius: inherit !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.mat-button-toggle-checked {
+  background-color: var(--mat-sys-primary-container) !important;
+  color: var(--mat-sys-on-primary-container) !important;
+}
+
+.mat-button-toggle-label-content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  padding: 0 16px !important;
+  height: 48px !important;
+  line-height: 1 !important;
+  width: 100% !important;
 }
 
 .green {

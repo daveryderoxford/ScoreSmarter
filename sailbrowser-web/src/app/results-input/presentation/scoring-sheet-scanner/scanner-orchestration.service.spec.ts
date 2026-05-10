@@ -2,8 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { vi } from 'vitest';
 import { FirebaseApp } from '@angular/fire/app';
-import { Firestore } from '@angular/fire/firestore';
-import { CaptureSessionUploadService } from 'app/results-sheet-phone-capture/capture-session-upload.service';
 import { RaceCalendarStore } from 'app/race-calender';
 import { RaceCompetitor } from '../../model/race-competitor';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
@@ -46,10 +44,6 @@ describe('ScannerOrchestrationService', () => {
       providers: [
         ScannerOrchestrationService,
         { provide: FirebaseApp, useValue: {} },
-        // The capture-session watcher reads Firestore, but no test path here
-        // exercises it — a stub is enough to satisfy the constructor inject.
-        { provide: Firestore, useValue: {} },
-        { provide: CaptureSessionUploadService, useValue: {} },
         { provide: RaceCalendarStore, useValue: { allRaces: signal([race]).asReadonly() } },
         { provide: RaceCompetitorStore, useValue: { selectedCompetitors: signal([competitor]).asReadonly() } },
         {

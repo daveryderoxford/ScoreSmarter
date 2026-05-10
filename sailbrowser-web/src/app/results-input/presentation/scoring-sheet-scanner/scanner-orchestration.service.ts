@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
-import { Firestore, doc, docData } from '@angular/fire/firestore';
+import { Firestore, doc, docData, getDoc, setDoc, updateDoc } from '@angular/fire/firestore';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
 import { RaceCalendarStore } from 'app/race-calender';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
@@ -77,6 +77,7 @@ export class ScannerOrchestrationService {
     storagePath?: string;
     uploadedAt?: Date;
     expiresAt?: Date;
+    scanResponse?: ScanResponse;
   } | null> {
     const ref = doc(this.firestore, `clubs/${clubId}/results-sheet-capture-sessions/${sessionId}`);
     return docData(ref).pipe(
@@ -85,8 +86,26 @@ export class ScannerOrchestrationService {
         storagePath?: string;
         uploadedAt?: Date;
         expiresAt?: Date;
+        scanResponse?: ScanResponse;
       } | null),
     );
+  }
+
+  async saveScanResponse(clubId: string, raceId: string, response: ScanResponse): Promise<void> {
+    const ref = doc(this.firestore, `clubs/${clubId}/results-sheet-capture-sessions/${raceId}`);
+    await setDoc(ref, { scanResponse: response, updatedAt: new Date() }, { merge: true });
+  }
+
+  async getScanResponse(clubId: string, raceId: string): Promise<ScanResponse | null> {
+    const ref = doc(this.firestore, `clubs/${clubId}/results-sheet-capture-sessions/${raceId}`);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    return snap.data()['scanResponse'] as ScanResponse || null;
+  }
+
+  async clearScanResponse(clubId: string, raceId: string): Promise<void> {
+    const ref = doc(this.firestore, `clubs/${clubId}/results-sheet-capture-sessions/${raceId}`);
+    await updateDoc(ref, { scanResponse: null });
   }
 
   runScan(request: ScanRunRequest): Observable<ScanRunState> {

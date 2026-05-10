@@ -13,11 +13,11 @@
 
   @if (vm().layout === 'reuse' && vm().reuseImageUrl; as existingUrl) {
   <div class="stepper-form race-sheet-reuse" style="width: 100%;">
-    <p class="reuse-caption">There is already a results sheet photo on file for this race.</p>
+    <p class="reuse-caption">Previously captured results sheet</p>
     <div class="preview-container reuse-preview">
       <app-image-viewer [src]="existingUrl" />
     </div>
-    <button matButton="filled" class="large-capture-btn" type="button" (click)="useExisting.emit()">
+    <button matFab extended  type="button" (click)="useExisting.emit()">
       <mat-icon>check_circle</mat-icon>
       Use this image
     </button>
@@ -38,18 +38,18 @@
   } @else {
   <div class="capture-zone">
     @if (vm().isMobile) {
-    <button matButton="filled" class="large-capture-btn" type="button" (click)="mobileFileInput.click()">
+    <button matFab extended type="button" (click)="mobileFileInput.click()">
       <mat-icon>camera_alt</mat-icon>
       Take Photo
     </button>
     } @else {
-    <button matButton="filled" class="large-capture-btn" type="button" (click)="openCamera.emit()">
+      <button matFab extended class="large-capture-btn" type="button" (click)="startPhoneCapture.emit()">
+        <mat-icon>smartphone</mat-icon>
+        Capture Using Phone
+      </button>
+    <button matButton="outlined" class="large-capture-btn" type="button" (click)="openCamera.emit()">
       <mat-icon>camera_alt</mat-icon>
-      Capture from Camera
-    </button>
-    <button matButton="outlined" class="large-capture-btn" type="button" (click)="startPhoneCapture.emit()">
-      <mat-icon>smartphone</mat-icon>
-      Capture Using Phone
+      Capture with PC camera
     </button>
     <div class="divider">
       <span>OR</span>

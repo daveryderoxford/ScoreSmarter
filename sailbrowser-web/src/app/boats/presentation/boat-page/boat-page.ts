@@ -24,12 +24,14 @@ import { ClubStore } from 'app/club-tenant';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getSchemesForTarget } from 'app/scoring/model/handicap-scheme-metadata';
 
+import { ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
+
 @Component({
   selector: 'app-boat-page',
-  imports: [Toolbar, MatListModule, MatMenuModule,
-    MatButtonModule, MatIconModule, RouterModule, MatDividerModule,
-    MatTooltipModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, LoadingCentered,
-    MatDividerModule],
+  imports: [Toolbar, MatListModule, MatMenuModule, 
+    MatButtonModule, MatIconModule, RouterModule, MatDividerModule, 
+    MatTooltipModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, LoadingCentered, 
+    MatDividerModule, ImportExportMenuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './boat-page.html',
   styles: `
@@ -157,8 +159,8 @@ export class BoatsPage {
     window.URL.revokeObjectURL(url);
   }
 
-  async importCsv(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
+  async importCsv(event: { event: Event, context: any }): Promise<void> {
+    const input = event.event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
 

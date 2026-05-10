@@ -11,23 +11,9 @@
    width: 100%;
 }
 
-.race-summary {
-   border: 1px solid var(--mat-sys-outline-variant);
-   border-radius: 12px;
-   padding: 16px;
-   margin: 0.25rem 0 1.1rem;
-   background: var(--mat-sys-surface-container-lowest);
-}
-
-.race-summary-title {
-   font-weight: 600;
-   margin-bottom: 0.35rem;
-}
-
-.race-summary-meta {
-   display: flex;
-   flex-wrap: wrap;
-   gap: 0.5rem 1rem;
-   font-size: 0.85rem;
-   color: var(--mat-sys-on-surface-variant);
+// Keep the embedded races panel at its initial size; don't let it grow with content.
+:host app-races-panel {
+   --races-panel-list-min-height: 336px;
+   --races-panel-list-max-height: 336px;
+   display: block;
 }
