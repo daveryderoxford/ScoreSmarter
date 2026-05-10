@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PublishedRace, RaceResult } from '../../published-results/model/published-race';
 import { scoreSeries, ScoringConfig } from './series-scorer';
-import { SeriesScoringScheme } from '../model/scoring-algotirhm';
 import { SeriesEntry } from '../../results-input';
 
 /** Helper to create a mock PublishedRace */

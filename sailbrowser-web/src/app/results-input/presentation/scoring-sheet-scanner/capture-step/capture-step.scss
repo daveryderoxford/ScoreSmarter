@@ -9,14 +9,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 2rem 4rem 2rem !important;
+  padding: 1rem 1rem 1.4rem !important;
 }
 
 .race-image-error-banner {
   width: 100%;
   max-width: 520px;
   display: flex;
-  gap: 0.75rem;
+  gap: 0.8rem;
   align-items: flex-start;
   border: 1px solid var(--mat-sys-error);
   color: var(--mat-sys-on-error-container);
@@ -62,54 +62,51 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.0rem;
 }
 
 .preview-container {
   position: relative;
   text-align: center;
-  margin-bottom: 1.5rem;
   padding: 0.25rem;
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: 12px;
   background-color: var(--mat-sys-surface);
   overflow: hidden;
   width: 100%;
-  height: 500px;
-  max-width: 500px;
+  height: 380px;
+  max-width: 600px;
 }
 
 .large-capture-btn {
-  @include mat.button-overrides((filled-container-height: 64px,
-      filled-label-text-size: 1.2rem,
-      filled-container-shape: 16px,
-      outlined-container-height: 64px,
-      outlined-label-text-size: 1.2rem,
-      outlined-container-shape: 16px,
+  @include mat.button-overrides((filled-container-height: 48px,
+      filled-container-shape: 14px,
+      outlined-container-height: 48px,
+      outlined-container-shape: 14px,
     ));
 
   width: 100%;
-  font-size: 1.2rem;
-  max-width: 400px;
+  font-size: 1.0rem;
+  max-width: 320px;
 
   mat-icon {
-    transform: scale(1.5);
-    margin-right: 12px;
+    transform: scale(1.3);
+    margin-right: 10px;
   }
 }
 
 .capture-actions {
   display: flex;
   justify-content: center;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 0.75rem;
+  margin: 0;
 }
 
 .divider {
   display: flex;
   align-items: center;
   width: 100%;
-  margin: 0.5rem 0;
+  margin: 0.25rem 0;
   color: var(--mat-sys-outline);
 
   &::before,
@@ -129,7 +126,7 @@
 .upload-zone {
   border: 2px dashed var(--mat-sys-outline-variant);
   border-radius: 12px;
-  padding: 3rem 2rem;
+  padding: 1.25rem 1.5rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
@@ -153,11 +150,16 @@
     opacity: 0;
   }
 
+  p {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+  }
+
   mat-icon {
-    font-size: 48px;
-    width: 48px;
-    height: 48px;
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
     color: var(--mat-sys-outline);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
   }
 }

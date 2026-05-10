@@ -5,7 +5,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatSelectChange } from '@angular/material/select';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BoatsStore } from 'app/boats';
@@ -14,9 +13,8 @@ import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { getFleetName } from 'app/club-tenant/model/fleet';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
-import { RacePickerDialog } from 'app/race-calender/presentation/race-picker-dialog/race-picker-dialog';
 import { RESULT_CODES, ResultCode } from 'app/scoring/model/result-code-scoring';
-import { format, isToday } from 'date-fns';
+import { format } from 'date-fns';
 import { firstValueFrom } from 'rxjs';
 import { startWith } from 'rxjs/operators';
 import { Toolbar } from "app/shared/components/toolbar";
@@ -182,45 +180,10 @@ export class ScoringSheetScanner {
     const race = this.selectedRace();
     return !!race && this.hasConfiguredStarts(race);
   });
-  readonly todaysRaceOptions = computed(() =>
-    this.raceCalendarStore.allRaces().filter((r: Race) => isToday(r.scheduledStart)).map((r: Race) => ({
-      id: r.id,
-      label: `${r.seriesName} — Race ${r.index}`,
-    })),
-  );
-  pickedRaceId = signal<string | null>(null);
-  readonly pickedRaceOption = computed(() => {
-    const pId = this.pickedRaceId();
-    if (!pId) return null;
-    const r = this.raceCalendarStore.allRaces().find((x: Race) => x.id === pId);
-    if (!r) return null;
-    return { id: r.id, label: `${r.seriesName} — Race ${r.index} (${format(r.scheduledStart, 'yyyy-MM-dd')})` };
-  });
-  readonly selectedRaceSummary = computed(() => {
-    const race = this.selectedRace();
-    if (race) {
-      return {
-        title: `${race.seriesName} - Race ${race.index}`,
-        meta: [
-          this.formatRaceDateTime(race.scheduledStart),
-          `Status: ${race.status}`,
-          `Type: ${race.type}`,
-        ],
-      };
-    }
+  readonly raceOptions = computed(() => this.raceCalendarStore.allRaces());
+  readonly selectedRaceIds = computed(() => {
     const raceId = this.selectedRaceId();
-    if (!raceId) return null;
-    const picked = this.pickedRaceOption();
-    if (picked?.id === raceId) {
-      return {
-        title: picked.label,
-        meta: [`Race ID: ${raceId}`],
-      };
-    }
-    return {
-      title: `Selected race (${raceId})`,
-      meta: [],
-    };
+    return raceId ? [raceId] : [];
   });
   readonly startTimesSummary = computed(() => {
     const race = this.selectedRace();
@@ -335,12 +298,6 @@ export class ScoringSheetScanner {
     }
   }
 
-  private formatRaceDateTime(value: Date): string {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Scheduled time unavailable';
-    return format(date, 'EEE d MMM, HH:mm');
-  }
-
   private formatTimeOnly(value: Date): string {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return 'Time unavailable';
@@ -352,31 +309,12 @@ export class ScoringSheetScanner {
     return fleet ? getFleetName(fleet) : `Fleet ${fleetId}`;
   }
 
-  async onRaceSelect(event: MatSelectChange): Promise<void> {
-    if (event.value !== '__MORE__') return;
-    const dialogRef = this.dialog.open(RacePickerDialog, {
-      width: '500px',
-      data: {
-        title: 'Select Race',
-        maxSelections: 1,
-        requireSelection: true,
-        mode: 'scanner',
-        defaultPeriod: 'past',
-        availablePeriods: ['past'],
-        hideCompleteDefault: true,
-      },
-    });
-    dialogRef.afterClosed().subscribe(selection => {
-      const id = selection?.[0];
-      if (!id) {
-        this.form.controls.raceId.setValue('');
-        this.pickedRaceId.set(null);
-        return;
-      }
-      this.form.patchValue({ raceId: id });
-      this.pickedRaceId.set(id);
+  onScannerRaceIdsChange(ids: string[]): void {
+    const id = ids[0] ?? '';
+    this.form.controls.raceId.setValue(id);
+    if (id) {
       this.currentRacesStore.addRaceId(id);
-    });
+    }
   }
 
   onFileChange(event: Event): void {

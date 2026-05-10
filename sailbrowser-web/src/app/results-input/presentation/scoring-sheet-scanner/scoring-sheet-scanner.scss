@@ -19,7 +19,7 @@
 }
 
 .step-container {
-  padding: 1rem 0;
+  padding: 1rem 0 0;
   max-width: 1120px;
   margin: 0 auto;
 }
@@ -39,7 +39,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 2rem;
+  margin-top: 1rem;
+
+  // Keep Next/Previous in view regardless of step content height.
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: 0.75rem 0;
+  background: var(--mat-sys-surface-container-low);
+  border-top: 1px solid var(--mat-sys-outline-variant);
 }
 
 .step-actions-single-row {
@@ -57,7 +65,7 @@
 .detail-panel-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
 }
 
@@ -65,22 +73,25 @@
   font-weight: 600;
 }
 
-.detail-panel-status {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--mat-sys-primary);
-}
-
-.detail-panel-status.missing {
-  color: var(--mat-sys-error);
-}
-
-.detail-panel-lines {
-  margin-top: 0.5rem;
-  color: var(--mat-sys-on-surface-variant);
+.detail-panel-summary {
+  text-align: right;
   font-size: 0.9rem;
+  color: var(--mat-sys-on-surface);
   display: grid;
   gap: 0.2rem;
+
+  &.missing {
+    color: var(--mat-sys-error);
+  }
+}
+
+.detail-panel-time {
+  font-weight: 500;
+}
+
+.detail-panel-required {
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .detail-panel-actions {

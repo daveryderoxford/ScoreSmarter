@@ -9,10 +9,9 @@
         <form [formGroup]="form" class="stepper-form stepper-form-narrow">
           <app-race-step
             [form]="form"
-            [todaysRaceOptions]="todaysRaceOptions()"
-            [pickedRaceOption]="pickedRaceOption()"
-            [selectedRaceSummary]="selectedRaceSummary()"
-            (raceSelect)="onRaceSelect($event)" />
+            [races]="raceOptions()"
+            [selectedRaceIds]="selectedRaceIds()"
+            (raceSelectionChange)="onScannerRaceIdsChange($event)" />
           <div class="step-actions">
             <button matButton="filled" type="submit" matStepperNext [disabled]="!form.controls.raceId.valid" style="margin-left:auto;">Next</button>
           </div>
@@ -47,14 +46,15 @@
         <div class="detail-panel">
           <div class="detail-panel-header">
             <div class="detail-panel-title">{{ startTimesSummary().title }}</div>
-            <span class="detail-panel-status" [class.missing]="!startTimesSummary().configured">
-              {{ startTimesSummary().configured ? 'Configured' : 'Required' }}
-            </span>
-          </div>
-          <div class="detail-panel-lines">
-            @for (line of startTimesSummary().lines; track line) {
-            <div>{{ line }}</div>
-            }
+            <div class="detail-panel-summary" [class.missing]="!startTimesSummary().configured">
+              @if (startTimesSummary().configured) {
+                @for (line of startTimesSummary().lines; track line) {
+                  <div class="detail-panel-time">{{ line }}</div>
+                }
+              } @else {
+                <span class="detail-panel-required">Required</span>
+              }
+            </div>
           </div>
           <div class="detail-panel-actions">
             <button matButton="outlined" type="button" (click)="setStartTimesForSelectedRace()">

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,12 +12,13 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
-import { ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
 import { LoadingCentered } from "app/shared/components/loading-centered";
 import { Toolbar } from 'app/shared/components/toolbar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
 import { ClubStore } from '../../services/club-store';
+
+import { ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
 import { FleetsCsvService } from '../../services/fleets-csv.service';
 
 @Component({
@@ -40,6 +41,12 @@ export class FleetPage {
   private snackbar = inject(MatSnackBar);
   private fleetsCsv = inject(FleetsCsvService);
 
+  debugEffect = effect( () =>{
+    console.log(JSON.stringify(this.filteredFleets()));
+    console.log('\n')
+
+  });
+
   searchControl = new FormControl('');
   searchTerm = toSignal(
     this.searchControl.valueChanges.pipe(
@@ -55,7 +62,7 @@ export class FleetPage {
       if (fleet.type === 'GeneralHandicap') return false; // Hide system General Handicap fleet from the UI
       const name = getFleetName(fleet).toLowerCase();
       return name.includes(filter);
-    }).sort((a: Fleet, b: Fleet) => getFleetName(a).localeCompare(getFleetName(b)));
+    }).sort((a, b) => getFleetName(a).localeCompare(getFleetName(b)));
   });
 
   getFleetName = getFleetName;
