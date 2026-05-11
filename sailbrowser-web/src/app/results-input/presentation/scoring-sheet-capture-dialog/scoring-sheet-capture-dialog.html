@@ -1,0 +1,15 @@
+<h2 mat-dialog-title>Capture scoring sheet image</h2>
+<mat-dialog-content class="capture-dialog-content">
+  <app-capture-step
+    [vm]="vm()"
+    (fileChanged)="onFileChange($event)"
+    (openCamera)="openCameraDialog()"
+    (startPhoneCapture)="startPhoneCapture()"
+    (clearImage)="clearImage()" />
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button matButton type="button" (click)="cancel()">Cancel</button>
+  <button matButton="filled" type="button" [disabled]="!hasImage()" (click)="confirm()">
+    Use this image
+  </button>
+</mat-dialog-actions>

@@ -22,4 +22,3 @@ export type { ScoringConfiguration } from './scoring-configuration';
 
 export type { PublishedRace, RaceResult } from './scored-race';
 export type { PublishedSeriesResult } from './series-result';
-export type { ScoringDiagnostics } from './diagnostics';

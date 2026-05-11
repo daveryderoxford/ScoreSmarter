@@ -731,4 +731,242 @@ describe('RaceScorer', () => {
       expect(secondPass).toEqual(firstPass);
     });
   });
+
+  describe('Stale manualPosition on non-finishers (RRS A4.2)', () => {
+    // RRS A4.2 - "A boat that did not start, did not finish, retired after
+    // finishing or was disqualified shall be scored points for the finishing
+    // place ... but shall not be ranked above any boat that finished."
+    // Combined with RRS A8.1 (ties), the invariant is: only finishers carry a
+    // finishing position; rank = 0 means "no finishing place".
+
+    it('Handicap: DNF with stale manualPosition gets rank 0 and sorts to bottom', () => {
+      // Reproduces the leak: a competitor recorded a finishing position and
+      // was later marked DNF; manualPosition lingers on RaceCompetitor.
+      // buildRaceResults must gate the rank seed on resultCode.
+      const competitors = [
+        createCompetitor('1', 600, 'OK'),
+        createCompetitor('2', 700, 'OK'),
+        createCompetitor('3', null, 'DNF', { manualPosition: 1 }),
+      ];
+      const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 3);
+
+      const r1 = results.find(r => r.sailNumber === 101)!;
+      const r2 = results.find(r => r.sailNumber === 102)!;
+      const dnf = results.find(r => r.sailNumber === 103)!;
+
+      expect(r1.rank).toBe(1);
+      expect(r2.rank).toBe(2);
+      expect(dnf.rank).toBe(0);
+      expect(dnf.resultCode).toBe('DNF');
+      expect(results[results.length - 1].sailNumber).toBe(103);
+    });
+
+    it('Level Rating: DNF with stale manualPosition does not flip ordering to manual positions', () => {
+      // determineOrdering chooses manual-positions vs elapsed-time by
+      // inspecting finishers. With a stale rank on a non-finisher, the
+      // post-scoring invariant `rank > 0 => finisher` is what keeps
+      // sortByPoints and the results table honest.
+      const competitors = [
+        createCompetitor('1', 600, 'OK'),
+        createCompetitor('2', 700, 'OK'),
+        createCompetitor('3', 800, 'OK'),
+        createCompetitor('4', null, 'DNF', { manualPosition: 2 }),
+      ];
+      const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 4);
+
+      const r1 = results.find(r => r.sailNumber === 101)!;
+      const r2 = results.find(r => r.sailNumber === 102)!;
+      const r3 = results.find(r => r.sailNumber === 103)!;
+      const dnf = results.find(r => r.sailNumber === 104)!;
+
+      expect(r1.rank).toBe(1);
+      expect(r1.elapsedTime).toBe(600);
+      expect(r2.rank).toBe(2);
+      expect(r3.rank).toBe(3);
+      expect(dnf.rank).toBe(0);
+      expect(results[results.length - 1].sailNumber).toBe(104);
+    });
+  });
+
+  describe('Level Rating parity with Handicap', () => {
+    // Mirrors the existing handicap SCP / ZFP / static-code tests against
+    // Level Rating to lock in parity across the two race types and the three
+    // ordering modes (corrected time, elapsed time, manual positions).
+
+    it('Level Rating (manual positions): SCP keeps finishing rank and adds penalty places (RRS 44.3(c))', () => {
+      // RRS 44.3(c): "The race score for a boat that takes a Scoring Penalty
+      // shall be the score she would have received without that penalty,
+      // made worse by ... [N] places. The scores of other boats shall not be
+      // changed; therefore, two boats may receive the same score."
+      const competitors = [
+        createCompetitor('1', null, 'OK', { manualPosition: 1 }),
+        createCompetitor('2', null, 'SCP', { manualPosition: 2 }),
+        createCompetitor('3', null, 'OK', { manualPosition: 3 }),
+      ];
+      // 100 boats entered. Penalty = max(2, round(100 * 0.2 * 10) / 10) = 20.
+      const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 100);
+
+      const r1 = results.find(r => r.sailNumber === 101)!;
+      const r2 = results.find(r => r.sailNumber === 102)!;
+      const r3 = results.find(r => r.sailNumber === 103)!;
+
+      expect(r1.rank).toBe(1);
+      expect(r1.points).toBe(1);
+      expect(r2.rank).toBe(2);
+      expect(r2.points).toBe(22);
+      // RRS 44.3(c): other boats' scores are unchanged.
+      expect(r3.rank).toBe(3);
+      expect(r3.points).toBe(3);
+    });
+
+    it('Level Rating (elapsed time): SCP keeps finishing rank and adds penalty places (RRS 44.3(c))', () => {
+      const competitors = [
+        createCompetitor('1', 600, 'OK'),
+        createCompetitor('2', 700, 'SCP'),
+        createCompetitor('3', 800, 'OK'),
+      ];
+      const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 100);
+
+      const r1 = results.find(r => r.sailNumber === 101)!;
+      const r2 = results.find(r => r.sailNumber === 102)!;
+      const r3 = results.find(r => r.sailNumber === 103)!;
+
+      expect(r1.rank).toBe(1);
+      expect(r1.points).toBe(1);
+      expect(r2.rank).toBe(2);
+      expect(r2.points).toBe(22);
+      expect(r3.rank).toBe(3);
+      expect(r3.points).toBe(3);
+    });
+
+    it('Level Rating: ZFP penalty rounds to 1/10 of a point (RRS 44.3(c), project rounding rule)', () => {
+      // Project rule deviates from the strict RRS "nearest whole number"
+      // rounding and keeps 1/10 precision; see also the handicap counterpart.
+      const seriesCompetitorCount = 11;
+      const competitors = [
+        createCompetitor('1', 600, 'OK'),
+        createCompetitor('2', 700, 'ZFP'),
+      ];
+      // Penalty = 20% of 11 = 2.2; c2 = 2 + 2.2 = 4.2.
+      const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', seriesCompetitorCount);
+
+      const r2 = results.find(r => r.sailNumber === 102)!;
+      expect(r2.points).toBe(4.2);
+    });
+
+    it('Level Rating: ZFP enforces minimum 2-place penalty (RRS 44.3(c))', () => {
+      // 20% of 4 = 0.8, rounded to 1, but the rule sets a minimum of 2 places.
+      const seriesCompetitorCount = 4;
+      const competitors = [
+        createCompetitor('1', 600, 'OK'),
+        createCompetitor('2', 700, 'ZFP'),
+      ];
+      const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', seriesCompetitorCount);
+
+      const r2 = results.find(r => r.sailNumber === 102)!;
+      // 2nd place (2 pts) + min(2) places = 4 pts.
+      expect(r2.points).toBe(4);
+    });
+
+    it('Level Rating: SCP penalty capped at the DNF score (RRS 44.3(c))', () => {
+      // RRS 44.3(c): "the boat shall not be scored worse than Did Not Finish".
+      const seriesCompetitorCount = 6;
+      const competitors = [
+        createCompetitor('1', 600, 'OK'),
+        createCompetitor('2', 700, 'OK'),
+        createCompetitor('3', 800, 'OK'),
+        createCompetitor('4', 850, 'OK'),
+        createCompetitor('5', 900, 'OK'),
+        createCompetitor('6', 1000, 'SCP'),
+      ];
+      // long series: dnfPoints = startAreaCount (6) + 1 = 7.
+      // 6 (place) + 1.4 (penalty) = 7.4, capped at 7.
+      const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'long', seriesCompetitorCount);
+
+      const r6 = results.find(r => r.sailNumber === 106)!;
+      expect(r6.points).toBe(7);
+    });
+
+    it('Level Rating: DNF / OCS / DNS / DSQ static codes match handicap (RRS A4.2, A5.1)', () => {
+      // RRS A4.2 / A5.1 (Low-Point Scoring): boats that did not start, did
+      // not finish, retired, or were disqualified are scored
+      // "the number of boats entered in the series + 1".
+      const seriesCompetitorCount = 6;
+      const competitors = [
+        createCompetitor('1', 600, 'OK'),
+        createCompetitor('2', 700, 'OK'),
+        createCompetitor('3', null, 'DNF'),
+        createCompetitor('4', null, 'OCS'),
+        createCompetitor('5', null, 'DNS'),
+        createCompetitor('6', null, 'DSQ'),
+      ];
+      const penaltyPoints = seriesCompetitorCount + 1;
+      const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', seriesCompetitorCount);
+
+      const r3 = results.find(r => r.sailNumber === 103)!;
+      const r4 = results.find(r => r.sailNumber === 104)!;
+      const r5 = results.find(r => r.sailNumber === 105)!;
+      const r6 = results.find(r => r.sailNumber === 106)!;
+
+      expect(r3.points).toBe(penaltyPoints);
+      expect(r3.rank).toBe(0);
+      expect(r4.points).toBe(penaltyPoints);
+      expect(r4.rank).toBe(0);
+      expect(r5.points).toBe(penaltyPoints);
+      expect(r5.rank).toBe(0);
+      expect(r6.points).toBe(penaltyPoints);
+      expect(r6.rank).toBe(0);
+    });
+
+    it('Level Rating: RET non-finishers have rank=0 and stay at the bottom alongside DNF (RRS A4.2)', () => {
+      const competitors = [
+        createCompetitor('1', 600, 'OK'),
+        createCompetitor('2', 700, 'OK'),
+        createCompetitor('3', 800, 'OK'),
+        createCompetitor('4', null, 'DNF'),
+        createCompetitor('5', null, 'RET'),
+      ];
+      const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 5);
+
+      const ranks = [101, 102, 103, 104, 105].map(sn =>
+        results.find(r => r.sailNumber === sn)!.rank,
+      );
+      expect(ranks).toEqual([1, 2, 3, 0, 0]);
+      const lastTwo = results.slice(-2).map(r => r.sailNumber).sort();
+      expect(lastTwo).toEqual([104, 105]);
+    });
+
+    it('Level Rating: RDG without a finish time falls to the bottom with rank=0 (RRS A4.2)', () => {
+      const competitors = [
+        createCompetitor('1', 600, 'OK'),
+        createCompetitor('2', 700, 'OK'),
+        createCompetitor('3', 800, 'OK'),
+        createCompetitor('4', null, 'RDG'),
+      ];
+      const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 4);
+
+      const rdg = results.find(r => r.sailNumber === 104)!;
+      expect(rdg.rank).toBe(0);
+      expect(results[results.length - 1].sailNumber).toBe(104);
+    });
+
+    it('Level Rating: RDG with a finish time keeps its finishing rank (RRS A8.1)', () => {
+      // RDG points are written by the series scorer; the per-race rank still
+      // reflects the boat's actual finishing position.
+      const competitors = [
+        createCompetitor('1', 600, 'OK'),
+        createCompetitor('2', 700, 'RDG'),
+        createCompetitor('3', 800, 'OK'),
+      ];
+      const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 3);
+
+      const r1 = results.find(r => r.sailNumber === 101)!;
+      const rdg = results.find(r => r.sailNumber === 102)!;
+      const r3 = results.find(r => r.sailNumber === 103)!;
+
+      expect(r1.rank).toBe(1);
+      expect(rdg.rank).toBe(2);
+      expect(r3.rank).toBe(3);
+    });
+  });
 });

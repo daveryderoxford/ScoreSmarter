@@ -92,19 +92,19 @@ export class ScannerOrchestrationService {
   }
 
   async saveScanResponse(clubId: string, raceId: string, response: ScanResponse): Promise<void> {
-    const ref = doc(this.firestore, `clubs/${clubId}/results-sheet-capture-sessions/${raceId}`);
+    const ref = doc(this.firestore, `clubs/${clubId}/scan-results/${raceId}`);
     await setDoc(ref, { scanResponse: response, updatedAt: new Date() }, { merge: true });
   }
 
   async getScanResponse(clubId: string, raceId: string): Promise<ScanResponse | null> {
-    const ref = doc(this.firestore, `clubs/${clubId}/results-sheet-capture-sessions/${raceId}`);
+    const ref = doc(this.firestore, `clubs/${clubId}/scan-results/${raceId}`);
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
     return snap.data()['scanResponse'] as ScanResponse || null;
   }
 
   async clearScanResponse(clubId: string, raceId: string): Promise<void> {
-    const ref = doc(this.firestore, `clubs/${clubId}/results-sheet-capture-sessions/${raceId}`);
+    const ref = doc(this.firestore, `clubs/${clubId}/scan-results/${raceId}`);
     await updateDoc(ref, { scanResponse: null });
   }
 

@@ -17,17 +17,44 @@
   </div>
 
   @if (selectedRace(); as sr) {
-    @if (sr.type === 'Handicap') {
-      <button matButton="text" (click)="setStartTime(sr)">Start</button>
-    }
-      }
 
-  <app-busy-button [style]="'text'" [busy]="publishing()" (click)="publish()">
-    Publish
-  </app-busy-button>
-  <button matButton="text" type="button" [disabled]="!selectedRace()" (click)="viewResultsForSelectedRace()">
-    Results
-  </button>
+
+    @if (isMobile()) {
+      <button mat-icon-button type="button" [matMenuTriggerFor]="raceActionsMenu"
+        aria-label="Race actions">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #raceActionsMenu="matMenu">
+        <button mat-menu-item type="button" (click)="openScoringSheet()">
+          <mat-icon>photo_camera</mat-icon>
+          <span>Scoring sheet</span>
+        </button>
+        <button mat-menu-item type="button" [disabled]="publishing()" (click)="publish()">
+          <mat-icon>upload</mat-icon>
+          <span>Publish</span>
+        </button>
+        <button mat-menu-item type="button" (click)="viewResultsForSelectedRace()">
+          <mat-icon>scoreboard</mat-icon>
+          <span>Results</span>
+        </button>
+      </mat-menu>
+    } @else {
+          @if (sr.type === 'Handicap') {
+          <button matButton="text" (click)="setStartTime(sr)">Start</button>
+          }
+      <button mat-icon-button type="button"
+        aria-label="Open scoring sheet"
+        (click)="openScoringSheet()">
+        <mat-icon>photo_camera</mat-icon>
+      </button>
+      <app-busy-button [style]="'text'" [busy]="publishing()" (click)="publish()">
+        Publish
+      </app-busy-button>
+      <button matButton="text" type="button" (click)="viewResultsForSelectedRace()">
+        Results
+      </button>
+    }
+  }
 
 </app-toolbar>
 

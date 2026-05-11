@@ -124,44 +124,39 @@ export class ScoringEngine {
 
     if (candidateRaces.length === 0) {
       console.log(`ScoringEngine: No races to publish for series ${seriesId}`);
-      return;
+    } else {
+      // 2. Sort races chronologically
+      candidateRaces.sort((a, b) => {
+        const timeA = (a.actualStart || a.scheduledStart).getTime();
+        const timeB = (b.actualStart || b.scheduledStart).getTime();
+        return timeA - timeB;
+      });
+
+      // 3. Fetch all competitors and entries (needed for scoring and per-fleet filters).
+      const allSeriesCompetitors = await this.rcs.getSeriesCompetitors(seriesId);
+      const seriesEntries = await this.seriesEntryStore.getSeriesEntries(seriesId);
+
+      console.log(`ScoringEngine: Series ${seriesId} - Races: ${candidateRaces.length}, Competitors: ${allSeriesCompetitors.length}, Entries: ${seriesEntries.length}`);
+
+      const configsToScore = [series.primaryScoringConfiguration, ...(series.secondaryScoringConfigurations || [])];
+
+      for (const config of configsToScore) {
+        const isPrimary = config.id === series.primaryScoringConfiguration.id;
+        const publishedSeriesId = isPrimary ? series.id : `${series.id}_${config.id}`;
+        const publishedSeriesName = isPrimary ? series.name : `${series.name} - ${config.name}`;
+
+        const scorableRaces = candidateRaces.filter(race =>
+          isRaceScorable(race, config, allSeriesCompetitors, seriesEntries),
+        );
+
+        await this.rescoreAllRacesForConfig(batch, seasonUpdates, series, config, publishedSeriesId, publishedSeriesName, scorableRaces, allSeriesCompetitors, seriesEntries);
+      }
+
+      this.cleanupStaleSeries(batch, seasonUpdates, series, configsToScore);
     }
 
-    // 2. Sort races chronologically
-    candidateRaces.sort((a, b) => {
-      const timeA = (a.actualStart || a.scheduledStart).getTime();
-      const timeB = (b.actualStart || b.scheduledStart).getTime();
-      return timeA - timeB;
-    });
-
-    // 3. Fetch all competitors and entries (needed for scoring and per-fleet filters).
-    const allSeriesCompetitors = await this.rcs.getSeriesCompetitors(seriesId);
-    const seriesEntries = await this.seriesEntryStore.getSeriesEntries(seriesId);
-
-    const allRaces = candidateRaces;
-
-    console.log(`ScoringEngine: Series ${seriesId} - Races: ${allRaces.length}, Competitors: ${allSeriesCompetitors.length}, Entries: ${seriesEntries.length}`);
-
-    const configsToScore = [series.primaryScoringConfiguration, ...(series.secondaryScoringConfigurations || [])];
-
-    for (const config of configsToScore) {
-      const isPrimary = config.id === series.primaryScoringConfiguration.id;
-      const publishedSeriesId = isPrimary ? series.id : `${series.id}_${config.id}`;
-      const publishedSeriesName = isPrimary ? series.name : `${series.name} - ${config.name}`;
-
-      const scorableRaces = allRaces.filter(race =>
-        isRaceScorable(race, config, allSeriesCompetitors, seriesEntries),
-      );
-
-      await this.rescoreAllRacesForConfig(batch, seasonUpdates, series, config, publishedSeriesId, publishedSeriesName, scorableRaces, allSeriesCompetitors, seriesEntries);
-    }
-
-    this.cleanupStaleSeries(batch, seasonUpdates, series, configsToScore);
-
-    // 4. Clear dirty for every race in this publish pass, so the series
-    // does not stay perpetually "needs publish" for those races. New edits (e.g. fixing a result or
-    // moving someone back to NOT FINISHED to unscore) will set dirty again via the results workflow.
-    for (const race of allRaces) {
+    // 4. Clear dirty for every race in the series. 
+    for (const race of racesForSeries) {
       if (race.dirty) {
         const raceDoc = this.tenant.docRef<Race>('races', race.id);
         batch.update(raceDoc, { dirty: false });

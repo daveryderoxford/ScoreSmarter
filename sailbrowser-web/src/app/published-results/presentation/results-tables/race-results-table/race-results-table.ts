@@ -1,7 +1,7 @@
 import { CdkTableModule } from '@angular/cdk/table';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { doesRaceRequireHandicap, type RaceType } from 'app/race-calender/model/race-type';
-import { RaceResult } from 'app/published-results/model/published-race';
+import { isRankedRaceResult, RaceResult } from 'app/published-results/model/published-race';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { competitorColumns, nameColumnWidth as computeNameColumnWidth } from '../results-table-shared';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
@@ -17,6 +17,8 @@ export type RaceColumn = (typeof raceColumns)[number];
   styleUrls: ['../results-table-shared.scss', './race-results-table.scss'],
 })
 export class RaceResultsTable {
+  protected readonly isRankedRaceResult = isRankedRaceResult;
+
   results = input.required<RaceResult[]>();
   columns = input<RaceColumn[]>([...raceColumns]);
   /** When set and not a handicap-time race, elapsed/corrected/rating columns are hidden. */

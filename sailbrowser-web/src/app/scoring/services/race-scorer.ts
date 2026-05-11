@@ -1,4 +1,4 @@
-import { RaceResult } from '../../published-results/model/published-race';
+import { hasRaceRank, RaceResult, UNRANKED_RACE_RANK } from '../../published-results/model/published-race';
 import { Race, RaceType } from '../../race-calender';
 import { RaceCompetitor, SeriesEntry } from '../../results-input';
 import { ScoreSmarterError } from '../../shared/utils/scoresmarter-error';
@@ -62,7 +62,7 @@ export function calculateRacePoints(
   // Ranks are NOT re-derived from array index here - they were already assigned by
   // assignPointsForFinishers (RRS A8.1 ties + 44.3(c) penalised boats keep their finish
   // rank). Rows without a rank (OOD / RDG-without-finish / DNF / DNC / RET / ...) keep
-  // rank = 0 as initialised in buildRaceResults; the rank-aware sortByPoints below
+  // UNRANKED_RACE_RANK as initialised in buildRaceResults; the rank-aware sortByPoints below
   // pins them to the bottom regardless of any points written back later by the series
   // scorer (e.g. applyClubOod).
   results.sort((a, b) => sortByPoints(a, b));
@@ -85,7 +85,7 @@ function determineOrdering(raceType: RaceType, scheme: HandicapScheme, results: 
     orderingProperty = 'rank';
     validateFinishersHaveData(finishers, 'rank', 'Pursuit races require a manual position');
   } else if (scheme === 'Level Rating') {
-    const useManualPositions = finishers.some(f => f.rank > 0);
+    const useManualPositions = finishers.some(f => hasRaceRank(f.rank));
     if (useManualPositions) {
       orderingProperty = 'rank';
       validateFinishersHaveData(finishers, 'rank', 'Manual positions are used');
@@ -109,7 +109,7 @@ function validateFinishersHaveData(finishers: RaceResult[], property: keyof Race
   const missingData = finishers
     // Exclude competitors with redress from finish time validation, as they may not have one.
     .filter(f => !isRedress(f.resultCode))
-    .find(f => !((f[property] as number) > 0));
+    .find(f => property === 'rank' ? !hasRaceRank(f.rank) : !((f[property] as number) > 0));
   if (missingData) {
     const propertyName = property === 'rank' ? 'position' : 'finish time';
     throw new ScoreSmarterError(`Inconsistent ordering data: ${context}, but finisher with sail number ${missingData.sailNumber} is missing a ${propertyName}.`);
@@ -145,10 +145,14 @@ export function buildRaceResults(
         ? 'NOT FINISHED'
         : comp.resultCode;
 
+    // Do not set a rank for competitors that did not finish.   Set then to unranked.
+    // They already should have a null rank from results processing so this is just for safety.
+    const seededRank = isFinishedComp(adjustedResultCode) ? (comp.manualPosition || UNRANKED_RACE_RANK) : UNRANKED_RACE_RANK;
+
     return {
       seriesEntryId: comp.seriesEntryId,
       competitorKey: mergeKeyFor(entry, mergeStrategy),
-      rank: comp.manualPosition || 0,
+      rank: seededRank,
       boatClass: entry.boatClass,
       sailNumber: entry.sailNumber,
       helm: entry.helm,
@@ -258,6 +262,12 @@ function applyStaticRacePenalties(results: RaceResult[],
   const nonFinishers = results.filter(r => !isFinishedComp(r.resultCode));
 
   for (const result of nonFinishers) {
+    // RRS A4.2: non-finishers receive a score but not a finishing position.
+    // Reset defensively so subsequent calculateRacePoints passes (e.g. from the
+    // series-scorer writeback loop) can never observe a stale rank on a
+    // non-finisher.
+    result.rank = UNRANKED_RACE_RANK;
+
     // Determine which algorithm to use based on the scheme
     const algorithm = (scheme === 'long')
       ? getLongAlgorithm(result.resultCode)
@@ -279,9 +289,9 @@ function applyStaticRacePenalties(results: RaceResult[],
 /**
  * Rank-aware points sort.
  *
- * Rows that have a rank (rank > 0 - real finishers, including those with a scoring
+ * Rows that have a rank (real finishers, including those with a scoring
  * penalty per RRS 44.3(c), and redress recipients who finished) sort above rows that
- * do not (rank === 0 - OOD, RDG-without-finish, DNF, DNC, RET, OCS, ...). Within
+ * do not (UNRANKED_RACE_RANK - OOD, RDG-without-finish, DNF, DNC, RET, OCS, ...). Within
  * each group the order is by points ascending; rows with zero points yet are pushed
  * to the bottom of their group.
  *
@@ -290,8 +300,8 @@ function applyStaticRacePenalties(results: RaceResult[],
  * coincide with a real finisher's points.
  */
 export function sortByPoints(a: RaceResult, b: RaceResult): number {
-  const aRanked = a.rank > 0;
-  const bRanked = b.rank > 0;
+  const aRanked = hasRaceRank(a.rank);
+  const bRanked = hasRaceRank(b.rank);
   if (aRanked !== bRanked) return aRanked ? -1 : 1;
   return (a.points || 9999) - (b.points || 9999);
 }

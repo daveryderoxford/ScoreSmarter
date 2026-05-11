@@ -1,5 +1,5 @@
 import type { DncCalculation } from 'app/club-tenant/model/club';
-import type { PublishedRace } from 'app/published-results/model/published-race';
+import { UNRANKED_RACE_RANK, type PublishedRace } from 'app/published-results/model/published-race';
 import type { Race } from 'app/race-calender/model/race';
 import type { SeriesEntry } from 'app/results-input';
 import type { RaceCompetitor } from 'app/results-input/model/race-competitor';
@@ -58,7 +58,7 @@ export function buildDncContext(args: {
         .map(result => ({
           seriesEntryId: result.seriesEntryId,
           competitorKey: result.competitorKey,
-          rank: 0,
+          rank: UNRANKED_RACE_RANK,
           boatClass: '',
           sailNumber: 0,
           helm: '',

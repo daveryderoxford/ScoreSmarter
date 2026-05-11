@@ -45,3 +45,14 @@ export interface RaceResult {
    points: number;
    resultCode: ResultCode;
 }
+
+/** Published race results use this sentinel when a competitor has no finishing rank. */
+export const UNRANKED_RACE_RANK = 0;
+
+export function hasRaceRank(rank: number): boolean {
+   return rank !== UNRANKED_RACE_RANK;
+}
+
+export function isRankedRaceResult(result: Pick<RaceResult, 'rank'>): boolean {
+   return hasRaceRank(result.rank);
+}

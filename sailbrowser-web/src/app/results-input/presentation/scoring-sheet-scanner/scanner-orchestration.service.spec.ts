@@ -2,7 +2,9 @@ import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { vi } from 'vitest';
 import { FirebaseApp } from '@angular/fire/app';
+import { Firestore } from '@angular/fire/firestore';
 import { RaceCalendarStore } from 'app/race-calender';
+import { CaptureSessionUploadService } from 'app/results-sheet-phone-capture/capture-session-upload.service';
 import { RaceCompetitor } from '../../model/race-competitor';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
 import { SeriesEntryStore } from '../../services/series-entry-store';
@@ -44,6 +46,11 @@ describe('ScannerOrchestrationService', () => {
       providers: [
         ScannerOrchestrationService,
         { provide: FirebaseApp, useValue: {} },
+        { provide: Firestore, useValue: {} },
+        {
+          provide: CaptureSessionUploadService,
+          useValue: { uploadFromCaptureSession: vi.fn() },
+        },
         { provide: RaceCalendarStore, useValue: { allRaces: signal([race]).asReadonly() } },
         { provide: RaceCompetitorStore, useValue: { selectedCompetitors: signal([competitor]).asReadonly() } },
         {

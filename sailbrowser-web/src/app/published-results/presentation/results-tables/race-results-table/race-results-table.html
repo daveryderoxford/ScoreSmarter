@@ -5,7 +5,7 @@
       <ng-container cdkColumnDef="rank">
          <th cdk-header-cell class="rank-col" *cdkHeaderCellDef>Rank</th>
          <td cdk-cell class="rank-col" *cdkCellDef="let competitor">
-            @if (competitor.rank > 0) {
+            @if (isRankedRaceResult(competitor)) {
                {{competitor.rank}}
             }
          </td>

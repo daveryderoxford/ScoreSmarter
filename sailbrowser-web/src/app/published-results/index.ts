@@ -1,4 +1,5 @@
 export type { PublishedRace, RaceResult } from './model/published-race';
+export { hasRaceRank, isRankedRaceResult, UNRANKED_RACE_RANK } from './model/published-race';
 export type { PublishedSeason, SeriesInfo } from './model/published-season';
 export type { PublishedSeries, PublishedSeriesResult } from './model/published-series';
 

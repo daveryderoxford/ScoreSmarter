@@ -35,7 +35,6 @@
               }
             ],
             "styles": [
-              "src/tailwind.css",
               "src/styles.scss"
             ],
             "stylePreprocessorOptions": {

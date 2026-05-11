@@ -1,6 +1,5 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { ChangeDetectorRef, Component, computed, effect, inject, signal, viewChild } from '@angular/core';
-import { FirebaseApp } from '@angular/fire/app';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,8 +27,8 @@ import { CaptureStep, CaptureStepViewModel } from './capture-step/capture-step';
 import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
 import { ScanResponse, ScannedResultRow, ScannerContext } from './scan-model';
 import { ScannerOrchestrationService } from './scanner-orchestration.service';
+import { ResultsSheetCaptureService } from '../../services/results-sheet-capture.service';
 import { RaceStep } from './race-step/race-step';
-import { getDownloadURL, getStorage, ref as storageRef } from 'firebase/storage';
 import type { ScannerTimeFormat } from '@shared/scanner-context';
 import { SetupStep } from './setup-step/setup-step';
 import { PhoneCaptureQrDialog, PhoneCaptureQrDialogResult } from './phone-capture-qr-dialog/phone-capture-qr-dialog';
@@ -104,9 +103,9 @@ export class ScoringSheetScanner {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly scannerOrchestration = inject(ScannerOrchestrationService);
+  private readonly captureService = inject(ResultsSheetCaptureService);
   private readonly manualResultsService = inject(ManualResultsService);
   private readonly cdr = inject(ChangeDetectorRef);
-  private readonly firebaseApp = inject(FirebaseApp);
 
   readonly isMobile = computed(() => this.breakpointObserver.isMatched('(max-width: 599px)'));
   stepper = viewChild.required<MatStepper>('stepper');
@@ -280,13 +279,8 @@ export class ScoringSheetScanner {
 
   private async resolveRaceSheetImageUrl(imageRef: string): Promise<void> {
     const resolveVersion = ++this.raceSheetImageResolveVersion;
-    if (!imageRef) {
-      this.raceSheetImageUrl.set(null);
-      this.raceSheetImageLoadError.set(null);
-      return;
-    }
     try {
-      const url = await getDownloadURL(storageRef(getStorage(this.firebaseApp), imageRef));
+      const url = await this.captureService.resolveDownloadUrl(imageRef);
       if (resolveVersion !== this.raceSheetImageResolveVersion) return;
       this.raceSheetImageUrl.set(url);
       this.raceSheetImageLoadError.set(null);
