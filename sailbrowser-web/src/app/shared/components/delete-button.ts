@@ -20,6 +20,13 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
   `,
   styles: [
     `
+    @use '@angular/material' as mat;
+    :host {
+      @include mat.button-overrides((
+        tonal-container-color: var(--mat-sys-error),
+        tonal-label-text-color: var(--mat-sys-on-error),
+      ));    
+    }
     `,
   ],
   imports: [MatButtonModule, MatProgressSpinnerModule],

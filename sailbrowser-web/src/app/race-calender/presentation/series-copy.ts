@@ -12,10 +12,18 @@ import { RaceCalendarStore } from '../services/full-race-calander';
 import { Series } from '../model/series';
 import { ClubStore } from 'app/club-tenant';
 import { getFleetName } from 'app/club-tenant/model/fleet';
+import { SubmitButton } from 'app/shared/components/submit-button';
 
 @Component({
   selector: 'app-series-copy',
-  imports: [Toolbar, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, ReactiveFormsModule],
+  imports: [Toolbar, 
+    MatButtonModule, 
+    MatFormFieldModule, 
+    MatInputModule, 
+    MatSelectModule, 
+    ReactiveFormsModule,
+    SubmitButton
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-toolbar [title]="'Copy Series ' + series()?.name" showBack/>
@@ -43,9 +51,9 @@ import { getFleetName } from 'app/club-tenant/model/fleet';
       </mat-form-field>
 
       <div class="actions">
-        <button [disabled]="form.invalid || !form.dirty" matButton="tonal" type="submit">
+        <app-submit-button [busy]="busy()" [disabled]="form.invalid || !form.dirty">
           Copy
-        </button>
+        </app-submit-button>
       </div>
    </form>
   `,
@@ -110,13 +118,14 @@ export class SeriesCopy {
         fleetId: fleetId
       };
 
-      this.rcs.addRaces(seriesDetails, this.races());
+      await this.rcs.addRaces(seriesDetails, this.races());
 
       this.form.reset();
 
       // Navigate back to the series list
-      this.router.navigate(['race-calender', this.id()]);
-    } catch (error: any) {
+      this.router.navigate(['./race-calender']);
+    } catch (error: unknown) {
+      console.log('SeriesCopy:  Error saving new series ' +  error);
       this.snackbar.open('Error adding Series', 'Dismiss', { duration: 3000 });
     } finally {
       this.busy.set(false);

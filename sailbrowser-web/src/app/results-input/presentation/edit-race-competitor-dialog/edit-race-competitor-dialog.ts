@@ -59,7 +59,7 @@ export type EditRaceCompetitorDialogResult =
     </mat-dialog-content>
     <mat-dialog-actions align="start">
       <app-delete-button [busy]="saving()" (delete)="onDelete()">
-        Delete competitor
+        Delete Race Entry
       </app-delete-button>
     </mat-dialog-actions>
   `,

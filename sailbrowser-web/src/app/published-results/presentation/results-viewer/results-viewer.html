@@ -44,7 +44,6 @@
             </div>
             @if (alternativeConfigurations().length > 1) {
                <div class="config-selector-row">
-                  <span class="config-label">Scoring View:</span>
                   <mat-chip-listbox [value]="id()" (change)="onConfigurationChange($event.value)">
                      @for (config of alternativeConfigurations(); track config.id) {
                         <mat-chip-option [value]="config.id" [selected]="config.id === id()">
