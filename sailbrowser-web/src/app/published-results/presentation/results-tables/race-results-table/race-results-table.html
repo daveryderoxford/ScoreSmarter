@@ -1,5 +1,8 @@
-<div class="container">
-   <table cdk-table class="table" [dataSource]="tableData()" [trackBy]="trackByKey" [style.font-size]="fontSize()">
+<div class="published-results-table-frame">
+   <div class="container">
+      <div class="table-with-legend">
+         <app-tag-legend [definitions]="tagDefinitions()" />
+         <table cdk-table class="table" [dataSource]="tableData()" [trackBy]="trackByKey" [style.font-size]="fontSize()">
 
       <!-- Initial columns -->
       <ng-container cdkColumnDef="rank">
@@ -13,10 +16,19 @@
 
       <ng-container cdkColumnDef="name" sticky>
          <th cdk-header-cell [style.width]="nameColumnWidth()" *cdkHeaderCellDef>Helm/Crew</th>
-         <td cdk-cell [style.width]="nameColumnWidth()" *cdkCellDef="let competitor">
-            {{competitor.helm}}
+         <td cdk-cell class="name-cell" [style.width]="nameColumnWidth()" *cdkCellDef="let competitor">
+            <div class="name-cell__topline">
+               <span class="name-cell__helm">{{ competitor.helm }}</span>
+               @if ((competitor.tags ?? []).length > 0) {
+                  <app-tags-cell
+                     class="name-cell__badges"
+                     appearance="badges"
+                     [ids]="competitor.tags ?? []"
+                     [definitions]="tagDefinitions()" />
+               }
+            </div>
             @if (competitor.crew) {
-               <br> {{ competitor.crew}}
+               <div class="name-cell__crew">{{ competitor.crew }}</div>
             }
          </td>
       </ng-container>
@@ -78,4 +90,6 @@
       </tr>
 
    </table>
+      </div>
+   </div>
 </div>

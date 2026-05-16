@@ -27,9 +27,8 @@ export function nameColumnWidth(names: HelmCrew[]) {
    maxLenPixels = Math.min(MAX_NAME_WIDTH, maxLenPixels);
    maxLenPixels = Math.max(MIN_NAME_WIDTH, maxLenPixels);
 
-   console.log('Max ' + maxLenPixels + 'Characters: ' + maxLenChars);
-
    return `${maxLenPixels}px`;
 }
 
+/** Shared leading columns (tags render as dots beside the name, not a column). */
 export const competitorColumns = ['rank', 'name', 'boat', 'handicap'] as const;

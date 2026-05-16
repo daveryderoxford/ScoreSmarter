@@ -1,7 +1,7 @@
 import { Injectable, computed, effect, inject } from "@angular/core";
 import { rxResource } from '@angular/core/rxjs-interop';
 import { User } from "@angular/fire/auth";
-import { DocumentReference, arrayRemove, arrayUnion, doc, docData, setDoc, updateDoc } from "@angular/fire/firestore";
+import { DocumentReference, arrayRemove, arrayUnion, doc, docData, setDoc } from "@angular/fire/firestore";
 import { AuthService } from 'app/auth';
 import type { Boat } from 'app/boats';
 import { of } from 'rxjs';
@@ -67,11 +67,18 @@ export class UserDataService {
     return doc(this.userCollection, uid)
   }
 
+  // Same rationale as `updateDetails` above: prefer `setDoc({ merge: true })`
+  // over `updateDoc` so the typed converter is invoked.
   async addBoat(boat: Boat) {
-    await updateDoc(this._doc(this.id()!), { boats: arrayUnion(boat) });
+    await setDoc(this._doc(this.id()!), { boats: arrayUnion(boat) }, { merge: true });
   }
 
   async removeBoat(boat: Boat) {
-    await updateDoc(this._doc(this.id()!), { classes: arrayRemove(boat) });
+    // NOTE: the previous implementation wrote to a non-existent `classes`
+    // field. `updateDoc` masked the typo (no converter, no field-name
+    // validation); the typed `setDoc({ merge: true })` path surfaced it. The
+    // method is unused at the call sites today but is corrected so it would
+    // actually work if wired up.
+    await setDoc(this._doc(this.id()!), { boats: arrayRemove(boat) }, { merge: true });
   }
 }

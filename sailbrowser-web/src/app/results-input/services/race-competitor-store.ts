@@ -13,7 +13,6 @@ import {
   getDocs,
   query,
   setDoc,
-  updateDoc,
   where,
 } from '@angular/fire/firestore';
 import { FirestoreTenantService } from 'app/club-tenant';
@@ -97,9 +96,17 @@ export class RaceCompetitorStore {
     return id;
   }
 
+  /**
+   * Partial update of a race competitor. Routed through
+   * `setDoc({ merge: true })` (not `updateDoc`) so the typed
+   * `classInstanceConverter` runs — converting `undefined` to "omit", `null`
+   * to `deleteField()`, and `Date` to `Timestamp` exactly as documented in
+   * `firestore-helper.ts`. `updateDoc` bypasses converters entirely in the
+   * Firestore JS SDK.
+   */
   async updateResult(id: string, changes: Partial<RaceCompetitor>) {
     const update = this.tidyStrings(changes);
-    await updateDoc(this.ref(id), update);
+    await setDoc(this.ref(id), update, { merge: true });
   }
 
   async deleteResult(id: string) {

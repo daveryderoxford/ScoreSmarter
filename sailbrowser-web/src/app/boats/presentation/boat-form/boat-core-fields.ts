@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { ClubStore } from 'app/club-tenant';
+import { TagValuePicker } from 'app/club-tenant/presentation/tags/tag-value-picker';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { PERSONAL_HANDICAP_BANDS } from 'app/scoring/model/personal-handicap';
 import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inputs';
@@ -11,7 +12,7 @@ import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inpu
 @Component({
   selector: 'app-boat-core-fields',
   standalone: true,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, HandicapSchemeInputs],
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, HandicapSchemeInputs, TagValuePicker],
   template: `
     <div [formGroup]="form()">
       <mat-form-field>
@@ -61,6 +62,15 @@ import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inpu
       @if (nonPersonalBoatSchemes().length > 0) {
         <app-handicap-scheme-inputs [form]="form()" [schemes]="nonPersonalBoatSchemes()" />
       }
+
+      @if (availableTags().length > 0) {
+        <div class="tags-block" aria-label="Tags">
+          <span class="tags-block__label">Tags</span>
+          <app-tag-value-picker
+            [availableTags]="availableTags()"
+            formControlName="tags" />
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -72,6 +82,16 @@ import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inpu
       width: 100%;
       margin-bottom: 8px;
     }
+    .tags-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .tags-block__label {
+      font-size: 0.875rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -81,6 +101,9 @@ export class BoatCoreFields {
 
   form = input.required<FormGroup>();
   boatLevelSchemes = input.required<HandicapScheme[]>();
+
+  /** User-managed tag definitions exposed via the picker. */
+  readonly availableTags = computed(() => this.cs.club().tagDefinitions);
 
   supportsPersonalBand(): boolean {
     return this.boatLevelSchemes().includes('Personal');

@@ -5,16 +5,18 @@ import { MOCK_PUBLISHED_SEASONS } from '@testing/mocks/published-results/publish
 import { PublishedResultsReader } from '../../services/published-results-store';
 import { SeasonPage } from './season-page';
 
-const createMockReader = (isLoading = false) => ({
-  seasons: signal(MOCK_PUBLISHED_SEASONS).asReadonly(),
-  isLoadingSeasons: signal(isLoading).asReadonly(),
-  // Add other properties if needed by child components, even if empty
-  selectedSeriesId: signal(undefined),
-  series: signal(undefined),
-  races: signal([]),
-  seriesLoading: signal(false),
-  seriesError: signal(null),
-});
+function createMockReader(seasonsLoading = false): PublishedResultsReader {
+  return {
+    seasons: signal(MOCK_PUBLISHED_SEASONS).asReadonly(),
+    seasonsLoading: signal(seasonsLoading).asReadonly(),
+    selectedSeriesId: signal(undefined),
+    series: signal(undefined),
+    races: signal([]),
+    seriesLoading: signal(false),
+    seriesError: signal(null),
+    getSeriesById: async () => undefined,
+  } as unknown as PublishedResultsReader;
+}
 
 const meta: Meta<SeasonPage> = {
   title: 'Published Results/Season Page',

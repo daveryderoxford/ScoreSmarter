@@ -41,6 +41,7 @@ export function buildDncContext(args: {
     const filteredCompetitors = competitorsForConfigRace(race, config, allSeriesCompetitors, seriesEntries);
     return {
       ...race,
+      tagDefinitions: [],
       results: filteredCompetitors
         .filter(comp =>
           countableEntryIds.has(comp.seriesEntryId) &&
@@ -73,6 +74,7 @@ export function buildDncContext(args: {
           correctedTime: 0,
           points: 0,
           resultCode: 'DNC' as const,
+          tags: [],
         })),
     };
   });

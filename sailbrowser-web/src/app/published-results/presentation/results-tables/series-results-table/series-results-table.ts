@@ -4,6 +4,8 @@ import { PublishedSeries, PublishedSeriesResult } from 'app/published-results';
 import { format } from 'date-fns';
 import { competitorColumns, nameColumnWidth as computeNameColumnWidth } from '../results-table-shared';
 import { HighlightPosition } from "../highlighted-position";
+import { TagLegend } from '../tag-legend';
+import { TagsCell } from '../tags-cell';
 import { MERGED_BOAT_CLASS_SEPARATOR } from 'app/scoring/services/series-scorer';
 
 export const seriesColumns = [...competitorColumns, 'total', 'net'] as const;
@@ -14,7 +16,7 @@ export type SeriesColumn = typeof seriesColumns[number];
   templateUrl: './series-results-table.html',
   styleUrls: ['../results-table-shared.scss', './series-results-table.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CdkTableModule, HighlightPosition]
+  imports: [CdkTableModule, HighlightPosition, TagsCell, TagLegend]
 })
 export class SeriesResultsTable {
 
@@ -24,6 +26,9 @@ export class SeriesResultsTable {
   raceTitles = input.required<{ id: string; index: number; scheduledStart: Date; raceOfDay: number; }[]>();
   fontSize = input<string>('10pt');
   raceClicked = output<string>();
+
+  /** Snapshot of tag definitions for resolving tag colours beside the helm name. */
+  protected readonly tagDefinitions = computed(() => this.series()?.tagDefinitions ?? []);
 
   raceColumns = computed(() => {
     const scores = this.series()?.competitors[0]?.raceScores ?? [];

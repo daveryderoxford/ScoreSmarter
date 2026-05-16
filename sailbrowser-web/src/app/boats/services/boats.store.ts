@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { collectionData, deleteDoc, updateDoc, setDoc } from '@angular/fire/firestore';
+import { collectionData, deleteDoc, setDoc } from '@angular/fire/firestore';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { map, Observable } from 'rxjs';
@@ -19,12 +19,12 @@ export class BoatsStore {
   private readonly boatsResource = rxResource<Boat[], null>({
     stream: (): Observable<Boat[]> =>
       collectionData(this.boatsCollection, { idField: 'id' }).pipe(
-        map(boats => boats.sort(boatsSort)),
+        map(boats => boats.map(coerceBoatTags).sort(boatsSort)),
     ),
     defaultValue: [],
   });
 
-  trimStrings(boat: Partial<Boat>) {
+  trimStrings(boat: Partial<Boat>): Partial<Boat> {
     const update = { ...boat };
     if (update.helm) {
       update.helm = update.helm.trim();
@@ -38,18 +38,10 @@ export class BoatsStore {
     if (update.name) {
       update.name = update.name.trim();
     }
-
-    return this.withoutUndefined(update);
-  }
-
-  private withoutUndefined<T extends Record<string, unknown>>(obj: T): T {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(obj)) {
-      if (v !== undefined) {
-        out[k] = v;
-      }
-    }
-    return out as T;
+    // `undefined` cleanup is delegated to the typed `dataObjectConverter`
+    // (see `firestore-helper.ts`); partial writes go through
+    // `setDoc({ merge: true })` so the converter runs.
+    return update;
   }
 
   /** Collection of all boats */
@@ -63,16 +55,28 @@ export class BoatsStore {
     await setDoc(this.ref(id), update);
   }
 
+  /**
+   * Partial update of a boat. Uses `setDoc({ merge: true })` rather than
+   * `updateDoc` so the typed converter is invoked and `undefined` is omitted
+   * (vs the SDK rejecting it with `invalid-argument`). See
+   * `firestore-helper.ts` for the partial-write contract.
+   */
   async update(id: string, data: Partial<Boat>): Promise<void> {
     const docRef = this.ref(id);
     const update = this.trimStrings(data);
-    await updateDoc(docRef, update);
+    await setDoc(docRef, update, { merge: true });
   }
 
   async delete(id: string): Promise<void> {
     const docRef = this.ref(id);
     await deleteDoc(docRef);
   }
+}
+
+/** Defaults the mandatory `tags` array for Boats read off the wire. */
+function coerceBoatTags(boat: Boat): Boat {
+  if (Array.isArray(boat.tags)) return boat;
+  return { ...boat, tags: [] };
 }
 
 /** Sort boats by sail number then class */

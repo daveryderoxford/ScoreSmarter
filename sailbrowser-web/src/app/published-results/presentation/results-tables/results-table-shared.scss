@@ -1,8 +1,28 @@
+/** Wraps scrollable results table (race & series). */
+.published-results-table-frame {
+   width: 100%;
+}
+
 .container {
    width: 100%;
    border-radius: var(--mat-sys-corner-large);
    overflow-x: scroll;
    overflow-y: scroll;
+}
+
+/** Wraps legend + table: width follows the table (does not stretch to the viewport). */
+.table-with-legend {
+   display: inline-flex;
+   flex-direction: column;
+   align-items: stretch;
+   width: max-content;
+   box-sizing: border-box;
+   gap: 4px;
+}
+
+.table-with-legend > app-tag-legend {
+   flex: 0 0 auto;
+   align-self: stretch;
 }
 
 .cdk-header-row {
@@ -50,4 +70,27 @@
 .cdk-column-handicap {
    width: 60px;
    text-align: center;
+}
+
+/* Helm row + optional tag badges (dots) on one line; crew below. */
+.name-cell {
+   min-width: 0;
+}
+
+.name-cell__topline {
+   display: flex;
+   flex-direction: row;
+   align-items: center;
+   flex-wrap: wrap;
+   gap: 4px;
+   min-width: 0;
+}
+
+.name-cell__helm {
+   min-width: 0;
+   flex: 1 1 auto;
+}
+
+.name-cell__badges {
+   flex: 0 0 auto;
 }

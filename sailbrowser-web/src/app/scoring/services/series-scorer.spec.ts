@@ -15,6 +15,7 @@ function createMockRace(raceIndex: number, results: Partial<RaceResult>[]): Publ
     type: 'Handicap',
     isDiscardable: true, // This property on the RACE is correct
     isAverageLap: false,
+    tagDefinitions: [],
     results: results.map((res, i) => {
       const seriesEntryId = res.seriesEntryId || `entry${101 + i}`;
       return {
@@ -33,6 +34,7 @@ function createMockRace(raceIndex: number, results: Partial<RaceResult>[]): Publ
         correctedTime: 600 + i * 10,
         points: i + 1,
         resultCode: 'OK',
+        tags: [],
         ...res,
       };
     }),
@@ -49,6 +51,7 @@ function createMockEntries(keys: string[]): SeriesEntry[] {
       boatClass,
       sailNumber: parseInt(sailNumber, 10),
       handicaps: [{ scheme: 'PY', value: 1000 }],
+      tags: [],
     };
   });
 }
@@ -236,6 +239,20 @@ describe('scoreSeries', () => {
     // RRS A8.2: last race scores 2 vs 10 count even though 102’s race 2 is excluded from net.
     expect(h101.rank).toBe(1);
     expect(h102.rank).toBe(2);
+  });
+
+  it('rounds net and total points to one decimal (avoids IEEE sum noise in UI)', () => {
+    const keys = ['Solo 101-101-Solo'];
+    const entries = createMockEntries(keys);
+    const races: PublishedRace[] = [
+      createMockRace(0, [{ seriesEntryId: 'entry101', points: 1.1, resultCode: 'OK' }]),
+      createMockRace(1, [{ seriesEntryId: 'entry101', points: 2.2, resultCode: 'OK' }]),
+    ];
+    const config: ScoringConfig = { seriesType: 'short', discards: 0, dncPoints: 3 };
+    const [row] = scoreSeries(races, entries, config, 'PY', 'classSailNumberHelm');
+    expect(1.1 + 2.2).not.toBe(3.3);
+    expect(row.totalPoints).toBe(3.3);
+    expect(row.netPoints).toBe(3.3);
   });
 
   describe('RDG Scoring (applyIsafRedress)', () => {

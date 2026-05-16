@@ -58,6 +58,7 @@ describe('RaceCompetitorMutator behaviour (.harness)', () => {
       boatClass: 'ILCA 7',
       sailNumber: 100,
       handicaps: [],
+      tags: [],
     });
 
     it('is a no-op when nothing changed — no duplicate batch side effects assumed', async () => {
@@ -89,6 +90,7 @@ describe('RaceCompetitorMutator behaviour (.harness)', () => {
           boatClass: 'ILCA 7',
           sailNumber: 200,
           handicaps: [],
+          tags: [],
         },
       ];
       const prev = entryStore.entries[1];
@@ -122,7 +124,7 @@ describe('RaceCompetitorMutator behaviour (.harness)', () => {
 
   describe('updateRaceCompetitorsBulk', () => {
     it('merging explicit null clears an optional competitor field', async () => {
-      entryStore.entries = [{ id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] }];
+      entryStore.entries = [{ id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] }];
       compStore.comps = [
         new RaceCompetitor({
           id: 'c1',

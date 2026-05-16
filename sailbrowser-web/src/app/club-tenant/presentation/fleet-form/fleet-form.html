@@ -53,8 +53,13 @@
 
   @if (form.get('type')?.value === 'Tag') {
     <mat-form-field>
-      <mat-label>Tag Value</mat-label>
-      <input matInput formControlName="value">
+      <mat-label>Tag</mat-label>
+      <mat-select formControlName="value">
+        @for (tag of tagOptions(); track tag.id) {
+          <mat-option [value]="tag.id">{{ tag.label }}</mat-option>
+        }
+      </mat-select>
+      <mat-hint>Must match the tag id stored on series entries.</mat-hint>
     </mat-form-field>
   }
 

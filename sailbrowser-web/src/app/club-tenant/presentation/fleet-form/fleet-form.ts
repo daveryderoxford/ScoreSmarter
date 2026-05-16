@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -9,6 +9,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { Fleet } from 'app/club-tenant/model/fleet';
 import { ClubStore } from 'app/club-tenant';
+import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
 import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-scheme';
 
 @Component({
@@ -49,6 +50,11 @@ export class FleetForm {
   busy = input<boolean>(false);
   submitted = output<Partial<Fleet>>();
 
+  /** Tag definitions available for Tag fleets (non-blank labels only). */
+  protected readonly tagOptions = computed(() =>
+    this.cs.club().tagDefinitions.filter(t => t.label.trim().length > 0),
+  );
+
   form = new FormGroup({
     name: new FormControl<string>('', { nonNullable: true }),
     type: new FormControl<'BoatClass' | 'HandicapRange' | 'Tag'>('HandicapRange', { validators: [Validators.required], nonNullable: true }),
@@ -80,7 +86,7 @@ export class FleetForm {
           min: f.type === 'HandicapRange' ? f.min : null,
           max: f.type === 'HandicapRange' ? f.max : null,
           scheme: f.type === 'HandicapRange' ? f.scheme : null,
-          value: f.type === 'Tag' ? f.value : '',
+          value: f.type === 'Tag' ? normalizeTagFleetValue(f.value, this.tagOptions()) : '',
         });
       }
     });
@@ -160,4 +166,15 @@ export class FleetForm {
   public canDeactivate(): boolean {
     return !this.form.dirty;
   }
+}
+
+/** Maps legacy Tag fleet values (label text) to the canonical tag definition id. */
+function normalizeTagFleetValue(value: string, definitions: readonly ClubTagDefinition[]): string {
+  if (!value) return value;
+  if (definitions.some(d => d.id === value)) return value;
+  const lower = value.toLowerCase();
+  const byId = definitions.find(d => d.id.toLowerCase() === lower);
+  if (byId) return byId.id;
+  const byLabel = definitions.find(d => d.label.trim().toLowerCase() === lower);
+  return byLabel?.id ?? value;
 }

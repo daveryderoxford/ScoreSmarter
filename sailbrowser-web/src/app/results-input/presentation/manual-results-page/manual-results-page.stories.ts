@@ -76,6 +76,7 @@ function entryFor(p: CompSeed): SeriesEntry {
     boatClass: p.boatClass,
     sailNumber: p.sailNumber,
     handicaps: [{ scheme: 'PY', value: p.handicapValue ?? 1104 }],
+    tags: [],
   };
 }
 

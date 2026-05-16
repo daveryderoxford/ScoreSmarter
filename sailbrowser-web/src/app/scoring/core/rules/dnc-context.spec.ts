@@ -41,6 +41,7 @@ function entry(id: string, sailNumber: number, helm = `Helm ${sailNumber}`): Ser
     boatClass: 'Laser',
     sailNumber,
     handicaps: [{ scheme: 'PY', value: 1000 }],
+    tags: [],
   };
 }
 

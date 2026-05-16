@@ -16,6 +16,10 @@ export interface SeriesEntry {
    handicaps: Handicap[];
    personalHandicapBand?: PersonalHandicapBand;
 
-   // For subset scoring
-   tags?: string[];
+   /**
+    * User-authored tag ids carried on this entry (e.g. 'gold', 'u16').
+    * Always an array (default `[]`); display metadata is resolved against
+    * `Club.tagDefinitions` and the published-results snapshots.
+    */
+   tags: string[];
 }

@@ -13,7 +13,8 @@ import { SeriesEntry } from '../../results-input/model/series-entry';
 import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
 import { Handicap } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
-import { applyPersonalBandTag, resolveHandicapsForSeries } from './entry-helpers';
+import { SeriesEntryPartialUpdate } from 'app/results-input/services/series-entry-store';
+import { resolveHandicapsForSeries } from './entry-helpers';
 import {
   PerHullIdentity,
   describeIdentity,
@@ -30,6 +31,13 @@ export interface EntryDetails {
   sailNumber: number;
   handicaps?: Handicap[];
   personalHandicapBand?: PersonalHandicapBand;
+  /**
+   * Tag ids to seed on a newly-created SeriesEntry. Typically `Boat.tags`
+   * forwarded by the entry UI. Existing entries keep their tags - the RO
+   * may have overridden them; this field is ignored on the reuse path.
+   * Optional: omitted/undefined is treated as no boat tags (`[]`).
+   */
+  tags?: string[];
 }
 
 /**
@@ -220,12 +228,20 @@ export class EntryService {
     const existing = matches[0];
 
     if (existing) {
-      const entryUpdate: Partial<SeriesEntry> = {
+      // Reuse path: refresh derived fields only. Tags are user-authored and
+      // may have been overridden by an RO on the existing entry; do not
+      // overwrite them with the incoming boat tags.
+      //
+      // `personalHandicapBand` is passed as `null` when the caller has no
+      // band so the typed converter clears the field via `deleteField()`
+      // on the partial write. Passing raw `undefined` would be *omitted*
+      // by the converter (leave any stale band intact). The `null`
+      // sentinel is part of the converter contract documented in
+      // `firestore-helper.ts`.
+      const entryUpdate: SeriesEntryPartialUpdate = {
         handicaps,
-        personalHandicapBand: details.personalHandicapBand,
-        tags: applyPersonalBandTag(existing.tags, details.personalHandicapBand),
+        personalHandicapBand: details.personalHandicapBand ?? null,
       };
-      // Update crew if a value was provided (stays on the entry).
       if (details.crew !== undefined && details.crew !== existing.crew) {
         entryUpdate.crew = details.crew;
       }
@@ -244,7 +260,7 @@ export class EntryService {
         sailNumber: details.sailNumber,
         handicaps,
         personalHandicapBand: details.personalHandicapBand,
-        tags: applyPersonalBandTag([], details.personalHandicapBand),
+        tags: details.tags ?? [],
       });
     } catch (err) {
       // The mutator runs an authoritative collision check that may surface a

@@ -68,7 +68,8 @@ export interface CreateSeriesEntryInput {
   crew?: string;
   handicaps: Handicap[];
   personalHandicapBand?: PersonalHandicapBand;
-  tags?: string[];
+  /** Tag ids to seed on the new entry; caller passes `[]` when none. */
+  tags: string[];
 }
 
 const RACE_PATCH_KEYS: (keyof RaceScopedCompetitorPatch)[] = [

@@ -9,6 +9,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatChipsModule } from '@angular/material/chips';
 import { RouterLink, Router } from '@angular/router';
 import { PublishedResultsReader } from 'app/published-results/services/published-results-store';
+import { mergeTagDefinitionSnapshots } from 'app/published-results/services/published-tag-snapshot';
+import type { PublishedRace } from 'app/published-results/model/published-race';
+import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
 import { getConfigName } from 'app/scoring/model/scoring-configuration';
 import { LoadingCentered } from 'app/shared/components/loading-centered';
 import { Toolbar } from "app/shared/components/toolbar";
@@ -148,6 +151,11 @@ export class ResultsViewer {
 
   onConfigurationChange(newSeriesId: string) {
     this.router.navigate(['/results/viewer', newSeriesId]);
+  }
+
+  /** Per-race snapshot plus series snapshot so older race docs resolve all tags. */
+  tagDefinitionsForRace(race: PublishedRace): readonly ClubTagDefinition[] {
+    return mergeTagDefinitionSnapshots(race.tagDefinitions, this.series()?.tagDefinitions ?? []);
   }
 
   private scrollToRaceElement(raceId: string): boolean {

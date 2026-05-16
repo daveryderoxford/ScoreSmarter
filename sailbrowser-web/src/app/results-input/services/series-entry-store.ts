@@ -14,14 +14,28 @@ import {
   getDocs,
   query,
   setDoc,
-  updateDoc,
   where,
 } from '@angular/fire/firestore';
 import { FirestoreTenantService } from 'app/club-tenant';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
+import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { map, of, tap } from 'rxjs';
 import { SeriesEntry } from '../model/series-entry';
 import { CurrentRaces } from './current-races-store';
+
+/**
+ * Partial `SeriesEntry` payload accepted by `updateEntry`. Optional fields
+ * may be set to `null` to clear them on the wire (the typed converter
+ * translates `null` to `deleteField()` on partial writes). Plain
+ * `undefined` is *omitted* and leaves the existing value alone.
+ */
+export type SeriesEntryPartialUpdate =
+  Omit<Partial<SeriesEntry>, 'personalHandicapBand' | 'crew' | 'club'>
+  & {
+    personalHandicapBand?: PersonalHandicapBand | null;
+    crew?: string | null;
+    club?: string | null;
+  };
 
 @Injectable({
   providedIn: 'root',
@@ -40,7 +54,7 @@ export class SeriesEntryStore {
   async getSeriesEntries(seriesId: string): Promise<SeriesEntry[]> {
     const q = query(this.collection, where('seriesId', '==', seriesId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map(doc => coerceEntryTags({ ...doc.data(), id: doc.id }));
   }
 
   /**
@@ -50,7 +64,7 @@ export class SeriesEntryStore {
   async getSeriesEntry(id: string): Promise<SeriesEntry | null> {
     const snapshot = await getDoc(this.ref(id));
     if (!snapshot.exists()) return null;
-    return { ...snapshot.data(), id: snapshot.id };
+    return coerceEntryTags({ ...snapshot.data(), id: snapshot.id });
   }
 
   private readonly selectedSeriesIds = computed(() => this.currentRaces.selectedSeries().map(s => s.id));
@@ -68,7 +82,7 @@ export class SeriesEntryStore {
           where('seriesId', 'in', selectedIds)
         );
         return collectionData(q, { idField: 'id' }).pipe(
-          map(entries => entries.sort(sortEntries)),
+          map(entries => entries.map(coerceEntryTags).sort(sortEntries)),
           tap(entries => console.log(`SeriesEntryStore. Loaded ${entries.length} entries`))
         );
       }
@@ -76,16 +90,16 @@ export class SeriesEntryStore {
     defaultValue: []
   });
 
-  /** Time string fields if they exist on the update object */
-  private tidyStrings(entry: Partial<SeriesEntry>): Partial<SeriesEntry> {
+  /** Trim string fields if they exist on the update object */
+  private tidyStrings<T extends Partial<SeriesEntry> | SeriesEntryPartialUpdate>(entry: T): T {
     const update = { ...entry };
-    if (update.helm) {
+    if (typeof update.helm === 'string') {
       update.helm = update.helm.trim();
     }
-    if (update.crew) {
+    if (typeof update.crew === 'string') {
       update.crew = update.crew.trim();
     }
-    if (update.boatClass) {
+    if (typeof update.boatClass === 'string') {
       update.boatClass = update.boatClass.trim();
     }
     return update;
@@ -102,9 +116,21 @@ export class SeriesEntryStore {
     return id;
   }
 
-  async updateEntry(id: string, changes: Partial<SeriesEntry>) {
+  /**
+   * Partial update of a series entry. Uses `setDoc({ merge: true })` rather
+   * than `updateDoc` because the Firestore SDK only invokes the typed
+   * converter (`dataObjectConverter`) on `setDoc`/`addDoc`. The converter is
+   * what cleanses `undefined` (omit on partial writes) and `null`
+   * (`deleteField()` on partial writes), so calling `updateDoc` here would
+   * ship a raw `undefined` straight to the SDK and trigger
+   * `invalid-argument: Unsupported field value: undefined`.
+   *
+   * Callers may pass `null` on optional fields to *clear* them; passing
+   * `undefined` (or omitting the key) leaves the existing value alone.
+   */
+  async updateEntry(id: string, changes: SeriesEntryPartialUpdate) {
     const update = this.tidyStrings(changes);
-    await updateDoc(this.ref(id), update);
+    await setDoc(this.ref(id), update as SeriesEntry, { merge: true });
   }
 
   async deleteEntry(id: string) {
@@ -115,6 +141,12 @@ export class SeriesEntryStore {
   seriesEntryDocRef(id: string): DocumentReference<SeriesEntry> {
     return this.ref(id);
   }
+}
+
+/** Defaults the mandatory `tags` array for entries read off the wire. */
+function coerceEntryTags(entry: SeriesEntry): SeriesEntry {
+  if (Array.isArray(entry.tags)) return entry;
+  return { ...entry, tags: [] };
 }
 
 /** Sort entries by boat class and sail number */

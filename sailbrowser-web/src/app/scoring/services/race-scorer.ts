@@ -167,6 +167,11 @@ export function buildRaceResults(
       correctedTime: 0,
       points: 0,
       resultCode: adjustedResultCode,
+      // Copy entry tags onto the race result so per-race tables can
+      // render them and the published-results snapshot can union them
+      // for tagDefinitions. `entry.tags` is mandatory; defensive `?? []`
+      // only matters for old fixtures.
+      tags: [...(entry.tags ?? [])],
     };
   });
 }
@@ -239,8 +244,8 @@ function assignPointsForFinishers(
         // The minimum penalty is two places.
         // Rounding to 1/10 of a point as per user requirement.
         const penalty = Math.max(2, Math.round((dncPoints - 1) * 0.2 * 10) / 10);
-        // The penalty is capped at the DNF score.
-        res.points = Math.min(res.points + penalty, dnfPoints);
+        // The penalty is capped at the DNF score, then rounded to one decimal (RRS A9-style; avoids float sum noise).
+        res.points = Math.round(Math.min(res.points + penalty, dnfPoints) * 10) / 10;
       }
     }
     pos += resultsAtValue.length;

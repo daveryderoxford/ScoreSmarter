@@ -37,6 +37,7 @@ function entry(overrides: Partial<SeriesEntry> & Pick<SeriesEntry, 'id'>): Serie
     boatClass: 'Laser',
     sailNumber: 100,
     handicaps: [{ scheme: 'PY', value: 1100 }],
+    tags: [],
     ...overrides,
   };
 }

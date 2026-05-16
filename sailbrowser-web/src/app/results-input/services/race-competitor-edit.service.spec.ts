@@ -75,7 +75,7 @@ describe('RaceCompetitorEditService', () => {
 
   it('writes helm change to the SeriesEntry (no per-race scope)', async () => {
     entryStore.entries = [
-      { id: 'se-1', seriesId: 's1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] },
+      { id: 'se-1', seriesId: 's1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [], tags: [] },
     ];
     compStore.comps = [
       new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -104,6 +104,7 @@ describe('RaceCompetitorEditService', () => {
         sailNumber: 100,
         handicaps: [],
         personalHandicapBand: 'Band2',
+        tags: [],
       },
     ];
     compStore.comps = [
@@ -122,7 +123,7 @@ describe('RaceCompetitorEditService', () => {
 
   it('records crewOverride on RaceCompetitor for raceOnly crew change', async () => {
     entryStore.entries = [
-      { id: 'se-1', seriesId: 's1', helm: 'Old', crew: 'A', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] },
+      { id: 'se-1', seriesId: 's1', helm: 'Old', crew: 'A', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [], tags: [] },
     ];
     compStore.comps = [
       new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -141,7 +142,7 @@ describe('RaceCompetitorEditService', () => {
 
   it('writes wholeSeries crew to the SeriesEntry', async () => {
     entryStore.entries = [
-      { id: 'se-1', seriesId: 's1', helm: 'Old', crew: 'A', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] },
+      { id: 'se-1', seriesId: 's1', helm: 'Old', crew: 'A', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [], tags: [] },
     ];
     compStore.comps = [
       new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -157,8 +158,8 @@ describe('RaceCompetitorEditService', () => {
 
   it('refuses to rename helm when the new identity collides with another entry in the series', async () => {
     entryStore.entries = [
-      { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
-      { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+      { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
+      { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
     ];
     compStore.comps = [
       new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
@@ -174,8 +175,8 @@ describe('RaceCompetitorEditService', () => {
 
   it('uses case-insensitive normalisation when detecting rename collisions', async () => {
     entryStore.entries = [
-      { id: 'se-1', seriesId: 's1', helm: 'Sam Skipper', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
-      { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+      { id: 'se-1', seriesId: 's1', helm: 'Sam Skipper', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
+      { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
     ];
     compStore.comps = [
       new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
@@ -188,8 +189,8 @@ describe('RaceCompetitorEditService', () => {
 
   it('refuses to rename sail number into another entry', async () => {
     entryStore.entries = [
-      { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
-      { id: 'se-2', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 200, handicaps: [] },
+      { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
+      { id: 'se-2', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 200, handicaps: [], tags: [] },
     ];
     compStore.comps = [
       new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
@@ -203,7 +204,7 @@ describe('RaceCompetitorEditService', () => {
 
   it('allows rename when only the entry being edited matches the new identity (case fix)', async () => {
     entryStore.entries = [
-      { id: 'se-1', seriesId: 's1', helm: 'sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+      { id: 'se-1', seriesId: 's1', helm: 'sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
     ];
     compStore.comps = [
       new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -216,9 +217,9 @@ describe('RaceCompetitorEditService', () => {
 
   it('ignores entries in OTHER series when checking for a rename collision', async () => {
     entryStore.entries = [
-      { id: 'se-1', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+      { id: 'se-1', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
       // Same identity but different series - must not block the rename.
-      { id: 'se-99', seriesId: 's2', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+      { id: 'se-99', seriesId: 's2', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
     ];
     compStore.comps = [
       new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -231,7 +232,7 @@ describe('RaceCompetitorEditService', () => {
 
   it('deletes orphaned series entry after deleting last competitor', async () => {
     entryStore.entries = [
-      { id: 'se-1', seriesId: 's1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [] },
+      { id: 'se-1', seriesId: 's1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [], tags: [] },
     ];
     compStore.comps = [
       new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -248,7 +249,7 @@ describe('RaceCompetitorEditService', () => {
 
   it('preserves the series entry when another race still references it', async () => {
     entryStore.entries = [
-      { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+      { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
     ];
     compStore.comps = [
       new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -319,6 +320,7 @@ describe('RaceCompetitorEditService', () => {
           boatClass: 'ILCA 6',
           sailNumber: 100,
           handicaps: [{ scheme: 'PY', value: 1100 }],
+          tags: [],
         },
       ];
       compStore.comps = [
@@ -366,6 +368,7 @@ describe('RaceCompetitorEditService', () => {
           boatClass: 'ILCA 6',
           sailNumber: 100,
           handicaps: [{ scheme: 'PY', value: 1165 }],
+          tags: [],
         },
       ];
       compStore.comps = [
@@ -390,8 +393,8 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
-        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
+        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
@@ -416,8 +419,8 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
-        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
+        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c-edit', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
@@ -446,8 +449,8 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [s];
       raceCalendar.races = [testRace('r1', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam',  boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
-        { id: 'se-2', seriesId: 's1', helm: 'Jane', boatClass: 'ILCA 7', sailNumber: 200, handicaps: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam',  boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
+        { id: 'se-2', seriesId: 's1', helm: 'Jane', boatClass: 'ILCA 7', sailNumber: 200, handicaps: [], tags: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -473,7 +476,7 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1'), testRace('r2', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam', crew: 'Alice', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', crew: 'Alice', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -501,7 +504,7 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1'), testRace('r2', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam', crew: 'Alice', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', crew: 'Alice', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -533,6 +536,7 @@ describe('RaceCompetitorEditService', () => {
         {
           id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100,
           handicaps: [{ scheme: 'PY', value: 1100 }],
+          tags: [],
         },
       ];
       compStore.comps = [

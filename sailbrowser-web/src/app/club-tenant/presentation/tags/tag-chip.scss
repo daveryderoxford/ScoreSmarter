@@ -1,0 +1,45 @@
+// Shared styling for tag chips across the tag picker, definition list and
+// published-results tables. Kept here so visual changes only need to happen
+// in one place.
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  font-weight: 500;
+  border: 1px solid transparent;
+  background: var(--mat-sys-surface-variant);
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+.tag-chip--unresolved {
+  border-style: dashed;
+  border-color: var(--mat-sys-outline);
+  background: transparent;
+  color: var(--mat-sys-on-surface);
+}
+
+// Compact dots in published-results tables (legend + name-column badges).
+.tag-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 1px solid #000;
+  flex-shrink: 0;
+}
+
+.tag-dot--neutral {
+  background: var(--mat-sys-surface-variant);
+}
+
+.tag-dot--unresolved {
+  background: transparent;
+  border-style: dashed;
+}

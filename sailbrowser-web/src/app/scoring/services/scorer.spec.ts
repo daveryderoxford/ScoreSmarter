@@ -84,6 +84,7 @@ function buildSeriesEntries(seeds: CompetitorSeed[]): SeriesEntry[] {
       boatClass: 'TestClass',
       sailNumber: c.sailNumber,
       handicaps: [{ scheme: 'PY', value: 1000 }],
+      tags: [],
     });
   }
   return Array.from(byId.values());

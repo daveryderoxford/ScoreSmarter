@@ -14,6 +14,8 @@ import { PublishedRace } from '../model/published-race';
 import { PublishedSeason, SeriesInfo } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
 import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH } from './published-results-store';
+import { buildTagDefinitionSnapshot } from './published-tag-snapshot';
+import { normalizeTagIds } from './resolved-tag';
 
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
 import { competitorsForConfigRace, doesRaceRequireHandicap, isRaceScorable } from 'app/scoring/core/rules/eligibility';
@@ -180,7 +182,7 @@ export class ScoringEngine {
     seriesEntries: SeriesEntry[]
   ): Promise<void> {
     if (racesToScore.length === 0) {
-      this.savePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, []);
+      this.savePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, [], []);
       const existingRaces = await this.readPublishedRaces(publishedSeriesId);
       this.savePublishedRaces(batch, publishedSeriesId, [], existingRaces);
       await this.prepareSeasonUpdate(
@@ -253,7 +255,33 @@ export class ScoringEngine {
       currentSeriesResults = seriesResults;
     }
 
-    this.savePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, currentSeriesResults);
+    // Attach the immutable `tagDefinitions` snapshot to each PublishedRace
+    // and the PublishedSeries doc, scoped to ids actually referenced by the
+    // rows in each doc. Pulling colour/label metadata in at publish time
+    // (vs. lookup at read time) keeps historical results stable when the
+    // club later renames or deletes a tag definition.
+    const clubTagDefinitions = club?.tagDefinitions ?? [];
+    for (const race of existingPublishedRaces) {
+      for (const result of race.results) {
+        result.tags = normalizeTagIds(result.tags ?? [], clubTagDefinitions);
+      }
+      const ids = race.results.flatMap(r => r.tags);
+      race.tagDefinitions = buildTagDefinitionSnapshot(ids, clubTagDefinitions);
+    }
+    for (const competitor of currentSeriesResults) {
+      competitor.tags = normalizeTagIds(competitor.tags ?? [], clubTagDefinitions);
+    }
+    const seriesTagIds = currentSeriesResults.flatMap(c => c.tags);
+    const seriesTagDefinitions = buildTagDefinitionSnapshot(seriesTagIds, clubTagDefinitions);
+
+    this.savePublishedSeries(
+      batch,
+      publishedSeriesId,
+      publishedSeriesName,
+      config.fleet.id,
+      currentSeriesResults,
+      seriesTagDefinitions,
+    );
     const existingRaces = await this.readPublishedRaces(publishedSeriesId);
     this.savePublishedRaces(batch, publishedSeriesId, existingPublishedRaces, existingRaces);
     await this.prepareSeasonUpdate(
@@ -271,7 +299,14 @@ export class ScoringEngine {
   private async readPublishedRaces(publishedSeriesId: string): Promise<PublishedRace[]> {
     const racesCol = this.tenant.collectionRef<PublishedRace>(PUBLISHED_SERIES_PATH, publishedSeriesId, 'races');
     const snapshot = await getDocs(racesCol);
-    return snapshot.docs.map(doc => doc.data());
+    return snapshot.docs.map(doc => {
+      const race = doc.data();
+      return {
+        ...race,
+        results: race.results.map(r => Array.isArray(r.tags) ? r : { ...r, tags: [] }),
+        tagDefinitions: Array.isArray(race.tagDefinitions) ? race.tagDefinitions : [],
+      };
+    });
   }
 
   private savePublishedSeries(
@@ -280,6 +315,7 @@ export class ScoringEngine {
     publishedSeriesName: string,
     fleetId: string,
     results: PublishedSeries['competitors'],
+    tagDefinitions: PublishedSeries['tagDefinitions'],
   ): void {
     const seriesDoc = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, publishedSeriesId);
     const publishedSeries: PublishedSeries = {
@@ -287,6 +323,7 @@ export class ScoringEngine {
       name: publishedSeriesName,
       fleetId: fleetId,
       competitors: results,
+      tagDefinitions,
     };
     batch.set(seriesDoc, publishedSeries);
   }

@@ -1,11 +1,10 @@
 /** Additional styles for series results table in addtion to 
 those in results-table-shared */
 
-// Series table is rendere with fixed 
-// layout into wide container (1200px)
+/** Series results: fixed layout, intrinsic width (scroll parent when wider than viewport). */
 .table {
    table-layout: fixed;
-   width: 100%;
+   width: max-content;
 }
 
 // Additional coluns in Series table in addition to standard ones

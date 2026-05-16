@@ -67,6 +67,7 @@ export class KnownBoatEntryDialog {
         crew: boat.crew,
         handicaps: boat.handicaps,
         personalHandicapBand: boat.personalHandicapBand,
+        tags: boat.tags,
       });
       this.dialogRef.close({ created: true, selectedBoatId: boat.id } satisfies KnownBoatEntryDialogResult);
     } finally {

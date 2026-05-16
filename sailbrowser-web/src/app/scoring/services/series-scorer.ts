@@ -9,6 +9,11 @@ import { mergeKeyFor, type MergeStrategy } from './merge-key';
 
 export const MERGED_BOAT_CLASS_SEPARATOR = '&';
 
+/** One decimal — matches ISAF/OOD pool averages and avoids IEEE-754 sum noise in totals. */
+function roundSeriesPointValue(n: number): number {
+  return Math.round(n * 10) / 10;
+}
+
 export interface ScoringConfig {
   seriesType: SeriesScoringScheme;
   discards: number;
@@ -189,6 +194,9 @@ function makeSeriesRow(
     netPoints: 0,
     rank: 0,
     scoresForTiebreak: [],
+    // Tags come from the first chronologically contributing entry; see
+    // `seedDisplayFromEntry` for the override path.
+    tags: [...(seed.tags ?? [])],
   };
 }
 
@@ -205,6 +213,9 @@ function seedDisplayFromEntry(
   row.handicap = getHandicapValue(entry.handicaps, handicapScheme) ?? 0;
   row.personalHandicapBand = entry.personalHandicapBand;
   row.boatClass = entry.boatClass;
+  // Tags follow the same first-chronological rule as the display fields:
+  // the seeded value is overwritten on first actual race contribution.
+  row.tags = [...(entry.tags ?? [])];
 }
 
 function calculateTotalsAndDiscards(
@@ -231,8 +242,8 @@ function calculateTotalsAndDiscards(
 
     const scoresToCount = result.raceScores.filter(s => !s.isDiscard);
 
-    result.netPoints = scoresToCount.reduce((acc, r) => acc + r.points, 0);
-    result.totalPoints = result.raceScores.reduce((acc, r) => acc + r.points, 0);
+    result.netPoints = roundSeriesPointValue(scoresToCount.reduce((acc, r) => acc + r.points, 0));
+    result.totalPoints = roundSeriesPointValue(result.raceScores.reduce((acc, r) => acc + r.points, 0));
   }
   return results;
 }
@@ -356,7 +367,10 @@ function compareSeriesStandings(a: IntermediateSeriesResult, b: IntermediateSeri
 function rankCompetitors(results: IntermediateSeriesResult[]): IntermediateSeriesResult[] {
   // A8.1: sorted counting scores (no excluded / discarded races), best → worst.
   results.forEach(result => {
-    result.scoresForTiebreak = result.raceScores.filter(r => !r.isDiscard).map(r => r.points).sort((a, b) => a - b);
+    result.scoresForTiebreak = result.raceScores
+      .filter(r => !r.isDiscard)
+      .map(r => roundSeriesPointValue(r.points))
+      .sort((a, b) => a - b);
   });
 
   results.sort(compareSeriesStandings);

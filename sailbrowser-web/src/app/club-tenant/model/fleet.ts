@@ -24,8 +24,9 @@ export interface HandicapRangeFleet {
 export interface TagFleet {
    type: 'Tag';
    id: string;
-   name: string; // e.g. "Novice"
-   value: string; // The tag string to match, e.g. "Novice"
+   name: string; // e.g. "Youth"
+   /** Club tag definition id to match on `SeriesEntry.tags` (e.g. `youth`). */
+   value: string;
 }
 
 export type Fleet = GeneralHandicapFleet | BoatClassFleet | HandicapRangeFleet | TagFleet;

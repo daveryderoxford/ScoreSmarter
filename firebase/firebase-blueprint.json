@@ -8,9 +8,29 @@
         "name": { "type": "string", "description": "The name of the club." },
         "fleets": { "type": "array", "items": { "type": "string" }, "description": "List of fleets in the club." },
         "classes": { "type": "array", "items": { "type": "string" }, "description": "List of boat classes supported." },
-        "seasons": { "type": "array", "items": { "type": "string" }, "description": "List of season IDs." }
+        "seasons": { "type": "array", "items": { "type": "string" }, "description": "List of season IDs." },
+        "tagDefinitions": {
+          "type": "array",
+          "items": { "$ref": "#/entities/ClubTagDefinition" },
+          "description": "User-managed display metadata for tag ids used on boats and series entries. Default []."
+        }
       },
       "required": ["name"]
+    },
+    "ClubTagDefinition": {
+      "title": "Club Tag Definition",
+      "description": "Display metadata for a tag id (label and colour). The id is a stable storage key.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Stable storage key, e.g. 'gold'." },
+        "label": { "type": "string", "description": "Display label; blank hides the definition from pickers." },
+        "color": {
+          "type": "string",
+          "enum": ["gold", "silver", "bronze", "blue", "green", "purple", "orange", "red"],
+          "description": "Optional chip background colour from the fixed palette."
+        }
+      },
+      "required": ["id", "label"]
     },
     "Boat": {
       "title": "Boat",
@@ -20,7 +40,12 @@
         "name": { "type": "string" },
         "ownerUid": { "type": "string" },
         "class": { "type": "string" },
-        "handicap": { "type": "number" }
+        "handicap": { "type": "number" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tag ids propagated onto series entries at sign-on. Default []."
+        }
       },
       "required": ["name", "ownerUid"]
     },
@@ -63,9 +88,38 @@
         "raceId": { "type": "string" },
         "boatId": { "type": "string" },
         "position": { "type": "integer" },
-        "points": { "type": "number" }
+        "points": { "type": "number" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tag ids copied from the contributing series entry. Default []."
+        }
       },
       "required": ["raceId", "boatId"]
+    },
+    "PublishedRace": {
+      "title": "Published Race",
+      "description": "Immutable per-race published results document.",
+      "type": "object",
+      "properties": {
+        "tagDefinitions": {
+          "type": "array",
+          "items": { "$ref": "#/entities/ClubTagDefinition" },
+          "description": "Snapshot of club tag definitions referenced by any results row at publish time. Default []."
+        }
+      }
+    },
+    "PublishedSeries": {
+      "title": "Published Series",
+      "description": "Immutable series-aggregated published results document.",
+      "type": "object",
+      "properties": {
+        "tagDefinitions": {
+          "type": "array",
+          "items": { "$ref": "#/entities/ClubTagDefinition" },
+          "description": "Snapshot of club tag definitions referenced by any competitor row at publish time. Default []."
+        }
+      }
     },
     "SeriesEntry": {
       "title": "Series Entry",
@@ -73,7 +127,12 @@
       "type": "object",
       "properties": {
         "seriesId": { "type": "string" },
-        "boatId": { "type": "string" }
+        "boatId": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tag ids carried on the entry (user tags + personal-band:<band>). Default []."
+        }
       },
       "required": ["seriesId", "boatId"]
     },

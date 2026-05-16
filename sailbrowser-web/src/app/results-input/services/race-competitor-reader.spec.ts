@@ -48,6 +48,7 @@ function minimalEntry(overrides: Partial<SeriesEntry> & Pick<SeriesEntry, 'id'>)
     boatClass: 'ILCA 7',
     sailNumber: 1,
     handicaps: [],
+    tags: [],
     ...overrides,
   };
 }

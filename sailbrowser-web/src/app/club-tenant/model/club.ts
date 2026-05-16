@@ -1,5 +1,6 @@
 import { Season } from 'app/race-calender/model/season';
 import { BoatClass } from './boat-class';
+import { ClubTagDefinition } from './club-tag';
 import { Fleet } from 'app/club-tenant/model/fleet';
 import { HandicapScheme } from '../../scoring/model/handicap-scheme';
 import type { SuspectTimeThresholdOverrides } from 'app/results-input/services/suspect-time-rules';
@@ -36,4 +37,9 @@ export interface Club {
    longSeriesDefaults: ScoringDefaults;
    shortSeriesDefaults: ScoringDefaults;
    suspectTimeThresholds?: SuspectTimeThresholdOverrides;
+   /**
+    * User-managed display metadata for the tag ids referenced by boats and
+    * series entries. Always an array (default `[]`).
+    */
+   tagDefinitions: ClubTagDefinition[];
 }

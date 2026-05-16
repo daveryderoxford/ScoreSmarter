@@ -1,3 +1,4 @@
+import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import type { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
@@ -35,6 +36,12 @@ export interface PublishedSeriesResult {
       notes?: string;
    }[];
    scoresForTiebreak: number[];
+   /**
+    * Tag ids from the first chronological contributing `SeriesEntry`.
+    * Default `[]`; display metadata is resolved against
+    * `PublishedSeries.tagDefinitions`.
+    */
+   tags: string[];
 }
 
 export interface PublishedSeries {
@@ -42,4 +49,9 @@ export interface PublishedSeries {
    name: string;
    fleetId: string;
    competitors: PublishedSeriesResult[];
+   /**
+    * Snapshot of the club tag definitions referenced by any competitor row
+    * at publish time. Default `[]`.
+    */
+   tagDefinitions: ClubTagDefinition[];
 }

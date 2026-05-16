@@ -3,6 +3,16 @@ those in results-table-shared */
 
 .table {
    table-layout: fixed;
+   width: max-content;
+}
+
+.cdk-column-elapsed,
+.cdk-column-corrected {
+   width: 76px;
+   min-width: 76px;
+   max-width: 76px;
+   text-align: right;
+   white-space: nowrap;
 }
 
 .cdk-column-points {

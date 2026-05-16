@@ -65,6 +65,18 @@
   color: var(--mat-sys-on-error-container);
 }
 
+.tags-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.tags-block-title {
+  font-weight: 500;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

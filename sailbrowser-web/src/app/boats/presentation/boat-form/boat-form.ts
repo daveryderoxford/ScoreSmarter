@@ -55,6 +55,7 @@ export class BoatForm {
     crew: new FormControl(''),
     isClub: new FormControl<boolean>(false),
     personalHandicapBand: new FormControl<PersonalHandicapBand | 'unknown'>('unknown'),
+    tags: new FormControl<string[]>([], { nonNullable: true }),
   }) as FormGroup<any>;
 
   constructor() {
@@ -97,6 +98,7 @@ export class BoatForm {
         const b = this.boat()!;
         const patch: Record<string, unknown> = { ...b };
         patch['personalHandicapBand'] = b.personalHandicapBand ?? 'unknown';
+        patch['tags'] = [...b.tags];
         for (const scheme of HANDICAP_SCHEMES) {
           if (HANDICAP_SCHEME_METADATA[scheme].appliesTo !== 'boat') continue;
           const meta = getHandicapSchemeMetadata(scheme);
@@ -147,6 +149,7 @@ export class BoatForm {
       personalHandicapBand: v['personalHandicapBand'] === 'unknown'
         ? undefined
         : (v['personalHandicapBand'] as PersonalHandicapBand | undefined),
+      tags: Array.isArray(v['tags']) ? (v['tags'] as string[]) : [],
     };
     this.submitted.emit(output);
     this.form.reset();

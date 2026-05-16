@@ -491,6 +491,7 @@ export class EntryPage {
       isClub: false,
       handicaps: created.boat.handicaps,
       personalHandicapBand: created.boat.personalHandicapBand,
+      tags: created.boat.tags ?? [],
     };
     this.selectedBoat.set(newBoat);
     this.boatSearchControl.setValue(newBoat, { emitEvent: false });
@@ -513,6 +514,7 @@ export class EntryPage {
       crew: candidate.crew,
       handicaps: active.size > 0 ? activeHandicaps : undefined,
       personalHandicapBand: candidate.personalHandicapBand,
+      tags: selected.tags,
     };
 
     const conflicts = this._entryService.findEntryConflicts(entryData);

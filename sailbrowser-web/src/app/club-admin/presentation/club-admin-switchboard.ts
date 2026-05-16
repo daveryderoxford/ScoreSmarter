@@ -110,6 +110,14 @@ export class ClubAdminSwitchboard {
       ]
     },
     {
+      title: 'Tags',
+      description: 'Manage tag definitions used to label boats and series entries.',
+      icon: 'sell',
+      resources: [
+        { label: 'Tags', route: '/club-admin/tags' },
+      ]
+    },
+    {
       title: 'User Management',
       description: 'Manage club personnel, race officers, and permissions.',
       icon: 'group',

@@ -10,7 +10,6 @@ import {
   DocumentReference,
   getFirestore,
   setDoc,
-  updateDoc,
 } from '@angular/fire/firestore';
 import { firstValueFrom, filter } from 'rxjs';
 import { Club, ScoringDefaults } from '../model/club';
@@ -81,6 +80,7 @@ export class ClubStore {
       suspectTimeThresholds: DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES,
       longSeriesDefaults: DEFAULT_LONG_SERIES_DEFAULTS,
       shortSeriesDefaults: DEFAULT_SHORT_SERIES_DEFAULTS,
+      tagDefinitions: [],
     }
   });
 
@@ -123,7 +123,8 @@ export class ClubStore {
       classes: sortedClasses,
       seasons,
       longSeriesDefaults: club.longSeriesDefaults ?? DEFAULT_LONG_SERIES_DEFAULTS,
-      shortSeriesDefaults: club.shortSeriesDefaults ?? DEFAULT_SHORT_SERIES_DEFAULTS, 
+      shortSeriesDefaults: club.shortSeriesDefaults ?? DEFAULT_SHORT_SERIES_DEFAULTS,
+      tagDefinitions: club.tagDefinitions ?? [],
       suspectTimeThresholds: {
         ...DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES,
         ...(club.suspectTimeThresholds ?? {}),
@@ -152,48 +153,54 @@ export class ClubStore {
     return await setDoc(this.clubDoc()!, update, { merge: true });
   }
 
+  // All club-doc mutators route through `setDoc({ merge: true })` rather than
+  // `updateDoc` so the typed `dataObjectConverter` is invoked (the Firestore
+  // SDK skips converters on `updateDoc`). The converter handles undefined →
+  // omit, null → deleteField(), Date → Timestamp, etc.; `arrayUnion`/
+  // `arrayRemove` sentinels pass through untouched.
+
   async addFleet(fleet: Fleet) {
-    await updateDoc(this.clubDoc()!, { fleets: arrayUnion(fleet) });
+    await setDoc(this.clubDoc()!, { fleets: arrayUnion(fleet) }, { merge: true });
   }
 
   async updateFleet(newFleet: Fleet) {
     const currentFleets = this._clubResource.value().fleets;
     const updatedFleets = currentFleets.map(f => f.id === newFleet.id ? newFleet : f);
-    await updateDoc(this.clubDoc()!, { fleets: updatedFleets });
+    await setDoc(this.clubDoc()!, { fleets: updatedFleets }, { merge: true });
   }
 
   async removeFleet(fleet: Fleet) {
     const currentFleets = this._clubResource.value()!.fleets;
     const updatedFleets = currentFleets.filter(f => f.id !== fleet.id);
-    await updateDoc(this.clubDoc()!, { fleets: updatedFleets });
+    await setDoc(this.clubDoc()!, { fleets: updatedFleets }, { merge: true });
   }
 
   async addClass(boatClass: BoatClass) {
-    await updateDoc(this.clubDoc()!, { classes: arrayUnion(boatClass) });
+    await setDoc(this.clubDoc()!, { classes: arrayUnion(boatClass) }, { merge: true });
   }
 
   async updateClass(oldClass: BoatClass, newClass: BoatClass) {
     const currentClasses = this.club().classes;
     const updatedClasses = currentClasses.map(c => c.id === oldClass.id ? newClass : c);
-    await updateDoc(this.clubDoc()!, { classes: updatedClasses });
+    await setDoc(this.clubDoc()!, { classes: updatedClasses }, { merge: true });
   }
 
   async removeClass(boatClass: BoatClass) {
-    await updateDoc(this.clubDoc()!, { classes: arrayRemove(boatClass) });
+    await setDoc(this.clubDoc()!, { classes: arrayRemove(boatClass) }, { merge: true });
   }
 
   async addSeason(season: Season) {
-    await updateDoc(this.clubDoc()!, { seasons: arrayUnion(season) });
+    await setDoc(this.clubDoc()!, { seasons: arrayUnion(season) }, { merge: true });
   }
 
   async updateSeason(oldSeason: Season, newSeason: Season) {
     const currentSeasons = this.club().seasons;
     const updatedSeasons = currentSeasons.map(s => s.id === oldSeason.id ? newSeason : s);
-    await updateDoc(this.clubDoc()!, { seasons: updatedSeasons });
+    await setDoc(this.clubDoc()!, { seasons: updatedSeasons }, { merge: true });
   }
 
   async removeSeason(season: Season) {
-    await updateDoc(this.clubDoc()!, { seasons: arrayRemove(season) });
+    await setDoc(this.clubDoc()!, { seasons: arrayRemove(season) }, { merge: true });
   }
 
   /** Find fleet  by id */

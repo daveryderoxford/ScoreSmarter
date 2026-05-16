@@ -1,7 +1,14 @@
 import { Meta, StoryObj } from '@storybook/angular';
+import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
 import { SeriesResultsTable } from './series-results-table';
 import { PUBLIC_SERIES_MOCK } from '@testing/mocks/published-results/published-series-mocks';
 import { MERGED_BOAT_CLASS_SEPARATOR } from 'app/scoring/services/series-scorer';
+
+const STORY_TAG_DEFINITIONS: ClubTagDefinition[] = [
+  { id: 'gold', label: 'Gold Fleet', color: 'gold' },
+  { id: 'u16', label: 'Under 16', color: 'blue' },
+  { id: 'youth', label: 'Youth' },
+];
 
 export default {
   title: 'Published Results/Results Table',
@@ -66,6 +73,42 @@ export const MergedClasses: Story = {
           sailNumber: 5678,
         },
       ],
+    },
+  },
+  render: (args) => ({
+    props: args,
+  }),
+};
+
+/** Tag colours as dots beside helm names on the series summary. */
+export const WithTags: Story = {
+  args: {
+    ...Default.args,
+    series: {
+      ...PUBLIC_SERIES_MOCK,
+      tagDefinitions: STORY_TAG_DEFINITIONS,
+      competitors: PUBLIC_SERIES_MOCK.competitors.map((c, i) => ({
+        ...c,
+        tags: i === 0 ? ['gold'] : i === 1 ? ['gold', 'u16'] : [],
+      })),
+    },
+  },
+  render: (args) => ({
+    props: args,
+  }),
+};
+
+/** Legacy Youth label + canonical youth id dedupe to one neutral dot plus gold. */
+export const WithTagAliases: Story = {
+  args: {
+    ...Default.args,
+    series: {
+      ...PUBLIC_SERIES_MOCK,
+      tagDefinitions: STORY_TAG_DEFINITIONS,
+      competitors: PUBLIC_SERIES_MOCK.competitors.map((c, i) => ({
+        ...c,
+        tags: i === 0 ? ['Youth', 'youth', 'gold'] : i === 1 ? ['gold'] : [],
+      })),
     },
   },
   render: (args) => ({

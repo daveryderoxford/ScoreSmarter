@@ -1,11 +1,29 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { collectionData, docData, query, orderBy, getDoc } from '@angular/fire/firestore';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { of, combineLatest } from 'rxjs';
+import { of, combineLatest, map } from 'rxjs';
 import { PublishedSeason } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
 import { PublishedRace } from '../model/published-race';
 import { FirestoreTenantService } from 'app/club-tenant/services/firestore-tenant';
+
+/** Defaults the mandatory tags / tagDefinitions arrays for older docs read off the wire. */
+function coercePublishedSeries(series: PublishedSeries | undefined): PublishedSeries | undefined {
+  if (!series) return series;
+  return {
+    ...series,
+    competitors: series.competitors.map(c => Array.isArray(c.tags) ? c : { ...c, tags: [] }),
+    tagDefinitions: Array.isArray(series.tagDefinitions) ? series.tagDefinitions : [],
+  };
+}
+
+function coercePublishedRace(race: PublishedRace): PublishedRace {
+  return {
+    ...race,
+    results: race.results.map(r => Array.isArray(r.tags) ? r : { ...r, tags: [] }),
+    tagDefinitions: Array.isArray(race.tagDefinitions) ? race.tagDefinitions : [],
+  };
+}
 
 export const PUBLISHED_SEASONS_PATH = 'published_seasons';
 export const PUBLISHED_SERIES_PATH = 'published_series';
@@ -34,8 +52,8 @@ export class PublishedResultsReader {
          const q = query(racesCol, orderBy('index', 'asc'));
 
          return combineLatest({
-            series: docData(seriesDocRef),
-            races: collectionData(q)
+            series: docData(seriesDocRef).pipe(map(coercePublishedSeries)),
+            races: collectionData(q).pipe(map(races => races.map(coercePublishedRace)))
          });
       }
    });
@@ -56,6 +74,6 @@ export class PublishedResultsReader {
       // Fallback to fetching directly from Firestore
       const seriesDocRef = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, id);
       const snapshot = await getDoc(seriesDocRef);
-      return snapshot.exists() ? snapshot.data() : undefined;
+      return snapshot.exists() ? coercePublishedSeries(snapshot.data()) : undefined;
    }
 }

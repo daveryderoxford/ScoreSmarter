@@ -19,6 +19,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { ClubStore } from 'app/club-tenant';
+import { TagValuePicker } from 'app/club-tenant/presentation/tags/tag-value-picker';
 import { Series } from 'app/race-calender/model/series';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
 import { resolveHandicapsForSeries } from 'app/entry/services/entry-helpers';
@@ -51,7 +52,8 @@ type PersonalBandFormValue = 'unknown' | PersonalHandicapBand;
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    SubmitButton
+    SubmitButton,
+    TagValuePicker
 ],
   templateUrl: './series-entry-edit-form.html',
   styleUrls: ['./series-entry-edit-form.scss'],
@@ -69,6 +71,9 @@ export class SeriesEntryEditForm implements OnInit {
 
   readonly personalBands = PERSONAL_HANDICAP_BANDS;
 
+  /** User-managed tag definitions exposed via the picker. */
+  readonly availableTags = computed(() => this.clubStore.club().tagDefinitions);
+
   readonly form = this.fb.group({
     helm: new FormControl('', {
       nonNullable: true,
@@ -85,6 +90,7 @@ export class SeriesEntryEditForm implements OnInit {
     personalHandicapBand: new FormControl<PersonalBandFormValue>('unknown', {
       nonNullable: true,
     }),
+    tags: new FormControl<string[]>([], { nonNullable: true }),
   });
 
   private readonly boatClassValue = signal<string>('');
@@ -173,6 +179,7 @@ export class SeriesEntryEditForm implements OnInit {
         boatClass: c.boatClass,
         sailNumber: c.sailNumber,
         personalHandicapBand: bandForm,
+        tags: c.entry.tags,
       },
       { emitEvent: true },
     );
@@ -197,6 +204,7 @@ export class SeriesEntryEditForm implements OnInit {
       boatClass: v.boatClass,
       sailNumber: Number(v.sailNumber),
       personalHandicapBand,
+      tags: [...v.tags],
     });
   }
 

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ClubStore } from 'app/club-tenant';
-import { applyPersonalBandTag, resolveHandicapsForSeries } from 'app/entry/services/entry-helpers';
+import { resolveHandicapsForSeries } from 'app/entry/services/entry-helpers';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Handicap, getHandicapValue } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
@@ -62,6 +62,11 @@ export interface SeriesEntryEditCommand {
   boatClass: string;
   sailNumber: number;
   personalHandicapBand?: PersonalHandicapBand;
+  /**
+   * User-authored tags for the entry. Omitted means "leave tags unchanged"
+   * so legacy callers don't reset them on save.
+   */
+  tags?: string[];
 }
 
 /**
@@ -334,7 +339,12 @@ export class RaceCompetitorEditService {
       if (!handicapsEqual(workingEntry.handicaps, recomputed)) {
         entryUpdate.handicaps = recomputed;
       }
-      const nextTags = applyPersonalBandTag(workingEntry.tags, personalHandicapBand);
+    }
+
+    // User-tag edits flow through `command.tags`. When omitted we keep
+    // the existing tags; when supplied we replace them wholesale.
+    if (command.tags !== undefined) {
+      const nextTags = [...command.tags];
       if (!tagsEqual(workingEntry.tags, nextTags)) {
         entryUpdate.tags = nextTags;
       }

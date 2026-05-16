@@ -43,6 +43,7 @@ function makeCompetitor(partial: Partial<SeriesEntry>): ResolvedRaceCompetitor {
     boatClass: 'ILCA 7',
     sailNumber: 12345,
     handicaps: [{ scheme: 'PY', value: 1100 }],
+    tags: [],
     ...partial,
   };
   const comp = new RaceCompetitor({

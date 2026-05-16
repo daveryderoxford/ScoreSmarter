@@ -1,0 +1,83 @@
+:host {
+  display: block;
+}
+
+.tag-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.row mat-form-field {
+  flex: 1 1 180px;
+  min-width: 160px;
+}
+
+.color-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.color-row-label {
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.required-mark {
+  color: var(--mat-sys-error);
+}
+
+.color-toggle-group {
+  width: 100%;
+}
+
+// Compact swatch toggles so all eight palette colours fit in the edit dialog.
+:host ::ng-deep .color-toggle-group {
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 6px;
+}
+
+:host ::ng-deep .color-toggle-group .mat-button-toggle {
+  flex: 0 0 36px;
+  width: 36px;
+  border-radius: 50%;
+}
+
+:host ::ng-deep .color-toggle-group .mat-button-toggle-button {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.swatch {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--mat-sys-outline);
+  vertical-align: middle;
+}
+
+.swatch[data-color="gold"]   { background: #FFD700; }
+.swatch[data-color="silver"] { background: #C0C0C0; }
+.swatch[data-color="bronze"] { background: #CD7F32; }
+.swatch[data-color="blue"]   { background: #1976D2; }
+.swatch[data-color="green"]  { background: #2E7D32; }
+.swatch[data-color="purple"] { background: #7B1FA2; }
+.swatch[data-color="orange"] { background: #EF6C00; }
+.swatch[data-color="red"]    { background: #C62828; }

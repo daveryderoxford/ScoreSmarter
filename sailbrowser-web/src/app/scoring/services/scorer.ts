@@ -88,7 +88,8 @@ function updateGridWithRace(scoringGrid: PublishedRace[], race: Race, updatedRes
     scoringGrid.push({
       ...race,
       isAverageLap: race.isAverageLap,
-      results: updatedResults
+      results: updatedResults,
+      tagDefinitions: [],
     });
   }
 }

@@ -1,10 +1,13 @@
 import { CdkTableModule } from '@angular/cdk/table';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
 import { doesRaceRequireHandicap, type RaceType } from 'app/race-calender/model/race-type';
 import { isRankedRaceResult, RaceResult } from 'app/published-results/model/published-race';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { competitorColumns, nameColumnWidth as computeNameColumnWidth } from '../results-table-shared';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
+import { TagLegend } from '../tag-legend';
+import { TagsCell } from '../tags-cell';
 
 export const raceColumns = [...competitorColumns, 'elapsed', 'corrected', 'points'] as const;
 export type RaceColumn = (typeof raceColumns)[number];
@@ -12,7 +15,7 @@ export type RaceColumn = (typeof raceColumns)[number];
 @Component({
   selector: 'app-race-results-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CdkTableModule, DurationPipe],
+  imports: [CdkTableModule, DurationPipe, TagsCell, TagLegend],
   templateUrl: './race-results-table.html',
   styleUrls: ['../results-table-shared.scss', './race-results-table.scss'],
 })
@@ -25,16 +28,19 @@ export class RaceResultsTable {
   raceType = input<RaceType | undefined>(undefined);
   /** Series scoring scheme (used to show personal handicap band under rating). */
   scoringHandicapScheme = input<HandicapScheme | undefined>(undefined);
+  /** Snapshot of tag definitions for resolving tag colours beside the helm name. */
+  tagDefinitions = input<readonly ClubTagDefinition[]>([]);
   showBoatClass = input(true);
   fontSize = input(10);
 
   displayedColumns = computed(() => {
     const cols = this.columns();
     const rt = this.raceType();
+    let filtered = cols;
     if (rt !== undefined && !doesRaceRequireHandicap(rt)) {
-      return cols.filter(c => c !== 'elapsed' && c !== 'corrected' && c !== 'handicap');
+      filtered = filtered.filter(c => c !== 'elapsed' && c !== 'corrected' && c !== 'handicap');
     }
-    return [...cols];
+    return [...filtered];
   });
 
   nameColumnWidth = computed(() => computeNameColumnWidth(this.results()));

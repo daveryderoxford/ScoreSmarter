@@ -129,7 +129,8 @@ export class QuickEntryForm {
         helm: this.form.value.helm!,
         crew: this.form.value.crew,
         boatClass: this.boatClass(),
-        sailNumber: parseInt(this.sailNumber(), 10)
+        sailNumber: parseInt(this.sailNumber(), 10),
+        tags: [],
       };
 
       await this.entryService.enterRaces(entryDetails);
