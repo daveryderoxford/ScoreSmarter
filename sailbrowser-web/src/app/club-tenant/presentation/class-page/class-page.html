@@ -1,4 +1,7 @@
 <app-toolbar title="Classes">
+  <button matButton="tonal" type="button" (click)="openSyncSeriesHandicapsDialog()">
+    Update series handicaps
+  </button>
   <app-import-export-menu context="classes" (exportCsv)="exportCsv()" (importFile)="importCsv($event)" />
 </app-toolbar>
 
