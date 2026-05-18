@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
@@ -20,6 +21,10 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { ClassesCsvService } from '../../services/classes-csv.service';
 
 import { ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
+import {
+  SyncSeriesHandicapsDialog,
+  type SyncSeriesHandicapsDialogData,
+} from './sync-series-handicaps-dialog';
 
 @Component({
   selector: 'app-class-page',
@@ -39,6 +44,7 @@ import { ImportExportMenuComponent } from 'app/shared/components/import-export-m
 export class ClassPage {
   cs = inject(ClubStore);
   private ds = inject(DialogsService);
+  private dialog = inject(MatDialog);
   private snackbar = inject(MatSnackBar);
   private classesCsv = inject(ClassesCsvService);
 
@@ -85,6 +91,20 @@ export class ClassPage {
     a.download = `classes-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
+  }
+
+  openSyncSeriesHandicapsDialog(): void {
+    const data: SyncSeriesHandicapsDialogData = {
+      onApplied: plan => {
+        const n = plan.updated.length;
+        this.snackbar.open(
+          n === 1 ? 'Updated handicaps for 1 entry.' : `Updated handicaps for ${n} entries.`,
+          'Dismiss',
+          { duration: 4000 },
+        );
+      },
+    };
+    this.dialog.open(SyncSeriesHandicapsDialog, { data, width: '480px' });
   }
 
   async importCsv(event: { event: Event, context: any }) {
