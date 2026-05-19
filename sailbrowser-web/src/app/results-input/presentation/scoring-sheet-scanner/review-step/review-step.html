@@ -82,7 +82,7 @@
 
 @if (unmatchedRows().length > 0) {
 <h3 class="section-title" style="margin-top: 2.5rem;">Unmatched Rows</h3>
-<p class="section-hint">Known boat: create entry from existing boat/helm. Otherwise use full entry flow.</p>
+<p class="section-hint">Known boat: pick helm from the club boat list. Otherwise add an entry with helm name (class and sail from the scan).</p>
 <div class="table-container">
   <table mat-table [dataSource]="unmatchedRows()" class="mat-elevation-z1">
 
@@ -118,7 +118,7 @@
           <button matButton="outlined" (click)="knownBoatEntryRequested.emit(vm.row)">Known boat - create entry</button>
           <div class="possible-helms" title="Possible helms">{{ vm.possibleHelms.join(', ') }}</div>
         } @else {
-          <button mat-button (click)="newEntryRequested.emit(vm.row)">Add entry manually</button>
+          <button matButton="outlined" (click)="newEntryRequested.emit(vm.row)">Add entry</button>
         }
       </td>
     </ng-container>

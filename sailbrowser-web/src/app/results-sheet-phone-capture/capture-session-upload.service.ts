@@ -22,7 +22,7 @@ export class CaptureSessionUploadService {
     if (environment.useEmulators) {
       try { connectFunctionsEmulator(functions, 'localhost', 5001); } catch { /* already configured */ }
     }
-    const fn = httpsCallable(functions, 'uploadResultsSheetImageFromSession', { timeout: 120_000 });
+    const fn = httpsCallable(functions, 'uploadImageFromPhone', { timeout: 120_000 });
     const res = await fn(payload);
     return res.data as { status: string; storagePath?: string };
   }

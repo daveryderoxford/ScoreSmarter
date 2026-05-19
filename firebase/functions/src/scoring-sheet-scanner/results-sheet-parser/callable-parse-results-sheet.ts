@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { getFirestore } from "firebase-admin/firestore";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { onCall } from "firebase-functions/v2/https";
 import {
@@ -55,7 +55,7 @@ function assertCallerHasClubAccess(
   // Enable by uncommenting the block above once Auth custom claims (e.g. clubs map) are assigned for scanner users.
 }
 
-async function buildRosterFromRace(
+async function getRaceCompetitors(
   clubId: string,
   raceId: string,
   requestId: string,
@@ -96,7 +96,7 @@ async function buildRosterFromRace(
     }
   }
 
-  const roster: Array<{ id: string; class: string; sailNumber: string; name?: string }> = [];
+  const competitors: Array<{ id: string; class: string; sailNumber: string; name?: string }> = [];
   for (const doc of compSnap.docs) {
     const comp = doc.data() as RaceCompetitorDoc;
     const sid = comp.seriesEntryId;
@@ -111,7 +111,7 @@ async function buildRosterFromRace(
     if (!boatClass || sailNum == null || Number.isNaN(Number(sailNum))) {
       continue;
     }
-    roster.push({
+    competitors.push({
       id: doc.id,
       class: boatClass,
       sailNumber: String(sailNum),
@@ -119,7 +119,7 @@ async function buildRosterFromRace(
     });
   }
 
-  if (roster.length === 0) {
+  if (competitors.length === 0) {
     logScanError(requestId, "build_roster", "No roster entries after resolving series entries", {
       clubId,
       raceId,
@@ -132,13 +132,13 @@ async function buildRosterFromRace(
     );
   }
 
-  roster.sort((a, b) => {
+  competitors.sort((a, b) => {
     const c = a.class.localeCompare(b.class);
     if (c !== 0) return c;
     return a.sailNumber.localeCompare(b.sailNumber, undefined, { numeric: true });
   });
 
-  return roster;
+  return competitors;
 }
 
 export function validateStoredRequest(data: unknown, requestId: string): ParseStoredResultsSheetRequest {
@@ -181,6 +181,44 @@ export function validateStoredRequest(data: unknown, requestId: string): ParseSt
   };
 }
 
+/** Scan payload persisted for client resume (`clubs/{clubId}/scan-results/{raceId}`). */
+export function extractScanResponseForPersistence(parsed: Record<string, unknown>): {
+  scannedResults: unknown[];
+  pageNotes?: string;
+  unreadableRowsCount: number;
+} {
+  return {
+    scannedResults: Array.isArray(parsed.scannedResults) ? parsed.scannedResults : [],
+    pageNotes: typeof parsed.pageNotes === "string" ? parsed.pageNotes : undefined,
+    unreadableRowsCount:
+      typeof parsed.unreadableRowsCount === "number" ? parsed.unreadableRowsCount : 0,
+  };
+}
+
+async function persistScanResponse(
+  requestId: string,
+  clubId: string,
+  raceId: string,
+  parsed: Record<string, unknown>,
+  storagePath: string,
+): Promise<void> {
+  const scanResponse = extractScanResponseForPersistence(parsed);
+  await db().doc(`clubs/${clubId}/scan-results/${raceId}`).set(
+    {
+      scanResponse,
+      scannedAt: FieldValue.serverTimestamp(),
+      requestId,
+      storagePath: typeof parsed.storedImagePath === "string" ? parsed.storedImagePath : storagePath,
+    },
+    { merge: true },
+  );
+  logScan(requestId, "persist_scan_response", "Saved scan response for race", {
+    clubId,
+    raceId,
+    rowCount: scanResponse.scannedResults.length,
+  });
+}
+
 async function parseFromStoredImage(
   requestId: string,
   clubId: string,
@@ -188,7 +226,7 @@ async function parseFromStoredImage(
   scannerContext: ScannerContext,
   storagePath: string,
 ) {
-  const roster = await buildRosterFromRace(clubId, raceId, requestId);
+  const roster = await getRaceCompetitors(clubId, raceId, requestId);
   const bucket = getStorage().bucket();
   const file = bucket.file(storagePath);
   const [buffer] = await file.download();
@@ -217,11 +255,17 @@ async function parseFromStoredImage(
   });
 
   const parsed = await parseWithAi(requestId, imageBase64, imageMimeType, mergedContext, raceId);
-  return {
-    ...((typeof parsed === "object" && parsed !== null) ? parsed as Record<string, unknown> : { parsed }),
+  const response =
+    (typeof parsed === "object" && parsed !== null)
+      ? { ...(parsed as Record<string, unknown>) }
+      : { parsed };
+  const withStorage = {
+    ...response,
     storedImagePath: storagePath,
     storedImageUri: `gs://${bucket.name}/${storagePath}`,
   };
+  await persistScanResponse(requestId, clubId, raceId, withStorage, storagePath);
+  return withStorage;
 }
 
 export const parseStoredResultsSheet = onCall({

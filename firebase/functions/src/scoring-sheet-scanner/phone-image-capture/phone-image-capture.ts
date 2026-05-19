@@ -9,12 +9,12 @@ import {
 
 const CAPTURE_SESSION_TTL_MS = 10 * 60 * 1000;
 
-interface CreateCaptureSessionRequest {
+interface PhoneImageCaptureRequestData {
   clubId: string;
   raceId: string;
 }
 
-interface UploadFromCaptureSessionRequest {
+interface UploadImageFromPhoneData {
   clubId: string;
   sessionId: string;
   token: string;
@@ -30,8 +30,8 @@ function tokenHash(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-function validateCreateRequest(data: unknown, requestId: string): CreateCaptureSessionRequest {
-  const req = data as CreateCaptureSessionRequest;
+function validateCreateRequest(data: unknown, requestId: string): PhoneImageCaptureRequestData {
+  const req = data as PhoneImageCaptureRequestData;
   if (!req?.clubId || typeof req.clubId !== "string") {
     throw httpsWithDetails("invalid-argument", "Missing clubId.", {
       requestId, stage: "validate_input", cause: "missing_club_id",
@@ -45,8 +45,8 @@ function validateCreateRequest(data: unknown, requestId: string): CreateCaptureS
   return req;
 }
 
-function validateUploadRequest(data: unknown, requestId: string): Required<UploadFromCaptureSessionRequest> {
-  const req = data as UploadFromCaptureSessionRequest;
+function validateUploadRequest(data: unknown, requestId: string): Required<UploadImageFromPhoneData> {
+  const req = data as UploadImageFromPhoneData;
   if (!req?.sessionId || typeof req.sessionId !== "string") {
     throw httpsWithDetails("invalid-argument", "Missing sessionId.", {
       requestId, stage: "validate_input", cause: "missing_session_id",
@@ -76,7 +76,7 @@ function validateUploadRequest(data: unknown, requestId: string): Required<Uploa
   };
 }
 
-export const createResultsSheetCaptureSession = onCall({
+export const createPhoneUploadRequest = onCall({
   memory: "256MiB",
   timeoutSeconds: 60,
 }, async (request) => {
@@ -116,7 +116,7 @@ export const createResultsSheetCaptureSession = onCall({
   };
 });
 
-export const uploadResultsSheetImageFromSession = onCall({
+export const uploadImageFromPhone = onCall({
   memory: "512MiB",
   timeoutSeconds: 120,
 }, async (request) => {

@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
-import { Firestore, doc, docData, getDoc, setDoc, updateDoc } from '@angular/fire/firestore';
+import { Firestore, doc, docData, getDoc, setDoc } from '@angular/fire/firestore';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
 import { RaceCalendarStore } from 'app/race-calender';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
@@ -51,7 +51,7 @@ export class ScannerOrchestrationService {
     if (environment.useEmulators) {
       try { connectFunctionsEmulator(functions, 'localhost', 5001); } catch { /* already configured */ }
     }
-    const createFn = httpsCallable(functions, 'createResultsSheetCaptureSession', { timeout: 60_000 });
+    const createFn = httpsCallable(functions, 'createPhoneUploadRequest', { timeout: 60_000 });
     const res = await createFn({ clubId, raceId });
     return res.data as {
       sessionId: string;
@@ -91,21 +91,25 @@ export class ScannerOrchestrationService {
     );
   }
 
-  async saveScanResponse(clubId: string, raceId: string, response: ScanResponse): Promise<void> {
-    const ref = doc(this.firestore, `clubs/${clubId}/scan-results/${raceId}`);
-    await setDoc(ref, { scanResponse: response, updatedAt: new Date() }, { merge: true });
-  }
+
 
   async getScanResponse(clubId: string, raceId: string): Promise<ScanResponse | null> {
     const ref = doc(this.firestore, `clubs/${clubId}/scan-results/${raceId}`);
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
-    return snap.data()['scanResponse'] as ScanResponse || null;
+    const stored = snap.data()['scanResponse'];
+    if (!stored || typeof stored !== 'object') return null;
+    return stored as ScanResponse;
   }
 
   async clearScanResponse(clubId: string, raceId: string): Promise<void> {
     const ref = doc(this.firestore, `clubs/${clubId}/scan-results/${raceId}`);
-    await updateDoc(ref, { scanResponse: null });
+    await setDoc(ref, { scanResponse: null }, { merge: true });
+  }
+
+  /** Applies the same auto-accept rules used after a live scan. */
+  prepareScanResponseForReview(response: ScanResponse): ScanResponse {
+    return this.applyAutoAccept(response);
   }
 
   runScan(request: ScanRunRequest): Observable<ScanRunState> {

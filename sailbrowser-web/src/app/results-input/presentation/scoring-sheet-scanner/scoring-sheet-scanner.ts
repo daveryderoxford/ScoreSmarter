@@ -3,7 +3,9 @@ import { ChangeDetectorRef, Component, computed, effect, inject, signal, viewChi
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BoatsStore } from 'app/boats';
@@ -25,6 +27,10 @@ import { RaceStartTimeDialog, RaceStartTimeResult } from '../handicap/race-start
 import { CameraCaptureDialog } from './camera-capture-dialog';
 import { CaptureStep, CaptureStepViewModel } from './capture-step/capture-step';
 import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
+import {
+  UnmatchedRowEntryDialog,
+  type UnmatchedRowEntryDialogResult,
+} from './unmatched-row-entry-dialog';
 import { ScanResponse, ScannedResultRow, ScannerContext } from './scan-model';
 import { ScannerOrchestrationService } from './scanner-orchestration.service';
 import { ResultsSheetCaptureService } from '../../services/results-sheet-capture.service';
@@ -40,6 +46,8 @@ import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step/review-s
     ReactiveFormsModule,
     MatDialogModule,
     MatStepperModule,
+    MatCardModule,
+    MatIconModule,
     RaceStep,
     SetupStep,
     CaptureStep,
@@ -224,6 +232,9 @@ export class ScoringSheetScanner {
   imagePreview = signal<string | null>(null);
   loading = signal(false);
   result = signal<ScanResponse | null>(null);
+  /** Parsed scan persisted for the selected race (from Firestore). */
+  storedScanOffer = signal<ScanResponse | null>(null);
+  loadingStoredScan = signal(false);
   error = signal<string | null>(null);
   scanStage = signal<string | null>(null);
 
@@ -268,13 +279,21 @@ export class ScoringSheetScanner {
       // Allow capture step completion without image while testing review flow.
       this.captureForm.controls.hasImage.setValue(true);
     }
-    this.form.controls.raceId.valueChanges.subscribe(() => {
+    this.form.controls.raceId.valueChanges.subscribe(raceId => {
       this.preferNewCaptureOverRaceSheet.set(false);
+      this.result.set(null);
+      this.error.set(null);
+      void this.loadStoredScanOffer(raceId);
     });
     effect(() => {
       const imageRef = this.selectedRace()?.resultsSheetImage?.trim() ?? '';
       void this.resolveRaceSheetImageUrl(imageRef);
     });
+
+    const initialRaceId = this.form.controls.raceId.value;
+    if (initialRaceId) {
+      void this.loadStoredScanOffer(initialRaceId);
+    }
   }
 
   private async resolveRaceSheetImageUrl(imageRef: string): Promise<void> {
@@ -308,6 +327,48 @@ export class ScoringSheetScanner {
     this.form.controls.raceId.setValue(id);
     if (id) {
       this.currentRacesStore.addRaceId(id);
+    }
+  }
+
+  private async loadStoredScanOffer(raceId: string): Promise<void> {
+    if (!raceId) {
+      this.storedScanOffer.set(null);
+      return;
+    }
+    this.loadingStoredScan.set(true);
+    try {
+      const stored = await this.scannerOrchestration.getScanResponse(this.clubTenant.clubId, raceId);
+      this.storedScanOffer.set(stored);
+    } catch (err: unknown) {
+      console.error('ScoringSheetScanner: failed to load stored scan', err);
+      this.storedScanOffer.set(null);
+    } finally {
+      this.loadingStoredScan.set(false);
+    }
+  }
+
+  async reviewStoredScan(): Promise<void> {
+    const stored = this.storedScanOffer();
+    if (!stored) return;
+    this.result.set(this.scannerOrchestration.prepareScanResponseForReview(stored));
+    this.error.set(null);
+    this.captureForm.controls.hasImage.setValue(true);
+    queueMicrotask(() => {
+      const stepper = this.stepper();
+      stepper.selectedIndex = 3;
+      this.cdr.markForCheck();
+    });
+  }
+
+  async discardStoredScan(): Promise<void> {
+    const raceId = this.form.controls.raceId.value;
+    if (!raceId) return;
+    try {
+      await this.scannerOrchestration.clearScanResponse(this.clubTenant.clubId, raceId);
+      this.storedScanOffer.set(null);
+    } catch (err: unknown) {
+      console.error('ScoringSheetScanner: failed to clear stored scan', err);
+      this.error.set('Could not discard the saved scan. Please try again.');
     }
   }
 
@@ -472,7 +533,7 @@ export class ScoringSheetScanner {
       b => b.boatClass.toLowerCase() === boatClass.toLowerCase() && Number(b.sailNumber) === sailNumber,
     );
     if (matches.length === 0) {
-      await this.openManualEntryForRow(row);
+      await this.openUnmatchedRowEntry(row);
       return;
     }
 
@@ -487,12 +548,20 @@ export class ScoringSheetScanner {
     this.refreshScanRowMatch(row, boatClass, sailNumber, selectedBoat?.helm);
   }
 
-  async openManualEntryForRow(row: ScannedResultRow): Promise<void> {
+  async openUnmatchedRowEntry(row: ScannedResultRow): Promise<void> {
     const raceId = this.form.value.raceId;
-    if (!raceId) return;
-    await this.router.navigate(['/entry/enter'], {
-      queryParams: { raceId, returnTo: 'results-input', boatClass: row.boatClass?.value ?? '', sailNumber: row.sailNumber?.value ?? '' },
+    const boatClass = row.boatClass?.value?.trim();
+    const sailNumber = Number(row.sailNumber?.value);
+    if (!raceId || !boatClass || !Number.isFinite(sailNumber)) return;
+
+    const dialogRef = this.dialog.open(UnmatchedRowEntryDialog, {
+      width: '420px',
+      data: { raceId, boatClass, sailNumber },
     });
+
+    const result = (await firstValueFrom(dialogRef.afterClosed())) as UnmatchedRowEntryDialogResult | undefined;
+    if (!result?.created) return;
+    this.refreshScanRowMatch(row, boatClass, sailNumber, result.helm);
   }
 
   async saveResults(): Promise<void> {
@@ -547,6 +616,8 @@ export class ScoringSheetScanner {
           resultCode: this.normalizeScannedResultCode(vm.row.status),
         });
       }
+      await this.scannerOrchestration.clearScanResponse(this.clubTenant.clubId, raceId);
+      this.storedScanOffer.set(null);
       await this.router.navigate(['/results-input/manual'], { queryParams: { raceId } });
     } finally {
       this.loading.set(false);
