@@ -13,8 +13,8 @@ export { seriesChanged, seriesCreated } from "./results/results.js";
 export {
   parseStoredResultsSheet,
   uploadResultsSheetImage,
-  createResultsSheetCaptureSession,
-  uploadResultsSheetImageFromSession,
+  createPhoneUploadRequest,
+  uploadImageFromPhone,
 } from "./scoring-sheet-scanner/scoring-sheet-scanner.js";
 export { createNewTenant } from "./sys-admin/club.js";
 export { assignRole } from "./sys-admin/roles.js";

@@ -34,3 +34,19 @@ test("validateStoredRequest throws when raceId is missing", async () => {
     /Missing raceId/,
   );
 });
+
+test("extractScanResponseForPersistence keeps scan fields only", async () => {
+  const { extractScanResponseForPersistence } = await import("./callable-parse-results-sheet.js");
+  const payload = extractScanResponseForPersistence({
+    scannedResults: [{ rowIndex: 1 }],
+    pageNotes: "note",
+    unreadableRowsCount: 2,
+    storedImagePath: "clubs/x/img.jpg",
+    storedImageUri: "gs://bucket/x",
+  });
+  assert.deepEqual(payload, {
+    scannedResults: [{ rowIndex: 1 }],
+    pageNotes: "note",
+    unreadableRowsCount: 2,
+  });
+});

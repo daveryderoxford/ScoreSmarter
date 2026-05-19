@@ -35,6 +35,44 @@
   margin: 0 auto;
 }
 
+.stored-scan-status {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.stored-scan-offer {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stored-scan-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.stored-scan-detail,
+.stored-scan-notes {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.stored-scan-notes {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.stored-scan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .step-actions {
   display: flex;
   justify-content: space-between;

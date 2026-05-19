@@ -15,7 +15,8 @@ export type ScanStage =
   | "update_race_doc"
   | "build_prompt"
   | "vertex_generate"
-  | "parse_model_json";
+  | "parse_model_json"
+  | "persist_scan_response";
 
 export interface ScanErrorDetails {
   requestId: string;

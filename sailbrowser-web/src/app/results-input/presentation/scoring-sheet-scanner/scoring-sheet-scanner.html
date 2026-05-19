@@ -12,6 +12,35 @@
             [races]="raceOptions()"
             [selectedRaceIds]="selectedRaceIds()"
             (raceSelectionChange)="onScannerRaceIdsChange($event)" />
+
+          @if (loadingStoredScan()) {
+            <p class="stored-scan-status" role="status">Checking for a saved scan…</p>
+          } @else if (storedScanOffer(); as stored) {
+            <mat-card appearance="outlined" class="stored-scan-offer">
+              <p class="stored-scan-title">
+                <mat-icon>history</mat-icon>
+                Saved scan for this race
+              </p>
+              <p class="stored-scan-detail">
+                {{ stored.scannedResults.length }} rows parsed
+                @if (stored.unreadableRowsCount > 0) {
+                  ({{ stored.unreadableRowsCount }} unreadable)
+                }
+              </p>
+              @if (stored.pageNotes) {
+                <p class="stored-scan-notes">{{ stored.pageNotes }}</p>
+              }
+              <div class="stored-scan-actions">
+                <button matButton="tonal" type="button" (click)="reviewStoredScan()">
+                  Review saved scan
+                </button>
+                <button matButton="outlined" type="button" (click)="discardStoredScan()">
+                  Discard saved scan
+                </button>
+              </div>
+            </mat-card>
+          }
+
           <div class="step-actions">
             <button matButton="filled" type="submit" matStepperNext [disabled]="!form.controls.raceId.valid" style="margin-left:auto;">Next</button>
           </div>
@@ -96,7 +125,7 @@
           (retryRequested)="scan()"
           (saveRequested)="saveResults()"
           (knownBoatEntryRequested)="openKnownBoatEntry($event)"
-          (newEntryRequested)="openManualEntryForRow($event)" />
+          (newEntryRequested)="openUnmatchedRowEntry($event)" />
       </div>
     </mat-step>
   </mat-stepper>

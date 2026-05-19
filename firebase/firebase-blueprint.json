@@ -183,6 +183,10 @@
       "schema": "ResultsSheetCaptureSession",
       "description": "Ephemeral phone-capture QR sessions (read by desktop; writes via Cloud Functions only)."
     },
+    "/clubs/{clubId}/scan-results/{raceId}": {
+      "schema": "ScanResults",
+      "description": "Persisted results-sheet parse for a race until reviewed or cleared."
+    },
     "/clubs/{clubId}/series/{seriesId}": {
       "schema": "Series",
       "description": "Series definitions."

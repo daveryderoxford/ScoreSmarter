@@ -1,6 +1,6 @@
-export { parseStoredResultsSheet } from "./scan/callable-parse-results-sheet.js";
+export { parseStoredResultsSheet } from "./results-sheet-parser/callable-parse-results-sheet.js";
 export { uploadResultsSheetImage } from "./image-upload/callable-upload-results-sheet-image.js";
 export {
-  createResultsSheetCaptureSession,
-  uploadResultsSheetImageFromSession,
-} from "./capture-session/callable-capture-session.js";
+  createPhoneUploadRequest,
+  uploadImageFromPhone,
+} from "./phone-image-capture/phone-image-capture.js";

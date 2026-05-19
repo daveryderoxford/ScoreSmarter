@@ -245,6 +245,13 @@ service cloud.firestore {
         // Creates/updates are performed by Cloud Functions (Admin SDK bypasses rules).
         allow create, update, delete: if false;
       }
+
+      // Parsed results-sheet scan blobs (written by Cloud Functions; RO may clear after review).
+      match /scan-results/{raceId} {
+        allow read: if isRO(clubId);
+        allow create, update: if isRO(clubId);
+        allow delete: if isRO(clubId);
+      }
     }
 
     // User Management
