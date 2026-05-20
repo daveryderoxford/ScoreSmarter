@@ -14,6 +14,11 @@ import {
   PhoneCaptureQrDialogResult,
 } from '../scoring-sheet-scanner/phone-capture-qr-dialog/phone-capture-qr-dialog';
 import { MatDialog } from '@angular/material/dialog';
+import {
+  CaptureImage,
+  capturePreviewUrl,
+  isCaptureReady,
+} from '../scoring-sheet-scanner/scan-model';
 
 export interface ScoringSheetCaptureDialogData {
   clubId: string;
@@ -46,31 +51,16 @@ export class ScoringSheetCaptureDialog {
   );
   private readonly subDialog = inject(MatDialog);
 
-  protected readonly imageBase64 = signal<string | null>(null);
-  protected readonly imageMimeType = signal<string | null>(null);
-  protected readonly imagePreview = signal<string | null>(null);
-  protected readonly storedImagePath = signal<string | null>(null);
+  protected readonly captureImage = signal<CaptureImage | null>(null);
 
-  protected readonly hasImage = computed(
-    () => (!!this.imageBase64() && !!this.imageMimeType()) || !!this.storedImagePath(),
-  );
+  protected readonly hasImage = computed(() => isCaptureReady(this.captureImage()));
 
   protected readonly vm = computed((): CaptureStepViewModel => {
-    const previewSrc = this.imagePreview();
-    if (previewSrc) {
-      return {
-        layout: 'preview',
-        isMobile: this.data.isMobile,
-        reuseImageUrl: null,
-        previewSrc,
-        storedImageError: null,
-      };
-    }
+    const img = this.captureImage();
     return {
-      layout: 'capture',
+      mode: img ? 'newPreview' : 'empty',
       isMobile: this.data.isMobile,
-      reuseImageUrl: null,
-      previewSrc: null,
+      previewSrc: capturePreviewUrl(img),
       storedImageError: null,
     };
   });
@@ -81,13 +71,15 @@ export class ScoringSheetCaptureDialog {
       this.clearImage();
       return;
     }
-    this.imageMimeType.set(file.type);
     const reader = new FileReader();
     reader.onload = () => {
       const readResult = reader.result as string;
-      this.imagePreview.set(readResult);
-      this.imageBase64.set(readResult.split(',')[1]);
-      this.storedImagePath.set(null);
+      this.captureImage.set({
+        kind: 'inline',
+        base64: readResult.split(',')[1],
+        mimeType: file.type,
+        previewUrl: readResult,
+      });
     };
     reader.readAsDataURL(file);
   }
@@ -100,10 +92,12 @@ export class ScoringSheetCaptureDialog {
     });
     ref.afterClosed().subscribe(result => {
       if (!result) return;
-      this.imageBase64.set(result.base64);
-      this.imagePreview.set(result.preview);
-      this.imageMimeType.set('image/jpeg');
-      this.storedImagePath.set(null);
+      this.captureImage.set({
+        kind: 'inline',
+        base64: result.base64,
+        mimeType: 'image/jpeg',
+        previewUrl: result.preview,
+      });
     });
   }
 
@@ -125,24 +119,22 @@ export class ScoringSheetCaptureDialog {
   }
 
   protected clearImage(): void {
-    this.imageBase64.set(null);
-    this.imageMimeType.set(null);
-    this.imagePreview.set(null);
-    this.storedImagePath.set(null);
+    this.captureImage.set(null);
   }
 
   protected confirm(): void {
-    const storedPath = this.storedImagePath();
-    if (storedPath) {
-      this.dialogRef.close({ outcome: 'stored', storagePath: storedPath });
+    const img = this.captureImage();
+    if (!img) return;
+    if (img.kind === 'storagePath') {
+      this.dialogRef.close({ outcome: 'stored', storagePath: img.path });
       return;
     }
-    const base64 = this.imageBase64();
-    const mimeType = this.imageMimeType();
-    const preview = this.imagePreview();
-    if (base64 && mimeType && preview) {
-      this.dialogRef.close({ outcome: 'inline', base64, mimeType, preview });
-    }
+    this.dialogRef.close({
+      outcome: 'inline',
+      base64: img.base64,
+      mimeType: img.mimeType,
+      preview: img.previewUrl,
+    });
   }
 
   protected cancel(): void {

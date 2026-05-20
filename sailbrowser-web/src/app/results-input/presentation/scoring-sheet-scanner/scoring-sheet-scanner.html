@@ -53,11 +53,10 @@
       <div class="step-container">
         <app-capture-step
           [vm]="captureViewModel()"
-          (captureNewInstead)="captureNewInsteadOfReuse()"
+          (captureNewInstead)="startNewCapture()"
           (fileChanged)="onFileChange($event)"
           (openCamera)="openCameraDialog()"
           (startPhoneCapture)="startPhoneCapture()"
-          (useExisting)="useExistingImage()"
           (clearImage)="clearImage()" />
         <div class="step-actions">
           <button matButton matStepperPrevious>Previous</button>

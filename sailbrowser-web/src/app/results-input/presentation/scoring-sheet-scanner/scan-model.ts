@@ -51,3 +51,33 @@ export interface ScanRunState {
   result?: ScanResponse;
   error?: string;
 }
+
+/** Image selected for scanning (storage path or inline bytes + optional UI preview). */
+export type CaptureImage =
+  | { kind: 'storagePath'; path: string; previewUrl?: string | null }
+  | { kind: 'inline'; base64: string; mimeType: string; previewUrl: string };
+
+export function isCaptureReady(img: CaptureImage | null): boolean {
+  if (!img) return false;
+  if (img.kind === 'storagePath') return !!img.path;
+  return !!img.base64 && !!img.mimeType;
+}
+
+export function capturePreviewUrl(img: CaptureImage | null): string | null {
+  if (!img) return null;
+  return img.previewUrl ?? null;
+}
+
+export function toScanRunFields(
+  img: CaptureImage | null,
+): Pick<ScanRunRequest, 'storagePath' | 'imageBase64' | 'imageMimeType'> {
+  if (!img) return {};
+  if (img.kind === 'storagePath') {
+    return { storagePath: img.path, imageBase64: null, imageMimeType: null };
+  }
+  return {
+    storagePath: null,
+    imageBase64: img.base64,
+    imageMimeType: img.mimeType,
+  };
+}
