@@ -65,6 +65,7 @@ export interface CreateSeriesEntryInput {
   helm: string;
   boatClass: string;
   sailNumber: number;
+  club?: string;
   crew?: string;
   handicaps: Handicap[];
   personalHandicapBand?: PersonalHandicapBand;

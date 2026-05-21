@@ -1,0 +1,42 @@
+@if (variant() === 'button') {
+  <button
+    matButton
+    type="button"
+    [disabled]="disabled()"
+    [matMenuTriggerFor]="editMenu"
+  >
+    {{ triggerLabel() }}
+  </button>
+
+  <mat-menu #editMenu="matMenu">
+    <ng-container *ngTemplateOutlet="items" />
+  </mat-menu>
+} @else {
+  <ng-container *ngTemplateOutlet="items" />
+}
+
+<ng-template #items>
+  <button mat-menu-item type="button" (click)="openChangeCompetitor()">
+    <span class="menu-item-body">
+      <span class="menu-item-title">Race Entry</span>
+      <span class="menu-item-hint">Change class, sail number, or helm for race</span>
+    </span>
+  </button>
+  <button mat-menu-item type="button" (click)="openRaceResultData()">
+    <span class="menu-item-body">
+      <span class="menu-item-title">Race Results</span>
+      <span class="menu-item-hint">Override race result data</span>
+    </span>
+  </button>
+  <button mat-menu-item type="button" (click)="openSeriesTypo()">
+    <span class="menu-item-body">
+      <span class="menu-item-title">Series data</span>
+      <span class="menu-item-hint">Changes apply to all races in series</span>
+    </span>
+  </button>
+  <button matButton="tonal" type="button" class="delete-item" (click)="confirmDelete()">
+    <span class="menu-item-body">
+      <span class="menu-item-title">Delete Race Entry</span>
+    </span>
+  </button>
+</ng-template>

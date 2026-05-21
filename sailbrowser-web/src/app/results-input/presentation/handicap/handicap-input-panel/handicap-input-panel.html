@@ -71,7 +71,18 @@
   <app-result-code-select formControlName="resultCode"></app-result-code-select>
 
   <div class="actions" style="display: flex; align-items: center; gap: 8px; justify-content: flex-start;">
-    <button matButton type="button" [disabled]="!hasSelectedCompetitor()" (click)="editSelectedCompetitor()">Edit Entry</button>
+    @if (selectedCompetitor(); as sel) {
+      <app-competitor-edit-menu
+        [competitor]="sel"
+        [race]="race()"
+        [resultDraft]="editResultDraft()"
+        [disabled]="!hasSelectedCompetitor()"
+        (changed)="onCompetitorEdited()"
+        (deleted)="onCompetitorDeleted()"
+      />
+    } @else {
+      <button matButton type="button" disabled>Edit Entry</button>
+    }
     <span style="flex: 1;"></span>
     <button matButton type="button" [disabled]="!hasSelectedCompetitor()" (click)="setSelectedCompetitor(undefined)">Clear</button>
     <button matButton="filled" type="submit" [disabled]="!hasSelectedCompetitor()">Save</button>

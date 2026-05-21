@@ -39,9 +39,14 @@ import {
   segmentProcessedPlacedAndNonPlaced,
   TieGroupRow,
 } from '../../../services/manual-results.service';
+import {
+  DuplicateSailPlacementDialog,
+  DuplicateSailPlacementDialogData,
+} from '../duplicate-sail-placement-dialog';
 import { ResultCodeDialog } from '../result-code-dialog';
 import { ResolvedRaceCompetitor, sortResolvedCompetitors } from 'app/results-input';
-import { EditRaceCompetitorDialog } from '../../edit-race-competitor-dialog/edit-race-competitor-dialog';
+import { RaceResultDraft } from '../../../model/race-result-draft';
+import { CompetitorEditMenuComponent } from '../../competitor-edit-menu/competitor-edit-menu';
 
 /** Placing / penalty queue derived from `RaceCompetitor[]`; overwritten when race or row-id set changes. */
 interface OrderQueueModel {
@@ -106,6 +111,7 @@ type OrderEntryInput = { key: string; raceId: string; comps: ResolvedRaceCompeti
     MatDialogModule,
     MatMenuModule,
     FormsModule,
+    CompetitorEditMenuComponent,
   ],
   templateUrl: './position-based-input-panel.html',
   styleUrl: './position-based-input-panel.scss',
@@ -320,20 +326,147 @@ export class PositionBasedInputPanel implements AfterViewInit {
   }
 
   async commitFromEntry(): Promise<void> {
+    const competitorId = this.resolveCommitCompetitorId();
+    if (!competitorId) {
+      return;
+    }
+    await this.commitCompetitorFromEntry(competitorId);
+  }
+
+  private resolveCommitCompetitorId(): string | undefined {
     const exact = this.exactSailMatchId();
     if (exact) {
-      await this.addToProcessed(exact);
-      return;
+      return exact;
     }
     const sel = this.selectedMatchId();
     if (sel && this.orderQueue().remainingIds.includes(sel)) {
-      await this.addToProcessed(sel);
-      return;
+      return sel;
     }
     const f = this.filteredRemaining();
     if (f.length === 1) {
-      await this.addToProcessed(f[0]);
+      return f[0];
     }
+    return undefined;
+  }
+
+  private async commitCompetitorFromEntry(competitorId: string): Promise<void> {
+    const comp = this.compById().get(competitorId);
+    if (!comp) {
+      return;
+    }
+    const placedIds = this.findPlacedIdsBySailNumber(comp.sailNumber);
+    if (placedIds.length === 0) {
+      await this.addToProcessed(competitorId);
+      return;
+    }
+
+    const existingId = placedIds[0];
+    const existingComp = this.compById().get(existingId);
+    const groups = this.placingTieGroups();
+    const groupIndex = groups.findIndex(g => g.ids.includes(existingId));
+    const rankLabel = groupIndex >= 0 ? this.groupRankLabel(groupIndex) : '—';
+
+    const dialogRef = this.dialog.open(DuplicateSailPlacementDialog, {
+      data: {
+        sailNumber: comp.sailNumber,
+        existingHelm: existingComp?.helm ?? '',
+        existingBoatClass: existingComp?.boatClass ?? '',
+        existingRankLabel: rankLabel,
+        newHelm: comp.helm,
+        newBoatClass: comp.boatClass,
+      } satisfies DuplicateSailPlacementDialogData,
+      width: '480px',
+    });
+    const choice = await firstValueFrom(dialogRef.afterClosed());
+    if (!choice || choice === 'cancel') {
+      return;
+    }
+    if (choice === 'tie') {
+      await this.addToProcessedAsTieWithExisting(competitorId, existingId);
+      return;
+    }
+    await this.addToProcessed(competitorId);
+  }
+
+  /** Competitor ids in the placings segment with the given sail number. */
+  findPlacedIdsBySailNumber(sail: number): string[] {
+    const { placed } = segmentProcessedPlacedAndNonPlaced(
+      this.orderQueue().processedIds,
+      this.orderQueue().rowState,
+    );
+    return placed.filter(id => this.compById().get(id)?.sailNumber === sail);
+  }
+
+  private async addToProcessedAsTieWithExisting(
+    competitorId: string,
+    existingPlacedId: string,
+  ): Promise<void> {
+    const rem = this.orderQueue().remainingIds.filter(id => id !== competitorId);
+    const pending = new Map(this.pendingDefaults());
+    const preset = pending.get(competitorId);
+    const base: OrderEntryRowState = preset ?? {
+      resultCode: 'OK',
+      manualFinishTime: null,
+      rankOverride: null,
+    };
+    pending.delete(competitorId);
+    this.pendingDefaults.set(pending);
+
+    let state = new Map(this.orderQueue().rowState);
+    const nextRankOverride = isFinishedComp(base.resultCode) ? base.rankOverride ?? null : null;
+    state.set(competitorId, {
+      resultCode: base.resultCode,
+      manualFinishTime: this.race().type === 'Level Rating' ? base.manualFinishTime ?? null : null,
+      rankOverride: nextRankOverride,
+    });
+
+    const { placed, nonPlaced } = segmentProcessedPlacedAndNonPlaced(this.orderQueue().processedIds, state);
+    if (!isFinishedComp(base.resultCode)) {
+      nonPlaced.push(competitorId);
+      let proc = mergePlacedAndNonPlacedSegments(placed, nonPlaced);
+      proc = enforceProcessedSegmentOrder(proc, state);
+      const seg = segmentProcessedPlacedAndNonPlaced(proc, state);
+      const groups = buildTieGroupsFromPlaced(seg.placed, state);
+      state = normalizeRowStateFromOrderedTieGroups(groups, state);
+      this.orderQueue.update(q => ({
+        ...q,
+        remainingIds: rem,
+        processedIds: proc,
+        rowState: state,
+      }));
+      this.selectedMatchId.set(undefined);
+      this.searchText.set('');
+      await this.persist();
+      this.focusSearch();
+      return;
+    }
+
+    let groups = buildTieGroupsFromPlaced(placed, state);
+    const gi = groups.findIndex(g => g.ids.includes(existingPlacedId));
+    if (gi < 0) {
+      await this.addToProcessed(competitorId);
+      return;
+    }
+
+    const merged: TieGroupRow = {
+      rank: 0,
+      ids: [...groups[gi].ids, competitorId],
+    };
+    groups = [...groups.slice(0, gi), merged, ...groups.slice(gi + 1)];
+    const newPlaced = flattenTieGroups(groups);
+    state = normalizeRowStateFromOrderedTieGroups(groups, state);
+    const proc = mergePlacedAndNonPlacedSegments(newPlaced, nonPlaced);
+
+    this.orderQueue.update(q => ({
+      ...q,
+      remainingIds: rem,
+      processedIds: proc,
+      rowState: state,
+    }));
+    this.selectedMatchId.set(undefined);
+    this.searchText.set('');
+    await this.persist();
+    this.focusSearch();
   }
 
   private async addToProcessed(competitorId: string): Promise<void> {
@@ -636,13 +769,6 @@ export class PositionBasedInputPanel implements AfterViewInit {
     this.pendingDefaults.set(pending);
   }
 
-  async undoLast(): Promise<void> {
-    const proc = this.orderQueue().processedIds;
-    if (proc.length === 0) return;
-    const last = proc[proc.length - 1];
-    await this.removeFromQueue(last);
-  }
-
   onSearchKeydown(ev: KeyboardEvent): void {
     if (ev.key === 'Enter') {
       ev.preventDefault();
@@ -651,10 +777,6 @@ export class PositionBasedInputPanel implements AfterViewInit {
     if (ev.key === 'Escape') {
       this.searchText.set('');
       this.selectedMatchId.set(undefined);
-    }
-    if ((ev.metaKey || ev.ctrlKey) && ev.key === 'z') {
-      ev.preventDefault();
-      void this.undoLast();
     }
   }
 
@@ -678,17 +800,31 @@ export class PositionBasedInputPanel implements AfterViewInit {
     return this.orderQueue().rowState.get(id);
   }
 
-  async editCompetitor(id: string): Promise<void> {
-    const competitor = this.compById().get(id);
-    if (!competitor) return;
-    // The dialog owns the edit call so a collision error can keep it open.
-    // We just wait for it to close.
-    const dialogRef = this.dialog.open(EditRaceCompetitorDialog, {
-      maxWidth: '100vw',
-      width: 'min(calc(100vw - 24px), 460px)',
-      data: { competitor },
+  resultDraftFor(id: string): RaceResultDraft | undefined {
+    const comp = this.compById().get(id);
+    if (!comp) return undefined;
+    const row = this.rowFor(id);
+    return {
+      manualPosition: row?.rankOverride ?? comp.manualPosition ?? null,
+      resultCode: row?.resultCode ?? comp.resultCode,
+      crewOverride: comp.crewOverride,
+    };
+  }
+
+  onCompetitorDeletedFor(id: string): void {
+    const q = this.orderQueue();
+    const remaining = q.remainingIds.filter(x => x !== id);
+    const processed = q.processedIds.filter(x => x !== id);
+    const rowState = new Map(q.rowState);
+    rowState.delete(id);
+    this.orderQueue.set({
+      remainingIds: remaining,
+      processedIds: processed,
+      rowState,
     });
-    await firstValueFrom(dialogRef.afterClosed());
+    if (this.effectiveSelectedMatchId() === id) {
+      this.selectedMatchId.set(undefined);
+    }
   }
 
   /** Rank label for a tie group card (1-based position in placings). */

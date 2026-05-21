@@ -1,0 +1,53 @@
+<form [formGroup]="form" class="competitor-edit-form" (ngSubmit)="onSubmit()">
+  <p class="merge-hint">Changes apply to all series races sailed by this competitor.</p>
+
+  <mat-form-field class="field-full">
+    <mat-label>Helm</mat-label>
+    <input matInput formControlName="helm" autocomplete="name" autocapitalize="words" />
+    @if (form.controls.helm.hasError('required')) {
+      <mat-error>Helm required</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field class="field-full">
+    <mat-label>Crew</mat-label>
+    <input matInput formControlName="crew" autocomplete="off" />
+    <mat-hint>Applies to all races in series</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field class="field-full">
+    <mat-label>Club</mat-label>
+    <input matInput formControlName="club" autocomplete="organization" />
+  </mat-form-field>
+
+  @if (editableHandicapSchemes().length > 0) {
+    <div class="handicaps-block">
+      <span class="handicaps-title">Handicaps</span>
+      <app-handicap-scheme-inputs [form]="handicapsGroup" [schemes]="editableHandicapSchemes()" />
+    </div>
+  }
+
+  @if (supportsPersonalBand()) {
+    <mat-form-field class="field-full">
+      <mat-label>Personal handicap band</mat-label>
+      <mat-select formControlName="personalHandicapBand">
+        <mat-option value="unknown">Unknown / request allocation</mat-option>
+        @for (band of personalBands; track band) {
+          <mat-option [value]="band">{{ band }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+
+  @if (availableTags().length > 0) {
+    <div class="tags-block" role="group" aria-label="Tags">
+      <span class="tags-block-title">Tags</span>
+      <app-tag-value-picker formControlName="tags" [availableTags]="availableTags()" />
+    </div>
+  }
+
+  <div class="actions">
+    <button mat-button type="button" (click)="onCancel()">Cancel</button>
+    <app-submit-button [disabled]="form.invalid">Save</app-submit-button>
+  </div>
+</form>
