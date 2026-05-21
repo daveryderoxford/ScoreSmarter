@@ -21,7 +21,7 @@
           [class.selected]="effectiveSelectedMatchId() === id"
           [class.exact-sail]="exactSailMatchId() === id"
           (click)="selectMatch(id)">
-          <span class="drag-handle" aria-hidden="true">
+          <span class="drag-handle" cdkDragHandle aria-hidden="true" (pointerdown)="$event.stopPropagation()">
             <mat-icon>drag_indicator</mat-icon>
           </span>
           <span
@@ -39,10 +39,15 @@
                 <mat-icon>edit</mat-icon>
                 <span>Set result code</span>
               </button>
-              <button mat-menu-item type="button" (click)="editCompetitor(id)">
-                <mat-icon>person</mat-icon>
-                <span>Edit competitor</span>
-              </button>
+              @if (compById().get(id); as comp) {
+                <app-competitor-edit-menu
+                  variant="menuItems"
+                  [competitor]="comp"
+                  [race]="race()"
+                  [resultDraft]="resultDraftFor(id)"
+                  (deleted)="onCompetitorDeletedFor(id)"
+                />
+              }
             </mat-menu>
           </ng-container>
           <button
@@ -80,7 +85,7 @@
           class="drop-list drop-list-placing">
           @for (group of placingTieGroups(); track group.ids[0]) {
             <div cdkDrag class="tie-group" [cdkDragData]="group">
-              <span class="drag-handle" aria-hidden="true">
+              <span class="drag-handle" cdkDragHandle aria-hidden="true" (pointerdown)="$event.stopPropagation()">
                 <mat-icon>drag_indicator</mat-icon>
               </span>
               <span class="tie-group-rank">{{ groupRankLabel($index) }}</span>
@@ -103,10 +108,6 @@
                           <mat-icon>edit</mat-icon>
                           <span>Set result code</span>
                         </button>
-                        <button mat-menu-item type="button" (click)="editCompetitor(id)">
-                          <mat-icon>person</mat-icon>
-                          <span>Edit competitor</span>
-                        </button>
                         <button mat-menu-item type="button" (click)="tieWithAbove(id)" [disabled]="!canTieWithAbove(id)">
                           <mat-icon>call_split</mat-icon>
                           <span>Tie with above</span>
@@ -119,6 +120,15 @@
                           <mat-icon>close</mat-icon>
                           <span>Unfinish</span>
                         </button>
+                        @if (compById().get(id); as comp) {
+                          <app-competitor-edit-menu
+                            variant="menuItems"
+                            [competitor]="comp"
+                            [race]="race()"
+                            [resultDraft]="resultDraftFor(id)"
+                            (deleted)="onCompetitorDeletedFor(id)"
+                          />
+                        }
                       </mat-menu>
                     </ng-container>
                     <button
@@ -152,7 +162,7 @@
           class="drop-list drop-list-penalties">
           @for (id of nonPlacedSegmentIds(); track id) {
             <div cdkDrag class="row queue-row">
-              <span class="drag-handle" aria-hidden="true">
+              <span class="drag-handle" cdkDragHandle aria-hidden="true" (pointerdown)="$event.stopPropagation()">
                 <mat-icon>drag_indicator</mat-icon>
               </span>
               <span class="rank">—</span>
@@ -172,14 +182,19 @@
                     <mat-icon>edit</mat-icon>
                     <span>Set result code</span>
                   </button>
-                  <button mat-menu-item type="button" (click)="editCompetitor(id)">
-                    <mat-icon>person</mat-icon>
-                    <span>Edit competitor</span>
-                  </button>
                   <button mat-menu-item type="button" (click)="removeFromQueue(id)">
                     <mat-icon>close</mat-icon>
                     <span>Unfinish</span>
                   </button>
+                  @if (compById().get(id); as comp) {
+                    <app-competitor-edit-menu
+                      variant="menuItems"
+                      [competitor]="comp"
+                      [race]="race()"
+                      [resultDraft]="resultDraftFor(id)"
+                      (deleted)="onCompetitorDeletedFor(id)"
+                    />
+                  }
                 </mat-menu>
               </ng-container>
               <button
@@ -232,15 +247,13 @@
     }
 
     <div class="center-actions">
-      <button mat-button type="button" [disabled]="!previewCompetitor()">Detail</button>
-      <button mat-button type="button" (click)="undoLast()">Undo</button>
       <button
         matButton="filled"
         class="commit-btn"
         type="button"
         [disabled]="!canCommitEnter()"
         (click)="commitFromEntry()">
-        Add to order (Enter)
+        Add (enter)
       </button>
     </div>
   </div>

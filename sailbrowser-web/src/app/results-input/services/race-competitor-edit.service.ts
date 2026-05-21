@@ -1,9 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { ClubStore } from 'app/club-tenant';
 import { resolveHandicapsForSeries } from 'app/entry/services/entry-helpers';
-import { RaceCalendarStore } from 'app/race-calender';
-import { Handicap, getHandicapValue } from 'app/scoring/model/handicap';
+import { RaceCalendarStore, Series } from 'app/race-calender';
+import { Handicap } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
+import type { ResultCode } from 'app/scoring/model/result-code';
 import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
 import { RaceCompetitor } from '../model/race-competitor';
 import { SeriesEntry } from '../model/series-entry';
@@ -16,64 +17,44 @@ import {
   PerHullIdentity,
   describeIdentity,
   detectInRaceConflict,
+  entriesMatchIdentity,
   findCollidingEntry,
 } from './series-entry-identity';
 import { SeriesEntryStore } from './series-entry-store';
 
-/**
- * Per-race overrides are now intentionally minimal. Only `crew` may differ
- * between races for the same hull (handled via `RaceCompetitor.crewOverride`).
- * Every other piece of identity / boat / handicap data lives on the
- * `SeriesEntry` and is therefore inherently series-wide.
- */
-export type CrewEditScope = 'raceOnly' | 'wholeSeries';
-
-export type EditOperation =
-  | { type: 'setHelm'; value: string }
-  | { type: 'setCrew'; value: string; scope: CrewEditScope }
-  | { type: 'setBoatClass'; value: string }
-  | { type: 'setSailNumber'; value: number }
-  | { type: 'setHandicap'; scheme: Handicap['scheme']; value: number }
-  | { type: 'setPersonalHandicapBand'; band: PersonalHandicapBand | undefined }
-  | { type: 'deleteCompetitor' };
-
-export interface EditRaceCompetitorCommand {
-  competitorId: string;
-  operation: EditOperation;
-}
-
-/**
- * Single-shot edit of every correctable `SeriesEntry` field plus crew.
- * Handicaps are not part of this payload: they are re-resolved from the new
- * class / personal band via `resolveHandicapsForSeries` when those change.
- *
- * `crewScope`: `raceOnly` updates `RaceCompetitor.crewOverride` for this
- * race; `wholeSeries` updates `SeriesEntry.crew` (the post-entry correction
- * form always sends `raceOnly`).
- *
- * Intended for the post-entry correction dialog; the per-operation
- * `EditRaceCompetitorCommand` + `apply()` path remains for other callers.
- */
-export interface SeriesEntryEditCommand {
+export interface ChangeEnteredCompetitorCommand {
   competitorId: string;
   helm: string;
-  crew: string;
-  crewScope: CrewEditScope;
   boatClass: string;
   sailNumber: number;
-  personalHandicapBand?: PersonalHandicapBand;
-  /**
-   * User-authored tags for the entry. Omitted means "leave tags unchanged"
-   * so legacy callers don't reset them on save.
-   */
-  tags?: string[];
 }
 
-/**
- * Applies edit commands originating from the per-race UI. Logic intentionally
- * isolates per-race scope (only the crew field) from per-hull scope (everything
- * else); see `EditOperation` for the strict allowed shapes.
- */
+export interface RaceResultDataCommand {
+  competitorId: string;
+  startTime?: Date;
+  manualFinishTime?: Date | null;
+  manualLaps?: number;
+  resultCode?: ResultCode;
+  manualPosition?: number | null;
+  crewOverride?: string;
+}
+
+export interface SeriesTypoEditCommand {
+  competitorId: string;
+  helm: string;
+  crew?: string;
+  club?: string;
+  personalHandicapBand?: PersonalHandicapBand | null;
+  tags?: string[];
+  handicaps?: Handicap[];
+}
+
+interface EditContext {
+  target: RaceCompetitor;
+  entry: SeriesEntry;
+  series: Series;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RaceCompetitorEditService {
   private readonly competitors = inject(RaceCompetitorStore);
@@ -82,161 +63,231 @@ export class RaceCompetitorEditService {
   private readonly clubStore = inject(ClubStore);
   private readonly mutator = inject(RaceCompetitorMutator);
 
-  async apply(command: EditRaceCompetitorCommand): Promise<void> {
-    const target = this.competitors.selectedCompetitors().find(c => c.id === command.competitorId);
-    if (!target) {
-      throw new Error(`Competitor not found: ${command.competitorId}`);
-    }
-    const entry = this.seriesEntries.selectedEntries().find(e => e.id === target.seriesEntryId);
-    if (!entry) {
-      throw new Error(`SeriesEntry ${target.seriesEntryId} not found for competitor ${target.id}`);
-    }
+  async applyChangeEnteredCompetitor(command: ChangeEnteredCompetitorCommand): Promise<void> {
+    const { target, entry, series } = this.resolveEditContext(command.competitorId);
+    const helm = command.helm.trim();
+    const boatClass = command.boatClass.trim();
+    const sailNumber = command.sailNumber;
+    const proposed: PerHullIdentity = { helm, boatClass, sailNumber };
 
-    switch (command.operation.type) {
-      case 'deleteCompetitor':
-        await this.deleteCompetitor(target);
-        return;
-      case 'setCrew':
-        await this.applyCrew(target, entry, command.operation);
-        return;
-      case 'setHelm':
-      case 'setBoatClass':
-      case 'setSailNumber':
-      case 'setHandicap':
-      case 'setPersonalHandicapBand':
-        await this.applyEntryChange(entry, command.operation);
-        return;
-    }
-  }
-
-  private async applyCrew(
-    target: RaceCompetitor,
-    entry: SeriesEntry,
-    op: Extract<EditOperation, { type: 'setCrew' }>,
-  ): Promise<void> {
-    const trimmed = op.value.trim();
-    if (op.scope === 'raceOnly') {
-      // crewOverride === undefined means "use entry crew"; we keep the empty
-      // string as an explicit override that clears the entry crew for this race.
-      const next = trimmed === (entry.crew ?? '') ? undefined : trimmed;
-      if ((target.crewOverride ?? null) === (next ?? null)) return;
-      await this.competitors.updateResult(target.id, { crewOverride: next });
+    if (
+      entry.helm === helm &&
+      entry.boatClass === boatClass &&
+      entry.sailNumber === sailNumber
+    ) {
       return;
     }
 
-    if ((entry.crew ?? '') !== trimmed) {
-      await this.seriesEntries.updateEntry(entry.id, { crew: trimmed });
+    this.assertIdentityAllowedInRace(target, entry, series, proposed);
+
+    const boatClassChanged = !boatClassEqual(entry.boatClass, boatClass);
+    const handicapsForCreate = boatClassChanged
+      ? this.recomputeHandicapsForClass(series, boatClass, entry)
+      : entry.handicaps;
+
+    let workingEntry = entry;
+    const collision = this.findSeriesCollision(entry, proposed);
+    if (collision) {
+      await this.mutator.repointRaceCompetitorToEntry(target, collision.id, {
+        cleanupOldEntry: 'ifOrphan',
+      });
+      workingEntry = collision;
+    } else {
+      const newEntryId = await this.mutator.createSeriesEntry({
+        seriesId: entry.seriesId,
+        helm,
+        boatClass,
+        sailNumber,
+        club: entry.club,
+        crew: entry.crew,
+        tags: entry.tags,
+        personalHandicapBand: entry.personalHandicapBand,
+        handicaps: handicapsForCreate,
+      });
+      await this.mutator.repointRaceCompetitorToEntry(target, newEntryId, {
+        cleanupOldEntry: 'ifOrphan',
+      });
+      workingEntry = (await this.seriesEntries.getSeriesEntry(newEntryId))!;
     }
-    // Wholeseries: drop any per-race overrides for this entry that now match
-    // the new entry crew. We deliberately do NOT touch overrides that still
-    // diverge from the new entry crew.
-    const allForEntry = this.competitors.selectedCompetitors().filter(c => c.seriesEntryId === entry.id);
-    for (const comp of allForEntry) {
-      if (comp.crewOverride !== undefined && comp.crewOverride === trimmed) {
-        await this.competitors.updateResult(comp.id, { crewOverride: undefined });
+
+    if (boatClassChanged) {
+      const recomputed = this.recomputeHandicapsForClass(series, boatClass, workingEntry);
+      const entryUpdate: Partial<SeriesEntry> = { boatClass, handicaps: recomputed };
+      if (
+        !boatClassEqual(workingEntry.boatClass, boatClass) ||
+        !handicapsEqual(workingEntry.handicaps, recomputed)
+      ) {
+        const next: SeriesEntry = { ...workingEntry, ...entryUpdate } as SeriesEntry;
+        await this.mutator.updateSeriesEntryFromEdit(workingEntry, next);
       }
     }
+
+    await this.markRaceDirty(target.raceId);
   }
 
-  private async applyEntryChange(
-    entry: SeriesEntry,
-    op: Exclude<EditOperation, { type: 'setCrew' | 'deleteCompetitor' }>,
-  ): Promise<void> {
-    // Per-hull identity uniqueness is enforced authoritatively by the
-    // mutator (it queries series-entries and throws
-    // SeriesEntryIdentityConflictError on collision). We translate that to
-    // the friendly rename message expected by callers.
-    const update: Partial<SeriesEntry> = {};
-    switch (op.type) {
-      case 'setHelm':
-        if (entry.helm === op.value) return;
-        update.helm = op.value;
-        break;
-      case 'setBoatClass':
-        if (entry.boatClass === op.value) return;
-        update.boatClass = op.value;
-        break;
-      case 'setSailNumber':
-        if (entry.sailNumber === op.value) return;
-        update.sailNumber = op.value;
-        break;
-      case 'setHandicap': {
-        const current = getHandicapValue(entry.handicaps, op.scheme);
-        if (current === op.value) return;
-        const without = (entry.handicaps ?? []).filter(h => h.scheme !== op.scheme);
-        update.handicaps = [...without, { scheme: op.scheme, value: op.value }];
-        break;
-      }
-      case 'setPersonalHandicapBand':
-        // UI uses `undefined` for unknown; persisted clear is explicit `null` (merge → deleteField).
-        if ((entry.personalHandicapBand ?? null) === (op.band ?? null)) return;
-        (update as { personalHandicapBand?: PersonalHandicapBand | null }).personalHandicapBand =
-          op.band === undefined ? null : op.band;
-        break;
-    }
-    if (Object.keys(update).length === 0) return;
+  async applyRaceResultData(command: RaceResultDataCommand): Promise<void> {
+    const { target } = this.resolveEditContext(command.competitorId);
+    const raceUpdates: Partial<RaceCompetitor> = {};
 
-    const next: SeriesEntry = { ...entry, ...update } as SeriesEntry;
+    if (command.crewOverride !== undefined) {
+      const next =
+        command.crewOverride === '' ? undefined : command.crewOverride;
+      if ((target.crewOverride ?? null) !== (next ?? null)) {
+        raceUpdates.crewOverride = next;
+      }
+    }
+    if (command.startTime !== undefined && target.startTime !== command.startTime) {
+      raceUpdates.startTime = command.startTime;
+    }
+    if (
+      command.manualFinishTime !== undefined &&
+      target.manualFinishTime !== command.manualFinishTime
+    ) {
+      raceUpdates.manualFinishTime = command.manualFinishTime ?? undefined;
+    }
+    if (command.manualLaps !== undefined && target.manualLaps !== command.manualLaps) {
+      raceUpdates.manualLaps = command.manualLaps;
+    }
+    if (command.resultCode !== undefined && target.resultCode !== command.resultCode) {
+      raceUpdates.resultCode = command.resultCode;
+    }
+    if (command.manualPosition !== undefined) {
+      const next =
+        command.manualPosition === null ? undefined : command.manualPosition;
+      if (target.manualPosition !== next) {
+        raceUpdates.manualPosition = next;
+      }
+    }
+
+    if (Object.keys(raceUpdates).length === 0) return;
+
+    await this.competitors.updateResult(target.id, raceUpdates);
+    await this.markRaceDirty(target.raceId);
+  }
+
+  async applySeriesTypo(command: SeriesTypoEditCommand): Promise<void> {
+    const { target, entry, series } = this.resolveEditContext(command.competitorId);
+    const helm = command.helm.trim();
+    const proposed: PerHullIdentity = {
+      helm,
+      boatClass: entry.boatClass,
+      sailNumber: entry.sailNumber,
+    };
+
+    // Typo correction always updates this series entry in place — never repoint/merge.
+    if (!entriesMatchIdentity(entry, proposed)) {
+      this.assertIdentityAllowedInRace(target, entry, series, proposed);
+    }
+
+    const workingEntry = entry;
+
+    const commandSpecifiesBand = Object.prototype.hasOwnProperty.call(
+      command,
+      'personalHandicapBand',
+    );
+    const personalHandicapBand = command.personalHandicapBand;
+    const bandChanged =
+      commandSpecifiesBand &&
+      (workingEntry.personalHandicapBand ?? undefined) !==
+        (personalHandicapBand ?? undefined);
+
+    const entryUpdate: Partial<SeriesEntry> = {};
+    if (workingEntry.helm !== helm) entryUpdate.helm = helm;
+    if (command.crew !== undefined && workingEntry.crew !== command.crew) {
+      entryUpdate.crew = command.crew;
+    }
+    if (command.club !== undefined && workingEntry.club !== command.club) {
+      entryUpdate.club = command.club;
+    }
+    if (commandSpecifiesBand && bandChanged) {
+      entryUpdate.personalHandicapBand =
+        personalHandicapBand === null ? undefined : personalHandicapBand;
+    }
+    if (bandChanged) {
+      const recomputed = resolveHandicapsForSeries(
+        series,
+        {
+          boatClassName: workingEntry.boatClass,
+          handicaps: workingEntry.handicaps,
+          personalHandicapBand: personalHandicapBand === null ? undefined : personalHandicapBand,
+          personalHandicapUnknown: !personalHandicapBand,
+        },
+        this.clubStore.club().classes,
+      );
+      if (!handicapsEqual(workingEntry.handicaps, recomputed)) {
+        entryUpdate.handicaps = recomputed;
+      }
+    } else if (
+      command.handicaps &&
+      !handicapsEqual(workingEntry.handicaps, command.handicaps)
+    ) {
+      entryUpdate.handicaps = command.handicaps;
+    }
+    if (command.tags !== undefined) {
+      const nextTags = [...command.tags];
+      if (!tagsEqual(workingEntry.tags, nextTags)) {
+        entryUpdate.tags = nextTags;
+      }
+    }
+
+    if (Object.keys(entryUpdate).length === 0) return;
+
+    const next: SeriesEntry = { ...workingEntry, ...entryUpdate } as SeriesEntry;
     try {
-      await this.mutator.updateSeriesEntryFromEdit(entry, next);
+      await this.mutator.updateSeriesEntryFromEdit(workingEntry, next);
     } catch (err) {
       if (err instanceof SeriesEntryIdentityConflictError) {
         throw new ScoreSmarterError(
-          `Cannot rename: another series entry already exists for ` +
-          `${describeIdentity(err.identity)} (id ${err.collidingEntryId}). ` +
-          `Delete or merge that entry before renaming.`,
+          `Cannot update: another series entry already exists for ` +
+            `${describeIdentity(err.identity)} (id ${err.collidingEntryId}).`,
         );
       }
       throw err;
     }
+
+    await this.markRacesDirtyForEntry(workingEntry.id);
   }
 
-  private async deleteCompetitor(target: RaceCompetitor): Promise<void> {
+  async deleteRaceCompetitor(competitorId: string): Promise<void> {
+    const { target } = this.resolveEditContext(competitorId);
     await this.mutator.deleteRaceCompetitor(target);
   }
 
-  /**
-   * Single-shot multi-field edit from the post-entry correction dialog.
-   *
-   * Steps, in order, so that we never half-apply a change:
-   * 1. Resolve competitor + entry + series.
-   * 2. Build the proposed identity tuple and run duplicate + in-race
-   *    conflict checks against the *final* (helm, class, sail).
-   * 3. Persist crew using its scope rule (race override vs entry).
-   * 4. Recompute handicaps/tags for the new class / band, then write every
-   *    changed entry field in one `updateEntry` call.
-   * 5. Mark affected races dirty so the existing guards republish on leave.
-   */
-  async applyEdit(command: SeriesEntryEditCommand): Promise<void> {
-    const target = this.competitors.selectedCompetitors().find(c => c.id === command.competitorId);
+  private resolveEditContext(competitorId: string): EditContext {
+    const target = this.competitors.selectedCompetitors().find(c => c.id === competitorId);
     if (!target) {
-      throw new Error(`Competitor not found: ${command.competitorId}`);
+      throw new Error(`Competitor not found: ${competitorId}`);
     }
     const entry = this.seriesEntries.selectedEntries().find(e => e.id === target.seriesEntryId);
     if (!entry) {
-      throw new Error(`SeriesEntry ${target.seriesEntryId} not found for competitor ${target.id}`);
+      throw new Error(
+        `SeriesEntry ${target.seriesEntryId} not found for competitor ${target.id}`,
+      );
     }
     const series = this.raceCalendar.allSeries().find(s => s.id === entry.seriesId);
     if (!series) {
       throw new Error(`Series ${entry.seriesId} not found for entry ${entry.id}`);
     }
+    return { target, entry, series };
+  }
 
-    const helm = command.helm.trim();
-    const crew = command.crew.trim();
-    const boatClass = command.boatClass.trim();
-    const sailNumber = command.sailNumber;
-
-    const proposed: PerHullIdentity = { helm, boatClass, sailNumber };
-
-    // Same series: another SeriesEntry with this (helm, class, sail) tuple.
-    // If it exists, we either error (already represented in this race), run
-    // merged-hull/helm checks, then re-point this race row at that entry
-    // (same model as EntryService.findOrCreateSeriesEntry on reuse), or — if
-    // there is no collision — rename the current entry in place.
+  private findSeriesCollision(
+    entry: SeriesEntry,
+    proposed: PerHullIdentity,
+  ): SeriesEntry | undefined {
     const sameSeriesEntries = this.seriesEntries
       .selectedEntries()
       .filter(e => e.seriesId === entry.seriesId);
-    const collision = findCollidingEntry(sameSeriesEntries, proposed, entry.id);
+    return findCollidingEntry(sameSeriesEntries, proposed, entry.id);
+  }
+
+  private assertIdentityAllowedInRace(
+    target: RaceCompetitor,
+    entry: SeriesEntry,
+    series: Series,
+    proposed: PerHullIdentity,
+  ): void {
+    const collision = this.findSeriesCollision(entry, proposed);
     if (collision) {
       const alreadyInThisRace = this.competitors
         .selectedCompetitors()
@@ -253,176 +304,59 @@ export class RaceCompetitorEditService {
       }
     }
 
-    // In-race conflict against other competitors in the same race under the
-    // series' entry strategy (helm-in-race / hull-in-race). A no-op identity
-    // would match the target itself, so we exclude its own competitor row.
     const currentRaceComps = this.competitors
       .selectedCompetitors()
       .filter(c => c.raceId === target.raceId && c.id !== target.id);
     const strategy = series.entryAlgorithm ?? 'classSailNumberHelm';
     for (const comp of currentRaceComps) {
-      const otherEntry = this.seriesEntries.selectedEntries().find(e => e.id === comp.seriesEntryId);
+      const otherEntry = this.seriesEntries.selectedEntries().find(
+        e => e.id === comp.seriesEntryId,
+      );
       if (!otherEntry) continue;
       const reason = detectInRaceConflict(otherEntry, proposed, strategy);
       if (reason) {
         throw new ScoreSmarterError(
           `Cannot update: ${describeIdentity(proposed)} would conflict with ` +
-          `${describeIdentity(otherEntry)} in this race (${reason}).`,
+            `${describeIdentity(otherEntry)} in this race (${reason}).`,
         );
       }
     }
+  }
 
-    let workingEntry = entry;
-    let competitorForCrew = target;
-    if (collision) {
-      // Atomic repoint + orphan-cleanup of the now-unused old entry. The
-      // mutator validates the target entry belongs to the same series.
-      await this.mutator.repointRaceCompetitorToEntry(target, collision.id, {
-        cleanupOldEntry: 'ifOrphan',
-      });
-      workingEntry = collision;
-      const refreshed = this.competitors.selectedCompetitors().find(c => c.id === target.id);
-      // Live store may not yet reflect the write; fall back to a synthesised
-      // row whose `seriesEntryId` matches the new target so crew-scope
-      // comparisons against `workingEntry` stay correct.
-      competitorForCrew = refreshed ?? new RaceCompetitor({ ...target, seriesEntryId: collision.id });
+  private async markRaceDirty(raceId: string): Promise<void> {
+    await this.raceCalendar.updateRace(raceId, { dirty: true });
+  }
+
+  private async markRacesDirtyForEntry(seriesEntryId: string): Promise<void> {
+    const raceIds = new Set<string>();
+    for (const comp of this.competitors.selectedCompetitors()) {
+      if (comp.seriesEntryId === seriesEntryId) raceIds.add(comp.raceId);
     }
+    for (const raceId of raceIds) {
+      await this.markRaceDirty(raceId);
+    }
+  }
 
-    // Crew: the only field with per-race scope. We apply it first so a
-    // downstream entry-write failure can't leave the race row mutated in a
-    // way that contradicts the entry's crew.
-    const crewScopeChanged = await this.applyCrewEdit(
-      competitorForCrew,
-      workingEntry,
-      crew,
-      command.crewScope,
+  private recomputeHandicapsForClass(
+    series: Series,
+    boatClass: string,
+    template: SeriesEntry,
+  ): Handicap[] {
+    return resolveHandicapsForSeries(
+      series,
+      {
+        boatClassName: boatClass,
+        handicaps: undefined,
+        personalHandicapBand: template.personalHandicapBand,
+        personalHandicapUnknown: !template.personalHandicapBand,
+      },
+      this.clubStore.club().classes,
     );
-
-    // Entry field changes. Handicaps are re-resolved *only* when the boat
-    // class or personal band actually changed; a bare helm/crew correction
-    // must not silently rewrite handicaps and republish every race in the
-    // series.
-    /** When absent, callers are not intending to edit the saved band — avoid spurious clears. */
-    const commandSpecifiesBand = Object.prototype.hasOwnProperty.call(command, 'personalHandicapBand');
-    const personalHandicapBand = command.personalHandicapBand;
-    const classChanged = workingEntry.boatClass !== boatClass;
-    const bandChanged =
-      commandSpecifiesBand &&
-      (workingEntry.personalHandicapBand ?? undefined) !== (personalHandicapBand ?? undefined);
-
-    const entryUpdate: Partial<SeriesEntry> = {};
-    if (workingEntry.helm !== helm) entryUpdate.helm = helm;
-    if (classChanged) entryUpdate.boatClass = boatClass;
-    if (workingEntry.sailNumber !== sailNumber) entryUpdate.sailNumber = sailNumber;
-    if (bandChanged) {
-      (entryUpdate as { personalHandicapBand?: PersonalHandicapBand | null }).personalHandicapBand =
-        personalHandicapBand === undefined ? null : personalHandicapBand;
-    }
-
-    if (classChanged || bandChanged) {
-      // When the hull's class changes, do not pass the old `workingEntry.handicaps`
-      // into the resolver: valid PY (etc.) on the entry are treated as user
-      // overrides and would otherwise stick to the previous class's numbers.
-      // A class change means "take handicaps from the new club class (+ band
-      // rules)" — same as the entry form preview. Band-only edits keep the
-      // existing handicap array so PY-based Personal math stays stable.
-      const recomputed = resolveHandicapsForSeries(
-        series,
-        {
-          boatClassName: boatClass,
-          handicaps: classChanged ? undefined : workingEntry.handicaps,
-          personalHandicapBand,
-          personalHandicapUnknown: !personalHandicapBand,
-        },
-        this.clubStore.club().classes,
-      );
-      if (!handicapsEqual(workingEntry.handicaps, recomputed)) {
-        entryUpdate.handicaps = recomputed;
-      }
-    }
-
-    // User-tag edits flow through `command.tags`. When omitted we keep
-    // the existing tags; when supplied we replace them wholesale.
-    if (command.tags !== undefined) {
-      const nextTags = [...command.tags];
-      if (!tagsEqual(workingEntry.tags, nextTags)) {
-        entryUpdate.tags = nextTags;
-      }
-    }
-
-    const entryChanged = Object.keys(entryUpdate).length > 0;
-    if (entryChanged) {
-      const next: SeriesEntry = { ...workingEntry, ...entryUpdate } as SeriesEntry;
-      try {
-        await this.mutator.updateSeriesEntryFromEdit(workingEntry, next);
-      } catch (err) {
-        if (err instanceof SeriesEntryIdentityConflictError) {
-          throw new ScoreSmarterError(
-            `Cannot update: another series entry already exists for ` +
-            `${describeIdentity(err.identity)} (id ${err.collidingEntryId}).`,
-          );
-        }
-        throw err;
-      }
-    }
-
-    // Dirty marking: every race that references this entry is now stale for
-    // series-scope changes. For a pure race-only crew edit we only touch the
-    // current race. The set is always a superset of the current race when
-    // any entry field changed.
-    const raceIdsToMark = new Set<string>();
-    if (collision) {
-      raceIdsToMark.add(target.raceId);
-    }
-    if (crewScopeChanged === 'race') {
-      raceIdsToMark.add(target.raceId);
-    }
-    if (entryChanged || crewScopeChanged === 'series') {
-      for (const comp of this.competitors.selectedCompetitors()) {
-        if (comp.seriesEntryId === workingEntry.id) raceIdsToMark.add(comp.raceId);
-      }
-    }
-    for (const raceId of raceIdsToMark) {
-      await this.raceCalendar.updateRace(raceId, { dirty: true });
-    }
   }
+}
 
-  /**
-   * Returns `'race'` when only the current `RaceCompetitor.crewOverride` was
-   * touched, `'series'` when the entry crew was written, or `null` when the
-   * value was already in sync with the selected scope.
-   */
-  private async applyCrewEdit(
-    target: RaceCompetitor,
-    entry: SeriesEntry,
-    crew: string,
-    scope: CrewEditScope,
-  ): Promise<'race' | 'series' | null> {
-    if (scope === 'raceOnly') {
-      // `undefined` means "use the entry crew"; a deliberate empty string
-      // override clears the entry crew for this race only.
-      const next = crew === (entry.crew ?? '') ? undefined : crew;
-      if ((target.crewOverride ?? null) === (next ?? null)) return null;
-      await this.competitors.updateResult(target.id, { crewOverride: next });
-      return 'race';
-    }
-
-    let changed = false;
-    if ((entry.crew ?? '') !== crew) {
-      await this.seriesEntries.updateEntry(entry.id, { crew });
-      changed = true;
-    }
-    // Drop per-race overrides that now equal the new entry crew; we keep
-    // overrides that still intentionally diverge.
-    const allForEntry = this.competitors.selectedCompetitors().filter(c => c.seriesEntryId === entry.id);
-    for (const comp of allForEntry) {
-      if (comp.crewOverride !== undefined && comp.crewOverride === crew) {
-        await this.competitors.updateResult(comp.id, { crewOverride: undefined });
-        changed = true;
-      }
-    }
-    return changed ? 'series' : null;
-  }
+function boatClassEqual(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
 function handicapsEqual(a: Handicap[] | undefined, b: Handicap[] | undefined): boolean {

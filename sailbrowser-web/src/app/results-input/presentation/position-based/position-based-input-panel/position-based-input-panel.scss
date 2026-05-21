@@ -10,7 +10,7 @@
 
 .order-entry {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(280px, 360px);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(220px, 280px);
   gap: 1rem;
   align-items: stretch;
   min-height: 0;
@@ -81,9 +81,14 @@
   align-items: center;
   justify-content: center;
   color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.45));
-  pointer-events: none;
+  cursor: grab;
   line-height: 0;
   margin-right: -0.15rem;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
 
   mat-icon {
     font-size: 20px;
@@ -93,7 +98,7 @@
 }
 
 .source-row {
-  cursor: grab;
+  cursor: default;
   grid-template-columns: auto auto 1fr auto;
 
   &:hover {
@@ -178,7 +183,7 @@
   border-radius: 6px;
   border: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
   background: var(--mat-sys-surface-container, #fff);
-  cursor: grab;
+  cursor: default;
 
   &:hover {
     background: row.$neutral-hover-bg;
@@ -215,7 +220,7 @@
 }
 
 .queue-row {
-  cursor: grab;
+  cursor: default;
   grid-template-columns: auto 2rem auto 1fr auto auto;
 
   &:hover {
@@ -302,11 +307,12 @@
   flex-wrap: nowrap;
   gap: 0.5rem;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: flex-end;
 }
 
 .commit-btn {
   margin: 0;
+  margin-left: auto;
 }
 
 .center {

@@ -16,7 +16,8 @@ export interface MatchedRowVm {
 
 export interface UnmatchedRowVm {
   row: ScannedResultRow;
-  hasKnownBoat: boolean;
+  matchedBoat: boolean;
+  matchedClass: boolean;
   possibleHelms: string[];
 }
 

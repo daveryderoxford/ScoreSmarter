@@ -247,14 +247,21 @@ export class ScoringSheetScanner {
   
   readonly unmatchedRows = computed<UnmatchedRowVm[]>(() =>
     this.unmatchedResults().map(row => {
-      const matches = this.findBoatMatches(row);
-      const helms = Array.from(new Set(matches.map(m => m.helm).filter((h): h is string => !!h && h.trim().length > 0)));
-      return { row, hasKnownBoat: matches.length > 0, possibleHelms: helms };
+      const classNames = this.clubStore.club().classes.map(c=> c.name);
+      const classMatches = !row.boatClass?.value || classNames.includes(row.boatClass.value);
+      const boatMatches = this.findBoatMatches(row);
+      const helms = Array.from(new Set(boatMatches.map(m => m.helm).filter((h): h is string => !!h && h.trim().length > 0)));
+      return { 
+        row, 
+        matchedBoat: boatMatches.length > 0, 
+        possibleHelms: helms, 
+        matchedClass: classMatches
+      };
     }),
   );
 
   readonly displayedColumns = ['accept', 'sailNumber', 'boatClass', 'helm', 'time', 'status', 'laps', 'overall'];
-  readonly unmatchedColumns = ['sailNumber', 'boatClass', 'time', 'status', 'laps', 'enter'];
+  readonly unmatchedColumns = ['sailNumber', 'boatClass', 'time', 'status', 'laps', 'helms', 'enter'];
   readonly isMockScanMode = computed(() => this.scannerOrchestration.isMockMode(this.route.snapshot.queryParamMap.get('mockScan')));
   private findBoatMatches(row: ScannedResultRow) {
     const boatClass = row.boatClass?.value?.trim();

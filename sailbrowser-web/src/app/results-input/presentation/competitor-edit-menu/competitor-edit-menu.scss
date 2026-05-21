@@ -1,0 +1,22 @@
+.menu-item-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.3;
+  padding: 2px 0;
+}
+
+.menu-item-title {
+  font-size: 15px;
+}
+
+.menu-item-hint {
+  font-size: 11px;
+  color: var(--mat-sys-on-surface-variant);
+  white-space: normal;
+  max-width: 280px;
+}
+
+.delete-item {
+  color: var(--mat-sys-error);
+}

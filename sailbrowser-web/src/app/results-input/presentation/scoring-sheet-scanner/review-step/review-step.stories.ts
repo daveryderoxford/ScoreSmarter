@@ -61,8 +61,8 @@ const matchedRowVms: MatchedRowVm[] = [
 ];
 
 const unmatchedRowVms: UnmatchedRowVm[] = [
-  { row: unmatchedRows[0], hasKnownBoat: true, possibleHelms: ['Dana', 'Chris'] },
-  { row: unmatchedRows[1], hasKnownBoat: false, possibleHelms: [] },
+  { row: unmatchedRows[0], matchedBoat: true, possibleHelms: ['Dana', 'Chris'], matchedClass: true },
+  { row: unmatchedRows[1], matchedBoat: false, possibleHelms: [], matchedClass: true },
 ];
 
 function responseFor(rows: ScannedResultRow[]): ScanResponse {

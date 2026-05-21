@@ -37,7 +37,8 @@ import { isSuspectTime, resolveSuspectTimeRules } from '../../../services/suspec
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../race-start-time-dialog';
 import { RaceTimeInput } from '../race-time-input';
 import { ResultCodeSelect } from '../../result-code-select';
-import { EditRaceCompetitorDialog } from '../../edit-race-competitor-dialog/edit-race-competitor-dialog';
+import { RaceResultDraft } from '../../../model/race-result-draft';
+import { CompetitorEditMenuComponent } from '../../competitor-edit-menu/competitor-edit-menu';
 
 @Component({
   selector: 'app-handicap-input-panel',
@@ -55,6 +56,7 @@ import { EditRaceCompetitorDialog } from '../../edit-race-competitor-dialog/edit
     RaceTimeInput,
     ResultCodeSelect,
     DurationPipe,
+    CompetitorEditMenuComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -97,6 +99,18 @@ export class HandicapInputPanel {
   });
 
   readonly hasSelectedCompetitor = computed(() => this.selectedCompetitor() != null);
+
+  readonly editResultDraft = computed((): RaceResultDraft | undefined => {
+    const c = this.selectedCompetitor();
+    if (!c) return undefined;
+    const v = this.form.getRawValue();
+    return {
+      startTime: c.startTime ?? this.race().actualStart ?? null,
+      finishTime: v.finishTime,
+      laps: v.laps,
+      resultCode: v.resultCode,
+    };
+  });
 
   readonly searchControl = new FormControl<string | ResolvedRaceCompetitor | null>('');
   private readonly searchTerm = toSignal(
@@ -290,17 +304,12 @@ export class HandicapInputPanel {
     await this.saveCurrentSelection(true);
   }
 
-  async editSelectedCompetitor(): Promise<void> {
-    const competitor = this.selectedCompetitor();
-    if (!competitor) return;
-    // The dialog owns the edit call so a collision error can keep it open.
-    // We just wait for it to close.
-    const dialogRef = this.dialog.open(EditRaceCompetitorDialog, {
-      maxWidth: '100vw',
-      width: 'min(calc(100vw - 24px), 460px)',
-      data: { competitor },
-    });
-    await firstValueFrom(dialogRef.afterClosed());
+  onCompetitorEdited(): void {
+    // Stores refresh via parent bindings; keep selection for continued entry.
+  }
+
+  onCompetitorDeleted(): void {
+    this.setSelectedCompetitor(undefined);
   }
 
   private async saveCurrentSelection(clearAfterSave: boolean): Promise<boolean> {
