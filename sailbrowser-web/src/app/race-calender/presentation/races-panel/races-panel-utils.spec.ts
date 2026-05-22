@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Race } from '../../model/race';
 import {
+  emptyMessagePeriodSuffix,
   groupRacesForPanel,
   includesRaceForPanel,
   isCompletedRace,
   isScheduledToday,
+  periodForRacePanel,
   racePanelLabelLine1,
   racePanelLabelLine2,
 } from './races-panel-utils';
@@ -51,6 +53,25 @@ describe('races-panel-utils', () => {
     expect(includesRaceForPanel(tomorrow, null, now)).toBe(false);
     expect(includesRaceForPanel(tomorrow, 'past', now)).toBe(false);
     expect(includesRaceForPanel(tomorrow, 'future', now)).toBe(true);
+  });
+
+  it('emptyMessagePeriodSuffix describes the active period filters', () => {
+    const all = ['past', 'future', 'hideCompleted'] as const;
+    expect(emptyMessagePeriodSuffix(null, false, all)).toBe(' today');
+    expect(emptyMessagePeriodSuffix('future', false, all)).toBe(' in future races');
+    expect(emptyMessagePeriodSuffix('past', false, all)).toBe(' in past races');
+    expect(emptyMessagePeriodSuffix('past', true, all)).toBe(
+      ' in past races that do not have complete results',
+    );
+  });
+
+  it('periodForRacePanel picks past for today and yesterday and future for tomorrow', () => {
+    const today = race({ scheduledStart: new Date(2026, 3, 29, 9, 0) });
+    const yesterday = race({ scheduledStart: new Date(2026, 3, 28, 9, 0) });
+    const tomorrow = race({ scheduledStart: new Date(2026, 3, 30, 9, 0) });
+    expect(periodForRacePanel(today, now)).toBe('past');
+    expect(periodForRacePanel(yesterday, now)).toBe('past');
+    expect(periodForRacePanel(tomorrow, now)).toBe('future');
   });
 
   it('groups races by local day, sorting future days ascending and races within a day by start then index', () => {

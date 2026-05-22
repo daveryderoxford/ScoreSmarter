@@ -71,12 +71,38 @@ export function isScheduledToday(race: Race, now: Date): boolean {
   return scheduled >= startOfLocalDay(now) && scheduled <= endOfLocalDay(now);
 }
 
+/** Period chip to use so `includesRaceForPanel` includes this race (today → past). */
+export function periodForRacePanel(race: Race, now: Date): Exclude<RacesPanelPeriod, null> {
+  if (isScheduledToday(race, now)) return 'past';
+  const scheduled = new Date(race.scheduledStart);
+  if (scheduled < startOfLocalDay(now)) return 'past';
+  return 'future';
+}
+
 export function includesRaceForPanel(race: Race, period: RacesPanelPeriod, now: Date): boolean {
   if (isScheduledToday(race, now)) return true;
   const scheduled = new Date(race.scheduledStart);
   if (period === 'past') return scheduled < startOfLocalDay(now);
   if (period === 'future') return scheduled > endOfLocalDay(now);
   return false;
+}
+
+/** Appended to a consumer empty-message when the filtered race list is empty. */
+export function emptyMessagePeriodSuffix(
+  period: RacesPanelPeriod,
+  hideCompleted: boolean,
+  availableFilters: readonly RacesPanelFilter[],
+): string {
+  if (period === 'future') {
+    return ' in future races';
+  }
+  if (period === 'past') {
+    if (hideCompleted && availableFilters.includes('hideCompleted')) {
+      return ' in past races that do not have complete results';
+    }
+    return ' in past races';
+  }
+  return ' today';
 }
 
 export function groupRacesForPanel(races: readonly Race[], period: RacesPanelPeriod, now: Date): RaceDayGroup[] {

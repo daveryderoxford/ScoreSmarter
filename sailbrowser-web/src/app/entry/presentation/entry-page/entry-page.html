@@ -45,50 +45,54 @@
         }
       </div>
 
-      @if (selectedBoat(); as boat) {
+      <mat-card appearance="outlined" class="boat-details-panel">
+        @if (selectedBoat(); as boat) {
+          <div class="boat-summary">
+            <span class="boat-summary-main">{{ boat.boatClass }} · {{ boat.sailNumber }}</span>
+            @if (!boat.isClub && boat.helm) {
+              <span class="boat-summary-sub">{{ boat.helm }}</span>
+            }
+          </div>
 
-      @if (displayHandicaps().length > 0) {
-      <div class="handicap-line" role="group" aria-label="Handicaps">
-        <span class="handicap-line-title">Handicaps</span>
-        @for (h of displayHandicaps(); track h.scheme) {
-        <span class="handicap-chip">{{ h.scheme }} {{ h.value }}</span>
-        }
-      </div>
-      } @else {
-      <div class="handicap-line">
-        <span class="handicap-line-title">Handicaps</span>
-        <span class="handicap-chip handicap-chip--empty">No handicaps configured.</span>
-      </div>
-      }
+          @if (displayHandicaps().length > 0) {
+            <div class="handicap-line" role="group" aria-label="Handicaps">
+              <span class="handicap-line-title">Handicaps</span>
+              @for (h of displayHandicaps(); track h.scheme) {
+                <span class="handicap-chip">{{ h.scheme }} {{ h.value }}</span>
+              }
+            </div>
+          } @else {
+            <div class="handicap-line">
+              <span class="handicap-line-title">Handicaps</span>
+              <span class="handicap-chip handicap-chip--empty">No handicaps configured.</span>
+            </div>
+          }
 
-      <div class="helm-crew-row">
-        @if (boat.isClub) {
-        <mat-form-field>
-          <mat-label>Helm</mat-label>
-          <input matInput formControlName="helm" placeholder="Helm for this race entry" />
-          <mat-error>Helm name required</mat-error>
-        </mat-form-field>
-        }
-        <mat-form-field>
-          <mat-label>Crew</mat-label>
-          <input matInput formControlName="crew" placeholder="Optional" autocomplete="off" />
-        </mat-form-field>
-      </div>
-
-      } @else {
-      <div class="placeholder">
-
-        <b>Search for boat</b><br>
-        @if (boatCategory() === 'club') {
-        <p>Enter class of club boat and select bow number</p>
+          <div class="helm-crew-row">
+            @if (boat.isClub) {
+              <mat-form-field>
+                <mat-label>Helm</mat-label>
+                <input matInput formControlName="helm" placeholder="Helm for this race entry" />
+                <mat-error>Helm name required</mat-error>
+              </mat-form-field>
+            }
+            <mat-form-field>
+              <mat-label>Crew</mat-label>
+              <input matInput formControlName="crew" placeholder="Optional" autocomplete="off" />
+            </mat-form-field>
+          </div>
         } @else {
-          <p>Enter class, helm or sail number to search</p>
-            Press <b>New</b><br>
-            <p>to enter with a boat not currently saved</p>
+          <div class="boat-details-instructions">
+            <b>Search for boat</b>
+            @if (boatCategory() === 'club') {
+              <p>Enter class of club boat and select bow number</p>
+            } @else {
+              <p>Enter class, helm or sail number to search</p>
+              <p>Press <b>New</b> to enter with a boat not currently saved</p>
+            }
+          </div>
         }
-
-      </div>
-      }
+      </mat-card>
 
       <div class="actions">
         <button matButton="tonal" matStepperNext [disabled]="!canProceedToRaces()">Next</button>
@@ -103,11 +107,13 @@
       @if (!showForm()) {
       <app-centered-text>Select a boat first.</app-centered-text>
       } @else if (eligibleRaces().length > 0) {
-      <app-races-panel
-        [races]="eligibleRaces()"
-        [selectedRaceIds]="enteredRaceIds()"
-        emptyMessage="No eligible races for this boat."
-        (selectedRaceIdsChange)="onEntryRaceIdsChange($event)" />
+      <mat-card appearance="outlined" class="form-card race-selection-card">
+        <app-races-panel
+          [races]="eligibleRaces()"
+          [selectedRaceIds]="enteredRaceIds()"
+          emptyMessage="No eligible races for this boat."
+          (selectedRaceIdsChange)="onEntryRaceIdsChange($event)" />
+      </mat-card>
       } @else {
       <app-centered-text>No eligible races for this boat.</app-centered-text>
       }

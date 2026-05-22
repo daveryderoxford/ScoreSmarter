@@ -4,6 +4,7 @@ import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } 
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
@@ -61,6 +62,7 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     MatButtonModule,
     MatAutocompleteModule,
     MatButtonToggleModule,
+    MatCardModule,
     Toolbar,
     MatIcon,
     BusyButton,
@@ -71,13 +73,59 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
   styles: [
     `
     @use "mixins" as mix;
+    @use '@angular/material' as mat;
 
     @include mix.centered-column-page(".content", 480px);
 
-    app-races-panel {
-      --races-panel-list-min-height: 200px;
-      --races-panel-list-max-height: 420px;
+    .form-card {
+      padding: 15px 25px;
+    }
+
+    .race-selection-card app-races-panel {
+      --races-panel-list-min-height: 336px;
+      --races-panel-list-max-height: 336px;
       display: block;
+    }
+
+    .boat-details-panel {
+      min-height: 180px;
+      margin-top: 15px;
+      margin-bottom: 8px;
+      padding: 16px 20px;
+      box-sizing: border-box;
+    }
+
+    .boat-details-instructions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 148px;
+      text-align: center;
+      font: var(--mat-sys-body-large);
+      gap: 0.35rem;
+    }
+
+    .boat-details-instructions p {
+      margin: 0;
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .boat-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .boat-summary-main {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .boat-summary-sub {
+      font-size: 0.875rem;
+      color: var(--mat-sys-on-surface-variant);
     }
 
     .actions {
@@ -99,12 +147,15 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
 
     .category-toggle {
       margin-bottom: 24px;
-      width: 100%;
+      margin-left: 10%;
+      margin-right: 10%;
+      width: 80%;
       display: flex;
 
       mat-button-toggle {
         flex: 1;
       }
+
     }
 
     .helm-crew-row {
@@ -125,8 +176,8 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
       flex-wrap: wrap;
       align-items: baseline;
       gap: 6px 10px;
-      margin-top: 10px;
-      margin-bottom: 20px;
+      margin-top: 0;
+      margin-bottom: 16px;
       font-size: 0.875rem;
       line-height: 1.35;
       color: var(--mat-sys-on-surface-variant);
@@ -151,11 +202,6 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     .search-field {
       flex-grow: 1;
       font-size: 16px;
-    }
-    .placeholder {
-      padding: 15px;
-      text-align: center;
-      font: var(--mat-sys-body-large);
     }
     .muted {
       color: var(--mat-sys-on-surface-variant);

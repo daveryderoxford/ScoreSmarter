@@ -1,10 +1,26 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
 import { MatListModule, MatSelectionListChange } from '@angular/material/list';
 import type { Race } from '../../model/race';
 import {
+  emptyMessagePeriodSuffix,
   groupRacesForPanel,
+  includesRaceForPanel,
   isCompletedRace,
+  periodForRacePanel,
   racePanelLabelLine1,
   racePanelLabelLine2,
   type RacesPanelFilter,
@@ -17,6 +33,7 @@ const DEFAULT_AVAILABLE_FILTERS: readonly RacesPanelFilter[] = ['past', 'future'
   selector: 'app-races-panel',
   imports: [
     MatChipsModule,
+    MatIconModule,
     MatListModule,
   ],
   template: `
@@ -51,9 +68,9 @@ const DEFAULT_AVAILABLE_FILTERS: readonly RacesPanelFilter[] = ['past', 'future'
         }
       </div>
 
-      <div class="race-list-container">
+      <div class="race-list-container" #raceListContainer>
         @if (dayGroups().length === 0) {
-          <p class="hint">{{ emptyMessage() }}</p>
+          <p class="hint">{{ displayEmptyMessage() }}</p>
         } @else {
           <mat-selection-list
             class="race-list"
@@ -63,11 +80,19 @@ const DEFAULT_AVAILABLE_FILTERS: readonly RacesPanelFilter[] = ['past', 'future'
               <div mat-subheader class="group-heading">{{ group.heading }}</div>
               @for (race of group.races; track race.id) {
                 <mat-list-option
+                  [attr.data-race-id]="race.id"
                   [value]="race.id"
                   [selected]="isSelected(race.id)"
                   togglePosition="before">
                   <span matListItemTitle>{{ raceLabel(race) }}</span>
-                  <span matListItem>{{ raceLabel2(race) }}</span>
+                  @if (raceLabel2(race); as line2) {
+                    <span matListItemLine>{{ line2 }}</span>
+                  }
+                  @if (isCompletedRace(race)) {
+                  <span matListItemIcon>
+                    <mat-icon>check</mat-icon>
+                  </span>
+                  }
                 </mat-list-option>
               }
             }
@@ -126,7 +151,6 @@ const DEFAULT_AVAILABLE_FILTERS: readonly RacesPanelFilter[] = ['past', 'future'
       color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.7));
     }
 
-
   :host {
   @include mat.list-overrides((
     list-item-label-text-size: var(--mat-sys-body-medium-size),
@@ -140,10 +164,12 @@ const DEFAULT_AVAILABLE_FILTERS: readonly RacesPanelFilter[] = ['past', 'future'
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RacesPanel {
+  private readonly host = inject(ElementRef<HTMLElement>);
+
   races = input<readonly Race[]>([]);
   selectedRaceIds = input<readonly string[]>([]);
   maxSelections = input<number | undefined>(undefined);
-  emptyMessage = input('No races found for the selected filters.');
+  emptyMessage = input('No races found');
   now = input(new Date());
   /**
    * Which filter chips the consumer wants to expose.
@@ -154,8 +180,98 @@ export class RacesPanel {
   availableFilters = input<readonly RacesPanelFilter[]>(DEFAULT_AVAILABLE_FILTERS);
   selectedRaceIdsChange = output<string[]>();
 
+  private readonly raceListContainer = viewChild<ElementRef<HTMLElement>>('raceListContainer');
+
   protected readonly selectedPeriod = signal<RacesPanelPeriod>(null);
   protected readonly hideCompleted = signal(false);
+  /** One-shot: align period/hide-completed with initial selection only. */
+  private readonly startupFiltersSynced = signal(false);
+  private readonly startupScrollDone = signal(false);
+
+  private readonly racesById = computed(
+    () => new Map(this.races().map(race => [race.id, race] as const)),
+  );
+
+  protected readonly displayEmptyMessage = computed(() => {
+    const base = this.emptyMessage().trim().replace(/\.$/, '');
+    const suffix = emptyMessagePeriodSuffix(
+      this.effectivePeriod(),
+      this.effectiveHideCompleted(),
+      this.availableFilters(),
+    );
+    return `${base}${suffix}.`;
+  });
+
+  constructor() {
+    effect(() => {
+      if (this.startupFiltersSynced()) return;
+
+      const ids = this.selectedRaceIds();
+      if (ids.length === 0) return;
+
+      const pool = this.racesById();
+      const racesLoaded = this.races().length > 0;
+      const anySelectedInPool = ids.some(id => pool.has(id));
+      if (racesLoaded && !anySelectedInPool) {
+        this.startupFiltersSynced.set(true);
+        return;
+      }
+      if (!anySelectedInPool) return;
+
+      const now = this.now();
+      const filters = this.availableFilters();
+      const period = this.effectivePeriod();
+      const hideCompleted = this.effectiveHideCompleted();
+
+      let adjusted = false;
+      for (const id of ids) {
+        const race = pool.get(id);
+        if (!race) continue;
+
+        const visible =
+          (!hideCompleted || !isCompletedRace(race)) &&
+          includesRaceForPanel(race, period, now);
+        if (visible) continue;
+
+        const neededPeriod = periodForRacePanel(race, now);
+        if (filters.includes(neededPeriod)) {
+          this.selectedPeriod.set(neededPeriod);
+        }
+        if (isCompletedRace(race) && filters.includes('hideCompleted')) {
+          this.hideCompleted.set(false);
+        }
+        adjusted = true;
+        break;
+      }
+
+      if (adjusted) return;
+
+      this.startupFiltersSynced.set(true);
+    });
+
+    afterNextRender(() => {
+      // scroll to selected race when first displaying panel
+      effect(() => {
+        if (this.startupScrollDone()) return;
+
+        const ids = this.selectedRaceIds();
+        if (ids.length === 0) return;
+
+        const targetId = ids[0];
+        const visibleIds = new Set(this.dayGroups().flatMap(g => g.races.map(r => r.id)));
+        if (!visibleIds.has(targetId)) return;
+
+        const root = this.raceListContainer()?.nativeElement ?? this.host.nativeElement;
+        const option = root.querySelector(`[data-race-id="${targetId}"]`) as HTMLElement | null;
+        if (!option) return;
+
+        option.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        this.startupScrollDone.set(true);
+      });
+    });
+  }
+
+  protected readonly isCompletedRace = isCompletedRace;
 
   protected readonly isMultiSelect = computed(() => this.maxSelections() !== 1);
 

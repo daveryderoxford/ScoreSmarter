@@ -28,6 +28,12 @@ html {
   @include mat.toolbar-overrides((container-background-color: var(--mat-sys-primary-container),
       container-text-color: var(--mat-sys-primary),
     ));
+
+    @include mat.stepper-overrides((header-focus-state-layer-color: var(-mat-sys-surface-dim),
+      header-hover-state-layer-color: var(-mat-sys-surface-dim),
+      header-focus-state-layer-shape: 100px,
+      header-hover-state-layer-shape: 100px,
+    ));
 }
 
 body {
@@ -65,6 +71,7 @@ body {
   display: inline-flex !important;
   align-items: stretch !important;
   gap: 4px !important;
+  height: 35px;
 }
 
 .mat-button-toggle {

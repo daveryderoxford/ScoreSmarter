@@ -38,9 +38,6 @@ export class BoatsStore {
     if (update.name) {
       update.name = update.name.trim();
     }
-    // `undefined` cleanup is delegated to the typed `dataObjectConverter`
-    // (see `firestore-helper.ts`); partial writes go through
-    // `setDoc({ merge: true })` so the converter runs.
     return update;
   }
 
