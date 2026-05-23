@@ -25,8 +25,16 @@
         <mat-icon>more_vert</mat-icon>
       </button>
       <mat-menu #raceActionsMenu="matMenu">
+          @if (sr.type === 'Handicap') {
+            <button mat-menu-item type="button" (click)="setStartTime(sr)">
+              <mat-icon>flag</mat-icon>
+              Start
+            </button>
+          }
         <button mat-menu-item type="button" (click)="openScoringSheet()">
-          <mat-icon>photo_camera</mat-icon>
+            <mat-icon matBadge="1" [matBadgeHidden]="!selectedRace()?.resultsSheetImage">
+              photo_camera
+            </mat-icon>
           <span>Scoring sheet</span>
         </button>
         <button mat-menu-item type="button" [disabled]="publishing()" (click)="publish()">
@@ -39,13 +47,18 @@
         </button>
       </mat-menu>
     } @else {
-          @if (sr.type === 'Handicap') {
-          <button matButton="text" (click)="setStartTime(sr)">Start</button>
-          }
+      @if (sr.type === 'Handicap') {
+          @let numStarts = selectedRace()?.starts?.length ?? 0;
+          <button matButton="text" [matBadge]="numStarts" [matBadgeHidden]="numStarts === 0" (click)="setStartTime(sr)">
+            Start
+          </button>
+        }
       <button mat-icon-button type="button"
         aria-label="Open scoring sheet"
         (click)="openScoringSheet()">
-        <mat-icon>photo_camera</mat-icon>
+            <mat-icon matBadge="1" [matBadgeHidden]="!selectedRace()?.resultsSheetImage">
+              photo_camera
+            </mat-icon>
       </button>
       <app-busy-button [style]="'text'" [busy]="publishing()" (click)="publish()">
         Publish

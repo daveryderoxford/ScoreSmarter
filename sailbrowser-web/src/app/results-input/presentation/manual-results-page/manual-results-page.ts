@@ -25,6 +25,7 @@ import { HandicapInputPanel } from '../handicap/handicap-input-panel/handicap-in
 import { HandicapResultsTable } from '../handicap/handicap-results-table/handicap-results-table';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../handicap/race-start-time-dialog';
 import { PositionBasedInputPanel } from '../position-based/position-based-input-panel/position-based-input-panel';
+import { MatBadge } from '@angular/material/badge';
 
 const SHEET_POPUP_NAME = 'scoring-sheet';
 const SHEET_POPUP_FEATURES = 'popup,width=720,height=900';
@@ -46,6 +47,7 @@ const SHEET_POPUP_POLL_MS = 750;
     RaceTitlePipe,
     HandicapInputPanel,
     PositionBasedInputPanel,
+    MatBadge
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
