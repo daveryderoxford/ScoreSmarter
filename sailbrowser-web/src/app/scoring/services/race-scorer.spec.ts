@@ -22,7 +22,7 @@ interface CompetitorFixtureOptions {
   helm?: string;
   crew?: string;
   boatClass?: string;
-  sailNumber?: number;
+  sailNumber?: string;
   handicaps?: { scheme: string; value: number }[];
 }
 
@@ -61,7 +61,7 @@ function createCompetitor(
     helm: options.helm ?? `Helm ${id}`,
     crew: options.crew,
     boatClass: options.boatClass ?? 'Test Class',
-    sailNumber: options.sailNumber ?? 100 + parseInt(id, 10),
+    sailNumber: options.sailNumber ?? String(100 + parseInt(id, 10)),
     handicaps: (options.handicaps ?? [{ scheme: 'PY', value: 1000 }]) as SeriesEntry['handicaps'],
   } as SeriesEntry;
 
@@ -112,9 +112,9 @@ describe('RaceScorer', () => {
     ];
     const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 3);
 
-    const r1 = results.find(r => r.sailNumber === 101)!;
-    const r2 = results.find(r => r.sailNumber === 102)!;
-    const r3 = results.find(r => r.sailNumber === 103)!;
+    const r1 = results.find(r => r.sailNumber === '101')!;
+    const r2 = results.find(r => r.sailNumber === '102')!;
+    const r3 = results.find(r => r.sailNumber === '103')!;
 
     expect(r1.points).toBe(1);
     expect(r1.elapsedTime).toBe(600);
@@ -133,9 +133,9 @@ describe('RaceScorer', () => {
     ];
     const results = scoreRaceHelper(pursuitRace, competitors, 'Level Rating', 'short', 3);
 
-    const r1 = results.find(r => r.sailNumber === 101)!;
-    const r2 = results.find(r => r.sailNumber === 102)!;
-    const r3 = results.find(r => r.sailNumber === 103)!;
+    const r1 = results.find(r => r.sailNumber === '101')!;
+    const r2 = results.find(r => r.sailNumber === '102')!;
+    const r3 = results.find(r => r.sailNumber === '103')!;
 
     expect(r2.points).toBe(1); // from manualPosition: 1
     expect(r1.points).toBe(2); // from manualPosition: 2
@@ -152,10 +152,10 @@ describe('RaceScorer', () => {
     ];
     const results = scoreRaceHelper(levelRace, competitors, 'Level Rating', 'short', 4);
 
-    const r1 = results.find(r => r.sailNumber === 101)!;
-    const r2 = results.find(r => r.sailNumber === 102)!;
-    const r3 = results.find(r => r.sailNumber === 103)!;
-    const r4 = results.find(r => r.sailNumber === 104)!;
+    const r1 = results.find(r => r.sailNumber === '101')!;
+    const r2 = results.find(r => r.sailNumber === '102')!;
+    const r3 = results.find(r => r.sailNumber === '103')!;
+    const r4 = results.find(r => r.sailNumber === '104')!;
 
     expect(r2.rank).toBe(1);
     expect(r2.points).toBe(1);
@@ -180,11 +180,11 @@ describe('RaceScorer', () => {
     // c5 is 5th (5pts)
     const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 5);
 
-    const r1 = results.find(r => r.sailNumber === 101)!;
-    const r2 = results.find(r => r.sailNumber === 102)!;
-    const r3 = results.find(r => r.sailNumber === 103)!;
-    const r4 = results.find(r => r.sailNumber === 104)!;
-    const r5 = results.find(r => r.sailNumber === 105)!;
+    const r1 = results.find(r => r.sailNumber === '101')!;
+    const r2 = results.find(r => r.sailNumber === '102')!;
+    const r3 = results.find(r => r.sailNumber === '103')!;
+    const r4 = results.find(r => r.sailNumber === '104')!;
+    const r5 = results.find(r => r.sailNumber === '105')!;
 
     expect(r1.rank).toBe(1);
     expect(r1.points).toBe(1);
@@ -207,10 +207,10 @@ describe('RaceScorer', () => {
     // Position 5 gets 5 points.
     const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 5);
 
-    const r1 = results.find(r => r.sailNumber === 101)!;
-    const r2 = results.find(r => r.sailNumber === 102)!;
-    const r3 = results.find(r => r.sailNumber === 103)!;
-    const r4 = results.find(r => r.sailNumber === 104)!;
+    const r1 = results.find(r => r.sailNumber === '101')!;
+    const r2 = results.find(r => r.sailNumber === '102')!;
+    const r3 = results.find(r => r.sailNumber === '103')!;
+    const r4 = results.find(r => r.sailNumber === '104')!;
     // 4 boats tie for 1st. They take places 1,2,3,4. Points = (1+2+3+4)/4 = 2.5
     expect(r1.rank).toBe(1);
     expect(r1.points).toBe(2.5);
@@ -238,12 +238,12 @@ describe('RaceScorer', () => {
 
     const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCompetitorCount);
 
-    const r1 = results.find(r => r.sailNumber === 101)!;
-    const r2 = results.find(r => r.sailNumber === 102)!;
-    const r3 = results.find(r => r.sailNumber === 103)!;
-    const r4 = results.find(r => r.sailNumber === 104)!;
-    const r5 = results.find(r => r.sailNumber === 105)!;
-    const r6 = results.find(r => r.sailNumber === 106)!;
+    const r1 = results.find(r => r.sailNumber === '101')!;
+    const r2 = results.find(r => r.sailNumber === '102')!;
+    const r3 = results.find(r => r.sailNumber === '103')!;
+    const r4 = results.find(r => r.sailNumber === '104')!;
+    const r5 = results.find(r => r.sailNumber === '105')!;
+    const r6 = results.find(r => r.sailNumber === '106')!;
 
     expect(r1.points).toBe(1);
     expect(r2.points).toBe(2);
@@ -267,9 +267,9 @@ describe('RaceScorer', () => {
 
     const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCompetitorCount);
 
-    const r1 = results.find(r => r.sailNumber === 101)!;
-    const r2 = results.find(r => r.sailNumber === 102)!;
-    const r3 = results.find(r => r.sailNumber === 103)!;
+    const r1 = results.find(r => r.sailNumber === '101')!;
+    const r2 = results.find(r => r.sailNumber === '102')!;
+    const r3 = results.find(r => r.sailNumber === '103')!;
 
     expect(r1.points).toBe(1);
     expect(r2.points).toBe(nonStarterPoints); // NOT FINISHED gets non-starter points
@@ -288,9 +288,9 @@ describe('RaceScorer', () => {
     // Final order by points: c1 (1), c3 (3), c2 (22)
     const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 100);
 
-    const r1 = results.find(r => r.sailNumber === 101)!;
-    const r2 = results.find(r => r.sailNumber === 102)!;
-    const r3 = results.find(r => r.sailNumber === 103)!;
+    const r1 = results.find(r => r.sailNumber === '101')!;
+    const r2 = results.find(r => r.sailNumber === '102')!;
+    const r3 = results.find(r => r.sailNumber === '103')!;
 
     // RRS 44.3(c): the penalty raises the boat's points but the scores of
     // other boats are not changed. The penalised boat keeps its finishing rank
@@ -314,7 +314,7 @@ describe('RaceScorer', () => {
     // c2 finishes 2nd (2 pts). Penalty is 2.6. Total = 4.6 points.
     const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCompetitorCount);
 
-    const r2 = results.find(r => r.sailNumber === 102)!;
+    const r2 = results.find(r => r.sailNumber === '102')!;
     expect(r2.points).toBe(4.6);
   });
 
@@ -334,7 +334,7 @@ describe('RaceScorer', () => {
     // DNF score 6+1 = 7  So score should be capped to 7
     const results = scoreRaceHelper(mockRace, competitors, 'PY', 'long', seriesCompetitorCount);
 
-    const r4 = results.find(r => r.sailNumber === 106)!;
+    const r4 = results.find(r => r.sailNumber === '106')!;
     expect(r4.points).toBe(7);
   });
 
@@ -387,11 +387,11 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 5);
 
-      const r1 = results.find(r => r.sailNumber === 101)!;
-      const r2 = results.find(r => r.sailNumber === 102)!;
-      const r3 = results.find(r => r.sailNumber === 103)!;
-      const r4 = results.find(r => r.sailNumber === 104)!;
-      const r5 = results.find(r => r.sailNumber === 105)!;
+      const r1 = results.find(r => r.sailNumber === '101')!;
+      const r2 = results.find(r => r.sailNumber === '102')!;
+      const r3 = results.find(r => r.sailNumber === '103')!;
+      const r4 = results.find(r => r.sailNumber === '104')!;
+      const r5 = results.find(r => r.sailNumber === '105')!;
 
       expect(r1.rank).toBe(1); // 1st place
       expect(r2.rank).toBe(2); // Tied for 2nd
@@ -418,9 +418,9 @@ describe('RaceScorer', () => {
     // c2 finishes 2nd (2 pts). Penalty is 2. Total = 4 points.
     const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCompetitorCount);
 
-    const r1 = results.find(r => r.sailNumber === 101)!;
-    const r2 = results.find(r => r.sailNumber === 102)!;
-    const r3 = results.find(r => r.sailNumber === 103)!;
+    const r1 = results.find(r => r.sailNumber === '101')!;
+    const r2 = results.find(r => r.sailNumber === '102')!;
+    const r3 = results.find(r => r.sailNumber === '103')!;
 
     // RRS 44.3(c): a Scoring Penalty raises the penalised boat's points but
     // "the scores of other boats shall not be changed". The penalised boat
@@ -435,7 +435,7 @@ describe('RaceScorer', () => {
 
     // The array order (used for the UI display) is by points, so the penalised
     // boat appears AFTER the 3rd-place finisher even though its rank is still 2.
-    expect(results.map(r => r.sailNumber)).toEqual([101, 103, 102]);
+    expect(results.map(r => r.sailNumber)).toEqual(['101', '103', '102']);
   });
 
   it('should round ZFP penalty to 1/10 of a point', () => {
@@ -449,7 +449,7 @@ describe('RaceScorer', () => {
     // c2 finishes 2nd (2 pts). Penalty is 2.2. Total = 4.2 points.
     const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCompetitorCount);
 
-    const r2 = results.find(r => r.sailNumber === 102)!;
+    const r2 = results.find(r => r.sailNumber === '102')!;
     expect(r2.points).toBe(4.2);
   });
 
@@ -465,7 +465,7 @@ describe('RaceScorer', () => {
     // c2 finishes 2nd (2 pts). Penalty is 2. Total = 4 points.
     const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCompetitorCount);
 
-    const r2 = results.find(r => r.sailNumber === 102)!;
+    const r2 = results.find(r => r.sailNumber === '102')!;
     expect(r2.points).toBe(4);
   });
 
@@ -485,12 +485,12 @@ describe('RaceScorer', () => {
     // First scoring with 10 competitors
     calculateRacePoints(results, mockRace.type, 'PY', 'short', 11);
     // Penalty = 20% of 10 = 2. 2nd place (2 pts) + 2 = 4 pts.
-    expect(results.find(r => r.sailNumber === 102)!.points).toBe(4);
+    expect(results.find(r => r.sailNumber === '102')!.points).toBe(4);
 
     // Re-score with 20 competitors
     calculateRacePoints(results, mockRace.type, 'PY', 'short', 21);
     // Penalty = 20% of 20 = 4. 2nd place (2 pts) + 4 = 6 pts.
-    expect(results.find(r => r.sailNumber === 102)!.points).toBe(6);
+    expect(results.find(r => r.sailNumber === '102')!.points).toBe(6);
 
     // Verify times were NOT touched (they are 0 in buildRaceResults if not calculated, 
     // but we set them manually and they should stay)
@@ -507,10 +507,10 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 4);
 
-      const r1 = results.find(r => r.sailNumber === 101)!;
-      const r2 = results.find(r => r.sailNumber === 102)!;
-      const r3 = results.find(r => r.sailNumber === 103)!;
-      const ood = results.find(r => r.sailNumber === 104)!;
+      const r1 = results.find(r => r.sailNumber === '101')!;
+      const r2 = results.find(r => r.sailNumber === '102')!;
+      const r3 = results.find(r => r.sailNumber === '103')!;
+      const ood = results.find(r => r.sailNumber === '104')!;
 
       expect(r1.rank).toBe(1);
       expect(r2.rank).toBe(2);
@@ -518,7 +518,7 @@ describe('RaceScorer', () => {
       expect(ood.rank).toBe(0);
       expect(ood.resultCode).toBe('OOD');
       // The UI displays results in array order; OOD must render at the bottom.
-      expect(results[results.length - 1].sailNumber).toBe(104);
+      expect(results[results.length - 1].sailNumber).toBe('104');
     });
 
     it('OOD with writeback points stays at the bottom on re-score (the user-reported failure mode)', () => {
@@ -533,7 +533,7 @@ describe('RaceScorer', () => {
         createCompetitor('4', null, 'OOD'),
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 4);
-      const ood = results.find(r => r.sailNumber === 104)!;
+      const ood = results.find(r => r.sailNumber === '104')!;
 
       // Simulate the series-scoring writeback (scorer.ts step 4).
       ood.points = 2;
@@ -542,10 +542,10 @@ describe('RaceScorer', () => {
       // race added to the series via score()'s step 2.5.
       calculateRacePoints(results, mockRace.type, 'PY', 'short', 5);
 
-      const r1 = results.find(r => r.sailNumber === 101)!;
-      const r2 = results.find(r => r.sailNumber === 102)!;
-      const r3 = results.find(r => r.sailNumber === 103)!;
-      const oodAfter = results.find(r => r.sailNumber === 104)!;
+      const r1 = results.find(r => r.sailNumber === '101')!;
+      const r2 = results.find(r => r.sailNumber === '102')!;
+      const r3 = results.find(r => r.sailNumber === '103')!;
+      const oodAfter = results.find(r => r.sailNumber === '104')!;
 
       // No rank slot consumed by the OOD even though its points coincide with r2's.
       expect(r1.rank).toBe(1);
@@ -555,7 +555,7 @@ describe('RaceScorer', () => {
       // Writeback points survive the re-score.
       expect(oodAfter.points).toBe(2);
       // OOD is still at the bottom of the array.
-      expect(results[results.length - 1].sailNumber).toBe(104);
+      expect(results[results.length - 1].sailNumber).toBe('104');
     });
 
     it('OOD with writeback points equal to a tying finisher does not bump anyone', () => {
@@ -573,23 +573,23 @@ describe('RaceScorer', () => {
         createCompetitor('9', null, 'OOD'),
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 9);
-      const ood = results.find(r => r.sailNumber === 109)!;
+      const ood = results.find(r => r.sailNumber === '109')!;
       ood.points = 7.5;
 
       calculateRacePoints(results, mockRace.type, 'PY', 'short', 10);
 
-      const rankOf = (sn: number) => results.find(r => r.sailNumber === sn)!.rank;
-      expect(rankOf(101)).toBe(1);
-      expect(rankOf(102)).toBe(2);
-      expect(rankOf(103)).toBe(3);
-      expect(rankOf(104)).toBe(4);
-      expect(rankOf(105)).toBe(5);
-      expect(rankOf(106)).toBe(6);
+      const rankOf = (sn: string) => results.find(r => r.sailNumber === sn)!.rank;
+      expect(rankOf('101')).toBe(1);
+      expect(rankOf('102')).toBe(2);
+      expect(rankOf('103')).toBe(3);
+      expect(rankOf('104')).toBe(4);
+      expect(rankOf('105')).toBe(5);
+      expect(rankOf('106')).toBe(6);
       // RRS A8.1: tied finishers share the leading rank; the next rank is consumed.
-      expect(rankOf(107)).toBe(7);
-      expect(rankOf(108)).toBe(7);
-      expect(rankOf(109)).toBe(0); // OOD: no rank, regardless of writeback points.
-      expect(results[results.length - 1].sailNumber).toBe(109);
+      expect(rankOf('107')).toBe(7);
+      expect(rankOf('108')).toBe(7);
+      expect(rankOf('109')).toBe(0); // OOD: no rank, regardless of writeback points.
+      expect(results[results.length - 1].sailNumber).toBe('109');
     });
 
     it('reproduces the user-reported race-1 layout (12 finishers, one tie at 8th, OOD with writeback)', () => {
@@ -608,17 +608,17 @@ describe('RaceScorer', () => {
       competitors.push(createCompetitor('13', null, 'OOD'));
 
       const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 13);
-      const ood = results.find(r => r.sailNumber === 113)!;
+      const ood = results.find(r => r.sailNumber === '113')!;
 
       // Series scoring writes back an OOD average that coincides with rank 7's points.
       ood.points = 7;
       calculateRacePoints(results, mockRace.type, 'PY', 'short', 14);
 
-      const rankOf = (sn: number) => results.find(r => r.sailNumber === sn)!.rank;
-      const finisherRanks = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112].map(rankOf);
+      const rankOf = (sn: string) => results.find(r => r.sailNumber === sn)!.rank;
+      const finisherRanks = ['101', '102', '103', '104', '105', '106', '107', '108', '109', '110', '111', '112'].map(rankOf);
       expect(finisherRanks).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 8, 10, 11, 12]);
-      expect(rankOf(113)).toBe(0);
-      expect(results[results.length - 1].sailNumber).toBe(113);
+      expect(rankOf('113')).toBe(0);
+      expect(results[results.length - 1].sailNumber).toBe('113');
     });
 
     it('multiple SCP boats interleaved with OK boats keep their finishing ranks (RRS 44.3(c))', () => {
@@ -632,11 +632,11 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', seriesCount);
 
-      const r1 = results.find(r => r.sailNumber === 101)!;
-      const r2 = results.find(r => r.sailNumber === 102)!;
-      const r3 = results.find(r => r.sailNumber === 103)!;
-      const r4 = results.find(r => r.sailNumber === 104)!;
-      const r5 = results.find(r => r.sailNumber === 105)!;
+      const r1 = results.find(r => r.sailNumber === '101')!;
+      const r2 = results.find(r => r.sailNumber === '102')!;
+      const r3 = results.find(r => r.sailNumber === '103')!;
+      const r4 = results.find(r => r.sailNumber === '104')!;
+      const r5 = results.find(r => r.sailNumber === '105')!;
 
       // RRS 44.3(c): a Scoring Penalty raises the boat's points but does not
       // change other boats' scores. All five keep their finishing ranks.
@@ -659,9 +659,9 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 3);
 
-      const r1 = results.find(r => r.sailNumber === 101)!;
-      const rdg = results.find(r => r.sailNumber === 102)!;
-      const r3 = results.find(r => r.sailNumber === 103)!;
+      const r1 = results.find(r => r.sailNumber === '101')!;
+      const rdg = results.find(r => r.sailNumber === '102')!;
+      const r3 = results.find(r => r.sailNumber === '103')!;
 
       expect(r1.rank).toBe(1);
       expect(rdg.rank).toBe(2);
@@ -677,9 +677,9 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 4);
 
-      const rdg = results.find(r => r.sailNumber === 104)!;
+      const rdg = results.find(r => r.sailNumber === '104')!;
       expect(rdg.rank).toBe(0);
-      expect(results[results.length - 1].sailNumber).toBe(104);
+      expect(results[results.length - 1].sailNumber).toBe('104');
     });
 
     it('DNF and RET have rank=0 and stay at the bottom alongside finishers (RRS A4.2)', () => {
@@ -692,14 +692,14 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 5);
 
-      const ranks = [101, 102, 103, 104, 105].map(sn =>
+      const ranks = ['101', '102', '103', '104', '105'].map(sn =>
         results.find(r => r.sailNumber === sn)!.rank,
       );
       expect(ranks).toEqual([1, 2, 2, 0, 0]);
 
       // Both non-finishers appear after every finisher in the array order.
       const lastTwo = results.slice(-2).map(r => r.sailNumber).sort();
-      expect(lastTwo).toEqual([104, 105]);
+      expect(lastTwo).toEqual(['104', '105']);
     });
 
     it('scoring twice in a row yields the same array order and ranks (idempotent)', () => {
@@ -717,7 +717,7 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 6);
       // Simulate a series-scoring writeback for the OOD.
-      results.find(r => r.sailNumber === 106)!.points = 3;
+      results.find(r => r.sailNumber === '106')!.points = 3;
 
       const snapshot = (rs: RaceResult[]) =>
         rs.map(r => [r.sailNumber, r.rank, r.points, r.resultCode]);
@@ -750,15 +750,15 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'PY', 'short', 3);
 
-      const r1 = results.find(r => r.sailNumber === 101)!;
-      const r2 = results.find(r => r.sailNumber === 102)!;
-      const dnf = results.find(r => r.sailNumber === 103)!;
+      const r1 = results.find(r => r.sailNumber === '101')!;
+      const r2 = results.find(r => r.sailNumber === '102')!;
+      const dnf = results.find(r => r.sailNumber === '103')!;
 
       expect(r1.rank).toBe(1);
       expect(r2.rank).toBe(2);
       expect(dnf.rank).toBe(0);
       expect(dnf.resultCode).toBe('DNF');
-      expect(results[results.length - 1].sailNumber).toBe(103);
+      expect(results[results.length - 1].sailNumber).toBe('103');
     });
 
     it('Level Rating: DNF with stale manualPosition does not flip ordering to manual positions', () => {
@@ -774,17 +774,17 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 4);
 
-      const r1 = results.find(r => r.sailNumber === 101)!;
-      const r2 = results.find(r => r.sailNumber === 102)!;
-      const r3 = results.find(r => r.sailNumber === 103)!;
-      const dnf = results.find(r => r.sailNumber === 104)!;
+      const r1 = results.find(r => r.sailNumber === '101')!;
+      const r2 = results.find(r => r.sailNumber === '102')!;
+      const r3 = results.find(r => r.sailNumber === '103')!;
+      const dnf = results.find(r => r.sailNumber === '104')!;
 
       expect(r1.rank).toBe(1);
       expect(r1.elapsedTime).toBe(600);
       expect(r2.rank).toBe(2);
       expect(r3.rank).toBe(3);
       expect(dnf.rank).toBe(0);
-      expect(results[results.length - 1].sailNumber).toBe(104);
+      expect(results[results.length - 1].sailNumber).toBe('104');
     });
   });
 
@@ -806,9 +806,9 @@ describe('RaceScorer', () => {
       // 100 boats entered. Penalty = max(2, round(100 * 0.2 * 10) / 10) = 20.
       const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 100);
 
-      const r1 = results.find(r => r.sailNumber === 101)!;
-      const r2 = results.find(r => r.sailNumber === 102)!;
-      const r3 = results.find(r => r.sailNumber === 103)!;
+      const r1 = results.find(r => r.sailNumber === '101')!;
+      const r2 = results.find(r => r.sailNumber === '102')!;
+      const r3 = results.find(r => r.sailNumber === '103')!;
 
       expect(r1.rank).toBe(1);
       expect(r1.points).toBe(1);
@@ -827,9 +827,9 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 100);
 
-      const r1 = results.find(r => r.sailNumber === 101)!;
-      const r2 = results.find(r => r.sailNumber === 102)!;
-      const r3 = results.find(r => r.sailNumber === 103)!;
+      const r1 = results.find(r => r.sailNumber === '101')!;
+      const r2 = results.find(r => r.sailNumber === '102')!;
+      const r3 = results.find(r => r.sailNumber === '103')!;
 
       expect(r1.rank).toBe(1);
       expect(r1.points).toBe(1);
@@ -850,7 +850,7 @@ describe('RaceScorer', () => {
       // Penalty = 20% of 11 = 2.2; c2 = 2 + 2.2 = 4.2.
       const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', seriesCompetitorCount);
 
-      const r2 = results.find(r => r.sailNumber === 102)!;
+      const r2 = results.find(r => r.sailNumber === '102')!;
       expect(r2.points).toBe(4.2);
     });
 
@@ -863,7 +863,7 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', seriesCompetitorCount);
 
-      const r2 = results.find(r => r.sailNumber === 102)!;
+      const r2 = results.find(r => r.sailNumber === '102')!;
       // 2nd place (2 pts) + min(2) places = 4 pts.
       expect(r2.points).toBe(4);
     });
@@ -883,7 +883,7 @@ describe('RaceScorer', () => {
       // 6 (place) + 1.4 (penalty) = 7.4, capped at 7.
       const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'long', seriesCompetitorCount);
 
-      const r6 = results.find(r => r.sailNumber === 106)!;
+      const r6 = results.find(r => r.sailNumber === '106')!;
       expect(r6.points).toBe(7);
     });
 
@@ -903,10 +903,10 @@ describe('RaceScorer', () => {
       const penaltyPoints = seriesCompetitorCount + 1;
       const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', seriesCompetitorCount);
 
-      const r3 = results.find(r => r.sailNumber === 103)!;
-      const r4 = results.find(r => r.sailNumber === 104)!;
-      const r5 = results.find(r => r.sailNumber === 105)!;
-      const r6 = results.find(r => r.sailNumber === 106)!;
+      const r3 = results.find(r => r.sailNumber === '103')!;
+      const r4 = results.find(r => r.sailNumber === '104')!;
+      const r5 = results.find(r => r.sailNumber === '105')!;
+      const r6 = results.find(r => r.sailNumber === '106')!;
 
       expect(r3.points).toBe(penaltyPoints);
       expect(r3.rank).toBe(0);
@@ -928,12 +928,12 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 5);
 
-      const ranks = [101, 102, 103, 104, 105].map(sn =>
+      const ranks = ['101', '102', '103', '104', '105'].map(sn =>
         results.find(r => r.sailNumber === sn)!.rank,
       );
       expect(ranks).toEqual([1, 2, 3, 0, 0]);
       const lastTwo = results.slice(-2).map(r => r.sailNumber).sort();
-      expect(lastTwo).toEqual([104, 105]);
+      expect(lastTwo).toEqual(['104', '105']);
     });
 
     it('Level Rating: RDG without a finish time falls to the bottom with rank=0 (RRS A4.2)', () => {
@@ -945,9 +945,9 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 4);
 
-      const rdg = results.find(r => r.sailNumber === 104)!;
+      const rdg = results.find(r => r.sailNumber === '104')!;
       expect(rdg.rank).toBe(0);
-      expect(results[results.length - 1].sailNumber).toBe(104);
+      expect(results[results.length - 1].sailNumber).toBe('104');
     });
 
     it('Level Rating: RDG with a finish time keeps its finishing rank (RRS A8.1)', () => {
@@ -960,9 +960,9 @@ describe('RaceScorer', () => {
       ];
       const results = scoreRaceHelper(mockRace, competitors, 'Level Rating', 'short', 3);
 
-      const r1 = results.find(r => r.sailNumber === 101)!;
-      const rdg = results.find(r => r.sailNumber === 102)!;
-      const r3 = results.find(r => r.sailNumber === 103)!;
+      const r1 = results.find(r => r.sailNumber === '101')!;
+      const rdg = results.find(r => r.sailNumber === '102')!;
+      const r3 = results.find(r => r.sailNumber === '103')!;
 
       expect(r1.rank).toBe(1);
       expect(rdg.rank).toBe(2);

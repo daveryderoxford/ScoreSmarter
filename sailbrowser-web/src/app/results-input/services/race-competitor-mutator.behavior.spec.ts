@@ -56,7 +56,7 @@ describe('RaceCompetitorMutator behaviour (.harness)', () => {
       seriesId: 's1',
       helm: 'Sam',
       boatClass: 'ILCA 7',
-      sailNumber: 100,
+      sailNumber: '100',
       handicaps: [],
       tags: [],
     });
@@ -88,7 +88,7 @@ describe('RaceCompetitorMutator behaviour (.harness)', () => {
           seriesId: 's1',
           helm: 'Bob',
           boatClass: 'ILCA 7',
-          sailNumber: 200,
+          sailNumber: '200',
           handicaps: [],
           tags: [],
         },
@@ -98,7 +98,7 @@ describe('RaceCompetitorMutator behaviour (.harness)', () => {
         ...prev,
         helm: 'Sam',
         boatClass: 'ILCA 7',
-        sailNumber: 100,
+        sailNumber: '100',
       };
 
       await expect(mutator.updateSeriesEntryFromEdit(prev, nextBobToSam100)).rejects.toThrow(
@@ -124,7 +124,7 @@ describe('RaceCompetitorMutator behaviour (.harness)', () => {
 
   describe('updateRaceCompetitorsBulk', () => {
     it('merging explicit null clears an optional competitor field', async () => {
-      entryStore.entries = [{ id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] }];
+      entryStore.entries = [{ id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] }];
       compStore.comps = [
         new RaceCompetitor({
           id: 'c1',

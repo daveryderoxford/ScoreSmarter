@@ -35,7 +35,7 @@ function entry(overrides: Partial<SeriesEntry> & Pick<SeriesEntry, 'id'>): Serie
     seriesId: 'series-1',
     helm: 'Helm',
     boatClass: 'Laser',
-    sailNumber: 100,
+    sailNumber: '100',
     handicaps: [{ scheme: 'PY', value: 1100 }],
     tags: [],
     ...overrides,
@@ -80,14 +80,14 @@ describe('scoring-publish-filters', () => {
   });
 
   it('GeneralHandicap fleet: scorable whenever there are in-fleet rows (race status is enforced in ScoringEngine)', () => {
-    const entries = [entry({ id: 'e1' }), entry({ id: 'e2', sailNumber: 101 })];
+    const entries = [entry({ id: 'e1' }), entry({ id: 'e2', sailNumber: '101' })];
     const comps = [comp('c1', 'e1'), comp('c2', 'e2')];
 
     expect(isRaceScorable(race1, pyConfig, comps, entries)).toBe(true);
   });
 
   it('returns true when at least one competitor has a non–NOT FINISHED code', () => {
-    const entries = [entry({ id: 'e1' }), entry({ id: 'e2', sailNumber: 101 })];
+    const entries = [entry({ id: 'e1' }), entry({ id: 'e2', sailNumber: '101' })];
     const comps = [comp('c1', 'e1'), comp('c2', 'e2', 'DNF')];
 
     expect(isRaceScorable(race1, pyConfig, comps, entries)).toBe(true);
@@ -104,7 +104,7 @@ describe('scoring-publish-filters', () => {
   it('only considers competitors in the configured fleet for BoatClass config', () => {
     const entries = [
       entry({ id: 'e-laser', boatClass: 'Laser' }),
-      entry({ id: 'e-optimist', boatClass: 'Optimist', sailNumber: 102, helm: 'O' }),
+      entry({ id: 'e-optimist', boatClass: 'Optimist', sailNumber: '102', helm: 'O' }),
     ];
     const comps = [comp('c1', 'e-laser'), comp('c2', 'e-optimist', 'OK')];
 
@@ -115,7 +115,7 @@ describe('scoring-publish-filters', () => {
     const pursuitRace: Race = { ...race1, type: 'Pursuit' };
     const entries = [
       entry({ id: 'e1', handicaps: [] }),
-      entry({ id: 'e2', sailNumber: 101 }),
+      entry({ id: 'e2', sailNumber: '101' }),
     ];
     const comps = [comp('c1', 'e1', 'OK'), comp('c2', 'e2')];
 

@@ -61,7 +61,7 @@ describe('ScannerOrchestrationService', () => {
               seriesId: 'series-1',
               helm: 'Alex',
               boatClass: 'ILCA 7',
-              sailNumber: 1234,
+              sailNumber: '1234',
               handicaps: [],
             }]).asReadonly(),
           },

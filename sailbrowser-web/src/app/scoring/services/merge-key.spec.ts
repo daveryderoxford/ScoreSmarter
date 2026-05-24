@@ -7,7 +7,7 @@ function entry(over: Partial<SeriesEntry> & Pick<SeriesEntry, 'id'>): SeriesEntr
     seriesId: 'series-1',
     helm: 'Sam Skipper',
     boatClass: 'ILCA 7',
-    sailNumber: 12345,
+    sailNumber: '12345',
     handicaps: [],
     tags: [],
     ...over,
@@ -35,9 +35,9 @@ describe('mergeKeyFor', () => {
 
   describe("strategy 'classSailNumber'", () => {
     it('groups distinct entries that share a hull (class + sail number) regardless of helm', () => {
-      const sharedHullA = entry({ id: 'e1', helm: 'Helm One', boatClass: 'ILCA 7', sailNumber: 12345 });
-      const sharedHullB = entry({ id: 'e2', helm: 'Helm Two', boatClass: 'ILCA 7', sailNumber: 12345 });
-      const otherHull = entry({ id: 'e3', helm: 'Helm Two', boatClass: 'ILCA 7', sailNumber: 99999 });
+      const sharedHullA = entry({ id: 'e1', helm: 'Helm One', boatClass: 'ILCA 7', sailNumber: '12345' });
+      const sharedHullB = entry({ id: 'e2', helm: 'Helm Two', boatClass: 'ILCA 7', sailNumber: '12345' });
+      const otherHull = entry({ id: 'e3', helm: 'Helm Two', boatClass: 'ILCA 7', sailNumber: '99999' });
 
       expect(mergeKeyFor(sharedHullA, 'classSailNumber'))
         .toBe(mergeKeyFor(sharedHullB, 'classSailNumber'));
@@ -46,17 +46,17 @@ describe('mergeKeyFor', () => {
     });
 
     it('normalises class case / surrounding whitespace', () => {
-      const a = entry({ id: 'e1', boatClass: 'ILCA 7', sailNumber: 1 });
-      const b = entry({ id: 'e2', boatClass: '  ilca 7 ', sailNumber: 1 });
+      const a = entry({ id: 'e1', boatClass: 'ILCA 7', sailNumber: '1' });
+      const b = entry({ id: 'e2', boatClass: '  ilca 7 ', sailNumber: '1' });
       expect(mergeKeyFor(a, 'classSailNumber')).toBe(mergeKeyFor(b, 'classSailNumber'));
     });
   });
 
   describe("strategy 'helm'", () => {
     it('groups all entries sailed by the same helm regardless of hull', () => {
-      const lasers = entry({ id: 'e1', helm: 'Sam Skipper', boatClass: 'ILCA 7', sailNumber: 100 });
-      const aero = entry({ id: 'e2', helm: 'Sam Skipper', boatClass: 'RS Aero 7', sailNumber: 200 });
-      const someone = entry({ id: 'e3', helm: 'Other Person', boatClass: 'RS Aero 7', sailNumber: 200 });
+      const lasers = entry({ id: 'e1', helm: 'Sam Skipper', boatClass: 'ILCA 7', sailNumber: '100' });
+      const aero = entry({ id: 'e2', helm: 'Sam Skipper', boatClass: 'RS Aero 7', sailNumber: '200' });
+      const someone = entry({ id: 'e3', helm: 'Other Person', boatClass: 'RS Aero 7', sailNumber: '200' });
 
       expect(mergeKeyFor(lasers, 'helm')).toBe(mergeKeyFor(aero, 'helm'));
       expect(mergeKeyFor(lasers, 'helm')).not.toBe(mergeKeyFor(someone, 'helm'));

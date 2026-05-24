@@ -11,6 +11,7 @@ import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
 import { Series } from 'app/race-calender/model/series';
+import { calculatePersonalHandicapFromPy } from 'app/scoring/model/personal-handicap';
 import { afterEach } from 'vitest';
 import { RaceCompetitor } from '../model/race-competitor';
 import { RaceCompetitorEditService } from './race-competitor-edit.service';
@@ -26,6 +27,11 @@ class FakeRaceCalendarStore {
   async updateRace(raceId: string, data: Partial<Race>): Promise<void> {
     const idx = this.races.findIndex(r => r.id === raceId);
     if (idx >= 0) this.races[idx] = { ...this.races[idx], ...data } as Race;
+  }
+  async ensureRaceDirty(raceId: string): Promise<void> {
+    const r = this.races.find(x => x.id === raceId);
+    if (!r || r.dirty === true) return;
+    await this.updateRace(raceId, { dirty: true });
   }
 }
 
@@ -107,8 +113,9 @@ describe('RaceCompetitorEditService', () => {
 
   describe('deleteRaceCompetitor', () => {
     it('deletes orphaned series entry after deleting last competitor', async () => {
+      raceCalendar.series = [pySeries('s1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: 123, handicaps: [], tags: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: '123', handicaps: [], tags: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -121,8 +128,9 @@ describe('RaceCompetitorEditService', () => {
     });
 
     it('preserves the series entry when another race still references it', async () => {
+      raceCalendar.series = [pySeries('s1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -141,8 +149,8 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
-        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
+        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
@@ -152,7 +160,7 @@ describe('RaceCompetitorEditService', () => {
         competitorId: 'c1',
         helm: 'Sam',
         boatClass: 'ILCA 7',
-        sailNumber: 100,
+        sailNumber: '100',
       });
 
       expect(compStore.comps.find(c => c.id === 'c1')!.seriesEntryId).toBe('se-1');
@@ -173,7 +181,7 @@ describe('RaceCompetitorEditService', () => {
           seriesId: 's1',
           helm: 'Sam',
           boatClass: 'ILCA 6',
-          sailNumber: 100,
+          sailNumber: '100',
           handicaps: [{ scheme: 'PY', value: 1165 }],
           tags: [],
         },
@@ -186,7 +194,7 @@ describe('RaceCompetitorEditService', () => {
         competitorId: 'c1',
         helm: 'Sam',
         boatClass: 'ILCA 7',
-        sailNumber: 100,
+        sailNumber: '100',
       });
 
       const linked = compStore.comps.find(c => c.id === 'c1')!;
@@ -199,8 +207,8 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
-        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
+        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c-edit', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
@@ -212,7 +220,7 @@ describe('RaceCompetitorEditService', () => {
           competitorId: 'c-edit',
           helm: 'Sam',
           boatClass: 'ILCA 7',
-          sailNumber: 100,
+          sailNumber: '100',
         }),
       ).rejects.toThrowError(/already entered in this race/);
     });
@@ -223,7 +231,7 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({
@@ -265,7 +273,7 @@ describe('RaceCompetitorEditService', () => {
           seriesId: 's1',
           helm: 'Fred Blogggs',
           boatClass: 'ILCA 7',
-          sailNumber: 100,
+          sailNumber: '100',
           handicaps: [{ scheme: 'PY', value: 1100 }],
           tags: [],
         },
@@ -297,7 +305,7 @@ describe('RaceCompetitorEditService', () => {
           seriesId: 's1',
           helm: 'Old Helm',
           boatClass: 'ILCA 7',
-          sailNumber: 100,
+          sailNumber: '100',
           handicaps: [{ scheme: 'PY', value: 1100 }],
           tags: [],
         },
@@ -323,8 +331,8 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Fred Blogggs', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
-        { id: 'se-2', seriesId: 's1', helm: 'Fred Bloggs', boatClass: 'ILCA 7', sailNumber: 100, handicaps: [], tags: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Fred Blogggs', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
+        { id: 'se-2', seriesId: 's1', helm: 'Fred Bloggs', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -338,7 +346,7 @@ describe('RaceCompetitorEditService', () => {
       expect(compStore.comps[0].seriesEntryId).toBe('se-1');
     });
 
-    it('recomputes PY from club class when personal band changes', async () => {
+    it('recomputes Personal handicap from PY when personal band changes', async () => {
       clubStore.classes = [
         { id: 'ilca7', name: 'ILCA 7', handicaps: [{ scheme: 'PY', value: 1100 }] },
       ];
@@ -356,7 +364,7 @@ describe('RaceCompetitorEditService', () => {
           seriesId: 's1',
           helm: 'Sam',
           boatClass: 'ILCA 7',
-          sailNumber: 100,
+          sailNumber: '100',
           handicaps: [{ scheme: 'PY', value: 1100 }],
           tags: [],
         },
@@ -369,11 +377,12 @@ describe('RaceCompetitorEditService', () => {
         competitorId: 'c1',
         helm: 'Sam',
         personalHandicapBand: 'Band2',
-        handicaps: [],
       });
 
-      const py = entryStore.entries[0].handicaps?.find(h => h.scheme === 'PY');
-      expect(py?.value).toBeGreaterThan(0);
+      const updated = entryStore.entries[0];
+      expect(updated.personalHandicapBand).toBe('Band2');
+      const personal = updated.handicaps?.find(h => h.scheme === 'Personal');
+      expect(personal?.value).toBe(calculatePersonalHandicapFromPy(1100, 'Band2'));
     });
   });
 });

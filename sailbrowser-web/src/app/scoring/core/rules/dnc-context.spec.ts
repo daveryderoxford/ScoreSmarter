@@ -33,7 +33,7 @@ const config: HandicapConfiguration = {
   fleet: { id: 'f1', type: 'GeneralHandicap', name: 'General Handicap' },
 };
 
-function entry(id: string, sailNumber: number, helm = `Helm ${sailNumber}`): SeriesEntry {
+function entry(id: string, sailNumber: string, helm = `Helm ${sailNumber}`): SeriesEntry {
   return {
     id,
     seriesId: 'series-1',
@@ -67,7 +67,7 @@ function runDncContext(
 
 describe('buildDncContext', () => {
   it('excludes entries with only OOD rows from DNC counting domain (SeriesEntries basis)', () => {
-    const seriesEntries = [entry('e1', 101, 'A'), entry('e2', 102, 'B')];
+    const seriesEntries = [entry('e1', '101', 'A'), entry('e2', '102', 'B')];
     const comps = [
       comp('c1', 'r1', 'e1', 'OOD'),
       comp('c2', 'r1', 'e2', 'OK'),
@@ -86,7 +86,7 @@ describe('buildDncContext', () => {
     // Race r1: 4 OK finishers + 1 OOD. Per-race count must be 4 (OOD ignored),
     // so dncPoints = 4 + offset 1 = 5 (not 6).
     const seriesEntries = [
-      entry('e1', 101), entry('e2', 102), entry('e3', 103), entry('e4', 104), entry('e5', 105),
+      entry('e1', '101'), entry('e2', '102'), entry('e3', '103'), entry('e4', '104'), entry('e5', '105'),
     ];
     const comps = [
       comp('c1', 'r1', 'e1', 'OK'),
@@ -108,8 +108,8 @@ describe('buildDncContext', () => {
     // r1: 5 OK + 1 OOD (filtered = 5).  r2: 4 OK (filtered = 4).
     // dncPoints must reflect the larger race count after OOD filtering: 5 + 1 = 6.
     const seriesEntries = [
-      entry('e1', 101), entry('e2', 102), entry('e3', 103),
-      entry('e4', 104), entry('e5', 105), entry('e6', 106),
+      entry('e1', '101'), entry('e2', '102'), entry('e3', '103'),
+      entry('e4', '104'), entry('e5', '105'), entry('e6', '106'),
     ];
     const comps = [
       comp('c1a', 'r1', 'e1', 'OK'),
@@ -139,8 +139,8 @@ describe('buildDncContext', () => {
     // Recheck: 3 other OK + Helm A OK = 4 in r2. r1 has 3 other OK + A's OOD = 3.
     // Max = 4 + offset 1 = 5.
     const seriesEntries = [
-      entry('eA', 100, 'Helm A'),
-      entry('e1', 101), entry('e2', 102), entry('e3', 103),
+      entry('eA', '100', 'Helm A'),
+      entry('e1', '101'), entry('e2', '102'), entry('e3', '103'),
     ];
     const comps = [
       // r1: e1, e2, e3 OK + eA OOD (3 countable rows in r1).
@@ -167,8 +167,8 @@ describe('buildDncContext', () => {
 
   it('SeriesEntries basis: a mixed-status entry is counted (one OK row is enough)', () => {
     const seriesEntries = [
-      entry('eA', 100, 'Helm A'),
-      entry('e1', 101), entry('e2', 102), entry('e3', 103),
+      entry('eA', '100', 'Helm A'),
+      entry('e1', '101'), entry('e2', '102'), entry('e3', '103'),
     ];
     const comps = [
       comp('c1a', 'r1', 'e1', 'OK'),
@@ -188,7 +188,7 @@ describe('buildDncContext', () => {
   });
 
   it('falls back to the offset floor when every result code is OOD', () => {
-    const seriesEntries = [entry('e1', 101)];
+    const seriesEntries = [entry('e1', '101')];
     const comps = [comp('c1', 'r1', 'e1', 'OOD')];
     const out = runDncContext(
       [race('r1')], seriesEntries, comps,

@@ -24,8 +24,8 @@ describe('scoreSeriesSnapshot', () => {
       resultsSheetImage: '',
     };
     const entries: SeriesEntry[] = [
-      { id: 'e1', seriesId: 'series-1', helm: 'A', boatClass: 'Laser', sailNumber: 101, handicaps: [{ scheme: 'PY', value: 1000 }], tags: [] },
-      { id: 'e2', seriesId: 'series-1', helm: 'B', boatClass: 'Laser', sailNumber: 102, handicaps: [{ scheme: 'PY', value: 1000 }], tags: [] },
+      { id: 'e1', seriesId: 'series-1', helm: 'A', boatClass: 'Laser', sailNumber: '101', handicaps: [{ scheme: 'PY', value: 1000 }], tags: [] },
+      { id: 'e2', seriesId: 'series-1', helm: 'B', boatClass: 'Laser', sailNumber: '102', handicaps: [{ scheme: 'PY', value: 1000 }], tags: [] },
     ];
     const competitors = [
       new RaceCompetitor({

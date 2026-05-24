@@ -65,12 +65,12 @@ export const MergedClasses: Story = {
         {
           ...PUBLIC_SERIES_MOCK.competitors[0],
           boatClass: `ILCA 7${MERGED_BOAT_CLASS_SEPARATOR}RS Aero 7`,
-          sailNumber: 1234,
+          sailNumber: '1234',
         },
         {
           ...PUBLIC_SERIES_MOCK.competitors[1],
           boatClass: `ILCA 6${MERGED_BOAT_CLASS_SEPARATOR}ILCA 7${MERGED_BOAT_CLASS_SEPARATOR}RS Aero 6`,
-          sailNumber: 5678,
+          sailNumber: '5678',
         },
       ],
     },

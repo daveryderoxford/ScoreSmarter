@@ -51,7 +51,7 @@ function entry(overrides: Partial<SeriesEntry> = {}): SeriesEntry {
     seriesId: 'series-1',
     helm: 'Pat',
     boatClass: 'Laser',
-    sailNumber: 100,
+    sailNumber: '100',
     handicaps: [{ scheme: 'PY', value: 999 }],
     tags: [],
     ...overrides,

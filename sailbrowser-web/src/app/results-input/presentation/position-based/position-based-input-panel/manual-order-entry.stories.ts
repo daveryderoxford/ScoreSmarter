@@ -35,7 +35,7 @@ interface CompSeed {
   id: string;
   helm: string;
   boatClass: string;
-  sailNumber: number;
+  sailNumber: string;
   manualPosition?: number;
   resultCode?: RaceCompetitor['resultCode'];
 }
@@ -63,10 +63,10 @@ function comp(p: CompSeed): ResolvedRaceCompetitor {
 }
 
 const pursuitCompetitors: ResolvedRaceCompetitor[] = [
-  comp({ id: 'c1', helm: 'Alice', boatClass: 'ILCA 6', sailNumber: 201 }),
-  comp({ id: 'c2', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: 2010 }),
-  comp({ id: 'c3', helm: 'Cormac', boatClass: 'GP14', sailNumber: 7890 }),
-  comp({ id: 'c4', helm: 'Dana', boatClass: 'RS Aero', sailNumber: 3001 }),
+  comp({ id: 'c1', helm: 'Alice', boatClass: 'ILCA 6', sailNumber: '201' }),
+  comp({ id: 'c2', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: '2010' }),
+  comp({ id: 'c3', helm: 'Cormac', boatClass: 'GP14', sailNumber: '7890' }),
+  comp({ id: 'c4', helm: 'Dana', boatClass: 'RS Aero', sailNumber: '3001' }),
 ];
 
 function createManualResultsStub(): ManualResultsService {

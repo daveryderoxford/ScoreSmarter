@@ -9,7 +9,7 @@ function entry(tags: string[]): SeriesEntry {
     seriesId: 's1',
     helm: 'Helm',
     boatClass: 'Laser',
-    sailNumber: 100,
+    sailNumber: '100',
     handicaps: [],
     tags,
   };

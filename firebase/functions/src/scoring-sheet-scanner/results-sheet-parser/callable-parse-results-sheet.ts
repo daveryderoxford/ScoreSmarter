@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { type DocumentData, FieldValue, getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { onCall } from "firebase-functions/v2/https";
 import {
@@ -46,6 +46,16 @@ function normalizeSailNumberForRoster(raw: unknown): string {
   const digitIndex = compact.search(/\d/);
   if (digitIndex < 0) return compact.toUpperCase();
   return compact.slice(0, digitIndex).toUpperCase() + compact.slice(digitIndex);
+}
+
+/** Coerce Firestore series-entry wire data to {@link SeriesEntryDoc} (string sail numbers). */
+function coerceSeriesEntryDoc(raw: DocumentData): SeriesEntryDoc {
+  const sail = normalizeSailNumberForRoster(raw["sailNumber"]);
+  return {
+    helm: typeof raw["helm"] === "string" ? raw["helm"] : undefined,
+    boatClass: typeof raw["boatClass"] === "string" ? raw["boatClass"] : undefined,
+    sailNumber: sail || undefined,
+  };
 }
 
 function assertCallerHasClubAccess(
@@ -109,7 +119,7 @@ async function getRaceCompetitors(
   const entryById = new Map<string, SeriesEntryDoc>();
   for (const snap of entrySnaps) {
     if (snap.exists) {
-      entryById.set(snap.id, snap.data() as SeriesEntryDoc);
+      entryById.set(snap.id, coerceSeriesEntryDoc(snap.data() ?? {}));
     }
   }
 
@@ -124,7 +134,7 @@ async function getRaceCompetitors(
 
     const boatClass = (entry.boatClass ?? "").trim();
     const helm = (entry.helm ?? "").trim();
-    const sailText = normalizeSailNumberForRoster(entry.sailNumber);
+    const sailText = entry.sailNumber ?? "";
     if (!boatClass || !sailText) {
       continue;
     }

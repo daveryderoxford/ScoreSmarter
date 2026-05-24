@@ -81,7 +81,7 @@ function makeEntry(over: Partial<SeriesEntry> & Pick<SeriesEntry, 'id'>): Series
     seriesId: 's1',
     helm: 'Sam',
     boatClass: 'ILCA 7',
-    sailNumber: 100,
+    sailNumber: '100',
     handicaps: [],
     tags: [],
     ...over,
@@ -129,7 +129,7 @@ describe('EntryService.findEntryConflicts', () => {
     races: [makeRace({ id: 'r1', seriesId: 's1' })],
     helm: 'Sam',
     boatClass: 'ILCA 7',
-    sailNumber: 100,
+    sailNumber: '100',
     ...over,
   });
 
@@ -153,11 +153,11 @@ describe('EntryService.findEntryConflicts', () => {
 
   it('flags helm-already-in-race for a merged-helm series even when boat differs', () => {
     cal.series = [makeSeries('helm')];
-    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: 4787 })];
+    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: '4787' })];
     comps.comps = [makeComp('e1', 'r1', 'rc1')];
 
     const result = service.findEntryConflicts(
-      proposed({ boatClass: 'RS Aero 9', sailNumber: 4787 }),
+      proposed({ boatClass: 'RS Aero 9', sailNumber: '4787' }),
     );
     expect(result).toHaveLength(1);
     expect(result[0].reason).toBe('sameHelmDifferentHull');
@@ -165,11 +165,11 @@ describe('EntryService.findEntryConflicts', () => {
 
   it('does NOT flag helm-on-different-boat for a strict (classSailNumberHelm) series', () => {
     cal.series = [makeSeries('classSailNumberHelm')];
-    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: 4787 })];
+    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: '4787' })];
     comps.comps = [makeComp('e1', 'r1', 'rc1')];
 
     expect(
-      service.findEntryConflicts(proposed({ boatClass: 'RS Aero 9', sailNumber: 4787 })),
+      service.findEntryConflicts(proposed({ boatClass: 'RS Aero 9', sailNumber: '4787' })),
     ).toEqual([]);
   });
 
@@ -185,7 +185,7 @@ describe('EntryService.findEntryConflicts', () => {
 
   it('aggregates conflicts across multiple races in one call', () => {
     cal.series = [makeSeries('helm')];
-    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: 4787 })];
+    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: '4787' })];
     comps.comps = [
       makeComp('e1', 'r1', 'rc1'),
       makeComp('e1', 'r2', 'rc2'),
@@ -241,14 +241,14 @@ describe('EntryService.swapAndEnter', () => {
 
   it('removes the conflicting race competitor and signs the new entry on', async () => {
     cal.series = [makeSeries('helm')];
-    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: 4787 })];
+    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: '4787' })];
     comps.comps = [makeComp('e1', 'r1', 'rc1')];
 
     const details: EntryDetails = {
       races: [makeRace({ id: 'r1', seriesId: 's1' })],
       helm: 'Sam',
       boatClass: 'RS Aero 9',
-      sailNumber: 4787,
+      sailNumber: '4787',
     };
     const conflicts = service.findEntryConflicts(details);
     expect(conflicts).toHaveLength(1);
@@ -266,7 +266,7 @@ describe('EntryService.swapAndEnter', () => {
 
   it('cleans up the old SeriesEntry when the swap leaves it orphaned', async () => {
     cal.series = [makeSeries('helm')];
-    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: 4787 })];
+    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: '4787' })];
     comps.comps = [makeComp('e1', 'r1', 'rc1')];
 
     await service.swapAndEnter(
@@ -274,13 +274,13 @@ describe('EntryService.swapAndEnter', () => {
         races: [makeRace({ id: 'r1', seriesId: 's1' })],
         helm: 'Sam',
         boatClass: 'RS Aero 9',
-        sailNumber: 4787,
+        sailNumber: '4787',
       },
       service.findEntryConflicts({
         races: [makeRace({ id: 'r1', seriesId: 's1' })],
         helm: 'Sam',
         boatClass: 'RS Aero 9',
-        sailNumber: 4787,
+        sailNumber: '4787',
       }),
     );
 
@@ -289,7 +289,7 @@ describe('EntryService.swapAndEnter', () => {
 
   it('preserves the old SeriesEntry when it is still used in another race', async () => {
     cal.series = [makeSeries('helm')];
-    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: 4787 })];
+    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: '4787' })];
     comps.comps = [
       makeComp('e1', 'r1', 'rc1'),
       makeComp('e1', 'r2', 'rc2'),
@@ -299,7 +299,7 @@ describe('EntryService.swapAndEnter', () => {
       races: [makeRace({ id: 'r1', seriesId: 's1' })],
       helm: 'Sam',
       boatClass: 'RS Aero 9',
-      sailNumber: 4787,
+      sailNumber: '4787',
     };
     await service.swapAndEnter(details, service.findEntryConflicts(details));
 

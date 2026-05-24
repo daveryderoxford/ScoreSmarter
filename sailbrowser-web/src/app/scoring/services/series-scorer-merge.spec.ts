@@ -29,7 +29,7 @@ function entry(over: Partial<SeriesEntry> & Pick<SeriesEntry, 'id'>): SeriesEntr
     seriesId: 'series-1',
     helm: 'Helm',
     boatClass: 'ILCA 7',
-    sailNumber: 1000,
+    sailNumber: '1000',
     handicaps: [{ scheme: 'PY', value: 1100 }],
     tags: [],
     ...over,
@@ -93,9 +93,9 @@ describe("scoreSeries — strategy 'helm' (late merge)", () => {
    */
   it('collapses two hulls sailed by the same helm into a single series row', () => {
     const entries: SeriesEntry[] = [
-      entry({ id: 'eA', helm: 'Sam Skipper', boatClass: 'ILCA 7', sailNumber: 100 }),
-      entry({ id: 'eB', helm: 'Sam Skipper', boatClass: 'RS Aero 7', sailNumber: 200 }),
-      entry({ id: 'eC', helm: 'Other Person', boatClass: 'ILCA 6', sailNumber: 300 }),
+      entry({ id: 'eA', helm: 'Sam Skipper', boatClass: 'ILCA 7', sailNumber: '100' }),
+      entry({ id: 'eB', helm: 'Sam Skipper', boatClass: 'RS Aero 7', sailNumber: '200' }),
+      entry({ id: 'eC', helm: 'Other Person', boatClass: 'ILCA 6', sailNumber: '300' }),
     ];
 
     const races = [
@@ -128,14 +128,14 @@ describe("scoreSeries — strategy 'helm' (late merge)", () => {
         id: 'eA',
         helm: 'Sam Skipper',
         boatClass: 'ILCA 7',
-        sailNumber: 100,
+        sailNumber: '100',
         handicaps: [{ scheme: 'PY', value: 1100 }],
       }),
       entry({
         id: 'eB',
         helm: 'Sam Skipper',
         boatClass: 'RS Aero 7',
-        sailNumber: 200,
+        sailNumber: '200',
         handicaps: [{ scheme: 'PY', value: 1063 }],
       }),
     ];
@@ -151,14 +151,14 @@ describe("scoreSeries — strategy 'helm' (late merge)", () => {
 
     expect(row.helm).toBe('Sam Skipper');
     expect(row.boatClass).toBe(`ILCA 7${MERGED_BOAT_CLASS_SEPARATOR}RS Aero 7`);
-    expect(row.sailNumber).toBe(200);
+    expect(row.sailNumber).toBe('200');
     expect(row.handicap).toBe(1063);
   });
 
   it('reseeds display fields from the chronologically first race even if races are passed out of order', () => {
     const entries: SeriesEntry[] = [
-      entry({ id: 'eA', helm: 'Sam Skipper', boatClass: 'ILCA 7', sailNumber: 100 }),
-      entry({ id: 'eB', helm: 'Sam Skipper', boatClass: 'RS Aero 7', sailNumber: 200 }),
+      entry({ id: 'eA', helm: 'Sam Skipper', boatClass: 'ILCA 7', sailNumber: '100' }),
+      entry({ id: 'eB', helm: 'Sam Skipper', boatClass: 'RS Aero 7', sailNumber: '200' }),
     ];
 
     const races = [
@@ -168,14 +168,14 @@ describe("scoreSeries — strategy 'helm' (late merge)", () => {
 
     const [row] = scoreSeries(races, entries, config, 'PY', 'helm');
     expect(row.boatClass).toBe(`ILCA 7${MERGED_BOAT_CLASS_SEPARATOR}RS Aero 7`);
-    expect(row.sailNumber).toBe(200);
+    expect(row.sailNumber).toBe('200');
   });
 
   it('counts each merged competitor once for DNC points', () => {
     const entries: SeriesEntry[] = [
-      entry({ id: 'eA', helm: 'Sam', sailNumber: 100, boatClass: 'ILCA 7' }),
-      entry({ id: 'eB', helm: 'Sam', sailNumber: 200, boatClass: 'RS Aero 7' }),
-      entry({ id: 'eC', helm: 'Other', sailNumber: 300, boatClass: 'ILCA 6' }),
+      entry({ id: 'eA', helm: 'Sam', sailNumber: '100', boatClass: 'ILCA 7' }),
+      entry({ id: 'eB', helm: 'Sam', sailNumber: '200', boatClass: 'RS Aero 7' }),
+      entry({ id: 'eC', helm: 'Other', sailNumber: '300', boatClass: 'ILCA 6' }),
     ];
 
     // Race 0: Both sailors race. Race 1: only Sam (in his other hull).
@@ -197,8 +197,8 @@ describe("scoreSeries — strategy 'helm' (late merge)", () => {
 
   it('keeps an entry that never raced as a known merge group (DNC for every race)', () => {
     const entries: SeriesEntry[] = [
-      entry({ id: 'eA', helm: 'Sam', sailNumber: 100, boatClass: 'ILCA 7' }),
-      entry({ id: 'eB', helm: 'Other', sailNumber: 300, boatClass: 'ILCA 6' }),
+      entry({ id: 'eA', helm: 'Sam', sailNumber: '100', boatClass: 'ILCA 7' }),
+      entry({ id: 'eB', helm: 'Other', sailNumber: '300', boatClass: 'ILCA 6' }),
     ];
 
     const races = [
@@ -217,8 +217,8 @@ describe("scoreSeries — strategy 'helm' (late merge)", () => {
 
   it('can exclude merge groups that never raced when configured', () => {
     const entries: SeriesEntry[] = [
-      entry({ id: 'eA', helm: 'Sam', sailNumber: 100, boatClass: 'ILCA 7' }),
-      entry({ id: 'eB', helm: 'Other', sailNumber: 300, boatClass: 'ILCA 6' }),
+      entry({ id: 'eA', helm: 'Sam', sailNumber: '100', boatClass: 'ILCA 7' }),
+      entry({ id: 'eB', helm: 'Other', sailNumber: '300', boatClass: 'ILCA 6' }),
     ];
 
     const races = [
@@ -241,9 +241,9 @@ describe("scoreSeries — strategy 'helm' (late merge)", () => {
 describe("scoreSeries — strategy 'classSailNumber' (late merge by hull)", () => {
   it('merges different helms sharing one hull and seeds from chronologically first race', () => {
     const entries: SeriesEntry[] = [
-      entry({ id: 'eA', helm: 'Crew A', boatClass: 'GP14', sailNumber: 4242 }),
-      entry({ id: 'eB', helm: 'Crew B', boatClass: 'GP14', sailNumber: 4242 }),
-      entry({ id: 'eC', helm: 'Crew C', boatClass: 'ILCA 7', sailNumber: 1 }),
+      entry({ id: 'eA', helm: 'Crew A', boatClass: 'GP14', sailNumber: '4242' }),
+      entry({ id: 'eB', helm: 'Crew B', boatClass: 'GP14', sailNumber: '4242' }),
+      entry({ id: 'eC', helm: 'Crew C', boatClass: 'ILCA 7', sailNumber: '1' }),
     ];
 
     const races = [
@@ -265,7 +265,7 @@ describe("scoreSeries — strategy 'classSailNumber' (late merge by hull)", () =
     const gp14 = results.find(r => r.boatClass === 'GP14')!;
     // Display seeded from first race => Crew A
     expect(gp14.helm).toBe('Crew A');
-    expect(gp14.sailNumber).toBe(4242);
+    expect(gp14.sailNumber).toBe('4242');
     // Both race points present (1 + 2 = 3)
     expect(gp14.raceScores).toHaveLength(2);
     expect(gp14.totalPoints).toBe(3);
@@ -275,8 +275,8 @@ describe("scoreSeries — strategy 'classSailNumber' (late merge by hull)", () =
 describe("scoreSeries — strategy 'classSailNumberHelm' (no merge baseline)", () => {
   it('keeps each per-hull SeriesEntry as its own row even when helm is shared', () => {
     const entries: SeriesEntry[] = [
-      entry({ id: 'eA', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: 100 }),
-      entry({ id: 'eB', helm: 'Sam', boatClass: 'RS Aero 7', sailNumber: 200 }),
+      entry({ id: 'eA', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100' }),
+      entry({ id: 'eB', helm: 'Sam', boatClass: 'RS Aero 7', sailNumber: '200' }),
     ];
 
     const races = [
@@ -301,14 +301,14 @@ describe("scoreSeries — strategy 'classSailNumberHelm' (no merge baseline)", (
         id: 'eA',
         helm: 'Sam',
         boatClass: 'ILCA 7',
-        sailNumber: 100,
+        sailNumber: '100',
         handicaps: [{ scheme: 'PY', value: 1100 }],
       }),
       entry({
         id: 'eB',
         helm: 'Sam',
         boatClass: 'RS Aero 7',
-        sailNumber: 200,
+        sailNumber: '200',
         handicaps: [{ scheme: 'PY', value: 1063 }],
       }),
     ];

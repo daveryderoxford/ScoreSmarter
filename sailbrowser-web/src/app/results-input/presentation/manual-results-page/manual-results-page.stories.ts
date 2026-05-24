@@ -43,7 +43,7 @@ interface CompSeed {
   id: string;
   helm: string;
   boatClass: string;
-  sailNumber: number;
+  sailNumber: string;
   raceId: string;
   seriesId: string;
   startTime?: Date;
@@ -139,33 +139,33 @@ const start = raceHandicap.actualStart!;
 const handicapData = compsAndEntries([
   {
     id: 'c1', raceId: RACE_H_ID, seriesId: SERIES_H_ID,
-    helm: 'Alex', boatClass: 'ILCA 7', sailNumber: 100001,
+    helm: 'Alex', boatClass: 'ILCA 7', sailNumber: '100001',
     startTime: start, manualFinishTime: new Date(start.getTime() + 45 * 60 * 1000),
     manualLaps: 3, resultCode: 'OK',
   },
   {
     id: 'c2', raceId: RACE_H_ID, seriesId: SERIES_H_ID,
-    helm: 'Blake', boatClass: 'ILCA 6', sailNumber: 200002,
+    helm: 'Blake', boatClass: 'ILCA 6', sailNumber: '200002',
     startTime: start, manualFinishTime: new Date(start.getTime() + 48 * 60 * 1000),
     manualLaps: 3, resultCode: 'OK',
   },
-  { id: 'c3', raceId: RACE_H_ID, seriesId: SERIES_H_ID, helm: 'Chris', boatClass: 'ILCA 7', sailNumber: 100003 },
-  { id: 'c4', raceId: RACE_H_ID, seriesId: SERIES_H_ID, helm: 'Dana', boatClass: 'RS Aero 7', sailNumber: 4004, handicapValue: 1063 },
+  { id: 'c3', raceId: RACE_H_ID, seriesId: SERIES_H_ID, helm: 'Chris', boatClass: 'ILCA 7', sailNumber: '100003' },
+  { id: 'c4', raceId: RACE_H_ID, seriesId: SERIES_H_ID, helm: 'Dana', boatClass: 'RS Aero 7', sailNumber: '4004', handicapValue: 1063 },
 ]);
 
 const handicapData2 = compsAndEntries([
   {
     id: 'c1b', raceId: RACE_H2_ID, seriesId: SERIES_H_ID,
-    helm: 'Alex', boatClass: 'ILCA 7', sailNumber: 100001,
+    helm: 'Alex', boatClass: 'ILCA 7', sailNumber: '100001',
     startTime: start, manualFinishTime: new Date(start.getTime() + 46 * 60 * 1000),
     manualLaps: 3, resultCode: 'OK',
   },
-  { id: 'c2b', raceId: RACE_H2_ID, seriesId: SERIES_H_ID, helm: 'Blake', boatClass: 'ILCA 6', sailNumber: 200002 },
+  { id: 'c2b', raceId: RACE_H2_ID, seriesId: SERIES_H_ID, helm: 'Blake', boatClass: 'ILCA 6', sailNumber: '200002' },
 ]);
 
 const levelData = compsAndEntries([
-  { id: 'l1', raceId: RACE_LR_ID, seriesId: SERIES_LR_ID, helm: 'Erin', boatClass: 'ILCA 7', sailNumber: 111 },
-  { id: 'l2', raceId: RACE_LR_ID, seriesId: SERIES_LR_ID, helm: 'Frank', boatClass: 'ILCA 7', sailNumber: 222, manualPosition: 1, resultCode: 'OK' },
+  { id: 'l1', raceId: RACE_LR_ID, seriesId: SERIES_LR_ID, helm: 'Erin', boatClass: 'ILCA 7', sailNumber: '111' },
+  { id: 'l2', raceId: RACE_LR_ID, seriesId: SERIES_LR_ID, helm: 'Frank', boatClass: 'ILCA 7', sailNumber: '222', manualPosition: 1, resultCode: 'OK' },
 ]);
 
 function createManualResultsStub(): ManualResultsService {

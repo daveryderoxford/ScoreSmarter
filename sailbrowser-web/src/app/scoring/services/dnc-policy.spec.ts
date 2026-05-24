@@ -5,7 +5,7 @@ import { SeriesEntry } from '../../results-input/model/series-entry';
 import { computeDncPoints } from './dnc-policy';
 import { mergeKeyFor, type MergeStrategy } from './merge-key';
 
-function entry(id: string, helm: string, sailNumber: number, boatClass = 'ILCA 7'): SeriesEntry {
+function entry(id: string, helm: string, sailNumber: string, boatClass = 'ILCA 7'): SeriesEntry {
   return {
     id,
     seriesId: 'series-1',
@@ -55,9 +55,9 @@ function race(index: number, entries: SeriesEntry[], strategy: MergeStrategy): P
 describe('computeDncPoints', () => {
   const strategy: MergeStrategy = 'classSailNumberHelm';
   const entries = [
-    entry('e1', 'Helm 1', 101),
-    entry('e2', 'Helm 2', 102),
-    entry('e3', 'Helm 3', 103),
+    entry('e1', 'Helm 1', '101'),
+    entry('e2', 'Helm 2', '102'),
+    entry('e3', 'Helm 3', '103'),
   ];
 
   it('computes SeriesEntries + 1', () => {

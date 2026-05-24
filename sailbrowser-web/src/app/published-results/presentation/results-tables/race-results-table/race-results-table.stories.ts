@@ -32,7 +32,7 @@ export const Default: Story = {
 
 export const WithDNSRaceResult: Story = {
   args: {
-    results: [...PUBLISHED_RACES_MOCKS[0].results, { rank: 16, helm: 'Did Not Start', seriesEntryId: 'seriesEntry', competitorKey: 'seriesEntry', boatClass: 'Laser', sailNumber: 999, club: 'SBSC', finishTime: new Date('2024-05-01T12:00:00Z'), correctedTime: 99999, points: 16, resultCode: 'DNS', handicap: 1000, laps: 0, startTime: new Date('2024-05-01T12:00:00Z'), elapsedTime: 0, tags: [] }],
+    results: [...PUBLISHED_RACES_MOCKS[0].results, { rank: 16, helm: 'Did Not Start', seriesEntryId: 'seriesEntry', competitorKey: 'seriesEntry', boatClass: 'Laser', sailNumber: '999', club: 'SBSC', finishTime: new Date('2024-05-01T12:00:00Z'), correctedTime: 99999, points: 16, resultCode: 'DNS', handicap: 1000, laps: 0, startTime: new Date('2024-05-01T12:00:00Z'), elapsedTime: 0, tags: [] }],
     showBoatClass: true,
   },
 };

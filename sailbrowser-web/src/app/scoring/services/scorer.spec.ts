@@ -12,7 +12,7 @@ import { buildDncContext } from '../core/rules/dnc-context';
 
 interface CompetitorSeed {
   helm: string;
-  sailNumber: number;
+  sailNumber: string;
   finishTime?: Date;
   resultCode?: ResultCode;
 }
@@ -116,8 +116,8 @@ describe('score (Orchestrator)', () => {
   it('should score the first race and handle DNC points correctly when a new competitor joins later', () => {
     const race1 = createMockRace('race1', 0);
     const seeds1: CompetitorSeed[] = [
-      { helm: 'Helm 1', sailNumber: 101, finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
-      { helm: 'Helm 2', sailNumber: 102, finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
+      { helm: 'Helm 1', sailNumber: '101', finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
+      { helm: 'Helm 2', sailNumber: '102', finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
     ];
     const competitors1 = createMockCompetitors('race1', seeds1);
     let entries = buildSeriesEntries(seeds1);
@@ -131,14 +131,14 @@ describe('score (Orchestrator)', () => {
     ));
 
     let race1Result = scoredRaces.find(r => r.id === 'race1')!;
-    expect(race1Result.results.find(r => r.sailNumber === 101)?.points).toBe(1);
-    expect(race1Result.results.find(r => r.sailNumber === 102)?.points).toBe(2);
+    expect(race1Result.results.find(r => r.sailNumber === '101')?.points).toBe(1);
+    expect(race1Result.results.find(r => r.sailNumber === '102')?.points).toBe(2);
     expect(seriesResults.length).toBe(2);
 
     const race2 = createMockRace('race2', 1);
     const seeds2: CompetitorSeed[] = [
-      { helm: 'Helm 1', sailNumber: 101, finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
-      { helm: 'Helm 3', sailNumber: 103, finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
+      { helm: 'Helm 1', sailNumber: '101', finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
+      { helm: 'Helm 3', sailNumber: '103', finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
     ];
     const competitors2 = createMockCompetitors('race2', seeds2);
     entries = mergeEntries(entries, buildSeriesEntries(seeds2));
@@ -150,12 +150,12 @@ describe('score (Orchestrator)', () => {
 
     const dncPoints = 3 + 1;
 
-    const helm2SeriesResult = seriesResults.find(r => r.sailNumber === 102)!;
+    const helm2SeriesResult = seriesResults.find(r => r.sailNumber === '102')!;
     const helm2Race2Score = helm2SeriesResult.raceScores.find(rs => rs.raceIndex === 1)!;
     expect(helm2Race2Score.resultCode).toBe('DNC');
     expect(helm2Race2Score.points).toBe(dncPoints);
 
-    const helm3SeriesResult = seriesResults.find(r => r.sailNumber === 103)!;
+    const helm3SeriesResult = seriesResults.find(r => r.sailNumber === '103')!;
     const helm3Race1Score = helm3SeriesResult.raceScores.find(rs => rs.raceIndex === 0)!;
     expect(helm3Race1Score.resultCode).toBe('DNC');
     expect(helm3Race1Score.points).toBe(dncPoints);
@@ -164,8 +164,8 @@ describe('score (Orchestrator)', () => {
   it('should re-calculate SCP points when the number of series competitors changes', () => {
     const race1 = createMockRace('race1', 0);
     const seeds1: CompetitorSeed[] = [
-      { helm: 'Helm 1', sailNumber: 101, finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
-      { helm: 'Helm 2', sailNumber: 102, finishTime: new Date(new Date().getTime() + 11 * 60 * 1000), resultCode: 'SCP' },
+      { helm: 'Helm 1', sailNumber: '101', finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
+      { helm: 'Helm 2', sailNumber: '102', finishTime: new Date(new Date().getTime() + 11 * 60 * 1000), resultCode: 'SCP' },
     ];
     const competitors1 = createMockCompetitors('race1', seeds1);
     let entries = buildSeriesEntries(seeds1);
@@ -176,11 +176,11 @@ describe('score (Orchestrator)', () => {
     );
 
     let race1Result = scoredRaces.find(r => r.id === 'race1')!;
-    expect(race1Result.results.find(r => r.sailNumber === 102)?.points).toBe(3);
+    expect(race1Result.results.find(r => r.sailNumber === '102')?.points).toBe(3);
 
     const race2 = createMockRace('race2', 1);
     const seeds2: CompetitorSeed[] = [
-      { helm: 'Helm 3', sailNumber: 103, finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
+      { helm: 'Helm 3', sailNumber: '103', finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
     ];
     const competitors2 = createMockCompetitors('race2', seeds2);
     entries = mergeEntries(entries, buildSeriesEntries(seeds2));
@@ -191,14 +191,14 @@ describe('score (Orchestrator)', () => {
     ));
 
     race1Result = scoredRaces.find(r => r.id === 'race1')!;
-    expect(race1Result.results.find(r => r.sailNumber === 102)?.points).toBe(4);
+    expect(race1Result.results.find(r => r.sailNumber === '102')?.points).toBe(4);
   });
 
   it('should update race results with points calculated from series averages (e.g., RDGA), preserving the boat\'s finishing rank', () => {
     const race1 = createMockRace('race1', 0);
     const seeds1: CompetitorSeed[] = [
-      { helm: 'Helm 1', sailNumber: 101, finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
-      { helm: 'Helm 2', sailNumber: 102, finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
+      { helm: 'Helm 1', sailNumber: '101', finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
+      { helm: 'Helm 2', sailNumber: '102', finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
     ];
     const competitors1 = createMockCompetitors('race1', seeds1);
     let entries = buildSeriesEntries(seeds1);
@@ -215,8 +215,8 @@ describe('score (Orchestrator)', () => {
     // finishing position). Helm 2's rank must also stay at 2.
     const race2 = createMockRace('race2', 1);
     const seeds2: CompetitorSeed[] = [
-      { helm: 'Helm 1', sailNumber: 101, resultCode: 'RDGA', finishTime: new Date(new Date().getTime() + 8 * 60 * 1000) },
-      { helm: 'Helm 2', sailNumber: 102, finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
+      { helm: 'Helm 1', sailNumber: '101', resultCode: 'RDGA', finishTime: new Date(new Date().getTime() + 8 * 60 * 1000) },
+      { helm: 'Helm 2', sailNumber: '102', finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
     ];
     const competitors2 = createMockCompetitors('race2', seeds2);
     entries = mergeEntries(entries, buildSeriesEntries(seeds2));
@@ -227,8 +227,8 @@ describe('score (Orchestrator)', () => {
     ));
 
     const race2Result = scoredRaces.find(r => r.id === 'race2')!;
-    const helm101Race2Result = race2Result.results.find(res => res.sailNumber === 101)!;
-    const helm102Race2Result = race2Result.results.find(res => res.sailNumber === 102)!;
+    const helm101Race2Result = race2Result.results.find(res => res.sailNumber === '101')!;
+    const helm102Race2Result = race2Result.results.find(res => res.sailNumber === '102')!;
 
     // RDGA writeback overrides Helm 1's race 2 points with the series-average
     // value (2 = the only ISAF-pool race for Helm 1, race 1).
@@ -250,10 +250,10 @@ describe('score (Orchestrator)', () => {
     // a finisher's rank slot in race 1's results array.
     const race1 = createMockRace('race1', 0);
     const seeds1: CompetitorSeed[] = [
-      { helm: 'Helm 1', sailNumber: 101, finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
-      { helm: 'Helm 2', sailNumber: 102, finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
-      { helm: 'Helm 3', sailNumber: 103, finishTime: new Date(new Date().getTime() + 12 * 60 * 1000) },
-      { helm: 'Helm OOD', sailNumber: 104, resultCode: 'OOD' },
+      { helm: 'Helm 1', sailNumber: '101', finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
+      { helm: 'Helm 2', sailNumber: '102', finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
+      { helm: 'Helm 3', sailNumber: '103', finishTime: new Date(new Date().getTime() + 12 * 60 * 1000) },
+      { helm: 'Helm OOD', sailNumber: '104', resultCode: 'OOD' },
     ];
     const competitors1 = createMockCompetitors('race1', seeds1);
     let entries = buildSeriesEntries(seeds1);
@@ -264,16 +264,16 @@ describe('score (Orchestrator)', () => {
     );
 
     let race1Result = scoredRaces.find(r => r.id === 'race1')!;
-    let oodInRace1 = race1Result.results.find(r => r.sailNumber === 104)!;
+    let oodInRace1 = race1Result.results.find(r => r.sailNumber === '104')!;
 
     expect(oodInRace1.rank).toBe(0);
-    expect(race1Result.results[race1Result.results.length - 1].sailNumber).toBe(104);
+    expect(race1Result.results[race1Result.results.length - 1].sailNumber).toBe('104');
 
     // Add race 2 - helm OOD now actually sails and finishes ahead of helm 1.
     const race2 = createMockRace('race2', 1);
     const seeds2: CompetitorSeed[] = [
-      { helm: 'Helm 1', sailNumber: 101, finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
-      { helm: 'Helm OOD', sailNumber: 104, finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
+      { helm: 'Helm 1', sailNumber: '101', finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
+      { helm: 'Helm OOD', sailNumber: '104', finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
     ];
     const competitors2 = createMockCompetitors('race2', seeds2);
     entries = mergeEntries(entries, buildSeriesEntries(seeds2));
@@ -286,19 +286,19 @@ describe('score (Orchestrator)', () => {
     // Re-fetch race 1; scorer.ts step 4 writes back the recomputed OOD pool
     // average to race 1's helm 104 results row.
     race1Result = scoredRaces.find(r => r.id === 'race1')!;
-    oodInRace1 = race1Result.results.find(r => r.sailNumber === 104)!;
+    oodInRace1 = race1Result.results.find(r => r.sailNumber === '104')!;
 
     expect(oodInRace1.resultCode).toBe('OOD');
     expect(oodInRace1.rank).toBe(0);
     // Most importantly: OOD remains the last entry in the array (UI order).
-    expect(race1Result.results[race1Result.results.length - 1].sailNumber).toBe(104);
+    expect(race1Result.results[race1Result.results.length - 1].sailNumber).toBe('104');
 
     // Real finishers in race 1 keep their original ranks; no rank slot is
     // consumed by the OOD entry even though its points may now coincide
     // with a real finisher's points.
-    const r101 = race1Result.results.find(r => r.sailNumber === 101)!;
-    const r102 = race1Result.results.find(r => r.sailNumber === 102)!;
-    const r103 = race1Result.results.find(r => r.sailNumber === 103)!;
+    const r101 = race1Result.results.find(r => r.sailNumber === '101')!;
+    const r102 = race1Result.results.find(r => r.sailNumber === '102')!;
+    const r103 = race1Result.results.find(r => r.sailNumber === '103')!;
     expect(r101.rank).toBe(1);
     expect(r102.rank).toBe(2);
     expect(r103.rank).toBe(3);
@@ -312,10 +312,10 @@ describe('score (Orchestrator)', () => {
     // never-raced competitor would get DNC = 5 and this test would fail.
     const race1 = createMockRace('race1', 0);
     const seeds1: CompetitorSeed[] = [
-      { helm: 'Helm 1', sailNumber: 101, finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
-      { helm: 'Helm 2', sailNumber: 102, finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
-      { helm: 'Helm 3', sailNumber: 103, finishTime: new Date(new Date().getTime() + 12 * 60 * 1000) },
-      { helm: 'Helm OOD', sailNumber: 104, resultCode: 'OOD' },
+      { helm: 'Helm 1', sailNumber: '101', finishTime: new Date(new Date().getTime() + 10 * 60 * 1000) },
+      { helm: 'Helm 2', sailNumber: '102', finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
+      { helm: 'Helm 3', sailNumber: '103', finishTime: new Date(new Date().getTime() + 12 * 60 * 1000) },
+      { helm: 'Helm OOD', sailNumber: '104', resultCode: 'OOD' },
     ];
     const competitors1 = createMockCompetitors('race1', seeds1);
     const entries = buildSeriesEntries(seeds1);
@@ -338,7 +338,7 @@ describe('score (Orchestrator)', () => {
     // visible in the series results for the helms who didn't sail it.
     const race2 = createMockRace('race2', 1);
     const seeds2: CompetitorSeed[] = [
-      { helm: 'Helm 5', sailNumber: 105, finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
+      { helm: 'Helm 5', sailNumber: '105', finishTime: new Date(new Date().getTime() + 11 * 60 * 1000) },
     ];
     const competitors2 = createMockCompetitors('race2', seeds2);
     const allEntries = mergeEntries(entries, buildSeriesEntries(seeds2));
@@ -367,13 +367,13 @@ describe('score (Orchestrator)', () => {
 
     // Helm 5 didn't sail race 1 -> DNC for race 1 must reflect the
     // OOD-excluded count (4), not 5.
-    const helm5SeriesResult = seriesResults.find(r => r.sailNumber === 105)!;
+    const helm5SeriesResult = seriesResults.find(r => r.sailNumber === '105')!;
     const helm5Race1 = helm5SeriesResult.raceScores.find(rs => rs.raceIndex === 0)!;
     expect(helm5Race1.resultCode).toBe('DNC');
     expect(helm5Race1.points).toBe(4);
 
     // Helms 1-3 didn't sail race 2 -> they also get DNC = 4 there.
-    for (const sn of [101, 102, 103]) {
+    for (const sn of ['101', '102', '103']) {
       const helm = seriesResults.find(r => r.sailNumber === sn)!;
       const race2Score = helm.raceScores.find(rs => rs.raceIndex === 1)!;
       expect(race2Score.resultCode).toBe('DNC');

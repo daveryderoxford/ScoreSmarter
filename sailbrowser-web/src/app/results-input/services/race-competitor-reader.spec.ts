@@ -46,7 +46,7 @@ function minimalEntry(overrides: Partial<SeriesEntry> & Pick<SeriesEntry, 'id'>)
     seriesId: 's1',
     helm: 'A',
     boatClass: 'ILCA 7',
-    sailNumber: 1,
+    sailNumber: '1',
     handicaps: [],
     tags: [],
     ...overrides,
@@ -105,8 +105,8 @@ describe('RaceCompetitorReader', () => {
     ]);
     fakeEntries.setEntries([
       minimalEntry({ id: 'e1' }),
-      minimalEntry({ id: 'e2', sailNumber: 2 }),
-      minimalEntry({ id: 'e3', sailNumber: 3 }),
+      minimalEntry({ id: 'e2', sailNumber: '2' }),
+      minimalEntry({ id: 'e3', sailNumber: '3' }),
     ]);
     const byFilter = resolveRaceCompetitors(
       fakeComps.selectedCompetitors().filter(c => c.raceId === 'r1'),
