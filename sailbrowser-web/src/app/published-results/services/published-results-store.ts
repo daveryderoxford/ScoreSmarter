@@ -2,7 +2,6 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { collectionData, docData, query, orderBy, getDoc } from '@angular/fire/firestore';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { of, combineLatest, map } from 'rxjs';
-import { normalizeSailNumber } from 'app/boats/model/sail-number';
 import { PublishedSeason } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
 import { PublishedRace } from '../model/published-race';
@@ -13,10 +12,9 @@ function coercePublishedSeries(series: PublishedSeries | undefined): PublishedSe
   if (!series) return series;
   return {
     ...series,
-    competitors: series.competitors.map(c => ({
-      ...(Array.isArray(c.tags) ? c : { ...c, tags: [] }),
-      sailNumber: normalizeSailNumber(c.sailNumber),
-    })),
+    competitors: series.competitors.map(c =>
+      Array.isArray(c.tags) ? c : { ...c, tags: [] },
+    ),
     tagDefinitions: Array.isArray(series.tagDefinitions) ? series.tagDefinitions : [],
   };
 }
@@ -24,10 +22,9 @@ function coercePublishedSeries(series: PublishedSeries | undefined): PublishedSe
 function coercePublishedRace(race: PublishedRace): PublishedRace {
   return {
     ...race,
-    results: race.results.map(r => ({
-      ...(Array.isArray(r.tags) ? r : { ...r, tags: [] }),
-      sailNumber: normalizeSailNumber(r.sailNumber),
-    })),
+    results: race.results.map(r =>
+      Array.isArray(r.tags) ? r : { ...r, tags: [] },
+    ),
     tagDefinitions: Array.isArray(race.tagDefinitions) ? race.tagDefinitions : [],
   };
 }

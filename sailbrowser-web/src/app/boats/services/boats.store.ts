@@ -20,7 +20,7 @@ export class BoatsStore {
   private readonly boatsResource = rxResource<Boat[], null>({
     stream: (): Observable<Boat[]> =>
       collectionData(this.boatsCollection, { idField: 'id' }).pipe(
-        map(boats => boats.map(coerceBoat).sort(boatsSort)),
+        map(boats => boats.map(ensureBoatTags).sort(boatsSort)),
     ),
     defaultValue: [],
   });
@@ -74,14 +74,10 @@ export class BoatsStore {
   }
 }
 
-/** Normalises wire data (legacy numeric sail numbers, missing tags). */
-function coerceBoat(boat: Boat): Boat {
-  const coerced: Boat = {
-    ...boat,
-    sailNumber: normalizeSailNumber(boat.sailNumber),
-  };
-  if (Array.isArray(boat.tags)) return coerced;
-  return { ...coerced, tags: [] };
+/** Ensures missing tags default to an empty array. */
+function ensureBoatTags(boat: Boat): Boat {
+  if (Array.isArray(boat.tags)) return boat;
+  return { ...boat, tags: [] };
 }
 
 /** Sort boats by sail number then class */

@@ -29,7 +29,6 @@ export interface ScanErrorDetails {
 export interface SeriesEntryDoc {
   helm?: string;
   boatClass?: string;
-  /** Canonical string form (legacy Firestore numeric values are coerced on read). */
   sailNumber?: string;
 }
 

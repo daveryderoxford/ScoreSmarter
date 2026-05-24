@@ -55,7 +55,7 @@ export class SeriesEntryStore {
   async getSeriesEntries(seriesId: string): Promise<SeriesEntry[]> {
     const q = query(this.collection, where('seriesId', '==', seriesId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => coerceEntry({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map(doc => ensureEntryTags({ ...doc.data(), id: doc.id }));
   }
 
   /**
@@ -65,7 +65,7 @@ export class SeriesEntryStore {
   async getSeriesEntry(id: string): Promise<SeriesEntry | null> {
     const snapshot = await getDoc(this.ref(id));
     if (!snapshot.exists()) return null;
-    return coerceEntry({ ...snapshot.data(), id: snapshot.id });
+    return ensureEntryTags({ ...snapshot.data(), id: snapshot.id });
   }
 
   private readonly selectedSeriesIds = computed(() => this.currentRaces.selectedSeries().map(s => s.id));
@@ -83,7 +83,7 @@ export class SeriesEntryStore {
           where('seriesId', 'in', selectedIds)
         );
         return collectionData(q, { idField: 'id' }).pipe(
-          map(entries => entries.map(coerceEntry).sort(sortEntries)),
+          map(entries => entries.map(ensureEntryTags).sort(sortEntries)),
           tap(entries => console.log(`SeriesEntryStore. Loaded ${entries.length} entries`))
         );
       }
@@ -147,14 +147,10 @@ export class SeriesEntryStore {
   }
 }
 
-/** Normalises wire data (legacy numeric sail numbers, missing tags). */
-function coerceEntry(entry: SeriesEntry): SeriesEntry {
-  const coerced: SeriesEntry = {
-    ...entry,
-    sailNumber: normalizeSailNumber(entry.sailNumber),
-  };
-  if (Array.isArray(entry.tags)) return coerced;
-  return { ...coerced, tags: [] };
+/** Ensures missing tags default to an empty array. */
+function ensureEntryTags(entry: SeriesEntry): SeriesEntry {
+  if (Array.isArray(entry.tags)) return entry;
+  return { ...entry, tags: [] };
 }
 
 /** Sort entries by boat class and sail number */

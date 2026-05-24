@@ -31,30 +31,12 @@ function normalizeScannerTimeFormat(value: unknown): ScannerTimeFormat {
   return "clock_hms";
 }
 
-/** Matches sailbrowser-web `normalizeSailNumber` (country prefix uppercased). */
-function normalizeSailNumberForRoster(raw: unknown): string {
-  if (raw == null) return "";
-  let text: string;
-  if (typeof raw === "number") {
-    if (!Number.isFinite(raw)) return "";
-    text = String(Math.trunc(raw));
-  } else {
-    text = String(raw);
-  }
-  const compact = text.trim().replace(/\s+/g, "");
-  if (!compact) return "";
-  const digitIndex = compact.search(/\d/);
-  if (digitIndex < 0) return compact.toUpperCase();
-  return compact.slice(0, digitIndex).toUpperCase() + compact.slice(digitIndex);
-}
-
-/** Coerce Firestore series-entry wire data to {@link SeriesEntryDoc} (string sail numbers). */
-function coerceSeriesEntryDoc(raw: DocumentData): SeriesEntryDoc {
-  const sail = normalizeSailNumberForRoster(raw["sailNumber"]);
+function seriesEntryFromDoc(raw: DocumentData): SeriesEntryDoc {
+  const sail = raw["sailNumber"];
   return {
     helm: typeof raw["helm"] === "string" ? raw["helm"] : undefined,
     boatClass: typeof raw["boatClass"] === "string" ? raw["boatClass"] : undefined,
-    sailNumber: sail || undefined,
+    sailNumber: typeof sail === "string" && sail.length > 0 ? sail : undefined,
   };
 }
 
@@ -119,7 +101,7 @@ async function getRaceCompetitors(
   const entryById = new Map<string, SeriesEntryDoc>();
   for (const snap of entrySnaps) {
     if (snap.exists) {
-      entryById.set(snap.id, coerceSeriesEntryDoc(snap.data() ?? {}));
+      entryById.set(snap.id, seriesEntryFromDoc(snap.data() ?? {}));
     }
   }
 
