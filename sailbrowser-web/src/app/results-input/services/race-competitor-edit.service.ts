@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { sailNumbersEqual } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
 import { resolveHandicapsForSeries } from 'app/entry/services/entry-helpers';
 import { RaceCalendarStore, Series } from 'app/race-calender';
@@ -26,7 +27,7 @@ export interface ChangeEnteredCompetitorCommand {
   competitorId: string;
   helm: string;
   boatClass: string;
-  sailNumber: number;
+  sailNumber: string;
 }
 
 export interface RaceResultDataCommand {
@@ -73,7 +74,7 @@ export class RaceCompetitorEditService {
     if (
       entry.helm === helm &&
       entry.boatClass === boatClass &&
-      entry.sailNumber === sailNumber
+      sailNumbersEqual(entry.sailNumber, sailNumber)
     ) {
       return;
     }

@@ -5,7 +5,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 export type DuplicateSailPlacementChoice = 'tie' | 'next' | 'cancel';
 
 export interface DuplicateSailPlacementDialogData {
-  sailNumber: number;
+  sailNumber: string;
   existingHelm: string;
   existingBoatClass: string;
   existingRankLabel: string;

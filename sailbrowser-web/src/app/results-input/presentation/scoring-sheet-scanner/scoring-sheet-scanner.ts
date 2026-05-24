@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BoatsStore } from 'app/boats';
+import { normalizeSailNumber, sailNumbersEqual } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { getFleetName } from 'app/club-tenant/model/fleet';
@@ -265,10 +266,10 @@ export class ScoringSheetScanner {
   readonly isMockScanMode = computed(() => this.scannerOrchestration.isMockMode(this.route.snapshot.queryParamMap.get('mockScan')));
   private findBoatMatches(row: ScannedResultRow) {
     const boatClass = row.boatClass?.value?.trim();
-    const sailNumber = Number(row.sailNumber?.value);
-    if (!boatClass || !Number.isFinite(sailNumber)) return [];
+    const sailNumber = normalizeSailNumber(row.sailNumber?.value);
+    if (!boatClass || !sailNumber) return [];
     return this.boatsStore.boats().filter(
-      b => b.boatClass.toLowerCase() === boatClass.toLowerCase() && Number(b.sailNumber) === sailNumber,
+      b => b.boatClass.toLowerCase() === boatClass.toLowerCase() && sailNumbersEqual(b.sailNumber, sailNumber),
     );
   }
 
@@ -514,12 +515,12 @@ export class ScoringSheetScanner {
     return date;
   }
 
-  private refreshScanRowMatch(row: ScannedResultRow, boatClass: string, sailNumber: number, helm?: string): void {
+  private refreshScanRowMatch(row: ScannedResultRow, boatClass: string, sailNumber: string, helm?: string): void {
     const raceId = this.form.value.raceId;
     if (!raceId) return;
     const match = this.competitorReader.resolvedForRace(raceId).find(r => {
       const classMatch = r.boatClass.toLowerCase() === boatClass.toLowerCase();
-      const sailMatch = r.sailNumber === sailNumber;
+      const sailMatch = sailNumbersEqual(r.sailNumber, sailNumber);
       const helmMatch = !helm || r.helm.toLowerCase() === helm.toLowerCase();
       return classMatch && sailMatch && helmMatch;
     });
@@ -533,11 +534,11 @@ export class ScoringSheetScanner {
   async openKnownBoatEntry(row: ScannedResultRow): Promise<void> {
     const raceId = this.form.value.raceId;
     const boatClass = row.boatClass?.value?.trim();
-    const sailNumber = Number(row.sailNumber?.value);
-    if (!raceId || !boatClass || !Number.isFinite(sailNumber)) return;
+    const sailNumber = normalizeSailNumber(row.sailNumber?.value);
+    if (!raceId || !boatClass || !sailNumber) return;
 
     const matches = this.boatsStore.boats().filter(
-      b => b.boatClass.toLowerCase() === boatClass.toLowerCase() && Number(b.sailNumber) === sailNumber,
+      b => b.boatClass.toLowerCase() === boatClass.toLowerCase() && sailNumbersEqual(b.sailNumber, sailNumber),
     );
     if (matches.length === 0) {
       await this.openUnmatchedRowEntry(row);
@@ -558,8 +559,8 @@ export class ScoringSheetScanner {
   async openUnmatchedRowEntry(row: ScannedResultRow): Promise<void> {
     const raceId = this.form.value.raceId;
     const boatClass = row.boatClass?.value?.trim();
-    const sailNumber = Number(row.sailNumber?.value);
-    if (!raceId || !boatClass || !Number.isFinite(sailNumber)) return;
+    const sailNumber = normalizeSailNumber(row.sailNumber?.value);
+    if (!raceId || !boatClass || !sailNumber) return;
 
     const dialogRef = this.dialog.open(UnmatchedRowEntryDialog, {
       width: '420px',

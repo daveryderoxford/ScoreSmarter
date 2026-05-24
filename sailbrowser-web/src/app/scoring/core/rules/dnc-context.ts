@@ -61,7 +61,7 @@ export function buildDncContext(args: {
           competitorKey: result.competitorKey,
           rank: UNRANKED_RACE_RANK,
           boatClass: '',
-          sailNumber: 0,
+          sailNumber: '',
           helm: '',
           crew: '',
           club: '',

@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import type { Boat } from 'app/boats';
+import { normalizeSailNumber, sailNumberValidator } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
 import type { Handicap } from 'app/scoring/model/handicap';
 import { type PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
@@ -65,7 +66,7 @@ export class NewBoatDialog {
 
   readonly form: FormGroup = this.fb.group({
     boatClass: ['', Validators.required],
-    sailNumber: [null as number | null, [Validators.required, Validators.min(1)]],
+    sailNumber: ['', [Validators.required, sailNumberValidator]],
     name: [''],
     helm: ['', Validators.required],
     crew: [''],
@@ -105,7 +106,7 @@ export class NewBoatDialog {
 
     const boat: Partial<Boat> = {
       boatClass: String(raw['boatClass'] ?? '').trim(),
-      sailNumber: Number(raw['sailNumber']),
+      sailNumber: normalizeSailNumber(raw['sailNumber']),
       name: String(raw['name'] ?? '').trim(),
       helm: String(raw['helm'] ?? '').trim(),
       crew: String(raw['crew'] ?? '').trim(),

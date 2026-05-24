@@ -1,3 +1,4 @@
+import { compareSailNumbers, type SailNumber } from 'app/boats/model/sail-number';
 import { Handicap } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
@@ -42,7 +43,7 @@ export class ResolvedRaceCompetitor extends RaceCompetitor {
     return this.entry.boatClass;
   }
 
-  get sailNumber(): number {
+  get sailNumber(): SailNumber {
     return this.entry.sailNumber;
   }
 
@@ -100,5 +101,5 @@ export function sortResolvedCompetitors(
   if (classCompare !== 0) {
     return classCompare;
   }
-  return a.sailNumber - b.sailNumber;
+  return compareSailNumbers(a.sailNumber, b.sailNumber);
 }

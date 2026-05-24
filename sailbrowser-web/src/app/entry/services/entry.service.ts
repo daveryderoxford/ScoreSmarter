@@ -28,7 +28,7 @@ export interface EntryDetails {
   helm: string;
   crew?: string;
   boatClass: string;
-  sailNumber: number;
+  sailNumber: string;
   handicaps?: Handicap[];
   personalHandicapBand?: PersonalHandicapBand;
   /**

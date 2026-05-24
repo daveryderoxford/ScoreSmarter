@@ -1,3 +1,4 @@
+import type { SailNumber } from 'app/boats/model/sail-number';
 import { RaceType } from '../../race-calender/model/race-type';
 import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
 import type { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
@@ -39,7 +40,7 @@ export interface RaceResult {
    rank: number;
    club?: string;
    boatClass: string;
-   sailNumber: number;
+   sailNumber: SailNumber;
    helm: string;
    crew?: string;
    handicap: number;

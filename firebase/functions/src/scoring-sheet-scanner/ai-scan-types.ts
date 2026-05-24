@@ -29,7 +29,7 @@ export interface ScanErrorDetails {
 export interface SeriesEntryDoc {
   helm?: string;
   boatClass?: string;
-  sailNumber?: number;
+  sailNumber?: string | number;
 }
 
 export interface RaceCompetitorDoc {

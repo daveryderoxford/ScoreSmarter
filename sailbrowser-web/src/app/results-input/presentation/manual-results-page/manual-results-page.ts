@@ -1,6 +1,7 @@
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { afterNextRender, ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, linkedSignal, signal, untracked, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { MatBadge } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -25,11 +26,9 @@ import { HandicapInputPanel } from '../handicap/handicap-input-panel/handicap-in
 import { HandicapResultsTable } from '../handicap/handicap-results-table/handicap-results-table';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../handicap/race-start-time-dialog';
 import { PositionBasedInputPanel } from '../position-based/position-based-input-panel/position-based-input-panel';
-import { MatBadge } from '@angular/material/badge';
 
 const SHEET_POPUP_NAME = 'scoring-sheet';
 const SHEET_POPUP_FEATURES = 'popup,width=720,height=900';
-const SHEET_POPUP_POLL_MS = 750;
 
 @Component({
   selector: 'app-manual-results-page',
@@ -71,10 +70,10 @@ export class ManualResultsPage {
   readonly raceId = input<string>();
 
   /** Scoring sheet race selection (MVP: at most one id). */
-  private readonly scoringSheetRaceIds = signal<string[]>([]);
+  private readonly raceIds = signal<string[]>([]);
 
   readonly selectedRace = computed((): Race | undefined => {
-    const id = this.scoringSheetRaceIds()[0];
+    const id = this.raceIds()[0];
     if (!id) return undefined;
     return this.raceCalendarStore.allRaces().find(r => r.id === id);
   });
@@ -106,46 +105,46 @@ export class ManualResultsPage {
     { initialValue: false },
   );
 
-  /** Reference to the pop-out window currently showing the scoring sheet (null when none). */
-  private readonly sheetWindowRef = signal<Window | null>(null);
+  /** Reference to the pop-out window currently showing the scoring sheet image (null when none). */
+  private readonly imageWindowRef = signal<Window | null>(null);
   /** True while the scoring-sheet pop-out window is open; used to colour the toolbar toggle. */
-  protected readonly sheetWindowOpen = computed(() => this.sheetWindowRef() !== null);
+  protected readonly imageWindowOpen = computed(() => this.imageWindowRef() !== null);
   /** Resolved download URL for the selected race's `resultsSheetImage`. */
   private readonly sheetImageUrl = signal<string | null>(null);
   private sheetImageResolveVersion = 0;
-  private sheetWindowPollTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     effect(() => {
       const id = this.raceId();
       if (!id) return;
       untracked(() => {
-        if (this.scoringSheetRaceIds()[0] !== id) {
-          this.scoringSheetRaceIds.set([id]);
+        if (this.raceIds()[0] !== id) {
+          this.raceIds.set([id]);
           this.currentRacesStore.addRaceId(id);
         }
       });
     });
 
+    // Open the scoring sheet when screen is displayed with no 
+    // statr time selected
     afterNextRender(() => {
       setTimeout(() => {
-        if (!this.raceId() && this.scoringSheetRaceIds().length === 0) {
-          void this.openScoringSheetRacePicker();
+        if (!this.raceId() && this.raceIds().length === 0) {
+          void this.openRaceDialog();
         }
       }, 0);
     });
 
-    // Close any open pop-out and re-resolve the sheet image whenever the selected race changes.
+    // Close any open pop-out and re-resolve the sheet image 
+    // whenever the selected race changes.
     effect(() => {
       const race = this.selectedRace();
       const path = race?.resultsSheetImage?.trim() ?? '';
       untracked(() => {
-        this.closeSheetWindow();
         void this.refreshSheetImageUrl(path);
       });
     });
 
-    this.destroyRef.onDestroy(() => this.closeSheetWindow());
   }
 
   private async refreshSheetImageUrl(path: string): Promise<void> {
@@ -165,15 +164,15 @@ export class ManualResultsPage {
     }
   }
 
-  async openScoringSheet(): Promise<void> {
+  async openImageWindow(): Promise<void> {
     const race = this.selectedRace();
     if (!race) return;
 
     // If a popup is already open (named window), refocus it instead of doing
     // anything else - clicking the toolbar button should behave like any other
     // "open" action.
-    if (this.sheetWindowOpen()) {
-      try { this.sheetWindowRef()?.focus(); } catch { /* ignore */ }
+    if (this.imageWindowOpen()) {
+      try { this.imageWindowRef()?.focus(); } catch { /* ignore */ }
       return;
     }
 
@@ -184,7 +183,7 @@ export class ManualResultsPage {
         await this.refreshSheetImageUrl(race.resultsSheetImage.trim());
         url = this.sheetImageUrl();
       }
-      if (url) this.openSheetWindow(url);
+      if (url) this.openBrowserWindow(url);
       return;
     }
 
@@ -197,7 +196,7 @@ export class ManualResultsPage {
     if (!result) return;
     await this.refreshSheetImageUrl(result.storagePath);
     const url = this.sheetImageUrl();
-    if (url) this.openSheetWindow(url);
+    if (url) this.openBrowserWindow(url);
   }
 
   /**
@@ -208,10 +207,9 @@ export class ManualResultsPage {
    * gesture), surface a snackbar with an "Open" action so the next click is
    * itself a fresh user gesture the popup blocker will allow through.
    */
-  private openSheetWindow(url: string): void {
-    const win = this.tryOpenSheetWindow(url);
+  private openBrowserWindow(url: string): void {
+    const win = this.tryOpenWindow(url);
     if (win) {
-      this.adoptSheetWindow(win);
       return;
     }
     const ref = this.snackbar.open(
@@ -220,14 +218,11 @@ export class ManualResultsPage {
       { duration: 8000 },
     );
     ref.onAction().subscribe(() => {
-      const retry = this.tryOpenSheetWindow(url);
-      if (retry) {
-        this.adoptSheetWindow(retry);
-      }
+       this.tryOpenWindow(url);
     });
   }
 
-  private tryOpenSheetWindow(url: string): Window | null {
+  private tryOpenWindow(url: string): Window | null {
     const features = this.isMobile() ? undefined : SHEET_POPUP_FEATURES;
     try {
       const popup = window.open(url, SHEET_POPUP_NAME, features);
@@ -239,43 +234,8 @@ export class ManualResultsPage {
     }
   }
 
-  private adoptSheetWindow(win: Window): void {
-    try { win.focus(); } catch { /* ignore */ }
-    this.sheetWindowRef.set(win);
-    this.startSheetWindowPolling();
-  }
-
-  /** Closes the pop-out (if any) and clears the tracked reference. */
-  private closeSheetWindow(): void {
-    const win = this.sheetWindowRef();
-    if (win && !win.closed) {
-      try { win.close(); } catch { /* ignore */ }
-    }
-    this.sheetWindowRef.set(null);
-    this.stopSheetWindowPolling();
-  }
-
-  /** Polls the popup's `closed` flag so we can clear our reference when the user closes it externally. */
-  private startSheetWindowPolling(): void {
-    this.stopSheetWindowPolling();
-    this.sheetWindowPollTimer = setInterval(() => {
-      const win = this.sheetWindowRef();
-      if (!win || win.closed) {
-        this.sheetWindowRef.set(null);
-        this.stopSheetWindowPolling();
-      }
-    }, SHEET_POPUP_POLL_MS);
-  }
-
-  private stopSheetWindowPolling(): void {
-    if (this.sheetWindowPollTimer !== null) {
-      clearInterval(this.sheetWindowPollTimer);
-      this.sheetWindowPollTimer = null;
-    }
-  }
-
-  async openScoringSheetRacePicker(): Promise<void> {
-    const preselected = this.scoringSheetRaceIds()[0];
+  async openRaceDialog(): Promise<void> {
+    const preselected = this.raceIds()[0];
     const dialogRef = this.dialog.open<RacePickerDialog, RacePickerDialogData, string[] | undefined>(RacePickerDialog, {
       width: 'min(92vw, 440px)',
       maxHeight: '90vh',
@@ -292,12 +252,12 @@ export class ManualResultsPage {
     const id = result?.[0];
     if (id) {
       this.currentRacesStore.addRaceId(id);
-      this.scoringSheetRaceIds.set([id]);
+      this.raceIds.set([id]);
     }
   }
 
-  clearScoringSheetRace(): void {
-    this.scoringSheetRaceIds.set([]);
+  clearRace(): void {
+    this.raceIds.set([]);
   }
 
   async addEntryForSelectedRace(): Promise<void> {
@@ -345,7 +305,6 @@ export class ManualResultsPage {
 
     return result;
   }
-
   async publish() {
     if (this.selectedRace() && !this.publishing()) {
       const race = this.selectedRace()!;

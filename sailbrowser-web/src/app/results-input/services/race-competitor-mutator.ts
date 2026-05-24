@@ -13,6 +13,7 @@
  */
 import { inject, Injectable } from '@angular/core';
 import { Firestore, setDoc, writeBatch } from '@angular/fire/firestore';
+import { sailNumbersEqual } from 'app/boats/model/sail-number';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Handicap } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
@@ -64,7 +65,7 @@ export interface CreateSeriesEntryInput {
   seriesId: string;
   helm: string;
   boatClass: string;
-  sailNumber: number;
+  sailNumber: string;
   club?: string;
   crew?: string;
   handicaps: Handicap[];
@@ -120,7 +121,7 @@ function seriesEntriesEqual(a: SeriesEntry, b: SeriesEntry): boolean {
     (a.crew ?? '') === (b.crew ?? '') &&
     (a.club ?? '') === (b.club ?? '') &&
     a.boatClass === b.boatClass &&
-    a.sailNumber === b.sailNumber &&
+    sailNumbersEqual(a.sailNumber, b.sailNumber) &&
     (a.personalHandicapBand ?? null) === (b.personalHandicapBand ?? null) &&
     handicapListsEqual(a.handicaps, b.handicaps) &&
     tagListsEqual(a.tags, b.tags)
@@ -243,7 +244,7 @@ export class RaceCompetitorMutator {
     const identityChanged =
       previous.helm !== next.helm ||
       previous.boatClass !== next.boatClass ||
-      previous.sailNumber !== next.sailNumber;
+      !sailNumbersEqual(previous.sailNumber, next.sailNumber);
 
     if (identityChanged) {
       const proposed: PerHullIdentity = {
@@ -354,6 +355,6 @@ export class RaceCompetitorMutator {
 }
 
 /** Identifier helper retained for callers that need to mint ids outside the mutator. */
-export function generateSeriesEntryId(boatClass: string, sailNumber: number): string {
+export function generateSeriesEntryId(boatClass: string, sailNumber: string): string {
   return generateSecureID(10000, `SE-${boatClass}-${sailNumber}`);
 }

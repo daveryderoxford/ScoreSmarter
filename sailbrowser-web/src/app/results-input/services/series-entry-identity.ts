@@ -1,3 +1,4 @@
+import { sailNumbersEqual } from 'app/boats/model/sail-number';
 import { SeriesEntry } from '../model/series-entry';
 import type { SeriesEntryMatchingStrategy } from 'app/entry/model/entry-grouping';
 
@@ -9,7 +10,7 @@ import type { SeriesEntryMatchingStrategy } from 'app/entry/model/entry-grouping
  */
 export interface PerHullIdentity {
   boatClass: string;
-  sailNumber: number;
+  sailNumber: string;
   helm: string;
 }
 
@@ -18,7 +19,7 @@ const norm = (s: string | undefined): string => (s ?? '').trim().toLowerCase();
 export function entriesMatchIdentity(a: PerHullIdentity, b: PerHullIdentity): boolean {
   return (
     norm(a.boatClass) === norm(b.boatClass) &&
-    a.sailNumber === b.sailNumber &&
+    sailNumbersEqual(a.sailNumber, b.sailNumber) &&
     norm(a.helm) === norm(b.helm)
   );
 }
@@ -70,7 +71,7 @@ export type EntryConflictReason =
   | 'sameHelmDifferentHull';
 
 const sameHull = (a: PerHullIdentity, b: PerHullIdentity): boolean =>
-  norm(a.boatClass) === norm(b.boatClass) && a.sailNumber === b.sailNumber;
+  norm(a.boatClass) === norm(b.boatClass) && sailNumbersEqual(a.sailNumber, b.sailNumber);
 
 const sameHelm = (a: PerHullIdentity, b: PerHullIdentity): boolean =>
   norm(a.helm) === norm(b.helm);

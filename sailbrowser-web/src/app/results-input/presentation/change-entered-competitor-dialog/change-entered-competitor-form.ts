@@ -19,6 +19,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { ClubStore } from 'app/club-tenant';
+import { normalizeSailNumber, sailNumberValidator } from 'app/boats/model/sail-number';
+import { SailNumberInput } from 'app/boats/presentation/sail-number-input';
 import { seriesEntryMatchingStrategys } from 'app/entry/model/entry-grouping';
 import { Series } from 'app/race-calender/model/series';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
@@ -33,6 +35,7 @@ import { SubmitButton } from 'app/shared/components/submit-button';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    SailNumberInput,
     SubmitButton,
   ],
   templateUrl: './change-entered-competitor-form.html',
@@ -54,8 +57,9 @@ export class ChangeEnteredCompetitorForm implements OnInit {
   readonly form = this.fb.group({
     helm: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     boatClass: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    sailNumber: new FormControl<number | null>(null, {
-      validators: [Validators.required, Validators.min(1), Validators.pattern(/^[0-9]+$/)],
+    sailNumber: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, sailNumberValidator],
     }),
   });
 
@@ -111,7 +115,7 @@ export class ChangeEnteredCompetitorForm implements OnInit {
       competitorId: this.competitor().id,
       helm: v.helm,
       boatClass: v.boatClass,
-      sailNumber: Number(v.sailNumber),
+      sailNumber: normalizeSailNumber(v.sailNumber),
     });
   }
 

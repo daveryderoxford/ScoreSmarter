@@ -25,6 +25,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { Race } from 'app/race-calender';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
+import { sailNumberMatchesSearch, sailNumbersEqual } from 'app/boats/model/sail-number';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { firstValueFrom, map } from 'rxjs';
 import {
@@ -256,11 +257,13 @@ export class PositionBasedInputPanel implements AfterViewInit {
   /** Unique sail number among remaining (Enter commits even if keyword also matches others) */
   readonly exactSailMatchId = computed(() => {
     const raw = this.searchText().trim();
-    if (!raw || !/^\d+$/.test(raw)) {
+    if (!raw) {
       return undefined;
     }
-    const n = Number(raw);
-    const matches = this.orderQueue().remainingIds.filter(id => this.compById().get(id)?.sailNumber === n);
+    const matches = this.orderQueue().remainingIds.filter(id => {
+      const c = this.compById().get(id);
+      return c && sailNumberMatchesSearch(c.sailNumber, raw);
+    });
     return matches.length === 1 ? matches[0] : undefined;
   });
 
@@ -389,12 +392,12 @@ export class PositionBasedInputPanel implements AfterViewInit {
   }
 
   /** Competitor ids in the placings segment with the given sail number. */
-  findPlacedIdsBySailNumber(sail: number): string[] {
+  findPlacedIdsBySailNumber(sail: string): string[] {
     const { placed } = segmentProcessedPlacedAndNonPlaced(
       this.orderQueue().processedIds,
       this.orderQueue().rowState,
     );
-    return placed.filter(id => this.compById().get(id)?.sailNumber === sail);
+    return placed.filter(id => sailNumbersEqual(this.compById().get(id)?.sailNumber, sail));
   }
 
   private async addToProcessedAsTieWithExisting(
