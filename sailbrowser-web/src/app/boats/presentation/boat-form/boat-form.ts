@@ -4,6 +4,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { SubmitButton } from 'app/shared/components/submit-button';
+import { normalizeSailNumber, sailNumberValidator } from 'app/boats/model/sail-number';
 import { Boat } from 'app/boats';
 import { ClubStore } from 'app/club-tenant';
 import { getHandicapValue, type Handicap } from 'app/scoring/model/handicap';
@@ -49,7 +50,7 @@ export class BoatForm {
   // a strict typed FormGroup<Partial<Boat>> definition here.
   form = new FormGroup({
     boatClass: new FormControl('', { validators: [Validators.required] }),
-    sailNumber: new FormControl<number>(0, { validators: [Validators.required, Validators.min(0)] }),
+    sailNumber: new FormControl('', { validators: [Validators.required, sailNumberValidator] }),
     name: new FormControl(''),
     helm: new FormControl('', Validators.required),
     crew: new FormControl(''),
@@ -140,7 +141,7 @@ export class BoatForm {
 
     const output: Partial<Boat> = {
       boatClass: (v['boatClass'] as string) ?? '',
-      sailNumber: Number(v['sailNumber']),
+      sailNumber: normalizeSailNumber(v['sailNumber']),
       name: (v['name'] as string) ?? '',
       helm: helm || '',
       crew: (v['crew'] as string) ?? '',

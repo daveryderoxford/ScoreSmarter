@@ -21,7 +21,7 @@ import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dia
 export interface UnmatchedRowEntryDialogData {
   raceId: string;
   boatClass: string;
-  sailNumber: number;
+  sailNumber: string;
 }
 
 export interface UnmatchedRowEntryDialogResult {

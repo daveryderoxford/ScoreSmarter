@@ -1,17 +1,17 @@
 <app-toolbar title="Results Entry">
 
   <div center class="sheet-toolbar">
-    <mat-chip-set class="sheet-chips" aria-label="Races on scoring sheet">
-      @if (selectedRace(); as sr) {
-        <mat-chip-row removable (removed)="clearScoringSheetRace()">
+    @if (selectedRace(); as sr) {
+      <mat-chip-set class="sheet-chips" aria-label="Races on scoring sheet">
+        <mat-chip-row removable (removed)="clearRace()">
           <span matChipContent>{{ sr | racetitle }}</span>
           <button matChipRemove type="button" aria-label="Remove race from scoring sheet">
             <mat-icon>cancel</mat-icon>
           </button>
         </mat-chip-row>
-      }
-    </mat-chip-set>
-    <button matButton="outlined" type="button" class="select-races-btn" (click)="openScoringSheetRacePicker()">
+      </mat-chip-set>
+    }
+    <button matButton="outlined" type="button" class="select-races-btn" (click)="openRaceDialog()">
       Select races
     </button>
   </div>
@@ -26,12 +26,13 @@
       </button>
       <mat-menu #raceActionsMenu="matMenu">
           @if (sr.type === 'Handicap') {
+            @let numStarts = selectedRace()?.starts?.length ?? 0;
             <button mat-menu-item type="button" (click)="setStartTime(sr)">
-              <mat-icon>flag</mat-icon>
+              <mat-icon [matBadge]="numStarts" [matBadgeHidden]="numStarts === 0" >flag</mat-icon>
               Start
             </button>
           }
-        <button mat-menu-item type="button" (click)="openScoringSheet()">
+        <button mat-menu-item type="button" (click)="openImageWindow()">
             <mat-icon matBadge="1" [matBadgeHidden]="!selectedRace()?.resultsSheetImage">
               photo_camera
             </mat-icon>
@@ -55,7 +56,7 @@
         }
       <button mat-icon-button type="button"
         aria-label="Open scoring sheet"
-        (click)="openScoringSheet()">
+        (click)="openImageWindow()">
             <mat-icon matBadge="1" [matBadgeHidden]="!selectedRace()?.resultsSheetImage">
               photo_camera
             </mat-icon>
@@ -102,7 +103,7 @@
   <div class="manual-results-empty mat-elevation-z1">
     <p class="manual-results-empty-title">No race on the scoring sheet yet.</p>
     <p class="manual-results-empty-hint">Choose which race you are entering results for.</p>
-    <button matButton="filled" type="button" (click)="openScoringSheetRacePicker()">
+    <button matButton="filled" type="button" (click)="openRaceDialog()">
       Select races on Scoring Sheet
     </button>
   </div>

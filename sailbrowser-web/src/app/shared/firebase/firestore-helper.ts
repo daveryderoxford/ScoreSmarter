@@ -1,3 +1,6 @@
+import { toFirebaseId } from '../utils/firebase-id';
+
+export { toFirebaseId };
 import {
    PartialWithFieldValue,
    QueryDocumentSnapshot,
@@ -130,18 +133,10 @@ function toAppModelRecursive(value: any): any {
    return value;
 }
 
-/** 
- * Removes any invalid character from a string so it can be used as 
- * a Firestore object Id
- */
-export function toFirebaseId(str: string): string {
-   return str.toLowerCase().replace(/[^a-z0-9]/g, '-');
-}
-
-/** 
- * Generates a an Id for an object that is (statistically) gasrenteed
- * to be unique given a maximum number to items.
- * Optinally a prefix may be added to the Id
+/**
+ * Generates a document id that is (statistically) unique for up to `n` items.
+ * When `prefix` is provided it is passed through {@link toFirebaseId} so callers
+ * can pass raw labels (class names, sail numbers, etc.) without pre-cleaning.
  */
 export function generateSecureID(n: number, prefix?: string): string {
    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -162,5 +157,6 @@ export function generateSecureID(n: number, prefix?: string): string {
       result += chars[randomValues[i] % chars.length];
    }
 
-   return prefix ? toFirebaseId(prefix) + '-' + result : result;
+   const cleanedPrefix = prefix ? toFirebaseId(prefix) : '';
+   return cleanedPrefix ? `${cleanedPrefix}-${result}` : result;
 }

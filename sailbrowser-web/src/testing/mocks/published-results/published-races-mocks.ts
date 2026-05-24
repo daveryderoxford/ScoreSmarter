@@ -17,7 +17,7 @@ function createRawRaceResult(index: number, baseStartTime: Date): RaceResult {
 
   const helm = helmNames[index % helmNames.length];
   const boatClass = boatClasses[index % boatClasses.length];
-  const sailNumber = 10000 + index * 10 + Math.floor(Math.random() * 10);
+  const sailNumber = String(10000 + index * 10 + Math.floor(Math.random() * 10));
   const club = clubNames[index % clubNames.length];
   const crew = index % 3 === 0 ? `Crew ${index}` : undefined; // Some have crew
 

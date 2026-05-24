@@ -3,6 +3,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
 import { BoatsDupDialogData, BoatsDuplicatesDialog } from './boats-duplicates-dialog';
+import { sailNumbersEqual } from 'app/boats/model/sail-number';
 import { Boat, BoatsStore } from 'app/boats';
 
 @Injectable({
@@ -45,7 +46,7 @@ function checkForDuplicateBoats(
   const possibles = allBoats.filter(boat =>
     boat.id !== options?.excludeBoatId &&
     boat.boatClass === newBoat.boatClass &&
-    boat.sailNumber === newBoat.sailNumber
+    sailNumbersEqual(boat.sailNumber, newBoat.sailNumber)
   );
 
   const newName = (newBoat.name ?? '').trim().toLowerCase();

@@ -1,3 +1,4 @@
+import { normalizeSailNumber } from 'app/boats/model/sail-number';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
 import type { SeriesEntryMatchingStrategy } from 'app/entry/model/entry-grouping';
 
@@ -30,7 +31,7 @@ export function mergeKeyFor(
     case 'regatta':
       return entry.id;
     case 'classSailNumber':
-      return `cs#${normClass(entry.boatClass)}#${entry.sailNumber}`;
+      return `cs#${normClass(entry.boatClass)}#${normalizeSailNumber(entry.sailNumber)}`;
     case 'helm':
       return `h#${normHelm(entry.helm)}`;
   }

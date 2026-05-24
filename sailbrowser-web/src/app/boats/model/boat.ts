@@ -1,9 +1,10 @@
 import type { Handicap } from 'app/scoring/model/handicap';
 import type { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
+import type { SailNumber } from './sail-number';
 
 export interface Boat {
   id: string;
-  sailNumber: number;
+  sailNumber: SailNumber;
   boatClass: string;
   name: string;
   helm: string;

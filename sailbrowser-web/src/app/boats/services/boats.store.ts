@@ -4,6 +4,7 @@ import { collectionData, deleteDoc, setDoc } from '@angular/fire/firestore';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { map, Observable } from 'rxjs';
+import { compareSailNumbers, normalizeSailNumber, sailNumberMatchesSearch } from '../model/sail-number';
 import { Boat } from '../model/boat';
 import { FirestoreTenantService } from 'app/club-tenant';
 
@@ -19,7 +20,7 @@ export class BoatsStore {
   private readonly boatsResource = rxResource<Boat[], null>({
     stream: (): Observable<Boat[]> =>
       collectionData(this.boatsCollection, { idField: 'id' }).pipe(
-        map(boats => boats.map(coerceBoatTags).sort(boatsSort)),
+        map(boats => boats.map(coerceBoat).sort(boatsSort)),
     ),
     defaultValue: [],
   });
@@ -37,6 +38,9 @@ export class BoatsStore {
     }
     if (update.name) {
       update.name = update.name.trim();
+    }
+    if (update.sailNumber != null) {
+      update.sailNumber = normalizeSailNumber(update.sailNumber);
     }
     return update;
   }
@@ -70,10 +74,14 @@ export class BoatsStore {
   }
 }
 
-/** Defaults the mandatory `tags` array for Boats read off the wire. */
-function coerceBoatTags(boat: Boat): Boat {
-  if (Array.isArray(boat.tags)) return boat;
-  return { ...boat, tags: [] };
+/** Normalises wire data (legacy numeric sail numbers, missing tags). */
+function coerceBoat(boat: Boat): Boat {
+  const coerced: Boat = {
+    ...boat,
+    sailNumber: normalizeSailNumber(boat.sailNumber),
+  };
+  if (Array.isArray(boat.tags)) return coerced;
+  return { ...coerced, tags: [] };
 }
 
 /** Sort boats by sail number then class */
@@ -83,9 +91,8 @@ export function boatsSort(a: Boat, b: Boat): number {
 
   if (ca != cb) {
     return ca.localeCompare(cb);
-  } else {
-    return a.sailNumber < b.sailNumber ? -1 : 1;
   }
+  return compareSailNumbers(a.sailNumber, b.sailNumber);
 }
 
 /** Returns if a boat matches a filter string.
@@ -99,7 +106,7 @@ export function boatFilter(boat: Boat, search: string | null): boolean {
     normaliseString(boat.name).includes(filter) ||
     normaliseString(boat.helm).includes(filter) ||
     normaliseString(boat.crew).includes(filter) ||
-    boat.sailNumber.toString().includes(filter) ||
+    sailNumberMatchesSearch(boat.sailNumber, filter) ||
     normaliseString(boat.boatClass).includes(filter) ||
     (boat.isClub && 'club'.includes(filter));
 }

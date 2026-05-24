@@ -4,19 +4,34 @@
 
 .sheet-toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 10px;
   justify-content: center;
-  max-width: min(100%, 720px);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .sheet-chips {
   min-height: 32px;
+  min-width: 0;
+  flex: 0 1 auto;
+
+  mat-chip-row {
+    max-width: min(100%, 420px);
+
+    span[matChipContent] {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
 }
 
 .select-races-btn {
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .manual-results-empty {

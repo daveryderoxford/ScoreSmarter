@@ -92,7 +92,6 @@ export class HandicapInputPanel {
     { initialValue: 'OK' as ResultCode }
   );
 
-
   readonly timeInputRequired = computed(() => {
     const code = this.resultCodeValue();
     return requiresTime(code) || code === 'NOT FINISHED';

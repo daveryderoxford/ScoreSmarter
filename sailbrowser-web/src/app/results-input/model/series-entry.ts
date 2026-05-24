@@ -1,3 +1,4 @@
+import type { SailNumber } from 'app/boats/model/sail-number';
 import { Handicap } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 
@@ -12,7 +13,7 @@ export interface SeriesEntry {
 
    // Default Boat Details
    boatClass: string;
-   sailNumber: number;
+   sailNumber: SailNumber;
    handicaps: Handicap[];
    personalHandicapBand?: PersonalHandicapBand;
 

@@ -12,7 +12,14 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatStepperModule } from '@angular/material/stepper';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Boat, boatFilter, BoatsStore } from 'app/boats';
+import {
+  Boat,
+  boatFilter,
+  BoatsStore,
+  compareSailNumbers,
+  normalizeSailNumber,
+  sailNumbersEqual,
+} from 'app/boats';
 import { ClubStore } from 'app/club-tenant';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { RacesPanel } from 'app/race-calender/presentation/races-panel/races-panel';
@@ -49,7 +56,7 @@ function boatGroupKey(boat: Boat, category: 'club' | 'member'): string {
 function sortBoatsInGroup(a: Boat, b: Boat): number {
   const classCmp = (a.boatClass ?? '').localeCompare(b.boatClass ?? '');
   if (classCmp !== 0) return classCmp;
-  return (a.sailNumber ?? 0) - (b.sailNumber ?? 0);
+  return compareSailNumbers(a.sailNumber, b.sailNumber);
 }
 
 @Component({
@@ -443,9 +450,11 @@ export class EntryPage {
     // Replace temporary locally-selected new boat with the persisted store record once loaded.
     effect(() => {
       const classVal = this.initialBoatClass;
-      const sailVal = Number(this.initialSailNumber);
+      const sailVal = normalizeSailNumber(this.initialSailNumber);
       if (classVal && sailVal && !this.selectedBoat()) {
-        const boat = this.bs.boats().find(b => b.boatClass.toLowerCase() === classVal.toLowerCase() && b.sailNumber === sailVal);
+        const boat = this.bs.boats().find(
+          b => b.boatClass.toLowerCase() === classVal.toLowerCase() && sailNumbersEqual(b.sailNumber, sailVal),
+        );
         if (boat) {
           this.selectedBoat.set(boat);
           this.boatSearchControl.setValue(boat, { emitEvent: false });
@@ -460,7 +469,7 @@ export class EntryPage {
       const boat = this.selectedBoat();
       if (!boat || !boat.id.startsWith('new-')) return;
       const persisted = this.bs.boats().find(
-        b => b.boatClass === boat.boatClass && b.sailNumber === boat.sailNumber && b.helm === boat.helm
+        b => b.boatClass === boat.boatClass && sailNumbersEqual(b.sailNumber, boat.sailNumber) && b.helm === boat.helm
       );
       if (!persisted) return;
       this.selectedBoat.set(persisted);
@@ -517,7 +526,7 @@ export class EntryPage {
       const persisted = this.bs.boats().find(
         b =>
           b.boatClass === created.boat.boatClass &&
-          b.sailNumber === Number(created.boat.sailNumber ?? 0) &&
+          sailNumbersEqual(b.sailNumber, created.boat.sailNumber) &&
           b.helm === (created.boat.helm ?? '')
       );
       if (persisted) {
@@ -530,7 +539,7 @@ export class EntryPage {
     const newBoat: Boat = {
       id: `new-${Date.now()}`,
       boatClass: created.boat.boatClass ?? '',
-      sailNumber: Number(created.boat.sailNumber ?? 0),
+      sailNumber: normalizeSailNumber(created.boat.sailNumber ?? ''),
       helm: created.boat.helm ?? '',
       crew: created.boat.crew ?? '',
       name: created.boat.name ?? '',

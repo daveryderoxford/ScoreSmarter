@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { isValidSailNumber, normalizeSailNumber } from '../model/sail-number';
 import { Boat } from '../model/boat';
 import { Handicap } from 'app/scoring/model/handicap';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
@@ -70,7 +71,7 @@ export class BoatsCsvService {
   }
 
   tripletKey(boat: Pick<Boat, 'boatClass' | 'sailNumber' | 'helm'>): string {
-    return `${normaliseString(boat.boatClass)}|${boat.sailNumber}|${normaliseString(boat.helm)}`;
+    return `${normaliseString(boat.boatClass)}|${normalizeSailNumber(boat.sailNumber)}|${normaliseString(boat.helm)}`;
   }
 
   private parseBoatRecord(
@@ -88,11 +89,11 @@ export class BoatsCsvService {
     const isClubRaw = (record['isClub'] ?? '').trim();
     const isClub = this.parseBool(isClubRaw);
     const personalHandicapBandRaw = (record['personalHandicapBand'] ?? '').trim();
-    const sailNumber = Number(sailRaw);
+    const sailNumber = normalizeSailNumber(sailRaw);
 
     if (!boatClass) rowErrors.push('boatClass is required');
-    if (!Number.isFinite(sailNumber) || sailNumber <= 0 || !Number.isInteger(sailNumber)) {
-      rowErrors.push('sailNumber must be a positive integer');
+    if (!isValidSailNumber(sailNumber)) {
+      rowErrors.push('sailNumber is required');
     }
     if (isClubRaw && isClub == null) {
       rowErrors.push('isClub must be true/false (also accepts 1/0/yes/no/y/n)');

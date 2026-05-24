@@ -8,11 +8,12 @@ import { TagValuePicker } from 'app/club-tenant/presentation/tags/tag-value-pick
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { PERSONAL_HANDICAP_BANDS } from 'app/scoring/model/personal-handicap';
 import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inputs';
+import { SailNumberInput } from '../sail-number-input';
 
 @Component({
   selector: 'app-boat-core-fields',
   standalone: true,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, HandicapSchemeInputs, TagValuePicker],
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, HandicapSchemeInputs, TagValuePicker, SailNumberInput],
   template: `
     <div [formGroup]="form()">
       <mat-form-field>
@@ -27,7 +28,7 @@ import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inpu
 
       <mat-form-field>
         <mat-label>Sail number</mat-label>
-        <input matInput type="number" inputmode="numeric" pattern="[0-9]*" formControlName="sailNumber">
+        <app-sail-number-input formControlName="sailNumber" />
         <mat-error>Sail number required</mat-error>
       </mat-form-field>
 
@@ -113,4 +114,3 @@ export class BoatCoreFields {
     return this.boatLevelSchemes().filter(s => s !== 'Personal');
   }
 }
-

@@ -16,6 +16,7 @@ import {
   setDoc,
   where,
 } from '@angular/fire/firestore';
+import { compareSailNumbers, normalizeSailNumber } from 'app/boats/model/sail-number';
 import { FirestoreTenantService } from 'app/club-tenant';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
@@ -54,7 +55,7 @@ export class SeriesEntryStore {
   async getSeriesEntries(seriesId: string): Promise<SeriesEntry[]> {
     const q = query(this.collection, where('seriesId', '==', seriesId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => coerceEntryTags({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map(doc => coerceEntry({ ...doc.data(), id: doc.id }));
   }
 
   /**
@@ -64,7 +65,7 @@ export class SeriesEntryStore {
   async getSeriesEntry(id: string): Promise<SeriesEntry | null> {
     const snapshot = await getDoc(this.ref(id));
     if (!snapshot.exists()) return null;
-    return coerceEntryTags({ ...snapshot.data(), id: snapshot.id });
+    return coerceEntry({ ...snapshot.data(), id: snapshot.id });
   }
 
   private readonly selectedSeriesIds = computed(() => this.currentRaces.selectedSeries().map(s => s.id));
@@ -82,7 +83,7 @@ export class SeriesEntryStore {
           where('seriesId', 'in', selectedIds)
         );
         return collectionData(q, { idField: 'id' }).pipe(
-          map(entries => entries.map(coerceEntryTags).sort(sortEntries)),
+          map(entries => entries.map(coerceEntry).sort(sortEntries)),
           tap(entries => console.log(`SeriesEntryStore. Loaded ${entries.length} entries`))
         );
       }
@@ -101,6 +102,9 @@ export class SeriesEntryStore {
     }
     if (typeof update.boatClass === 'string') {
       update.boatClass = update.boatClass.trim();
+    }
+    if (update.sailNumber != null) {
+      update.sailNumber = normalizeSailNumber(update.sailNumber);
     }
     return update;
   }
@@ -143,10 +147,14 @@ export class SeriesEntryStore {
   }
 }
 
-/** Defaults the mandatory `tags` array for entries read off the wire. */
-function coerceEntryTags(entry: SeriesEntry): SeriesEntry {
-  if (Array.isArray(entry.tags)) return entry;
-  return { ...entry, tags: [] };
+/** Normalises wire data (legacy numeric sail numbers, missing tags). */
+function coerceEntry(entry: SeriesEntry): SeriesEntry {
+  const coerced: SeriesEntry = {
+    ...entry,
+    sailNumber: normalizeSailNumber(entry.sailNumber),
+  };
+  if (Array.isArray(entry.tags)) return coerced;
+  return { ...coerced, tags: [] };
 }
 
 /** Sort entries by boat class and sail number */
@@ -155,5 +163,5 @@ export function sortEntries(a: SeriesEntry, b: SeriesEntry): number {
   if (classCompare !== 0) {
     return classCompare;
   }
-  return a.sailNumber - b.sailNumber;
+  return compareSailNumbers(a.sailNumber, b.sailNumber);
 }

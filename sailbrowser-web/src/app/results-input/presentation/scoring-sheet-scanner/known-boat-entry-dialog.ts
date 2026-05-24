@@ -10,7 +10,7 @@ import { RaceCalendarStore } from 'app/race-calender';
 export interface KnownBoatEntryDialogData {
   raceId: string;
   boatClass: string;
-  sailNumber: number;
+  sailNumber: string;
   boats: Boat[];
 }
 

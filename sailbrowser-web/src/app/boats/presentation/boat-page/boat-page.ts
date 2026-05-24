@@ -180,7 +180,7 @@ export class BoatsPage {
           ? `id:${boat.id.trim()}`
           : `triplet:${this.boatsCsv.tripletKey({
               boatClass: boat.boatClass ?? '',
-              sailNumber: boat.sailNumber ?? 0,
+              sailNumber: boat.sailNumber ?? '',
               helm: boat.helm ?? '',
             })}`;
         deduped.set(key, boat);
@@ -199,7 +199,7 @@ export class BoatsPage {
         const byTriplet = existingByTriplet.get(
           this.boatsCsv.tripletKey({
             boatClass: boat.boatClass ?? '',
-            sailNumber: boat.sailNumber ?? 0,
+            sailNumber: boat.sailNumber ?? '',
             helm: boat.helm ?? '',
           })
         );

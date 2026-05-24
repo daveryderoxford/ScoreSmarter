@@ -1,3 +1,4 @@
+import type { SailNumber } from 'app/boats/model/sail-number';
 import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
@@ -21,7 +22,7 @@ export interface PublishedSeriesResult {
    helm: string;
    crew?: string;
    boatClass: string;
-   sailNumber: number;
+   sailNumber: SailNumber;
    club: string;
    handicap: number;
    personalHandicapBand?: PersonalHandicapBand;

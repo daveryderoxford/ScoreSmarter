@@ -31,6 +31,23 @@ function normalizeScannerTimeFormat(value: unknown): ScannerTimeFormat {
   return "clock_hms";
 }
 
+/** Matches sailbrowser-web `normalizeSailNumber` (country prefix uppercased). */
+function normalizeSailNumberForRoster(raw: unknown): string {
+  if (raw == null) return "";
+  let text: string;
+  if (typeof raw === "number") {
+    if (!Number.isFinite(raw)) return "";
+    text = String(Math.trunc(raw));
+  } else {
+    text = String(raw);
+  }
+  const compact = text.trim().replace(/\s+/g, "");
+  if (!compact) return "";
+  const digitIndex = compact.search(/\d/);
+  if (digitIndex < 0) return compact.toUpperCase();
+  return compact.slice(0, digitIndex).toUpperCase() + compact.slice(digitIndex);
+}
+
 function assertCallerHasClubAccess(
   authToken: Record<string, unknown>,
   clubId: string,
@@ -107,14 +124,14 @@ async function getRaceCompetitors(
 
     const boatClass = (entry.boatClass ?? "").trim();
     const helm = (entry.helm ?? "").trim();
-    const sailNum = entry.sailNumber;
-    if (!boatClass || sailNum == null || Number.isNaN(Number(sailNum))) {
+    const sailText = normalizeSailNumberForRoster(entry.sailNumber);
+    if (!boatClass || !sailText) {
       continue;
     }
     competitors.push({
       id: doc.id,
       class: boatClass,
-      sailNumber: String(sailNum),
+      sailNumber: sailText,
       name: helm || undefined,
     });
   }
