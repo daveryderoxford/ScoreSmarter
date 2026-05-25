@@ -5,8 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Toolbar } from 'app/shared/components/toolbar';
-import { collection, getDocs, writeBatch, doc, getFirestore } from '@angular/fire/firestore';
-import { FirebaseApp } from '@angular/fire/app';
+import { collection, getDocs, writeBatch, doc, Firestore } from '@angular/fire/firestore';
 import { ScoreSmarterError } from '../shared/utils/scoresmarter-error';
 
 @Component({
@@ -75,7 +74,7 @@ import { ScoreSmarterError } from '../shared/utils/scoresmarter-error';
    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SystemDataComponent {
-   private firestore = getFirestore(inject(FirebaseApp));
+   private firestore = inject(Firestore);
 
    path = signal('systemdata');
    busy = signal(false);

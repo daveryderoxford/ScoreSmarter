@@ -7,6 +7,7 @@ const db = getFirestore();
 
 export const getForcast = onCall(
    {
+      enforceAppCheck: true,            // Require app check token
       secrets: ['MET_OFFICE_API_KEY'], // Securely bind the single Met Office API Key
       region: 'europe-west1'           // Keeps execution close to UK/EU for lower latency
    },

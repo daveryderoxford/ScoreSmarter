@@ -1,14 +1,13 @@
 
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { FirebaseApp } from '@angular/fire/app';
 import {
   arrayRemove,
   arrayUnion,
   doc,
   docData,
   DocumentReference,
-  getFirestore,
+  Firestore,
   setDoc,
 } from '@angular/fire/firestore';
 import { firstValueFrom, filter } from 'rxjs';
@@ -46,7 +45,7 @@ const DEFAULT_SHORT_SERIES_DEFAULTS: ScoringDefaults = {
   providedIn: 'root',
 })
 export class ClubStore {
-  private readonly firestore = getFirestore(inject(FirebaseApp));
+  private readonly firestore = inject(Firestore);
 
   private _confirmedId = signal<string | undefined>(undefined);
 
