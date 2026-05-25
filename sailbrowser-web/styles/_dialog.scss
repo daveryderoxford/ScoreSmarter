@@ -1,0 +1,6 @@
+/** Scrollable body for tall mat-dialog-content (title + actions stay fixed). */
+.dialog-content-scroll {
+  max-height: min(80vh, calc(100dvh - 10rem));
+  overflow-y: auto;
+  min-width: 0;
+}

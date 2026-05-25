@@ -30,6 +30,8 @@ export class DuplicateBoatCheck {
 
     const dialogRef = this.dialog.open<BoatsDuplicatesDialog, BoatsDupDialogData>(BoatsDuplicatesDialog, {
       data: { boat: boat, possibleDuplicates: dups },
+      maxHeight: '90vh',
+      maxWidth: '95vw',
     });
     return firstValueFrom(dialogRef.afterClosed());
   }

@@ -52,6 +52,7 @@ export class CompetitorEditMenuComponent {
       boolean | undefined
     >(ChangeEnteredCompetitorDialog, {
       maxWidth: '100vw',
+      maxHeight: '90vh',
       width: DIALOG_WIDTH,
       data: { competitor: this.competitor() },
     });
@@ -65,6 +66,7 @@ export class CompetitorEditMenuComponent {
       boolean | undefined
     >(RaceResultDataDialog, {
       maxWidth: '100vw',
+      maxHeight: '90vh',
       width: DIALOG_WIDTH,
       data: {
         competitor: this.competitor(),
@@ -82,6 +84,7 @@ export class CompetitorEditMenuComponent {
       boolean | undefined
     >(SeriesEditDialog, {
       maxWidth: '100vw',
+      maxHeight: '90vh',
       width: DIALOG_WIDTH,
       data: { competitor: this.competitor() },
     });

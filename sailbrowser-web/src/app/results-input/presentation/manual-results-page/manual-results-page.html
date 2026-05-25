@@ -18,48 +18,44 @@
 
   @if (selectedRace(); as sr) {
 
-
     @if (isMobile()) {
-      <button mat-icon-button type="button" [matMenuTriggerFor]="raceActionsMenu"
-        aria-label="Race actions">
+      <button mat-icon-button type="button" [matMenuTriggerFor]="raceActionsMenu" aria-label="Race actions">
         <mat-icon>more_vert</mat-icon>
       </button>
       <mat-menu #raceActionsMenu="matMenu">
-          @if (sr.type === 'Handicap') {
-            @let numStarts = selectedRace()?.starts?.length ?? 0;
-            <button mat-menu-item type="button" (click)="setStartTime(sr)">
-              <mat-icon [matBadge]="numStarts" [matBadgeHidden]="numStarts === 0" >flag</mat-icon>
-              Start
-            </button>
-          }
-        <button mat-menu-item type="button" (click)="openImageWindow()">
-            <mat-icon matBadge="1" [matBadgeHidden]="!selectedRace()?.resultsSheetImage">
-              photo_camera
-            </mat-icon>
-          <span>Scoring sheet</span>
+        @if (sr.type === 'Handicap') {
+        @let numStarts = selectedRace()?.starts?.length ?? 0;
+        <button mat-menu-item type="button" (click)="setStartTime(sr)">
+          <mat-icon [matBadge]="numStarts" [matBadgeHidden]="numStarts === 0">flag</mat-icon>
+          Start
         </button>
-        <button mat-menu-item type="button" [disabled]="publishing()" (click)="publish()">
-          <mat-icon>upload</mat-icon>
-          <span>Publish</span>
-        </button>
-        <button mat-menu-item type="button" (click)="viewResultsForSelectedRace()">
-          <mat-icon>scoreboard</mat-icon>
-          <span>Results</span>
-        </button>
-      </mat-menu>
-    } @else {
+      }
+      <button mat-menu-item type="button" (click)="openImageWindow()">
+        <mat-icon matBadge="1" [matBadgeHidden]="!selectedRace()?.resultsSheetImage">
+          photo_camera
+        </mat-icon>
+        <span>Scoring sheet</span>
+      </button>
+      <button mat-menu-item type="button" [disabled]="publishing()" (click)="publish()">
+        <mat-icon>upload</mat-icon>
+        <span>Publish</span>
+      </button>
+      <button mat-menu-item type="button" (click)="viewResultsForSelectedRace()">
+        <mat-icon>scoreboard</mat-icon>
+        <span>Results</span>
+      </button>
+    </mat-menu>
+  } @else {
       @if (sr.type === 'Handicap') {
-          @let numStarts = selectedRace()?.starts?.length ?? 0;
-          <button matButton="text" [matBadge]="numStarts" [matBadgeHidden]="numStarts === 0" (click)="setStartTime(sr)">
-            Start
-          </button>
-        }
-      <button mat-icon-button type="button"
-        aria-label="Open scoring sheet"
-        (click)="openImageWindow()">
-            <mat-icon matBadge="1" [matBadgeHidden]="!selectedRace()?.resultsSheetImage">
-              photo_camera
-            </mat-icon>
+        @let numStarts = selectedRace()?.starts?.length ?? 0;
+        <button matButton="text" [matBadge]="numStarts" [matBadgeHidden]="numStarts === 0" (click)="setStartTime(sr)">
+          Start
+        </button>
+      }
+      <button mat-icon-button type="button" [disabled]=loadingImage() aria-label="Open scoring sheet" (click)="displayOrCaptureImage()">
+        <mat-icon matBadge="1" [matBadgeHidden]="!selectedRace()?.resultsSheetImage">
+          photo_camera
+        </mat-icon>
       </button>
       <app-busy-button [style]="'text'" [busy]="publishing()" (click)="publish()">
         Publish
@@ -67,44 +63,40 @@
       <button matButton="text" type="button" (click)="viewResultsForSelectedRace()">
         Results
       </button>
-    }
+      }
   }
 
 </app-toolbar>
 
 @if (selectedRace()) {
-  @let race = selectedRace()!;
-  @if (race.type === 'Handicap') {
-    <div class="container-handicap">
-      <div class="table-section">
-        <app-handicap-results-table [competitors]="sortedCompetitors()"
-          [handicapScheme]="handicapScheme()"
-          [selectedCompetitorId]="handicapSelectedCompetitor()?.id ?? null"
-          (rowClicked)="onTableRowClick($event)"/>
-      </div>
-      <div class="input-section mat-elevation-z2">
-        <h3>Record Result</h3>
-        <app-handicap-input-panel [race]="race" [competitors]="sortedCompetitors()"
-          [handicapScheme]="handicapScheme()"
-          [(selectedCompetitor)]="handicapSelectedCompetitor"
-          (addEntryRequested)="addEntryForSelectedRace()" />
-      </div>
-    </div>
-  } @else {
-    <div class="container-position">
-      <div class="position-workspace mat-elevation-z1">
-        <h3 class="position-workspace-title">Record result (finish order)</h3>
-        <app-position-based-input-panel [race]="race" [competitors]="sortedCompetitors()"
-          (addEntryRequested)="addEntryForSelectedRace()" />
-      </div>
-    </div>
-  }
-} @else {
-  <div class="manual-results-empty mat-elevation-z1">
-    <p class="manual-results-empty-title">No race on the scoring sheet yet.</p>
-    <p class="manual-results-empty-hint">Choose which race you are entering results for.</p>
-    <button matButton="filled" type="button" (click)="openRaceDialog()">
-      Select races on Scoring Sheet
-    </button>
+@let race = selectedRace()!;
+@if (race.type === 'Handicap') {
+<div class="container-handicap">
+  <div class="table-section">
+    <app-handicap-results-table [competitors]="sortedCompetitors()" [handicapScheme]="handicapScheme()"
+      [selectedCompetitorId]="handicapSelectedCompetitor()?.id ?? null" (rowClicked)="onTableRowClick($event)" />
   </div>
+  <div class="input-section mat-elevation-z2">
+    <h3>Record Result</h3>
+    <app-handicap-input-panel [race]="race" [competitors]="sortedCompetitors()" [handicapScheme]="handicapScheme()"
+      [(selectedCompetitor)]="handicapSelectedCompetitor" (addEntryRequested)="addEntryForSelectedRace()" />
+  </div>
+</div>
+} @else {
+<div class="container-position">
+  <div class="position-workspace mat-elevation-z1">
+    <h3 class="position-workspace-title">Record result (finish order)</h3>
+    <app-position-based-input-panel [race]="race" [competitors]="sortedCompetitors()"
+      (addEntryRequested)="addEntryForSelectedRace()" />
+  </div>
+</div>
+}
+} @else {
+<div class="manual-results-empty mat-elevation-z1">
+  <p class="manual-results-empty-title">No race on the scoring sheet yet.</p>
+  <p class="manual-results-empty-hint">Choose which race you are entering results for.</p>
+  <button matButton="filled" type="button" (click)="openRaceDialog()">
+    Select races on Scoring Sheet
+  </button>
+</div>
 }

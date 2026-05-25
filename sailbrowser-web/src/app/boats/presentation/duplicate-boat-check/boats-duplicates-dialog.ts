@@ -13,7 +13,7 @@ export interface BoatsDupDialogData {
   selector: 'app-boats-duplicate-dialog',
   template: `
     <h2 mat-dialog-title>Possible duplicate</h2>
-    <mat-dialog-content>
+    <mat-dialog-content class="dialog-content-scroll">
         <p>{{ data.possibleDuplicates.length }} other helms exist for {{data.boat.boatClass}} {{data.boat.sailNumber}}
       </p>
       <mat-list>
@@ -25,8 +25,8 @@ export interface BoatsDupDialogData {
       </mat-list>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button matButton="tonal" [mat-dialog-close]="false">Cancel</button>
-      <button matButton="tonal" [mat-dialog-close]="true">Save boat</button>
+      <button matButton [mat-dialog-close]="false">Cancel</button>
+      <button matButton="filled" [mat-dialog-close]="true">Save boat</button>
     </mat-dialog-actions>
   `,
   styles: [],

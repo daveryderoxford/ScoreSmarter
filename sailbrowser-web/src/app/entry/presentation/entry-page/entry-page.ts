@@ -505,6 +505,8 @@ export class EntryPage {
   async createNewBoat() {
     const dialogRef = this.dialog.open(NewBoatDialog, {
       width: '400px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
       disableClose: true,
     });
 

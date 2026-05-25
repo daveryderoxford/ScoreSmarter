@@ -66,6 +66,7 @@ export class ManualResultsPage {
   private message = inject(DialogsService);
 
   publishing = signal(false);
+  loadingImage = signal(false);
 
   readonly raceId = input<string>();
 
@@ -164,19 +165,18 @@ export class ManualResultsPage {
     }
   }
 
-  async openImageWindow(): Promise<void> {
+  async displayOrCaptureImage(): Promise<void> {
     const race = this.selectedRace();
     if (!race) return;
 
     // If a popup is already open (named window), refocus it instead of doing
-    // anything else - clicking the toolbar button should behave like any other
-    // "open" action.
+    // anything else 
     if (this.imageWindowOpen()) {
       try { this.imageWindowRef()?.focus(); } catch { /* ignore */ }
       return;
     }
 
-    if (race.resultsSheetImage?.trim()) {
+    if (race.resultsSheetImage) {
       // Image already stored - resolve a URL (if not cached yet) then pop it open.
       let url = this.sheetImageUrl();
       if (!url) {
@@ -187,16 +187,22 @@ export class ManualResultsPage {
       return;
     }
 
-    // No image yet - capture, persist, resolve a URL, then pop it open.
-    const result = await this.captureService.captureAndStore({
-      clubId: this.clubTenant.clubId,
-      raceId: race.id,
-      isMobile: this.isMobile(),
-    });
-    if (!result) return;
-    await this.refreshSheetImageUrl(result.storagePath);
-    const url = this.sheetImageUrl();
-    if (url) this.openBrowserWindow(url);
+    // No image yet - capture, persist, resolve a URL, then open it
+    try {
+      this.loadingImage.set(true);
+      const result = await this.captureService.captureAndStore({
+        clubId: this.clubTenant.clubId,
+        raceId: race.id,
+        isMobile: this.isMobile(),
+      });
+
+      if (!result) return;
+      await this.refreshSheetImageUrl(result.storagePath);
+      const url = this.sheetImageUrl();
+      if (url) this.openBrowserWindow(url);
+    } finally {
+      this.loadingImage.set(false);
+    }
   }
 
   /**
@@ -218,7 +224,7 @@ export class ManualResultsPage {
       { duration: 8000 },
     );
     ref.onAction().subscribe(() => {
-       this.tryOpenWindow(url);
+      this.tryOpenWindow(url);
     });
   }
 
@@ -293,7 +299,7 @@ export class ManualResultsPage {
   }
 
   async setStartTime(race: Race): Promise<RaceStartTimeResult | undefined> {
-    const dialog = this.dialog.open<RaceStartTimeDialog, { race: Race }, RaceStartTimeResult>(RaceStartTimeDialog, {
+    const dialog = this.dialog.open<RaceStartTimeDialog, { race: Race; }, RaceStartTimeResult>(RaceStartTimeDialog, {
       data: { race }
     });
 

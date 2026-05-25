@@ -1,4 +1,5 @@
 @use '@angular/material' as mat;
+@use '../styles/dialog';
 
 @include mat.elevation-classes();
 @include mat.app-background();

@@ -19,7 +19,7 @@ export interface SeriesEditDialogData {
   imports: [MatDialogModule, MatButtonModule, SeriesEditForm],
   template: `
     <h3 mat-dialog-title>Correct series data</h3>
-    <mat-dialog-content>
+    <mat-dialog-content class="dialog-content-scroll">
       @if (series()) {
         <app-series-edit-form
           [competitor]="data.competitor"

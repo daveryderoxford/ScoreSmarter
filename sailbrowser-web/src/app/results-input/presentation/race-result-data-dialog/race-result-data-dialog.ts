@@ -22,7 +22,7 @@ export interface RaceResultDataDialogData {
   imports: [MatDialogModule, MatButtonModule, RaceResultDataForm],
   template: `
     <h3 mat-dialog-title>Edit Race Result</h3>
-    <mat-dialog-content>
+    <mat-dialog-content class="dialog-content-scroll">
       <app-race-result-data-form
         [competitor]="data.competitor"
         [race]="data.race"
