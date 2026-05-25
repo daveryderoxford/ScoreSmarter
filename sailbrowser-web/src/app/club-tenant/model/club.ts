@@ -27,6 +27,10 @@ export interface Club {
    shortName?: string;
    contactEmail: string;
    contactName: string;
+   /** Club venue latitude (WGS84) for Met Office forecasts */
+   latitude?: number;
+   /** Club venue longitude (WGS84) for Met Office forecasts */
+   longitude?: number;
    fleets: Fleet[];
    classes: BoatClass[];
    seasons: Season[];
