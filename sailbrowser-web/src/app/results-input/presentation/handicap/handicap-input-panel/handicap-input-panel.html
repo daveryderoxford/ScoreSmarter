@@ -1,20 +1,19 @@
-<div class="mode-display">
-  <div class="mode-info">
-    <mat-icon>{{ race().timeInputMode === 'elapsed' ? 'timer' : 'schedule' }}</mat-icon>
-    <span>{{ race().timeInputMode === 'elapsed' ? 'Stopwatch' : 'Time of Day' }}</span>
-  </div>
-  @if (displayedStartTime()) {
-    <span class="start-time">Start: {{ displayedStartTime() | date:'HH:mm:ss' }}</span>
-  }
-</div>
+<div class="top-buttons">
 
-@let stats = calculatedStats();
-<div class="stats-display" [class.suspicious]="stats?.isSuspicious">
-  <div class="stat-row">
-    <span>Elapsed: <b>{{ stats ? (stats.elapsedSeconds | duration) : ''}}</b></span>
-    <span>Corrected: <b>{{ stats ? (stats.correctedTime | duration) : ''}}</b></span>
-    <span>Avg Lap: <b>{{ stats ? (stats.avgLapTime | duration) : ''}}</b></span>
-  </div>
+      <button matButton="text" type="button" aria-label="Add entry" (click)="requestAddEntry()">
+        Add Entry
+      </button>
+      @if (selectedCompetitor(); as sel) {
+      <app-competitor-edit-menu [competitor]="sel" [race]="race()" [resultDraft]="editResultDraft()"
+        [disabled]="!hasSelectedCompetitor()" (changed)="onCompetitorEdited()" (deleted)="onCompetitorDeleted()" />
+      } @else {
+      <button matButton type="button" disabled>
+        Edit Entry
+        <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+      </button>
+      }
+      <mat-divider/>
+  
 </div>
 
 <form [formGroup]="form" (ngSubmit)="save()">
@@ -23,27 +22,34 @@
       <mat-label>Competitor Search</mat-label>
       <mat-icon matPrefix>search</mat-icon>
       <input #searchInput matInput [formControl]="searchControl" [matAutocomplete]="auto" placeholder="Class, Sail No or Helm">
-      <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn"
-        (optionSelected)="onCompetitorSelected($event)">
+      <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onCompetitorSelected($event)">
         @for (group of autoCompleteGroups(); track group.name) {
           <mat-optgroup [label]="group.name">
             @for (comp of group.competitors; track comp.id) {
-              <mat-option [value]="comp">
+              <mat-option [value]="comp.id">
                 {{comp.boatClass}} {{comp.sailNumber}} - {{comp.helm}}
               </mat-option>
             }
           </mat-optgroup>
         }
       </mat-autocomplete>
-      @if (searchControl.value) {
-        <button mat-icon-button matSuffix type="button" tabindex="-1" (click)="setSelectedCompetitor(undefined)" aria-label="Clear search">
-          <mat-icon>close</mat-icon>
-        </button>
-      }
     </mat-form-field>
-    <button mat-icon-button type="button" aria-label="Add entry" style="margin-top: -12px;" (click)="requestAddEntry()">
-      <mat-icon>add</mat-icon>
-    </button>
+  </div>
+
+  @let stats = calculatedStats();
+  <div class="stats-display" [class.suspicious]="stats?.isSuspicious">
+    <div class="title-row">
+      @let comp = selectedCompetitor();
+      <span>{{comp?.helm}}</span>
+      @if (comp) {
+      <span>{{comp.boatClass}} - {{ comp.sailNumber}}</span>
+      }
+    </div>
+    <div class="stat-row">
+      <span>Elapsed: <b>{{ stats ? (stats.elapsedSeconds | duration) : ''}}</b></span>
+      <span>Corrected: <b>{{ stats ? (stats.correctedTime | duration) : ''}}</b></span>
+      <span>Start: <b>{{ displayedStartTime() | date:'HH:mm:ss' }}</b></span>
+    </div>
   </div>
 
   <mat-form-field>
@@ -71,18 +77,6 @@
   <app-result-code-select formControlName="resultCode"></app-result-code-select>
 
   <div class="actions" style="display: flex; align-items: center; gap: 8px; justify-content: flex-start;">
-    @if (selectedCompetitor(); as sel) {
-      <app-competitor-edit-menu
-        [competitor]="sel"
-        [race]="race()"
-        [resultDraft]="editResultDraft()"
-        [disabled]="!hasSelectedCompetitor()"
-        (changed)="onCompetitorEdited()"
-        (deleted)="onCompetitorDeleted()"
-      />
-    } @else {
-      <button matButton type="button" disabled>Edit Entry</button>
-    }
     <span style="flex: 1;"></span>
     <button matButton type="button" [disabled]="!hasSelectedCompetitor()" (click)="setSelectedCompetitor(undefined)">Clear</button>
     <button matButton="filled" type="submit" [disabled]="!hasSelectedCompetitor()">Save</button>

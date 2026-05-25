@@ -15,7 +15,11 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import {
+  MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
+  MatAutocompleteTrigger,
+} from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -28,7 +32,7 @@ import { requiresTime } from 'app/scoring/model/result-code-scoring';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { normaliseString } from 'app/shared/utils/string-utils';
-import { firstValueFrom, map, startWith } from 'rxjs';
+import { firstValueFrom, startWith } from 'rxjs';
 import { manualRaceTableSort, ManualResultsService } from '../../../services/manual-results.service';
 import { ClubStore } from 'app/club-tenant';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
@@ -39,6 +43,7 @@ import { RaceTimeInput } from '../race-time-input';
 import { ResultCodeSelect } from '../../result-code-select';
 import { RaceResultDraft } from '../../../model/race-result-draft';
 import { CompetitorEditMenuComponent } from '../../competitor-edit-menu/competitor-edit-menu';
+import { MatDividerModule } from '@angular/material/divider';
 
 @Component({
   selector: 'app-handicap-input-panel',
@@ -57,6 +62,7 @@ import { CompetitorEditMenuComponent } from '../../competitor-edit-menu/competit
     ResultCodeSelect,
     DurationPipe,
     CompetitorEditMenuComponent,
+    MatDividerModule
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -76,6 +82,7 @@ export class HandicapInputPanel {
   readonly addEntryRequested = output<void>();
 
   readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
+  private readonly autocompleteTrigger = viewChild(MatAutocompleteTrigger);
 
   private readonly switchingSelection = signal(false);
 
@@ -111,12 +118,9 @@ export class HandicapInputPanel {
     };
   });
 
-  readonly searchControl = new FormControl<string | ResolvedRaceCompetitor | null>('');
+  readonly searchControl = new FormControl('', { nonNullable: true });
   private readonly searchTerm = toSignal(
-    this.searchControl.valueChanges.pipe(
-      startWith(''),
-      map(value => (typeof value === 'string' ? value : ''))
-    ),
+    this.searchControl.valueChanges.pipe(startWith('')),
     { initialValue: '' }
   );
 
@@ -198,7 +202,7 @@ export class HandicapInputPanel {
       const comp = this.selectedCompetitor();
       untracked(() => {
         if (!comp) {
-          this.searchControl.setValue(null, { emitEvent: false });
+          this.clearSearch();
           // Reset while controls are still enabled so values/CVAs update cleanly, then disable.
           this.resetFormDefaults();
           const syncOpts = { emitEvent: true } as const;
@@ -211,7 +215,7 @@ export class HandicapInputPanel {
         this.form.controls.finishTime.enable(opts);
         this.form.controls.laps.enable(opts);
         this.form.controls.resultCode.enable(opts);
-        this.searchControl.setValue(comp, { emitEvent: false });
+        this.clearSearch();
         if (comp.resultCode === 'NOT FINISHED') {
           this.resetFormDefaults();
         } else {
@@ -252,12 +256,17 @@ export class HandicapInputPanel {
     } as never);
   }
 
-  displayFn(comp: ResolvedRaceCompetitor): string {
-    return comp ? `${comp.helm} ${comp.boatClass} ${comp.sailNumber}` : '';
+  onCompetitorSelected(event: MatAutocompleteSelectedEvent): void {
+    const id = event.option.value as string;
+    const comp = this.sortedCompetitors().find(c => c.id === id);
+    if (!comp) return;
+    this.clearSearch();
+    void this.setSelectedCompetitor(comp);
   }
 
-  onCompetitorSelected(event: MatAutocompleteSelectedEvent): void {
-    void this.setSelectedCompetitor(event.option.value as ResolvedRaceCompetitor);
+  private clearSearch(): void {
+    this.autocompleteTrigger()?.closePanel();
+    this.searchControl.setValue('', { emitEvent: true });
   }
 
   requestAddEntry(): void {

@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { Race } from 'app/race-calender';
 import { RaceResultDraft } from 'app/results-input/model/race-result-draft';
@@ -24,7 +25,7 @@ const DIALOG_WIDTH = 'min(calc(100vw - 24px), 460px)';
 
 @Component({
   selector: 'app-competitor-edit-menu',
-  imports: [MatButtonModule, MatMenuModule, NgTemplateOutlet],
+  imports: [MatButtonModule, MatIconModule, MatMenuModule, NgTemplateOutlet],
   templateUrl: './competitor-edit-menu.html',
   styleUrl: './competitor-edit-menu.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

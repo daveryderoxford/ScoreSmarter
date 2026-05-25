@@ -30,7 +30,7 @@
           Start
         </button>
       }
-      <button mat-menu-item type="button" (click)="openImageWindow()">
+      <button mat-menu-item type="button" (click)="displayOrCaptureImage()">
         <mat-icon matBadge="1" [matBadgeHidden]="!selectedRace()?.resultsSheetImage">
           photo_camera
         </mat-icon>
@@ -77,7 +77,6 @@
       [selectedCompetitorId]="handicapSelectedCompetitor()?.id ?? null" (rowClicked)="onTableRowClick($event)" />
   </div>
   <div class="input-section mat-elevation-z2">
-    <h3>Record Result</h3>
     <app-handicap-input-panel [race]="race" [competitors]="sortedCompetitors()" [handicapScheme]="handicapScheme()"
       [(selectedCompetitor)]="handicapSelectedCompetitor" (addEntryRequested)="addEntryForSelectedRace()" />
   </div>
