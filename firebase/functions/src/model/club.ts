@@ -5,6 +5,8 @@ export interface Club {
    shortName?: string;
    contactEmail: string;
    contactName: string;
+   latitude?: number;
+   longitude?: number;
    fleets: [];
    classes: [];
    seasons: [];

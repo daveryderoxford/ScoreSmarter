@@ -24,11 +24,7 @@ import { ClubTenant } from './club-tenant/services/club-tenant';
 import { firebaseConfig } from './firebase-config';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 import { provideServiceWorker } from '@angular/service-worker';
-
-if (isDevMode()) {
-  (window as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-  console.log('AppCheck configured in debug mode');
-}
+import { initializeAppCheck, provideAppCheck, ReCaptchaEnterpriseProvider } from '@angular/fire/app-check';
 
 function browserLocaleId(): string {
   return typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en-GB';
@@ -49,26 +45,36 @@ export const appConfig: ApplicationConfig = {
     }),
     provideFunctions(() => getFunctions(getApp(), "europe-west1")),
     provideFirestore(() => {
-      let firestore = getFirestore();
+      const app = getApp();
+      let firestore;
       try {
-        firestore = initializeFirestore(getApp(), {
+        // Must not call getFirestore() first — that locks in default settings and
+        // makes initializeFirestore() fail with "already been called with different options".
+        firestore = initializeFirestore(app, {
           localCache: persistentLocalCache({
             tabManager: persistentMultipleTabManager(),
           }),
         });
       } catch (err) {
-        // Fallback for unsupported environments or repeated initialization.
+        // Hot reload, private browsing, or emulator: use the existing instance.
         console.warn('Firestore persistent cache unavailable, using default settings.', err);
+        firestore = getFirestore(app);
       }
       if (environment.useEmulators) {
         connectFirestoreEmulator(firestore, 'localhost', 8080);
       }
       return firestore;
     }),
-    /* provideAppCheck(() =>
-      initializeAppCheck(getApp(), {
-        provider: new ReCaptchaEnterpriseProvider('6LfC1dUrAAAAAH6_S3uOuk--gDUsbLivZ4lDEgH0'), isTokenAutoRefreshEnabled: true
-      })), */
+    provideAppCheck(() => {
+      // In debug App Check to use the debug provider instead of reCAPTCHA
+      if (isDevMode() || window.location.hostname === 'localhost') {
+        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+      }
+      return initializeAppCheck(undefined, {
+        provider: new ReCaptchaEnterpriseProvider('6LfC1dUrAAAAAH6_S3uOuk--gDUsbLivZ4lDEgH0'),
+        isTokenAutoRefreshEnabled: true
+      });
+    }),
     provideRouter(APP_ROUTES,
       withComponentInputBinding(),
       //  withDebugTracing(),

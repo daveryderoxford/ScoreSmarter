@@ -29,7 +29,7 @@ export interface NewBoatDialogResult {
   ],
   template: `
     <h2 mat-dialog-title>New Boat</h2>
-    <mat-dialog-content class="dialog-content">
+    <mat-dialog-content class="dialog-content-scroll">
       <form [formGroup]="form" class="dialog-form">
         <app-boat-core-fields [form]="form" [boatLevelSchemes]="boatSchemes()" />
 
@@ -37,20 +37,15 @@ export interface NewBoatDialogResult {
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button matButton="outlined" type="button" (click)="cancel()">Cancel</button>
-      <button matButton="tonal" type="button" (click)="save()" [disabled]="form.invalid || !form.dirty">Save</button>
+      <button matButton type="button" (click)="cancel()">Cancel</button>
+      <button matButton="filled" type="button" (click)="save()" [disabled]="form.invalid || !form.dirty">Save</button>
     </mat-dialog-actions>
   `,
   styles: [`
-    .dialog-content {
-      overflow: hidden;
-      max-height: none;
-    }
     .dialog-form {
       width: 100%;
       min-width: 0;
       padding-top: 8px;
-      overflow: hidden;
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,

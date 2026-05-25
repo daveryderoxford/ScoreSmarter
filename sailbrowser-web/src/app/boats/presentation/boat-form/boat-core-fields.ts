@@ -33,11 +33,6 @@ import { SailNumberInput } from '../sail-number-input';
       </mat-form-field>
 
       <mat-form-field>
-        <mat-label>Name</mat-label>
-        <input matInput formControlName="name">
-      </mat-form-field>
-
-      <mat-form-field>
         <mat-label>Normal helm</mat-label>
         <input matInput formControlName="helm">
         <mat-error>Helm name required</mat-error>
@@ -46,6 +41,11 @@ import { SailNumberInput } from '../sail-number-input';
       <mat-form-field>
         <mat-label>Normal crew</mat-label>
         <input matInput formControlName="crew">
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Boat Name</mat-label>
+        <input matInput formControlName="name" placeholder="eg Flying Fish">
       </mat-form-field>
 
       @if (supportsPersonalBand()) {

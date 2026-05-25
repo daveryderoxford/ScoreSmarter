@@ -6,41 +6,12 @@ const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 const WRITE_BATCH_LIMIT = 500;
 
 interface ClubMaintenanceStats {
-  orphanSeriesEntriesDeleted: number;
   staleFutureRacesCanceled: number;
 }
 
-export const cleanupOrphanSeriesEntriesWeekly = onSchedule(
-  {
-    schedule: "every tuesday 13:30",
-    timeZone: "Europe/London",
-    memory: "512MiB",
-    timeoutSeconds: 540,
-    retryCount: 0,
-  },
-  async () => {
-    const db = getFirestore();
-    const clubRefs = await db.collection("clubs").listDocuments();
-
-    logger.info(`cleanupOrphanSeriesEntriesWeekly: processing ${clubRefs.length} club(s)`);
-
-    for (const clubRef of clubRefs) {
-      try {
-        const stats = await cleanupOrphanSeriesEntriesForClub(db, clubRef.id);
-        logger.info("cleanupOrphanSeriesEntriesWeekly: club complete", {
-          clubId: clubRef.id,
-          orphanSeriesEntriesDeleted: stats.orphanSeriesEntriesDeleted,
-        });
-      } catch (err) {
-        logger.error("cleanupOrphanSeriesEntriesWeekly: club failed", {
-          clubId: clubRef.id,
-          error: err instanceof Error ? err.message : String(err),
-        });
-      }
-    }
-  },
-);
-
+/** Scheduled weekly job that runs every Monday and sets races over 2 weeks old 
+ * that still have a status if 'Future' as 'Canceled'. 
+*/
 export const cancelStaleFutureRacesWeekly = onSchedule(
   {
     schedule: "every monday 03:10",
@@ -72,46 +43,6 @@ export const cancelStaleFutureRacesWeekly = onSchedule(
     }
   },
 );
-
-async function cleanupOrphanSeriesEntriesForClub(db: Firestore, clubId: string): Promise<ClubMaintenanceStats> {
-  
-  // Read all series entries for club - This does not scale going forwards. 
-  // Move to adding a trigger when a race competitor is deleted. 
-  const seriesEntriesSnapshot = await db.collection(`clubs/${clubId}/series-entries`).get();
-
-  let batch = db.batch();
-  let writeCount = 0;
-  let orphanSeriesEntriesDeleted = 0;
-
-  const queueWrite = async (mutator: (b: WriteBatch) => void): Promise<void> => {
-    if (writeCount === WRITE_BATCH_LIMIT) {
-      await batch.commit();
-      batch = db.batch();
-      writeCount = 0;
-    }
-    mutator(batch);
-    writeCount++;
-  };
-
-  for (const entryDoc of seriesEntriesSnapshot.docs) {
-    const hasCompetitorSnapshot = await db
-      .collection(`clubs/${clubId}/race-results`)
-      .where("seriesEntryId", "==", entryDoc.id)
-      .limit(1)
-      .get();
-
-    if (hasCompetitorSnapshot.empty) {
-      orphanSeriesEntriesDeleted++;
-      await queueWrite(b => b.delete(entryDoc.ref));
-    }
-  }
-
-  if (writeCount > 0) {
-    await batch.commit();
-  }
-
-  return { orphanSeriesEntriesDeleted, staleFutureRacesCanceled: 0 };
-}
 
 async function cancelStaleFutureRacesForClub(db: Firestore, clubId: string, cutoff: Timestamp): Promise<ClubMaintenanceStats> {
   const staleFutureRacesSnapshot = await db
@@ -151,5 +82,5 @@ async function cancelStaleFutureRacesForClub(db: Firestore, clubId: string, cuto
     await batch.commit();
   }
 
-  return { orphanSeriesEntriesDeleted: 0, staleFutureRacesCanceled };
+  return { staleFutureRacesCanceled };
 }

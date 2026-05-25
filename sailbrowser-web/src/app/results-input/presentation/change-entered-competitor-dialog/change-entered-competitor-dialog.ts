@@ -19,7 +19,7 @@ export interface ChangeEnteredCompetitorDialogData {
   imports: [MatDialogModule, MatButtonModule, ChangeEnteredCompetitorForm],
   template: `
     <h3 mat-dialog-title>Change Race Entry</h3>
-    <mat-dialog-content>
+    <mat-dialog-content class="dialog-content-scroll">
       @if (series()) {
         <app-change-entered-competitor-form
           [competitor]="data.competitor"

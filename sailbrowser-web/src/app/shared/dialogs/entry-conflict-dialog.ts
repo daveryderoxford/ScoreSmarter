@@ -19,7 +19,7 @@ export interface EntryConflictSummary {
   selector: 'app-entry-conflict-dialog',
   template: `
     <h3 mat-dialog-title>{{ title }}</h3>
-    <div mat-dialog-content>
+    <div mat-dialog-content class="dialog-content-scroll">
       <p>{{ intro }}</p>
       <mat-list dense>
         @for (c of conflicts; track c.raceLabel + c.existingLabel) {

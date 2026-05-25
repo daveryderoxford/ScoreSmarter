@@ -2,6 +2,8 @@
   {
     "id": "demo",
     "shortName": "DEMO",
+    "latitude": 50.3714,
+    "longitude": -4.1427,
     "supportedHandicapSchemes": [
       "PY",
       "Personal"

@@ -1,10 +1,10 @@
-.mode-display {
+.top-buttons{
   display: flex;
-  justify-content: space-between;
+  gap: 15px;
+  justify-content: start;
   align-items: center;
-  font-size: 20px;
-  font-weight: 500;
   margin-bottom: 20px;
+  //background: var(--mat-sys-surface-container-low);
 }
 
 .mode-info {
@@ -24,9 +24,9 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px;
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: var(--mat-sys-surface-container-high);
   border-radius: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 15px;
   border-left: 4px solid transparent;
 
   &.suspicious {
@@ -34,6 +34,13 @@
     color: var(--mat-sys-on-error-container);
     border-left-color: var(--mat-sys-error);
   }
+}
+
+.title-row {
+  display: flex;
+  font: var(--mat-sys-title-medium);
+  gap: 25px;
+  margin-bottom:5px;
 }
 
 .stat-row {
