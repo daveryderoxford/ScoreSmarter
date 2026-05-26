@@ -71,20 +71,29 @@ export function isScheduledToday(race: Race, now: Date): boolean {
   return scheduled >= startOfLocalDay(now) && scheduled <= endOfLocalDay(now);
 }
 
-/** Period chip to use so `includesRaceForPanel` includes this race (today → past). */
-export function periodForRacePanel(race: Race, now: Date): Exclude<RacesPanelPeriod, null> {
-  if (isScheduledToday(race, now)) return 'past';
-  const scheduled = new Date(race.scheduledStart);
-  if (scheduled < startOfLocalDay(now)) return 'past';
-  return 'future';
-}
-
-export function includesRaceForPanel(race: Race, period: RacesPanelPeriod, now: Date): boolean {
+/**
+ * Default (no chip / `period === null`) shows today only; Past and Future add earlier or later days.
+ * Today's races always pass so they stay visible when switching chips.
+ */
+export function isRaceVisibleForPeriodChip(
+  race: Race,
+  period: RacesPanelPeriod,
+  now: Date,
+): boolean {
   if (isScheduledToday(race, now)) return true;
+  if (period === null) return false;
   const scheduled = new Date(race.scheduledStart);
   if (period === 'past') return scheduled < startOfLocalDay(now);
-  if (period === 'future') return scheduled > endOfLocalDay(now);
-  return false;
+  return scheduled > endOfLocalDay(now);
+}
+
+/**
+ * Which Past or Future chip to enable so a pre-selected race appears on open.
+ * Not for today's races — they are always visible via `isRaceVisibleForPeriodChip`.
+ */
+export function periodChipNeededForRace(race: Race, now: Date): 'past' | 'future' {
+  const scheduled = new Date(race.scheduledStart);
+  return scheduled < startOfLocalDay(now) ? 'past' : 'future';
 }
 
 /** Appended to a consumer empty-message when the filtered race list is empty. */
@@ -107,7 +116,7 @@ export function emptyMessagePeriodSuffix(
 
 export function groupRacesForPanel(races: readonly Race[], period: RacesPanelPeriod, now: Date): RaceDayGroup[] {
   const filtered = races
-    .filter(race => includesRaceForPanel(race, period, now))
+    .filter(race => isRaceVisibleForPeriodChip(race, period, now))
     .sort(sortRacesByTimeThenIndex);
   const byDay = new Map<string, Race[]>();
 

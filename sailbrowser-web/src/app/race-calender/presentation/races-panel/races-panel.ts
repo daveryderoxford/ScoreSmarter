@@ -1,11 +1,10 @@
 import {
-  afterNextRender,
+  afterRenderEffect,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
   ElementRef,
-  inject,
   input,
   output,
   signal,
@@ -18,9 +17,9 @@ import type { Race } from '../../model/race';
 import {
   emptyMessagePeriodSuffix,
   groupRacesForPanel,
-  includesRaceForPanel,
   isCompletedRace,
-  periodForRacePanel,
+  isRaceVisibleForPeriodChip,
+  periodChipNeededForRace,
   racePanelLabelLine1,
   racePanelLabelLine2,
   type RacesPanelFilter,
@@ -164,8 +163,6 @@ const DEFAULT_AVAILABLE_FILTERS: readonly RacesPanelFilter[] = ['past', 'future'
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RacesPanel {
-  private readonly host = inject(ElementRef<HTMLElement>);
-
   races = input<readonly Race[]>([]);
   selectedRaceIds = input<readonly string[]>([]);
   maxSelections = input<number | undefined>(undefined);
@@ -221,27 +218,21 @@ export class RacesPanel {
       const now = this.now();
       const filters = this.availableFilters();
       const period = this.effectivePeriod();
-      const hideCompleted = this.effectiveHideCompleted();
 
+      // One-shot: turn on Past or Future so pre-selected race IDs appear (default view is today-only).
       let adjusted = false;
       for (const id of ids) {
         const race = pool.get(id);
         if (!race) continue;
 
-        const visible =
-          (!hideCompleted || !isCompletedRace(race)) &&
-          includesRaceForPanel(race, period, now);
-        if (visible) continue;
+        if (isRaceVisibleForPeriodChip(race, period, now)) continue;
 
-        const neededPeriod = periodForRacePanel(race, now);
-        if (filters.includes(neededPeriod)) {
-          this.selectedPeriod.set(neededPeriod);
+        const chip = periodChipNeededForRace(race, now);
+        if (filters.includes(chip)) {
+          this.selectedPeriod.set(chip);
+          adjusted = true;
+          break;
         }
-        if (isCompletedRace(race) && filters.includes('hideCompleted')) {
-          this.hideCompleted.set(false);
-        }
-        adjusted = true;
-        break;
       }
 
       if (adjusted) return;
@@ -249,26 +240,46 @@ export class RacesPanel {
       this.startupFiltersSynced.set(true);
     });
 
-    afterNextRender(() => {
-      // scroll to selected race when first displaying panel
-      effect(() => {
-        if (this.startupScrollDone()) return;
+    // After DOM update; re-runs when period chip sync makes the pre-selected race visible.
+    afterRenderEffect(() => {
+      if (this.startupScrollDone()) return;
 
-        const ids = this.selectedRaceIds();
-        if (ids.length === 0) return;
+      const ids = this.selectedRaceIds();
+      if (ids.length === 0) return;
 
-        const targetId = ids[0];
-        const visibleIds = new Set(this.dayGroups().flatMap(g => g.races.map(r => r.id)));
-        if (!visibleIds.has(targetId)) return;
+      const visibleIds = new Set(this.dayGroups().flatMap(g => g.races.map(r => r.id)));
+      if (!ids.some(id => visibleIds.has(id))) return;
 
-        const root = this.raceListContainer()?.nativeElement ?? this.host.nativeElement;
-        const option = root.querySelector(`[data-race-id="${targetId}"]`) as HTMLElement | null;
-        if (!option) return;
-
-        option.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        this.startupScrollDone.set(true);
-      });
+      this.scrollToFirstVisibleSelectedRace();
     });
+  }
+
+  /** One-shot: scroll list to the first pre-selected race visible after filter sync. */
+  private scrollToFirstVisibleSelectedRace(): void {
+    if (this.startupScrollDone()) return;
+
+    const ids = this.selectedRaceIds();
+    const visibleIds = new Set(this.dayGroups().flatMap(g => g.races.map(r => r.id)));
+    const targetId = ids.find(id => visibleIds.has(id));
+    if (!targetId) return;
+
+    const container = this.raceListContainer()?.nativeElement;
+    const option = container?.querySelector(`[data-race-id="${targetId}"]`) as HTMLElement | null;
+    if (!container || !option) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const optionRect = option.getBoundingClientRect();
+    const isAbove = optionRect.top < containerRect.top;
+    const isBelow = optionRect.bottom > containerRect.bottom;
+    if (isAbove || isBelow) {
+      const targetTop =
+        option.offsetTop -
+        container.offsetTop -
+        (container.clientHeight - option.clientHeight) / 2;
+      container.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+    }
+
+    this.startupScrollDone.set(true);
   }
 
   protected readonly isCompletedRace = isCompletedRace;

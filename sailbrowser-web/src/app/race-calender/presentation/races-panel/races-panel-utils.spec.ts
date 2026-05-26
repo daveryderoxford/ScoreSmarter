@@ -3,10 +3,10 @@ import type { Race } from '../../model/race';
 import {
   emptyMessagePeriodSuffix,
   groupRacesForPanel,
-  includesRaceForPanel,
   isCompletedRace,
+  isRaceVisibleForPeriodChip,
   isScheduledToday,
-  periodForRacePanel,
+  periodChipNeededForRace,
   racePanelLabelLine1,
   racePanelLabelLine2,
 } from './races-panel-utils';
@@ -36,23 +36,23 @@ describe('races-panel-utils', () => {
   it('treats races scheduled today as included regardless of period', () => {
     const today = race({ scheduledStart: new Date(2026, 3, 29, 9, 0) });
     expect(isScheduledToday(today, now)).toBe(true);
-    expect(includesRaceForPanel(today, null, now)).toBe(true);
-    expect(includesRaceForPanel(today, 'past', now)).toBe(true);
-    expect(includesRaceForPanel(today, 'future', now)).toBe(true);
+    expect(isRaceVisibleForPeriodChip(today, null, now)).toBe(true);
+    expect(isRaceVisibleForPeriodChip(today, 'past', now)).toBe(true);
+    expect(isRaceVisibleForPeriodChip(today, 'future', now)).toBe(true);
   });
 
   it('only includes past races when the past period chip is active', () => {
     const yesterday = race({ id: 'y', scheduledStart: new Date(2026, 3, 28, 9, 0) });
-    expect(includesRaceForPanel(yesterday, null, now)).toBe(false);
-    expect(includesRaceForPanel(yesterday, 'past', now)).toBe(true);
-    expect(includesRaceForPanel(yesterday, 'future', now)).toBe(false);
+    expect(isRaceVisibleForPeriodChip(yesterday, null, now)).toBe(false);
+    expect(isRaceVisibleForPeriodChip(yesterday, 'past', now)).toBe(true);
+    expect(isRaceVisibleForPeriodChip(yesterday, 'future', now)).toBe(false);
   });
 
   it('only includes future races when the future period chip is active', () => {
     const tomorrow = race({ id: 't', scheduledStart: new Date(2026, 3, 30, 9, 0) });
-    expect(includesRaceForPanel(tomorrow, null, now)).toBe(false);
-    expect(includesRaceForPanel(tomorrow, 'past', now)).toBe(false);
-    expect(includesRaceForPanel(tomorrow, 'future', now)).toBe(true);
+    expect(isRaceVisibleForPeriodChip(tomorrow, null, now)).toBe(false);
+    expect(isRaceVisibleForPeriodChip(tomorrow, 'past', now)).toBe(false);
+    expect(isRaceVisibleForPeriodChip(tomorrow, 'future', now)).toBe(true);
   });
 
   it('emptyMessagePeriodSuffix describes the active period filters', () => {
@@ -65,13 +65,11 @@ describe('races-panel-utils', () => {
     );
   });
 
-  it('periodForRacePanel picks past for today and yesterday and future for tomorrow', () => {
-    const today = race({ scheduledStart: new Date(2026, 3, 29, 9, 0) });
+  it('periodChipNeededForRace picks past for yesterday and future for tomorrow', () => {
     const yesterday = race({ scheduledStart: new Date(2026, 3, 28, 9, 0) });
     const tomorrow = race({ scheduledStart: new Date(2026, 3, 30, 9, 0) });
-    expect(periodForRacePanel(today, now)).toBe('past');
-    expect(periodForRacePanel(yesterday, now)).toBe('past');
-    expect(periodForRacePanel(tomorrow, now)).toBe('future');
+    expect(periodChipNeededForRace(yesterday, now)).toBe('past');
+    expect(periodChipNeededForRace(tomorrow, now)).toBe('future');
   });
 
   it('groups races by local day, sorting future days ascending and races within a day by start then index', () => {
