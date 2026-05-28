@@ -1,6 +1,7 @@
 import { ApiError, GoogleGenAI, Type, type GenerateContentResponse } from "@google/genai";
-import { ScannerContext, ScannerTimeFormat, httpsWithDetails, logScan, logScanError } from "../ai-scan-types.js";
+import { ScannerContext, ScannerTimeFormat, logScan, logScanError } from "../ai-scan-model.js";
 import { buildPrompt } from "./prompt-builder.js";
+import { detailedHttpsError } from '../../shared/https-error.js';
 
 const GCP_PROJECT = process.env.GCLOUD_PROJECT || "sailbrowser-efef0";
 
@@ -128,7 +129,7 @@ export async function parseWithAi(
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     logScanError(requestId, "build_prompt", msg, { cause: "build_prompt_failed" });
-    throw httpsWithDetails("internal", "Failed to build AI prompt.", {
+    throw detailedHttpsError("internal", "Failed to build AI prompt.", {
       requestId,
       stage: "build_prompt",
       cause: "build_prompt_failed",
@@ -177,7 +178,7 @@ export async function parseWithAi(
       model: GEMINI_MODEL,
       httpStatus: status,
     });
-    throw httpsWithDetails(
+    throw detailedHttpsError(
       "internal",
       `AI request failed (${msg}). Check logs for requestId.`,
       {
@@ -207,7 +208,7 @@ export async function parseWithAi(
       cause: "empty_model_text",
       finishReason,
     });
-    throw httpsWithDetails(
+    throw detailedHttpsError(
       "internal",
       "No text returned from Gemini (empty or blocked response). Check logs for requestId.",
       {
@@ -244,7 +245,7 @@ export async function parseWithAi(
       cause: "json_parse_failed",
       resultJsonHead: resultJson.slice(0, 200),
     });
-    throw httpsWithDetails(
+    throw detailedHttpsError(
       "internal",
       "Model returned invalid JSON. Check logs for requestId.",
       {
@@ -351,7 +352,7 @@ export function validateAndNormalizeTimes(
   defaultHour?: number,
 ): void {
   if (typeof parsed !== "object" || parsed === null) {
-    throw httpsWithDetails("internal", "Model response is not an object.", {
+    throw detailedHttpsError("internal", "Model response is not an object.", {
       requestId,
       stage: "parse_model_json",
       cause: "invalid_model_shape",
@@ -359,7 +360,7 @@ export function validateAndNormalizeTimes(
   }
   const scannedResults = (parsed as { scannedResults?: unknown }).scannedResults;
   if (!Array.isArray(scannedResults)) {
-    throw httpsWithDetails("internal", "Model response missing scannedResults array.", {
+    throw detailedHttpsError("internal", "Model response missing scannedResults array.", {
       requestId,
       stage: "parse_model_json",
       cause: "missing_scanned_results",

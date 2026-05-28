@@ -7,7 +7,7 @@ if (getApps().length === 0) {
 }
 
 test("validateStoredRequest accepts required fields", async () => {
-  const { validateStoredRequest } = await import("./callable-parse-results-sheet.js");
+  const { validateStoredRequest } = await import("./parse-results-sheet.js");
   const data = validateStoredRequest(
     {
       scannerContext: { targetRaces: [], lapFormat: "numbers", hasHours: false, listOrder: "unsorted", roster: [] },
@@ -22,7 +22,7 @@ test("validateStoredRequest accepts required fields", async () => {
 });
 
 test("validateStoredRequest throws when raceId is missing", async () => {
-  const { validateStoredRequest } = await import("./callable-parse-results-sheet.js");
+  const { validateStoredRequest } = await import("./parse-results-sheet.js");
   assert.throws(
     () => validateStoredRequest(
       {
@@ -36,7 +36,7 @@ test("validateStoredRequest throws when raceId is missing", async () => {
 });
 
 test("extractScanResponseForPersistence keeps scan fields only", async () => {
-  const { extractScanResponseForPersistence } = await import("./callable-parse-results-sheet.js");
+  const { extractScanResponseForPersistence } = await import("./parse-results-sheet.js");
   const payload = extractScanResponseForPersistence({
     scannedResults: [{ rowIndex: 1 }],
     pageNotes: "note",

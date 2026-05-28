@@ -7,11 +7,12 @@ import {
   ScannerContext,
   ScannerTimeFormat,
   SeriesEntryDoc,
-  httpsWithDetails,
   logScan,
   logScanError,
-} from "../ai-scan-types.js";
+} from "../ai-scan-model.js";
 import { parseWithAi } from "./ai-parsing.js";
+import { detailedHttpsError } from "../../shared/https-error.js";
+import { assertAuthenticated, assertCallerRole } from "../../shared/authorisation.js";
 
 function db() {
   return getFirestore();
@@ -40,30 +41,6 @@ function seriesEntryFromDoc(raw: DocumentData): SeriesEntryDoc {
   };
 }
 
-function assertCallerHasClubAccess(
-  authToken: Record<string, unknown>,
-  clubId: string,
-  requestId: string,
-): void {
-  /*
-  if (authToken["sysAdmin"] === true) {
-    return;
-  }
-  const clubs = authToken["clubs"] as Record<string, string> | undefined;
-  if (clubs && typeof clubs[clubId] === "string" && clubs[clubId].length > 0) {
-    return;
-  }
-  logScanError(requestId, "assert_club_access", "Club access denied", { clubId });
-  throw httpsWithDetails("permission-denied", "You do not have access to load competitors for this club.", {
-    requestId,
-    stage: "assert_club_access",
-    cause: "club_claim_missing",
-    clubId,
-  });
-  */
-  // Enable by uncommenting the block above once Auth custom claims (e.g. clubs map) are assigned for scanner users.
-}
-
 async function getRaceCompetitors(
   clubId: string,
   raceId: string,
@@ -82,7 +59,7 @@ async function getRaceCompetitors(
       raceId,
       cause: "empty_race_results",
     });
-    throw httpsWithDetails(
+    throw detailedHttpsError(
       "not-found",
       "No race competitors found for this race. Add entries or select a different race.",
       { requestId, stage: "build_roster", cause: "empty_race_results", clubId, raceId },
@@ -134,7 +111,7 @@ async function getRaceCompetitors(
       raceId,
       cause: "roster_empty_after_resolve",
     });
-    throw httpsWithDetails(
+    throw detailedHttpsError(
       "failed-precondition",
       "Race has competitor rows but none could be resolved to class / sail / helm from series entries.",
       { requestId, stage: "build_roster", cause: "roster_empty_after_resolve", clubId, raceId },
@@ -155,28 +132,28 @@ export function validateStoredRequest(data: unknown, requestId: string): ParseSt
   const { scannerContext, clubId, raceId, storagePath } = requestData;
 
   if (!scannerContext) {
-    throw httpsWithDetails("invalid-argument", "Missing scanner context.", {
+    throw detailedHttpsError("invalid-argument", "Missing scanner context.", {
       requestId,
       stage: "validate_input",
       cause: "missing_context",
     });
   }
   if (!clubId || typeof clubId !== "string") {
-    throw httpsWithDetails("invalid-argument", "Missing clubId.", {
+    throw detailedHttpsError("invalid-argument", "Missing clubId.", {
       requestId,
       stage: "validate_input",
       cause: "missing_club_id",
     });
   }
   if (!raceId || typeof raceId !== "string") {
-    throw httpsWithDetails("invalid-argument", "Missing raceId.", {
+    throw detailedHttpsError("invalid-argument", "Missing raceId.", {
       requestId,
       stage: "validate_input",
       cause: "missing_race_id",
     });
   }
   if (!storagePath || typeof storagePath !== "string") {
-    throw httpsWithDetails("invalid-argument", "Missing storagePath.", {
+    throw detailedHttpsError("invalid-argument", "Missing storagePath.", {
       requestId,
       stage: "validate_input",
       cause: "missing_storage_path",
@@ -283,17 +260,10 @@ export const parseStoredResultsSheet = onCall({
 }, async (request) => {
   const requestId = randomUUID();
 
-  if (!request.auth) {
-    logScanError(requestId, "validate_input", "Unauthenticated call");
-    throw httpsWithDetails("unauthenticated", "Only authenticated users can scan results sheets.", {
-      requestId,
-      stage: "validate_input",
-      cause: "no_auth",
-    });
-  }
+  assertAuthenticated(request.auth, { requestId });
 
   const { scannerContext, clubId, raceId, storagePath } = validateStoredRequest(request.data, requestId);
-  assertCallerHasClubAccess(request.auth.token as Record<string, unknown>, clubId, requestId);
+  assertCallerRole("race-officer", request.auth, clubId);
 
   logScan(requestId, "validate_input", "parseStoredResultsSheet invoked", {
     uid: request.auth.uid,

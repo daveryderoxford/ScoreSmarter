@@ -2,8 +2,8 @@
 <div class="content">
   <mat-card class="home-card">
     <div class="club-header">
-      @if (clubStore.club().logoUrl) {
-        <img [src]="clubStore.club().logoUrl" alt="Club Logo" class="club-logo" referrerpolicy="no-referrer">
+      @if (logoSrc()) {
+        <img [src]="logoSrc()!" alt="Club Logo" class="club-logo" referrerpolicy="no-referrer">
       }
       <h1 class="club-title">{{ clubStore.club().name }}</h1>
     </div>
@@ -12,15 +12,15 @@
       <div class="actions">
         <a matButton="tonal" routerLink="/entry/enter">
           <mat-icon>assignment</mat-icon>
-          <span>Enter a Race</span>
+          <span>Race Entry</span>
         </a>
         <a matButton="tonal" routerLink="/entry/entries">
           <mat-icon>list_alt</mat-icon>
-          <span>View Entries</span>
+          <span>Input results</span>
         </a>
         <a matButton="tonal" routerLink="/results/viewer">
           <mat-icon>emoji_events</mat-icon>
-          <span>View Results</span>
+          <span>Results display</span>
         </a>
       </div>
 
