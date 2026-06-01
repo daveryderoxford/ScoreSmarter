@@ -1,6 +1,6 @@
-import type { ScannerContext, ScannerTimeFormat } from "@shared/scanner-context";
+import type { ScannerContext, ScannerTimeFormat, ScanStrategy } from "@shared/scanner-context";
 
-export type { ScannerContext, ScannerTimeFormat };
+export type { ScannerContext, ScannerTimeFormat, ScanStrategy };
 
 export const LOG = "resultsSheetScanner";
 

@@ -139,6 +139,16 @@ describe('CurrentRaces', () => {
     expect(current.selectedRaceIds()).toEqual(['today-a', 'today-b', 'manual']);
   });
 
+  it('addRaceId is a no-op when the race is already manually added', () => {
+    fakeCalendar.setAllRaces([
+      raceFixture({ id: 'manual', index: 1, scheduledStart: yesterdayAt(12, 0) }),
+    ]);
+    current.addRaceId('manual');
+    const before = current.selectedRaceIds();
+    current.addRaceId('manual');
+    expect(current.selectedRaceIds()).toEqual(before);
+  });
+
   it('removeRaceId drops a manual extra from selection', () => {
     fakeCalendar.setAllRaces([
       raceFixture({ id: 'today', index: 1, scheduledStart: todayAt(10, 0) }),
@@ -159,5 +169,17 @@ describe('CurrentRaces', () => {
     ]);
 
     expect(current.selectedSeries().map(s => s.id).sort()).toEqual(['series-1', 'series-2']);
+    expect(current.selectedSeriesIds()).toEqual(['series-1', 'series-2']);
+    expect(current.selectedSeriesIdsKey()).toBe('series-1\0series-2');
+  });
+
+  it('selectedRaceIdsKey is stable when selectedRaceIds is recomputed with the same ids', () => {
+    fakeCalendar.setAllRaces([
+      raceFixture({ id: 'today-a', index: 1, scheduledStart: todayAt(10, 0) }),
+      raceFixture({ id: 'today-b', index: 1, scheduledStart: todayAt(11, 0) }),
+    ]);
+    const keyBefore = current.selectedRaceIdsKey();
+    current.addRaceId('today-a');
+    expect(current.selectedRaceIdsKey()).toBe(keyBefore);
   });
 });

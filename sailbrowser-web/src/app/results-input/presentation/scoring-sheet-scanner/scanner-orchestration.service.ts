@@ -214,9 +214,9 @@ export class ScannerOrchestrationService {
   }
 
   private async runCallableScan(request: ScanRunRequest): Promise<ScanResponse> {
-    const hasImage = !!request.imageBase64 && !!request.imageMimeType;
-    const hasStoredPath = !!request.storagePath;
-    if (!hasImage && !hasStoredPath) throw new Error('Missing image data for scan.');
+    const hasInlineImage = !!request.imageBase64 && !!request.imageMimeType;
+    const useStoredRaceSheet = !!request.useStoredRaceSheet;
+    if (!hasInlineImage && !useStoredRaceSheet) throw new Error('Missing image data for scan.');
 
     const functions = getFunctions(this.app, 'europe-west1');
     if (environment.useEmulators) {
@@ -230,22 +230,19 @@ export class ScannerOrchestrationService {
       timeout: PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS,
     });
 
-    let storedImagePath = request.storagePath ?? undefined;
-    if (!storedImagePath) {
-      const uploadRes = await uploadFn({
+    if (!useStoredRaceSheet) {
+      await uploadFn({
         imageBase64: request.imageBase64,
         imageMimeType: request.imageMimeType,
         clubId: request.clubId,
         raceId: request.raceId,
       });
-      storedImagePath = (uploadRes.data as { storagePath?: string } | null)?.storagePath;
-      if (!storedImagePath) throw new Error('Upload succeeded but no storagePath was returned.');
     }
+
     const res = await parseFn({
       scannerContext: request.scannerContext,
       clubId: request.clubId,
       raceId: request.raceId,
-      storagePath: storedImagePath,
     });
 
     return res.data as ScanResponse;

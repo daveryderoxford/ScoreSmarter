@@ -50,3 +50,16 @@ test("extractScanResponseForPersistence keeps scan fields only", async () => {
     unreadableRowsCount: 2,
   });
 });
+
+test("extractScanResponseForPersistence omits pageNotes when absent", async () => {
+  const { extractScanResponseForPersistence } = await import("./parse-results-sheet.js");
+  const payload = extractScanResponseForPersistence({
+    scannedResults: [{ rowIndex: 1 }],
+    unreadableRowsCount: 0,
+  });
+  assert.equal("pageNotes" in payload, false);
+  assert.deepEqual(payload, {
+    scannedResults: [{ rowIndex: 1 }],
+    unreadableRowsCount: 0,
+  });
+});

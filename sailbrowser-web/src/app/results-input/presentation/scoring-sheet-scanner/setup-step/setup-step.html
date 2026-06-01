@@ -1,6 +1,15 @@
 <mat-card appearance="outlined" class="form-card">
   <form [formGroup]="form()">
     <mat-form-field subscriptSizing="dynamic">
+      <mat-label>Scan strategy</mat-label>
+      <mat-select formControlName="scanStrategy">
+        <mat-option value="FullAIScan-Fast">Full AI scan (fast)</mat-option>
+        <mat-option value="FullAIScan">Full AI scan (Pro, legacy)</mat-option>
+      </mat-select>
+      <mat-hint>Compare strategies on the same sheet by re-scanning with the other option.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field subscriptSizing="dynamic">
       <mat-label>Results ordering</mat-label>
       <mat-select formControlName="listOrder">
         <mat-option value="chronological">Finish order (approximate)</mat-option>

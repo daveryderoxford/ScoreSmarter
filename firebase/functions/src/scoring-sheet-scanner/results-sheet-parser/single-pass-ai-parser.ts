@@ -2,121 +2,15 @@ import { ApiError, GoogleGenAI, Type, type GenerateContentResponse } from "@goog
 import { ScannerContext, ScannerTimeFormat, logScan, logScanError } from "../ai-scan-model.js";
 import { buildPrompt } from "./prompt-builder.js";
 import { detailedHttpsError } from '../../shared/https-error.js';
+import { StratageyParemeters } from './scan-strategy.js';
 
 const GCP_PROJECT = process.env.GCLOUD_PROJECT || "sailbrowser-efef0";
-
-/**
- * Vertex **Generative AI API** location for @google/genai (not the same as the Cloud Functions region).
- * Gemini 3.1 Pro preview is only available on the **global** endpoint (see Vertex model + Gemini 3 docs).
- */
-const VERTEX_GENAI_LOCATION = "global";
-
-/** Gemini 3.1 Pro (Vertex public preview); call only with `VERTEX_GENAI_LOCATION` "global". */
-const GEMINI_MODEL = "gemini-3.1-pro-preview";
-
-const genai = new GoogleGenAI({
-  vertexai: true,
-  project: GCP_PROJECT,
-  location: VERTEX_GENAI_LOCATION,
-});
-
-function timeValueSchemaForMode(timeFormat: ScannerTimeFormat) {
-  if (timeFormat === "stopwatch_ms_elapsed") {
-    return {
-      type: Type.OBJECT,
-      properties: {
-        elapsedMinutes: { type: Type.NUMBER },
-        seconds: { type: Type.NUMBER },
-      },
-      required: ["elapsedMinutes", "seconds"],
-    };
-  }
-  return {
-    type: Type.OBJECT,
-    properties: {
-      hours: { type: Type.NUMBER },
-      minutes: { type: Type.NUMBER },
-      seconds: { type: Type.NUMBER },
-    },
-    required: ["hours", "minutes", "seconds"],
-  };
-}
-
-/** Structured output schema for @google/genai */
-function scanResultResponseSchemaForMode(timeFormat: ScannerTimeFormat) {
-  return {
-  type: Type.OBJECT,
-  properties: {
-    scannedResults: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          rowIndex: { type: Type.INTEGER },
-          boatClass: {
-            type: Type.OBJECT,
-            properties: {
-              value: { type: Type.STRING },
-              confidence: { type: Type.STRING },
-              alternatives: { type: Type.ARRAY, items: { type: Type.STRING } },
-            },
-          },
-          sailNumber: {
-            type: Type.OBJECT,
-            properties: {
-              value: { type: Type.STRING },
-              confidence: { type: Type.STRING },
-              alternatives: { type: Type.ARRAY, items: { type: Type.STRING } },
-            },
-          },
-          competitorName: {
-            type: Type.OBJECT,
-            properties: {
-              value: { type: Type.STRING },
-              confidence: { type: Type.STRING },
-              alternatives: { type: Type.ARRAY, items: { type: Type.STRING } },
-            },
-          },
-          time: {
-            type: Type.OBJECT,
-            properties: {
-              value: timeValueSchemaForMode(timeFormat),
-              confidence: { type: Type.STRING },
-              alternatives: { type: Type.ARRAY, items: timeValueSchemaForMode(timeFormat) },
-            },
-          },
-          laps: {
-            type: Type.OBJECT,
-            properties: {
-              value: { type: Type.NUMBER },
-              confidence: { type: Type.STRING },
-              alternatives: { type: Type.ARRAY, items: { type: Type.NUMBER } },
-            },
-          },
-          status: {
-            type: Type.STRING,
-            description: "Standard sailing status codes, e.g. OK, RET, DNS, DNF, DSQ",
-          },
-          overallRowConfidence: {
-            type: Type.STRING,
-            description: "HIGH, MANUAL_CHECK, FAILED, or AMBIGUOUS",
-          },
-          matchedCompetitorId: { type: Type.STRING },
-        },
-        required: ["rowIndex", "boatClass", "sailNumber", "time", "laps", "status", "overallRowConfidence"],
-      },
-    },
-    pageNotes: { type: Type.STRING },
-    unreadableRowsCount: { type: Type.INTEGER },
-  },
-  required: ["scannedResults", "unreadableRowsCount"],
-  };
-}
 
 const HMS_REGEX = /^(\d{1,2}):(\d{2}):(\d{2})$/;
 const MS_REGEX = /^(\d{1,2}):(\d{2})$/;
 
-export async function parseWithAi(
+export async function singlePassAIParser(
+  stratagy: StratageyParemeters,
   requestId: string,
   imageBase64: string,
   imageMimeType: string,
@@ -139,18 +33,24 @@ export async function parseWithAi(
 
   const promptPreviewMax = 800;
   logScan(requestId, "build_prompt", "Built text prompt for Gemini via Vertex (image sent separately)", {
-    model: GEMINI_MODEL,
+    model: stratagy.model,
     project: GCP_PROJECT,
-    location: VERTEX_GENAI_LOCATION,
+    location: stratagy.location,
     promptCharLength: prompt.length,
     promptPreview: prompt.slice(0, promptPreviewMax),
     promptTruncated: prompt.length > promptPreviewMax,
   });
 
+  const genai = new GoogleGenAI({
+    vertexai: true,
+    project: GCP_PROJECT,
+    location: stratagy.location,
+  });
+
   let result: GenerateContentResponse;
   try {
     result = await genai.models.generateContent({
-      model: GEMINI_MODEL,
+      model: stratagy.model,
       contents: [
         {
           role: "user",
@@ -175,7 +75,8 @@ export async function parseWithAi(
     const status = e instanceof ApiError ? e.status : undefined;
     logScanError(requestId, "vertex_generate", `Gemini generateContent failed: ${msg}`, {
       cause: "vertex_error",
-      model: GEMINI_MODEL,
+      model: stratagy.model,
+      location: stratagy.location,
       httpStatus: status,
     });
     throw detailedHttpsError(
@@ -185,7 +86,8 @@ export async function parseWithAi(
         requestId,
         stage: "vertex_generate",
         cause: "vertex_error",
-        model: GEMINI_MODEL,
+        model: stratagy.model,
+        location: stratagy.location,
         vertexMessage: msg.slice(0, 500),
         httpStatus: status,
       },
@@ -358,7 +260,7 @@ export function validateAndNormalizeTimes(
       cause: "invalid_model_shape",
     });
   }
-  const scannedResults = (parsed as { scannedResults?: unknown }).scannedResults;
+  const scannedResults = (parsed as { scannedResults?: unknown; }).scannedResults;
   if (!Array.isArray(scannedResults)) {
     throw detailedHttpsError("internal", "Model response missing scannedResults array.", {
       requestId,
@@ -373,13 +275,13 @@ export function validateAndNormalizeTimes(
       rowIndex?: unknown;
       status?: unknown;
       overallRowConfidence?: unknown;
-      time?: { value?: unknown; confidence?: unknown };
+      time?: { value?: unknown; confidence?: unknown; };
     };
     const status = typeof rowObj.status === "string" ? rowObj.status.toUpperCase() : "OK";
     const timeValue = rowObj.time?.value;
     if (status !== "OK") {
       if (typeof rowObj.time === "object" && rowObj.time !== null) {
-        (rowObj.time as { value?: unknown }).value = "";
+        (rowObj.time as { value?: unknown; }).value = "";
       }
       continue;
     }
@@ -393,15 +295,108 @@ export function validateAndNormalizeTimes(
         timeFormat,
       });
       if (typeof rowObj.time === "object" && rowObj.time !== null) {
-        (rowObj.time as { value?: unknown; confidence?: unknown }).value = "";
-        (rowObj.time as { value?: unknown; confidence?: unknown }).confidence = "MANUAL_CHECK";
+        (rowObj.time as { value?: unknown; confidence?: unknown; }).value = "";
+        (rowObj.time as { value?: unknown; confidence?: unknown; }).confidence = "MANUAL_CHECK";
       }
       rowObj.overallRowConfidence = "MANUAL_CHECK";
       continue;
     }
 
     if (typeof rowObj.time === "object" && rowObj.time !== null) {
-      (rowObj.time as { value?: unknown }).value = normalized;
+      (rowObj.time as { value?: unknown; }).value = normalized;
     }
   }
+}
+
+function timeValueSchemaForMode(timeFormat: ScannerTimeFormat) {
+  if (timeFormat === "stopwatch_ms_elapsed") {
+    return {
+      type: Type.OBJECT,
+      properties: {
+        elapsedMinutes: { type: Type.NUMBER },
+        seconds: { type: Type.NUMBER },
+      },
+      required: ["elapsedMinutes", "seconds"],
+    };
+  }
+  return {
+    type: Type.OBJECT,
+    properties: {
+      hours: { type: Type.NUMBER },
+      minutes: { type: Type.NUMBER },
+      seconds: { type: Type.NUMBER },
+    },
+    required: ["hours", "minutes", "seconds"],
+  };
+}
+
+/** Structured output schema for @google/genai */
+function scanResultResponseSchemaForMode(timeFormat: ScannerTimeFormat) {
+  return {
+  type: Type.OBJECT,
+  properties: {
+    scannedResults: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          rowIndex: { type: Type.INTEGER },
+          boatClass: {
+            type: Type.OBJECT,
+            properties: {
+              value: { type: Type.STRING },
+              confidence: { type: Type.STRING },
+              alternatives: { type: Type.ARRAY, items: { type: Type.STRING } },
+            },
+          },
+          sailNumber: {
+            type: Type.OBJECT,
+            properties: {
+              value: { type: Type.STRING },
+              confidence: { type: Type.STRING },
+              alternatives: { type: Type.ARRAY, items: { type: Type.STRING } },
+            },
+          },
+          competitorName: {
+            type: Type.OBJECT,
+            properties: {
+              value: { type: Type.STRING },
+              confidence: { type: Type.STRING },
+              alternatives: { type: Type.ARRAY, items: { type: Type.STRING } },
+            },
+          },
+          time: {
+            type: Type.OBJECT,
+            properties: {
+              value: timeValueSchemaForMode(timeFormat),
+              confidence: { type: Type.STRING },
+              alternatives: { type: Type.ARRAY, items: timeValueSchemaForMode(timeFormat) },
+            },
+          },
+          laps: {
+            type: Type.OBJECT,
+            properties: {
+              value: { type: Type.NUMBER },
+              confidence: { type: Type.STRING },
+              alternatives: { type: Type.ARRAY, items: { type: Type.NUMBER } },
+            },
+          },
+          status: {
+            type: Type.STRING,
+            description: "Standard sailing status codes, e.g. OK, RET, DNS, DNF, DSQ",
+          },
+          overallRowConfidence: {
+            type: Type.STRING,
+            description: "HIGH, MANUAL_CHECK, FAILED, or AMBIGUOUS",
+          },
+          matchedCompetitorId: { type: Type.STRING },
+        },
+        required: ["rowIndex", "boatClass", "sailNumber", "time", "laps", "status", "overallRowConfidence"],
+      },
+    },
+    pageNotes: { type: Type.STRING },
+    unreadableRowsCount: { type: Type.INTEGER },
+  },
+  required: ["scannedResults", "unreadableRowsCount"],
+  };
 }

@@ -44,7 +44,7 @@ import {
 import { ScannerOrchestrationService } from './scanner-orchestration.service';
 import { ResultsSheetCaptureService } from '../../services/results-sheet-capture.service';
 import { RaceStep } from './race-step/race-step';
-import type { ScannerTimeFormat } from '@shared/scanner-context';
+import type { ScanStrategy, ScannerTimeFormat } from '@shared/scanner-context';
 import { SetupStep } from './setup-step/setup-step';
 import { PhoneCaptureQrDialog, PhoneCaptureQrDialogResult } from './phone-capture-qr-dialog/phone-capture-qr-dialog';
 import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step/review-step';
@@ -135,6 +135,7 @@ export class ScoringSheetScanner {
     lapFormat: ['numbers', Validators.required],
     defaultHour: [10, [Validators.min(0), Validators.max(23)]],
     defaultLaps: [1, [Validators.min(1), Validators.max(100)]],
+    scanStrategy: this.fb.nonNullable.control<ScanStrategy>('FullAIScan', Validators.required),
   });
   captureForm = this.fb.nonNullable.group({
     hasImage: [false, Validators.requiredTrue],
@@ -650,6 +651,7 @@ export class ScoringSheetScanner {
       roster: [] as { id: string; class: string; sailNumber: string; name?: string; }[],
       lapsPresentOnSheet: v.lapsPresentOnSheet,
       timeFormat: v.timeFormat,
+      scanStrategy: v.scanStrategy,
     };
 
     await new Promise<void>((resolve) => {

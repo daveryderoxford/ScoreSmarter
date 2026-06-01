@@ -57,10 +57,10 @@ export class RaceCompetitorStore {
   }
 
   /** Race competitors in selected races */
-  private readonly selectedCompResource = rxResource<RaceCompetitor[], string[]>({
-    params: () => this.selectedRaces.selectedRaceIds(),
-    stream: (data) => {
-      const selectedIds = data.params;
+  private readonly selectedCompResource = rxResource<RaceCompetitor[], string>({
+    params: () => this.selectedRaces.selectedRaceIdsKey(),
+    stream: () => {
+      const selectedIds = this.selectedRaces.selectedRaceIds();
       if (selectedIds.length === 0) {
         return of([]);
       } else {

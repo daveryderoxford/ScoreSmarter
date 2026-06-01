@@ -2,7 +2,7 @@
 * Series Entry Management
 * Operations on the 'series-entries' collection.
 */
-import { computed, inject, Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import {
   collectionData,
@@ -68,13 +68,10 @@ export class SeriesEntryStore {
     return ensureEntryTags({ ...snapshot.data(), id: snapshot.id });
   }
 
-  private readonly selectedSeriesIds = computed(() => this.currentRaces.selectedSeries().map(s => s.id));
-
-  /** Series entries in selected races */
   private readonly selectedEntriesResource = rxResource({
-    params: () => this.selectedSeriesIds(),
-    stream: (data) => {
-      const selectedIds = data.params;
+    params: () => this.currentRaces.selectedSeriesIdsKey(),
+    stream: () => {
+      const selectedIds = this.currentRaces.selectedSeriesIds();
       if (selectedIds.length === 0) {
         return of([]);
       } else {

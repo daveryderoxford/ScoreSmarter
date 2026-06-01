@@ -10,7 +10,8 @@ import {
   logScan,
   logScanError,
 } from "../ai-scan-model.js";
-import { parseWithAi } from "./ai-parsing.js";
+import { normalizeScanStrategy, resolveStrategyExecution } from "./scan-strategy.js";
+import { resultsSheetStoragePath } from "../image-upload/image-storage.js";
 import { detailedHttpsError } from "../../shared/https-error.js";
 import { assertAuthenticated, assertCallerRole } from "../../shared/authorisation.js";
 
@@ -22,7 +23,6 @@ interface ParseStoredResultsSheetRequest {
   scannerContext: ScannerContext;
   clubId: string;
   raceId: string;
-  storagePath: string;
 }
 
 function normalizeScannerTimeFormat(value: unknown): ScannerTimeFormat {
@@ -45,7 +45,7 @@ async function getRaceCompetitors(
   clubId: string,
   raceId: string,
   requestId: string,
-): Promise<Array<{ id: string; class: string; sailNumber: string; name?: string }>> {
+): Promise<Array<{ id: string; class: string; sailNumber: string; name?: string; }>> {
   logScan(requestId, "build_roster", "Querying race-results for race", { clubId, raceId });
 
   const compSnap = await db()
@@ -82,7 +82,7 @@ async function getRaceCompetitors(
     }
   }
 
-  const competitors: Array<{ id: string; class: string; sailNumber: string; name?: string }> = [];
+  const competitors: Array<{ id: string; class: string; sailNumber: string; name?: string; }> = [];
   for (const doc of compSnap.docs) {
     const comp = doc.data() as RaceCompetitorDoc;
     const sid = comp.seriesEntryId;
@@ -129,7 +129,7 @@ async function getRaceCompetitors(
 
 export function validateStoredRequest(data: unknown, requestId: string): ParseStoredResultsSheetRequest {
   const requestData = data as ParseStoredResultsSheetRequest;
-  const { scannerContext, clubId, raceId, storagePath } = requestData;
+  const { scannerContext, clubId, raceId } = requestData;
 
   if (!scannerContext) {
     throw detailedHttpsError("invalid-argument", "Missing scanner context.", {
@@ -152,18 +152,10 @@ export function validateStoredRequest(data: unknown, requestId: string): ParseSt
       cause: "missing_race_id",
     });
   }
-  if (!storagePath || typeof storagePath !== "string") {
-    throw detailedHttpsError("invalid-argument", "Missing storagePath.", {
-      requestId,
-      stage: "validate_input",
-      cause: "missing_storage_path",
-    });
-  }
   return {
     scannerContext,
     clubId,
     raceId,
-    storagePath,
   };
 }
 
@@ -175,9 +167,9 @@ export function extractScanResponseForPersistence(parsed: Record<string, unknown
 } {
   return {
     scannedResults: Array.isArray(parsed.scannedResults) ? parsed.scannedResults : [],
-    pageNotes: typeof parsed.pageNotes === "string" ? parsed.pageNotes : undefined,
     unreadableRowsCount:
       typeof parsed.unreadableRowsCount === "number" ? parsed.unreadableRowsCount : 0,
+    ...(typeof parsed.pageNotes === "string" ? { pageNotes: parsed.pageNotes } : {}),
   };
 }
 
@@ -185,19 +177,32 @@ async function persistScanResponse(
   requestId: string,
   clubId: string,
   raceId: string,
-  parsed: Record<string, unknown>,
-  storagePath: string,
+  parsed: unknown,
 ): Promise<void> {
-  const scanResponse = extractScanResponseForPersistence(parsed);
-  await db().doc(`clubs/${clubId}/scan-results/${raceId}`).set(
-    {
-      scanResponse,
-      scannedAt: FieldValue.serverTimestamp(),
+  const scanResponse = extractScanResponseForPersistence(parsed as Record<string, unknown>);
+  try {
+    await db().doc(`clubs/${clubId}/scan-results/${raceId}`).set(
+      {
+        scanResponse,
+        scannedAt: FieldValue.serverTimestamp(),
+        requestId,
+      },
+      { merge: true },
+    );
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logScanError(requestId, "persist_scan_response", `Failed to save scan response: ${msg}`, {
+      cause: "firestore_set_failed",
+      clubId,
+      raceId,
+    });
+    throw detailedHttpsError("internal", "Failed to save scan response. Check logs for requestId.", {
       requestId,
-      storagePath: typeof parsed.storedImagePath === "string" ? parsed.storedImagePath : storagePath,
-    },
-    { merge: true },
-  );
+      stage: "persist_scan_response",
+      cause: "firestore_set_failed",
+      firestoreMessage: msg.slice(0, 500),
+    });
+  }
   logScan(requestId, "persist_scan_response", "Saved scan response for race", {
     clubId,
     raceId,
@@ -210,11 +215,25 @@ async function parseFromStoredImage(
   clubId: string,
   raceId: string,
   scannerContext: ScannerContext,
-  storagePath: string,
 ) {
+  const storagePath = resultsSheetStoragePath(clubId, raceId);
   const roster = await getRaceCompetitors(clubId, raceId, requestId);
   const bucket = getStorage().bucket();
   const file = bucket.file(storagePath);
+  const [exists] = await file.exists();
+  if (!exists) {
+    logScanError(requestId, "save_image", "No results sheet image in storage for race", {
+      clubId,
+      raceId,
+      storagePath,
+      cause: "missing_sheet_image",
+    });
+    throw detailedHttpsError(
+      "failed-precondition",
+      "No results sheet image for this race. Capture or upload a sheet first.",
+      { requestId, stage: "save_image", cause: "missing_sheet_image", clubId, raceId },
+    );
+  }
   const [buffer] = await file.download();
   const [metadata] = await file.getMetadata();
   const imageMimeType = metadata.contentType || "image/jpeg";
@@ -240,18 +259,27 @@ async function parseFromStoredImage(
     storagePath,
   });
 
-  const parsed = await parseWithAi(requestId, imageBase64, imageMimeType, mergedContext, raceId);
-  const response =
-    (typeof parsed === "object" && parsed !== null)
-      ? { ...(parsed as Record<string, unknown>) }
-      : { parsed };
-  const withStorage = {
-    ...response,
-    storedImagePath: storagePath,
-    storedImageUri: `gs://${bucket.name}/${storagePath}`,
-  };
-  await persistScanResponse(requestId, clubId, raceId, withStorage, storagePath);
-  return withStorage;
+  const scanStrategy = normalizeScanStrategy(mergedContext.scanStrategy);
+  const execution = resolveStrategyExecution(scanStrategy);
+  logScan(requestId, "merge_scanner_context", "Resolved scan strategy for AI parser", {
+    scanStrategy: execution.strategy,
+    model: execution.model,
+    location: execution.location,
+  });
+
+  const parsed = await execution.parser(
+    execution,
+    requestId,
+    imageBase64,
+    imageMimeType,
+    mergedContext,
+    raceId,
+  );
+
+  if (parsed !== null) {
+    await persistScanResponse(requestId, clubId, raceId, parsed);
+  }
+  return parsed;
 }
 
 export const parseStoredResultsSheet = onCall({
@@ -262,14 +290,14 @@ export const parseStoredResultsSheet = onCall({
 
   assertAuthenticated(request.auth, { requestId });
 
-  const { scannerContext, clubId, raceId, storagePath } = validateStoredRequest(request.data, requestId);
+  const { scannerContext, clubId, raceId } = validateStoredRequest(request.data, requestId);
   assertCallerRole("race-officer", request.auth, clubId);
 
   logScan(requestId, "validate_input", "parseStoredResultsSheet invoked", {
     uid: request.auth.uid,
     clubId,
     raceId,
-    storagePath,
+    storagePath: resultsSheetStoragePath(clubId, raceId),
   });
-  return parseFromStoredImage(requestId, clubId, raceId, scannerContext, storagePath);
+  return parseFromStoredImage(requestId, clubId, raceId, scannerContext);
 });

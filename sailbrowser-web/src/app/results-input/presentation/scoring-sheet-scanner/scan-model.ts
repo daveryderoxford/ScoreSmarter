@@ -41,7 +41,8 @@ export interface ScanRunRequest {
   scannerContext: ScannerContext;
   imageBase64?: string | null;
   imageMimeType?: string | null;
-  storagePath?: string | null;
+  /** Sheet already stored for this race at the canonical server path — skip upload before parse. */
+  useStoredRaceSheet?: boolean;
   mockMode?: boolean;
 }
 
@@ -70,13 +71,13 @@ export function capturePreviewUrl(img: CaptureImage | null): string | null {
 
 export function toScanRunFields(
   img: CaptureImage | null,
-): Pick<ScanRunRequest, 'storagePath' | 'imageBase64' | 'imageMimeType'> {
+): Pick<ScanRunRequest, 'useStoredRaceSheet' | 'imageBase64' | 'imageMimeType'> {
   if (!img) return {};
   if (img.kind === 'storagePath') {
-    return { storagePath: img.path, imageBase64: null, imageMimeType: null };
+    return { useStoredRaceSheet: true, imageBase64: null, imageMimeType: null };
   }
   return {
-    storagePath: null,
+    useStoredRaceSheet: false,
     imageBase64: img.base64,
     imageMimeType: img.mimeType,
   };
