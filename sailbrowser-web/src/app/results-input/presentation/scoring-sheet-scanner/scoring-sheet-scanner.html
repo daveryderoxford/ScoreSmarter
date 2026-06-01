@@ -31,18 +31,20 @@
                 <p class="stored-scan-notes">{{ stored.pageNotes }}</p>
               }
               <div class="stored-scan-actions">
-                <button matButton="tonal" type="button" (click)="reviewStoredScan()">
-                  Review saved scan
+                <button matButton="filled" type="button" (click)="processExistingScan()">
+                  Process Existing Scan
                 </button>
-                <button matButton="outlined" type="button" (click)="discardStoredScan()">
-                  Discard saved scan
+                <button matButton="outlined" type="button" (click)="discardScanAndContinue()">
+                  Discard Scan and Continue
                 </button>
               </div>
             </mat-card>
           }
 
           <div class="step-actions">
-            <button matButton="filled" type="submit" matStepperNext [disabled]="!form.controls.raceId.valid" style="margin-left:auto;">Next</button>
+            @if (!storedScanOffer()) {
+              <button matButton="filled" type="submit" matStepperNext [disabled]="!form.controls.raceId.valid" style="margin-left:auto;">Next</button>
+            }
           </div>
         </form>
       </div>

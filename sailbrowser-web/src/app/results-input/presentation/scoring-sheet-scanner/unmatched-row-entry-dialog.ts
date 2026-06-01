@@ -7,6 +7,8 @@ import {
 } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
@@ -38,6 +40,8 @@ export interface UnmatchedRowEntryDialogResult {
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
+    MatAutocompleteModule,
+    HelmNameAutocomplete,
   ],
   template: `
     <h2 mat-dialog-title>Add race entry</h2>
@@ -49,10 +53,15 @@ export interface UnmatchedRowEntryDialogResult {
       <form [formGroup]="form" class="entry-form" (ngSubmit)="createEntry()">
         <mat-form-field class="field">
           <mat-label>Helm</mat-label>
-          <input matInput formControlName="helm" autocomplete="off" />
-          @if (form.controls.helm.hasError('required')) {
-            <mat-error>Helm is required</mat-error>
-          }
+          <input
+            matInput
+            formControlName="helm"
+            autocomplete="off"
+            [matAutocomplete]="helmAutocomplete.panel()" />
+          <app-helm-name-autocomplete
+            #helmAutocomplete
+            [control]="form.controls.helm" />
+          <mat-error>Helm is required</mat-error>
         </mat-form-field>
         <mat-form-field class="field">
           <mat-label>Crew (optional)</mat-label>

@@ -38,6 +38,7 @@ import { resolveHandicapsForSeries } from '../../services/entry-helpers';
 import { meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
 import { EntryConflict, EntryService } from '../../services/entry.service';
 import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
+import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
 
 interface BoatAutocompleteGroup {
   readonly key: string;
@@ -66,6 +67,7 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
+    HelmNameAutocomplete,
     MatButtonModule,
     MatAutocompleteModule,
     MatButtonToggleModule,

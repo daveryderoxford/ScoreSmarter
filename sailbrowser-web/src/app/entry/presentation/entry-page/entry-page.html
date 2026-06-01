@@ -72,7 +72,15 @@
             @if (boat.isClub) {
               <mat-form-field>
                 <mat-label>Helm</mat-label>
-                <input matInput formControlName="helm" placeholder="Helm for this race entry" />
+                <input
+                  matInput
+                  formControlName="helm"
+                  placeholder="Helm for this race entry"
+                  autocomplete="off"
+                  [matAutocomplete]="clubHelmAutocomplete.panel()" />
+                <app-helm-name-autocomplete
+                  #clubHelmAutocomplete
+                  [control]="competitorDetailsGroup.controls['helm']" />
                 <mat-error>Helm name required</mat-error>
               </mat-form-field>
             }
