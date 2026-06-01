@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { computed, inject, Injectable } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { collectionData, deleteDoc, setDoc } from '@angular/fire/firestore';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
@@ -47,6 +47,9 @@ export class BoatsStore {
 
   /** Collection of all boats */
   readonly boats = this.boatsResource.value.asReadonly();
+
+  /** Distinct helm names from all boats, sorted alphabetically. */
+  readonly uniqueHelmNames = computed(() => uniqueHelmNamesFromBoats(this.boats()));
   readonly isLoading = this.boatsResource.isLoading;
   readonly error = this.boatsResource.error;
 
@@ -106,3 +109,18 @@ export function boatFilter(boat: Boat, search: string | null): boolean {
     normaliseString(boat.boatClass).includes(filter) ||
     (boat.isClub && 'club'.includes(filter));
 }
+
+export function uniqueHelmNamesFromBoats(boats: readonly Boat[]): string[] {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const boat of boats) { 
+    const key = normaliseString(boat.helm);
+    if (key !== '') {
+      if (seen.has(key)) continue;
+      seen.add(key);
+      names.push(boat.helm);
+    }
+  }
+  return names.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+

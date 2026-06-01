@@ -8,12 +8,24 @@ import { TagValuePicker } from 'app/club-tenant/presentation/tags/tag-value-pick
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { PERSONAL_HANDICAP_BANDS } from 'app/scoring/model/personal-handicap';
 import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inputs';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { HelmNameAutocomplete } from '../helm-name-autocomplete';
 import { SailNumberInput } from '../sail-number-input';
 
 @Component({
   selector: 'app-boat-core-fields',
   standalone: true,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, HandicapSchemeInputs, TagValuePicker, SailNumberInput],
+  imports: [
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatAutocompleteModule,
+    MatSelectModule,
+    HandicapSchemeInputs,
+    TagValuePicker,
+    HelmNameAutocomplete,
+    SailNumberInput,
+  ],
   template: `
     <div [formGroup]="form()">
       <mat-form-field>
@@ -34,7 +46,14 @@ import { SailNumberInput } from '../sail-number-input';
 
       <mat-form-field>
         <mat-label>Normal helm</mat-label>
-        <input matInput formControlName="helm">
+        <input
+          matInput
+          formControlName="helm"
+          autocomplete="off"
+          [matAutocomplete]="helmAutocomplete.panel()" />
+        <app-helm-name-autocomplete
+          #helmAutocomplete
+          [control]="form().controls['helm']" />
         <mat-error>Helm name required</mat-error>
       </mat-form-field>
 

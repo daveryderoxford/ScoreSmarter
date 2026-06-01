@@ -10,5 +10,6 @@ export interface Club {
    fleets: [];
    classes: [];
    seasons: [];
+   /** Firebase Storage object path (e.g. clubs/{clubId}/club-logo.jpg). */
    logoUrl?: string;
 }

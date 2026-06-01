@@ -34,6 +34,7 @@ export interface Club {
    fleets: Fleet[];
    classes: BoatClass[];
    seasons: Season[];
+   /** Firebase Storage object path (e.g. clubs/{clubId}/club-logo.jpg), not an external URL. */
    logoUrl?: string;
    supportedHandicapSchemes: HandicapScheme[];
    laps?: boolean;

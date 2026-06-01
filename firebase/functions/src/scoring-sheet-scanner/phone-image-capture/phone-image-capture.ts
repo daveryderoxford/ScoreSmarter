@@ -1,11 +1,13 @@
 import { randomBytes, randomUUID, createHash } from "crypto";
 import { FieldValue, Timestamp, getFirestore } from "firebase-admin/firestore";
 import { onCall } from "firebase-functions/v2/https";
-import { httpsWithDetails, logScan, logScanError } from "../ai-scan-types.js";
+import { logScan } from "../ai-scan-model.js";
 import {
   storeResultsSheetImage,
   updateRaceResultsSheetImagePath,
 } from "../image-upload/image-storage.js";
+import { detailedHttpsError } from "../../shared/https-error.js";
+import { assertAuthenticated, assertCallerRole } from "../../shared/authorisation.js";
 
 const CAPTURE_SESSION_TTL_MS = 10 * 60 * 1000;
 
@@ -33,12 +35,12 @@ function tokenHash(token: string): string {
 function validateCreateRequest(data: unknown, requestId: string): PhoneImageCaptureRequestData {
   const req = data as PhoneImageCaptureRequestData;
   if (!req?.clubId || typeof req.clubId !== "string") {
-    throw httpsWithDetails("invalid-argument", "Missing clubId.", {
+    throw detailedHttpsError("invalid-argument", "Missing clubId.", {
       requestId, stage: "validate_input", cause: "missing_club_id",
     });
   }
   if (!req?.raceId || typeof req.raceId !== "string") {
-    throw httpsWithDetails("invalid-argument", "Missing raceId.", {
+    throw detailedHttpsError("invalid-argument", "Missing raceId.", {
       requestId, stage: "validate_input", cause: "missing_race_id",
     });
   }
@@ -48,22 +50,22 @@ function validateCreateRequest(data: unknown, requestId: string): PhoneImageCapt
 function validateUploadRequest(data: unknown, requestId: string): Required<UploadImageFromPhoneData> {
   const req = data as UploadImageFromPhoneData;
   if (!req?.sessionId || typeof req.sessionId !== "string") {
-    throw httpsWithDetails("invalid-argument", "Missing sessionId.", {
+    throw detailedHttpsError("invalid-argument", "Missing sessionId.", {
       requestId, stage: "validate_input", cause: "missing_session_id",
     });
   }
   if (!req?.clubId || typeof req.clubId !== "string") {
-    throw httpsWithDetails("invalid-argument", "Missing clubId.", {
+    throw detailedHttpsError("invalid-argument", "Missing clubId.", {
       requestId, stage: "validate_input", cause: "missing_club_id",
     });
   }
   if (!req?.token || typeof req.token !== "string") {
-    throw httpsWithDetails("invalid-argument", "Missing token.", {
+    throw detailedHttpsError("invalid-argument", "Missing token.", {
       requestId, stage: "validate_input", cause: "missing_session_token",
     });
   }
   if (!req?.imageBase64 || typeof req.imageBase64 !== "string") {
-    throw httpsWithDetails("invalid-argument", "Missing image base64 data.", {
+    throw detailedHttpsError("invalid-argument", "Missing image base64 data.", {
       requestId, stage: "validate_input", cause: "missing_image",
     });
   }
@@ -81,13 +83,13 @@ export const createPhoneUploadRequest = onCall({
   timeoutSeconds: 60,
 }, async (request) => {
   const requestId = randomUUID();
-  if (!request.auth) {
-    logScanError(requestId, "validate_input", "Unauthenticated create capture session call");
-    throw httpsWithDetails("unauthenticated", "Only authenticated users can create capture sessions.", {
-      requestId, stage: "validate_input", cause: "no_auth",
-    });
-  }
+
+  assertAuthenticated(request.auth, { requestId });
+
   const { clubId, raceId } = validateCreateRequest(request.data, requestId);
+  
+  assertCallerRole("race-officer", request.auth, clubId);
+
   const sessionId = randomBytes(8).toString("base64url");
   const token = randomBytes(12).toString("base64url");
   const expiresAt = new Date(Date.now() + CAPTURE_SESSION_TTL_MS);
@@ -125,7 +127,7 @@ export const uploadImageFromPhone = onCall({
   const db = getFirestore();
   const sessionSnap = await db.doc(sessionDocPath(clubId, sessionId)).get();
   if (!sessionSnap.exists) {
-    throw httpsWithDetails("not-found", "Capture session not found.", {
+    throw detailedHttpsError("not-found", "Capture session not found.", {
       requestId, stage: "validate_input", cause: "session_not_found", sessionId, clubId,
     });
   }
@@ -136,23 +138,23 @@ export const uploadImageFromPhone = onCall({
   const expiresAt = data["expiresAt"] as Timestamp | undefined;
 
   if (!sessionClubId || !raceId || !expectedHash || !expiresAt) {
-    throw httpsWithDetails("failed-precondition", "Capture session is invalid.", {
+    throw detailedHttpsError("failed-precondition", "Capture session is invalid.", {
       requestId, stage: "validate_input", cause: "session_malformed", sessionId,
     });
   }
   if (sessionClubId !== clubId) {
-    throw httpsWithDetails("permission-denied", "Capture session club mismatch.", {
+    throw detailedHttpsError("permission-denied", "Capture session club mismatch.", {
       requestId, stage: "validate_input", cause: "session_club_mismatch", sessionId, clubId,
     });
   }
   if (tokenHash(token) !== expectedHash) {
-    throw httpsWithDetails("permission-denied", "Invalid capture token.", {
+    throw detailedHttpsError("permission-denied", "Invalid capture token.", {
       requestId, stage: "validate_input", cause: "invalid_session_token", sessionId,
     });
   }
   if (expiresAt.toDate().getTime() < Date.now()) {
     await sessionSnap.ref.set({ status: "expired", expiredAt: FieldValue.serverTimestamp() }, { merge: true });
-    throw httpsWithDetails("failed-precondition", "Capture session has expired.", {
+    throw detailedHttpsError("failed-precondition", "Capture session has expired.", {
       requestId, stage: "validate_input", cause: "session_expired", sessionId,
     });
   }
@@ -161,7 +163,7 @@ export const uploadImageFromPhone = onCall({
   try {
     imageBuffer = Buffer.from(imageBase64, "base64");
   } catch {
-    throw httpsWithDetails("invalid-argument", "imageBase64 is not valid base64.", {
+    throw detailedHttpsError("invalid-argument", "imageBase64 is not valid base64.", {
       requestId, stage: "validate_input", cause: "invalid_base64",
     });
   }

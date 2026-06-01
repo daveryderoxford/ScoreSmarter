@@ -2,13 +2,10 @@ import { inject, Injectable } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
 import { Firestore, doc, docData, getDoc, setDoc } from '@angular/fire/firestore';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
-import { RaceCalendarStore } from 'app/race-calender';
-import { RaceCompetitorStore } from '../../services/race-competitor-store';
-import { SeriesEntryStore } from '../../services/series-entry-store';
 import { environment } from '../../../../environments/environment';
 import { map, Observable } from 'rxjs';
 import { CaptureSessionUploadService } from 'app/results-sheet-phone-capture/capture-session-upload.service';
-import { ScanResponse, ScanRunRequest, ScanRunState, ScannedResultRow } from './scan-model';
+import { ScanResponse, ScanRunRequest, ScanRunState } from './scan-model';
 
 const PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS = 318_000;
 const UPLOAD_RESULTS_SHEET_IMAGE_CALLABLE_TIMEOUT_MS = 120_000;
@@ -17,9 +14,6 @@ const UPLOAD_RESULTS_SHEET_IMAGE_CALLABLE_TIMEOUT_MS = 120_000;
 export class ScannerOrchestrationService {
   private readonly app = inject(FirebaseApp);
   private readonly firestore = inject(Firestore);
-  private readonly raceCalendarStore = inject(RaceCalendarStore);
-  private readonly competitorStore = inject(RaceCompetitorStore);
-  private readonly entryStore = inject(SeriesEntryStore);
   private readonly captureSessionUpload = inject(CaptureSessionUploadService);
 
   private readonly scanActivityMessages = [
@@ -34,10 +28,6 @@ export class ScannerOrchestrationService {
 
   defaultStageMessage(): string {
     return this.scanActivityMessages[0];
-  }
-
-  isMockMode(rawFlag: string | null | undefined): boolean {
-    return rawFlag === '1';
   }
 
   async createCaptureSession(clubId: string, raceId: string): Promise<{
@@ -125,9 +115,7 @@ export class ScannerOrchestrationService {
 
       void (async () => {
         try {
-          const result = request.mockMode
-            ? this.buildMockResponse(request.raceId)
-            : await this.runCallableScan(request);
+          const result = await this.runCallableScan(request);
           subscriber.next({ status: 'success', result: this.applyAutoAccept(result) });
           subscriber.complete();
         } catch (err: unknown) {
@@ -142,67 +130,6 @@ export class ScannerOrchestrationService {
     });
   }
 
-  buildMockResponse(raceId: string): ScanResponse {
-    const race = this.raceCalendarStore.allRaces().find(r => r.id === raceId);
-    if (!race) {
-      return { scannedResults: [], unreadableRowsCount: 0 };
-    }
-
-    const comps = this.competitorStore.selectedCompetitors().filter(c => c.raceId === raceId);
-    const entries = this.entryStore.selectedEntries();
-    const start = race.actualStart ?? race.scheduledStart;
-
-    const rows = comps
-      .map((c, rowIndex): ScannedResultRow | undefined => {
-        const e = entries.find(se => se.id === c.seriesEntryId);
-        if (!e) return undefined;
-        const finish = new Date(start.getTime() + rowIndex * 4 * 60 * 1000 + 37 * 1000);
-        const hh = String(finish.getHours()).padStart(2, '0');
-        const mm = String(finish.getMinutes()).padStart(2, '0');
-        const ss = String(finish.getSeconds()).padStart(2, '0');
-        return {
-          rowIndex: rowIndex + 1,
-          matchedCompetitorId: c.id,
-          overallRowConfidence: rowIndex % 4 === 0 ? 'MANUAL_CHECK' : 'HIGH',
-          sailNumber: { value: String(e.sailNumber), confidence: rowIndex % 5 === 0 ? 'MANUAL_CHECK' : 'HIGH' },
-          boatClass: { value: e.boatClass, confidence: 'HIGH' },
-          time: { value: `${hh}:${mm}:${ss}`, confidence: rowIndex % 4 === 0 ? 'MANUAL_CHECK' : 'HIGH' },
-          laps: { value: 3, confidence: 'HIGH' },
-          status: 'OK',
-          accepted: false,
-        };
-      })
-      .filter((r): r is ScannedResultRow => !!r);
-
-    const unmatched1: ScannedResultRow = {
-      rowIndex: rows.length + 1,
-      overallRowConfidence: 'AMBIGUOUS',
-      sailNumber: { value: '9999', confidence: 'AMBIGUOUS' },
-      boatClass: { value: 'ILCA 7', confidence: 'MANUAL_CHECK' },
-      time: { value: '15:23:11', confidence: 'MANUAL_CHECK' },
-      laps: { value: 3, confidence: 'HIGH' },
-      status: 'OK',
-      accepted: false,
-    };
-
-    const unmatched2: ScannedResultRow = {
-      rowIndex: rows.length + 2,
-      overallRowConfidence: 'AMBIGUOUS',
-      sailNumber: { value: '9999', confidence: 'AMBIGUOUS' },
-      boatClass: { value: 'ILCA 7', confidence: 'HIGH' },
-      time: { value: '15:23:11', confidence: 'HIGH' },
-      laps: { value: 3, confidence: 'HIGH' },
-      status: 'OK',
-      accepted: false,
-    };
-
-    return {
-      scannedResults: rows.length > 0 ? [...rows, unmatched1, unmatched2] : [unmatched1],
-      unreadableRowsCount: 0,
-      pageNotes: 'Mock scan mode: generated rows from current race competitors.',
-    };
-  }
-
   private applyAutoAccept(response: ScanResponse): ScanResponse {
     const scannedResults = response.scannedResults.map(row => ({
       ...row,
@@ -214,9 +141,9 @@ export class ScannerOrchestrationService {
   }
 
   private async runCallableScan(request: ScanRunRequest): Promise<ScanResponse> {
-    const hasImage = !!request.imageBase64 && !!request.imageMimeType;
-    const hasStoredPath = !!request.storagePath;
-    if (!hasImage && !hasStoredPath) throw new Error('Missing image data for scan.');
+    const hasInlineImage = !!request.imageBase64 && !!request.imageMimeType;
+    const useStoredRaceSheet = !!request.useStoredRaceSheet;
+    if (!hasInlineImage && !useStoredRaceSheet) throw new Error('Missing image data for scan.');
 
     const functions = getFunctions(this.app, 'europe-west1');
     if (environment.useEmulators) {
@@ -230,22 +157,19 @@ export class ScannerOrchestrationService {
       timeout: PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS,
     });
 
-    let storedImagePath = request.storagePath ?? undefined;
-    if (!storedImagePath) {
-      const uploadRes = await uploadFn({
+    if (!useStoredRaceSheet) {
+      await uploadFn({
         imageBase64: request.imageBase64,
         imageMimeType: request.imageMimeType,
         clubId: request.clubId,
         raceId: request.raceId,
       });
-      storedImagePath = (uploadRes.data as { storagePath?: string } | null)?.storagePath;
-      if (!storedImagePath) throw new Error('Upload succeeded but no storagePath was returned.');
     }
+
     const res = await parseFn({
       scannerContext: request.scannerContext,
       clubId: request.clubId,
       raceId: request.raceId,
-      storagePath: storedImagePath,
     });
 
     return res.data as ScanResponse;

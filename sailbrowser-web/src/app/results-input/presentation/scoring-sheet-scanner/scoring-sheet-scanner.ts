@@ -7,31 +7,33 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
+import type { ScanStrategy, ScannerTimeFormat } from '@shared/scanner-context';
 import { BoatsStore } from 'app/boats';
 import { normalizeSailNumber, sailNumbersEqual } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
-import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { getFleetName } from 'app/club-tenant/model/fleet';
+import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
 import { RESULT_CODES, ResultCode } from 'app/scoring/model/result-code-scoring';
+import { Toolbar } from "app/shared/components/toolbar";
+import { normaliseString } from 'app/shared/utils/string-utils';
 import { format } from 'date-fns';
 import { firstValueFrom } from 'rxjs';
 import { startWith } from 'rxjs/operators';
-import { Toolbar } from "app/shared/components/toolbar";
 import { CurrentRaces } from '../../services/current-races-store';
 import { ManualResultsService } from '../../services/manual-results.service';
 import { RaceCompetitorReader } from '../../services/race-competitor-reader';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
+import { ResultsSheetCaptureService } from '../../services/results-sheet-capture.service';
 import { RaceStartTimeDialog, RaceStartTimeResult } from '../handicap/race-start-time-dialog';
 import { CameraCaptureDialog } from './camera-capture-dialog';
 import { CaptureStep, CaptureStepMode, CaptureStepViewModel } from './capture-step/capture-step';
 import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
-import {
-  UnmatchedRowEntryDialog,
-  type UnmatchedRowEntryDialogResult,
-} from './unmatched-row-entry-dialog';
+import { PhoneCaptureQrDialog, PhoneCaptureQrDialogResult } from './phone-capture-qr-dialog/phone-capture-qr-dialog';
+import { RaceStep } from './race-step/race-step';
+import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step/review-step';
 import {
   CaptureImage,
   ScanResponse,
@@ -42,12 +44,11 @@ import {
   toScanRunFields,
 } from './scan-model';
 import { ScannerOrchestrationService } from './scanner-orchestration.service';
-import { ResultsSheetCaptureService } from '../../services/results-sheet-capture.service';
-import { RaceStep } from './race-step/race-step';
-import type { ScannerTimeFormat } from '@shared/scanner-context';
 import { SetupStep } from './setup-step/setup-step';
-import { PhoneCaptureQrDialog, PhoneCaptureQrDialogResult } from './phone-capture-qr-dialog/phone-capture-qr-dialog';
-import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step/review-step';
+import {
+  UnmatchedRowEntryDialog,
+  type UnmatchedRowEntryDialogResult,
+} from './unmatched-row-entry-dialog';
 
 @Component({
   selector: 'app-scoring-sheet-scanner',
@@ -118,7 +119,6 @@ export class ScoringSheetScanner {
   private readonly clubStore = inject(ClubStore);
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
   private readonly scannerOrchestration = inject(ScannerOrchestrationService);
   private readonly captureService = inject(ResultsSheetCaptureService);
   private readonly manualResultsService = inject(ManualResultsService);
@@ -135,6 +135,7 @@ export class ScoringSheetScanner {
     lapFormat: ['numbers', Validators.required],
     defaultHour: [10, [Validators.min(0), Validators.max(23)]],
     defaultLaps: [1, [Validators.min(1), Validators.max(100)]],
+    scanStrategy: this.fb.nonNullable.control<ScanStrategy>('FullAIScan', Validators.required),
   });
   captureForm = this.fb.nonNullable.group({
     hasImage: [false, Validators.requiredTrue],
@@ -248,8 +249,9 @@ export class ScoringSheetScanner {
   
   readonly unmatchedRows = computed<UnmatchedRowVm[]>(() =>
     this.unmatchedResults().map(row => {
-      const classNames = this.clubStore.club().classes.map(c=> c.name);
-      const classMatches = !row.boatClass?.value || classNames.includes(row.boatClass.value);
+      const classMatches =
+        !row.boatClass?.value?.trim() ||
+        this.clubStore.club().classes.some(c => boatClassesMatch(c.name, row.boatClass?.value));
       const boatMatches = this.findBoatMatches(row);
       const helms = Array.from(new Set(boatMatches.map(m => m.helm).filter((h): h is string => !!h && h.trim().length > 0)));
       return { 
@@ -263,21 +265,19 @@ export class ScoringSheetScanner {
 
   readonly displayedColumns = ['accept', 'sailNumber', 'boatClass', 'helm', 'time', 'status', 'laps', 'overall'];
   readonly unmatchedColumns = ['sailNumber', 'boatClass', 'time', 'status', 'laps', 'helms', 'enter'];
-  readonly isMockScanMode = computed(() => this.scannerOrchestration.isMockMode(this.route.snapshot.queryParamMap.get('mockScan')));
   private findBoatMatches(row: ScannedResultRow) {
-    const boatClass = row.boatClass?.value?.trim();
+    const boatClass = row.boatClass?.value;
     const sailNumber = normalizeSailNumber(row.sailNumber?.value);
-    if (!boatClass || !sailNumber) return [];
+    if (!boatClass?.trim() || !sailNumber) return [];
+    const scannedClass = normaliseBoatClassForMatch(boatClass);
     return this.boatsStore.boats().filter(
-      b => b.boatClass.toLowerCase() === boatClass.toLowerCase() && sailNumbersEqual(b.sailNumber, sailNumber),
+      b =>
+        normaliseBoatClassForMatch(b.boatClass) === scannedClass &&
+        sailNumbersEqual(b.sailNumber, sailNumber),
     );
   }
 
   constructor() {
-    if (this.isMockScanMode()) {
-      // Allow capture step completion without image while testing review flow.
-      this.captureForm.controls.hasImage.setValue(true);
-    }
     this.form.controls.raceId.valueChanges.subscribe(raceId => {
       this.applyRaceStoredImageIfAny();
       this.result.set(null);
@@ -297,7 +297,7 @@ export class ScoringSheetScanner {
   }
 
   private syncCaptureFormValidity(): void {
-    this.captureForm.controls.hasImage.setValue(this.captureReady() || this.isMockScanMode());
+    this.captureForm.controls.hasImage.setValue(this.captureReady());
   }
 
   private applyRaceStoredImageIfAny(): void {
@@ -366,28 +366,43 @@ export class ScoringSheetScanner {
     }
   }
 
-  async reviewStoredScan(): Promise<void> {
+  processExistingScan(): void {
     const stored = this.storedScanOffer();
     if (!stored) return;
     this.result.set(this.scannerOrchestration.prepareScanResponseForReview(stored));
     this.error.set(null);
     this.captureForm.controls.hasImage.setValue(true);
     queueMicrotask(() => {
+      this.markPriorStepsCompleted(2);
       const stepper = this.stepper();
       stepper.selectedIndex = 3;
       this.cdr.markForCheck();
     });
   }
 
-  async discardStoredScan(): Promise<void> {
+  async discardScanAndContinue(): Promise<void> {
     const raceId = this.form.controls.raceId.value;
     if (!raceId) return;
     try {
       await this.scannerOrchestration.clearScanResponse(this.clubTenant.clubId, raceId);
       this.storedScanOffer.set(null);
+      this.result.set(null);
+      this.error.set(null);
+      this.applyRaceStoredImageIfAny();
+      queueMicrotask(() => {
+        this.stepper().selectedIndex = 1;
+        this.cdr.markForCheck();
+      });
     } catch (err: unknown) {
       console.error('ScoringSheetScanner: failed to clear stored scan', err);
       this.error.set('Could not discard the saved scan. Please try again.');
+    }
+  }
+
+  private markPriorStepsCompleted(lastIndex: number): void {
+    const steps = this.stepper().steps;
+    for (let i = 0; i <= lastIndex && i < steps.length; i++) {
+      steps.get(i)!.completed = true;
     }
   }
 
@@ -448,7 +463,7 @@ export class ScoringSheetScanner {
     }
 
     if (event.selectedIndex !== 3) return;
-    if (!this.isMockScanMode() && !this.captureReady()) return;
+    if (!this.captureReady()) return;
     if (this.loading()) return;
     if (this.result()) return;
     await this.scan();
@@ -519,7 +534,7 @@ export class ScoringSheetScanner {
     const raceId = this.form.value.raceId;
     if (!raceId) return;
     const match = this.competitorReader.resolvedForRace(raceId).find(r => {
-      const classMatch = r.boatClass.toLowerCase() === boatClass.toLowerCase();
+      const classMatch = boatClassesMatch(r.boatClass, boatClass);
       const sailMatch = sailNumbersEqual(r.sailNumber, sailNumber);
       const helmMatch = !helm || r.helm.toLowerCase() === helm.toLowerCase();
       return classMatch && sailMatch && helmMatch;
@@ -537,9 +552,7 @@ export class ScoringSheetScanner {
     const sailNumber = normalizeSailNumber(row.sailNumber?.value);
     if (!raceId || !boatClass || !sailNumber) return;
 
-    const matches = this.boatsStore.boats().filter(
-      b => b.boatClass.toLowerCase() === boatClass.toLowerCase() && sailNumbersEqual(b.sailNumber, sailNumber),
-    );
+    const matches = this.findBoatMatches(row);
     if (matches.length === 0) {
       await this.openUnmatchedRowEntry(row);
       return;
@@ -633,7 +646,7 @@ export class ScoringSheetScanner {
   }
 
   async scan(): Promise<void> {
-    if (!this.isMockScanMode() && !isCaptureReady(this.captureImage())) return;
+    if (!isCaptureReady(this.captureImage())) return;
     if (this.form.invalid) return this.error.set('Select a race and complete the context form.');
 
     this.error.set(null);
@@ -650,6 +663,7 @@ export class ScoringSheetScanner {
       roster: [] as { id: string; class: string; sailNumber: string; name?: string; }[],
       lapsPresentOnSheet: v.lapsPresentOnSheet,
       timeFormat: v.timeFormat,
+      scanStrategy: v.scanStrategy,
     };
 
     await new Promise<void>((resolve) => {
@@ -658,7 +672,6 @@ export class ScoringSheetScanner {
         clubId: this.clubTenant.clubId,
         scannerContext,
         ...toScanRunFields(this.captureImage()),
-        mockMode: this.isMockScanMode(),
       }).subscribe(state => {
         if (state.status === 'running') {
           this.loading.set(true);
@@ -676,4 +689,13 @@ export class ScoringSheetScanner {
       sub.add(() => resolve());
     });
   }
+}
+
+/** Boat-class matching: whitespace/case insensitive, treats Laser as ILCA. */
+function normaliseBoatClassForMatch(className: string | undefined | null): string {
+  return normaliseString(className).replace(/laser/g, 'ilca');
+}
+
+export function boatClassesMatch(a: string | undefined | null, b: string | undefined | null): boolean {
+  return normaliseBoatClassForMatch(a) === normaliseBoatClassForMatch(b);
 }

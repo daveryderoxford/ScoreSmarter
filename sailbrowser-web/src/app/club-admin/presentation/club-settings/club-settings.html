@@ -1,0 +1,67 @@
+<app-toolbar title="Club settings"></app-toolbar>
+
+<form class="settings-container" [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <div class="page-header">
+    <h3>Club profile</h3>
+    <p>Configure club identity, contact details, venue coordinates, and logo.</p>
+  </div>
+
+  <mat-card appearance="outlined" class="config-card">
+    <mat-card-content>
+      <div class="logo-row">
+        @if (logoPreviewUrl()) {
+          <img [src]="logoPreviewUrl()!" alt="Club logo preview" class="logo-preview">
+        }
+        <div class="logo-upload">
+          <label class="upload-label">
+            <span>Choose logo image</span>
+            <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onLogoSelected($event)">
+          </label>
+          <p class="hint">Saved to Cloud Storage at a fixed path per club. Shown on the home screen.</p>
+        </div>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Club name</mat-label>
+        <input matInput formControlName="name" required>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Short name</mat-label>
+        <input matInput formControlName="shortName">
+        <mat-hint>Used in page titles when set</mat-hint>
+      </mat-form-field>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Contact name</mat-label>
+          <input matInput formControlName="contactName" required>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Contact email</mat-label>
+          <input matInput type="email" formControlName="contactEmail" required>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Latitude</mat-label>
+          <input matInput type="number" formControlName="latitude" step="any">
+          <mat-hint>WGS84, for Met Office forecasts</mat-hint>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="flex-1">
+          <mat-label>Longitude</mat-label>
+          <input matInput type="number" formControlName="longitude" step="any">
+        </mat-form-field>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="actions">
+    <app-submit-button
+      [disabled]="form.invalid || (!form.dirty && !hasPendingLogo())"
+      [busy]="busy()">
+      Save
+    </app-submit-button>
+  </div>
+</form>

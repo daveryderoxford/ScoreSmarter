@@ -1,5 +1,5 @@
-export { parseStoredResultsSheet } from "./results-sheet-parser/callable-parse-results-sheet.js";
-export { uploadResultsSheetImage } from "./image-upload/callable-upload-results-sheet-image.js";
+export { parseStoredResultsSheet } from "./results-sheet-parser/parse-results-sheet.js";
+export { uploadResultsSheetImage } from "./image-upload/upload-results-sheet-image.js";
 export {
   createPhoneUploadRequest,
   uploadImageFromPhone,

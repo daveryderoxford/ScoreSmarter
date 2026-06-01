@@ -80,6 +80,7 @@ export class ClubAdminSwitchboard {
   });
 
   readonly actions: AdminAction[] = [
+
     {
       title: 'Race Calendar',
       description: 'Manage seasons, series schedules, and individual race events.',
@@ -91,13 +92,15 @@ export class ClubAdminSwitchboard {
       importExportContexts: ['race-calendar']
     },
     {
-      title: 'Fleets & Classes',
-      description: 'Configure boat classes, fleet divisions',
+      title: 'Club Data',
+      description: 'Manage clubm data boats, classes, fleets and entry tag values',
       icon: 'sailing',
       resources: [
         { label: 'Boats', route: '/boats' },
         { label: 'Classes', route: '/club/classes' },
         { label: 'Fleets', route: '/club/fleets' },
+        { label: 'Tags', route: '/club-admin/tags' },
+
       ],
       importExportContexts: ['boats', 'classes', 'fleets']
     },
@@ -109,24 +112,18 @@ export class ClubAdminSwitchboard {
         { label: 'Defaults', route: '/club-admin/scoring-defaults' },
       ]
     },
+
     {
-      title: 'Tags',
-      description: 'Manage tag definitions used to label boats and series entries.',
-      icon: 'sell',
-      resources: [
-        { label: 'Tags', route: '/club-admin/tags' },
-      ]
-    },
-    {
-      title: 'User Management',
-      description: 'Manage club personnel, race officers, and permissions.',
+      title: 'System data',
+      description: 'Manage club profile and users',
       icon: 'group',
       resources: [
+        { label: 'Club profile', route: '/club-admin/club-settings' },
         { label: 'Users', route: '/sys-admin/users' },
       ]
     },
     {
-      title: 'Results Management',
+      title: 'Results',
       description: 'Data import/export and archiving results.',
       icon: 'archive',
       resources: [

@@ -1,74 +1,57 @@
-  <app-toolbar title="Scan Results Sheet">
+<app-toolbar title="Scan Results Sheet">
 
-  </app-toolbar>
+</app-toolbar>
 
-  <mat-stepper class="stepper" [linear]="true" #stepper [orientation]="isMobile() ? 'vertical' : 'horizontal'" (selectionChange)="onStepChange($event)">
-    <mat-step [stepControl]="form" [completed]="form.valid">
-      <ng-template matStepLabel>Race</ng-template>
-      <div class="step-container">
-        <form [formGroup]="form" class="stepper-form stepper-form-narrow">
-          <app-race-step
-            [form]="form"
-            [races]="raceOptions()"
-            [selectedRaceIds]="selectedRaceIds()"
-            (raceSelectionChange)="onScannerRaceIdsChange($event)" />
+<mat-stepper class="stepper" [linear]="true" #stepper [orientation]="isMobile() ? 'vertical' : 'horizontal'"
+  (selectionChange)="onStepChange($event)">
+  <mat-step [stepControl]="form" [completed]="form.valid">
+    <ng-template matStepLabel>Race</ng-template>
+    <div class="step-container">
+      <form [formGroup]="form" class="stepper-form stepper-form-narrow">
+        <app-race-step [form]="form" [races]="raceOptions()" [selectedRaceIds]="selectedRaceIds()"
+          (raceSelectionChange)="onScannerRaceIdsChange($event)" />
 
-          @if (loadingStoredScan()) {
-            <p class="stored-scan-status" role="status">Checking for a saved scan…</p>
-          } @else if (storedScanOffer(); as stored) {
-            <mat-card appearance="outlined" class="stored-scan-offer">
-              <p class="stored-scan-title">
-                <mat-icon>history</mat-icon>
-                Saved scan for this race
-              </p>
-              <p class="stored-scan-detail">
-                {{ stored.scannedResults.length }} rows parsed
-                @if (stored.unreadableRowsCount > 0) {
-                  ({{ stored.unreadableRowsCount }} unreadable)
-                }
-              </p>
-              @if (stored.pageNotes) {
-                <p class="stored-scan-notes">{{ stored.pageNotes }}</p>
-              }
-              <div class="stored-scan-actions">
-                <button matButton="tonal" type="button" (click)="reviewStoredScan()">
-                  Review saved scan
-                </button>
-                <button matButton="outlined" type="button" (click)="discardStoredScan()">
-                  Discard saved scan
-                </button>
-              </div>
-            </mat-card>
-          }
-
-          <div class="step-actions">
-            <button matButton="filled" type="submit" matStepperNext [disabled]="!form.controls.raceId.valid" style="margin-left:auto;">Next</button>
-          </div>
-        </form>
-      </div>
-    </mat-step>
-
-    <mat-step [stepControl]="captureForm" [completed]="captureForm.valid">
-      <ng-template matStepLabel>Capture</ng-template>
-      <div class="step-container">
-        <app-capture-step
-          [vm]="captureViewModel()"
-          (captureNewInstead)="startNewCapture()"
-          (fileChanged)="onFileChange($event)"
-          (openCamera)="openCameraDialog()"
-          (startPhoneCapture)="startPhoneCapture()"
-          (clearImage)="clearImage()" />
         <div class="step-actions">
-          <button matButton matStepperPrevious>Previous</button>
-          <button matButton="filled" matStepperNext [disabled]="captureForm.invalid">Next</button>
+    
+          @if (storedScanOffer()) {
+    
+            <h3>Saved scan exists</h3>
+           
+            <div>
+              <button matButton="text" type="button" (click)="discardScanAndContinue()">
+                Discard
+              </button>
+              <button matButton="filled" type="button" (click)="processExistingScan()">
+                Use Saved
+              </button>
+            </div>
+            } @else {
+              <button matButton="filled" type="submit" matStepperNext [disabled]="!form.controls.raceId.valid || loadingStoredScan()"
+                style="margin-left:auto;">Next</button>
+            }
+          
         </div>
-      </div>
-    </mat-step>
+      </form>
+    </div>
+  </mat-step>
 
-    <mat-step [stepControl]="form">
-      <ng-template matStepLabel>Details</ng-template>
-      <div class="step-container">
-        <form [formGroup]="form" class="stepper-form stepper-form-narrow">
+  <mat-step [stepControl]="captureForm" [completed]="captureForm.valid">
+    <ng-template matStepLabel>Capture</ng-template>
+    <div class="step-container">
+      <app-capture-step [vm]="captureViewModel()" (captureNewInstead)="startNewCapture()"
+        (fileChanged)="onFileChange($event)" (openCamera)="openCameraDialog()" (startPhoneCapture)="startPhoneCapture()"
+        (clearImage)="clearImage()" />
+      <div class="step-actions">
+        <button matButton matStepperPrevious>Previous</button>
+        <button matButton="filled" matStepperNext [disabled]="captureForm.invalid">Next</button>
+      </div>
+    </div>
+  </mat-step>
+
+  <mat-step [stepControl]="form">
+    <ng-template matStepLabel>Details</ng-template>
+    <div class="step-container">
+      <form [formGroup]="form" class="stepper-form stepper-form-narrow">
 
         <!-- Start time panel -->
         <div class="detail-panel">
@@ -76,11 +59,11 @@
             <div class="detail-panel-title">{{ startTimesSummary().title }}</div>
             <div class="detail-panel-summary" [class.missing]="!startTimesSummary().configured">
               @if (startTimesSummary().configured) {
-                @for (line of startTimesSummary().lines; track line) {
-                  <div class="detail-panel-time">{{ line }}</div>
-                }
+              @for (line of startTimesSummary().lines; track line) {
+              <div class="detail-panel-time">{{ line }}</div>
+              }
               } @else {
-                <span class="detail-panel-required">Required</span>
+              <span class="detail-panel-required">Required</span>
               }
             </div>
           </div>
@@ -91,40 +74,27 @@
           </div>
         </div>
 
-          <app-setup-step [form]="form" />
+        <app-setup-step [form]="form" />
 
-          <div class="step-actions">
-            <button matButton matStepperPrevious>Previous</button>
-            <button
-              matButton="filled"
-              type="button"
-              matStepperNext
-              [disabled]="form.invalid || !hasConfiguredStartTimes()"
-              style="margin-left:auto;">
-              Next
-            </button>
-          </div>
-        </form>
-      </div>
-    </mat-step>
+        <div class="step-actions">
+          <button matButton matStepperPrevious>Previous</button>
+          <button matButton="filled" type="button" matStepperNext
+            [disabled]="form.invalid || !hasConfiguredStartTimes()" style="margin-left:auto;">
+            Next
+          </button>
+        </div>
+      </form>
+    </div>
+  </mat-step>
 
-    <mat-step>
-      <ng-template matStepLabel>Review</ng-template>
-      <div class="step-container review-container">
-        <app-review-step
-          [result]="result()"
-          [matchedRows]="matchedRows()"
-          [unmatchedRows]="unmatchedRows()"
-          [loading]="loading()"
-          [scanStage]="scanStage()"
-          [error]="error()"
-          [displayedColumns]="displayedColumns"
-          [unmatchedColumns]="unmatchedColumns"
-          (backRequested)="stepper.previous()"
-          (retryRequested)="scan()"
-          (saveRequested)="saveResults()"
-          (knownBoatEntryRequested)="openKnownBoatEntry($event)"
-          (newEntryRequested)="openUnmatchedRowEntry($event)" />
-      </div>
-    </mat-step>
-  </mat-stepper>
+  <mat-step>
+    <ng-template matStepLabel>Review</ng-template>
+    <div class="step-container review-container">
+      <app-review-step [result]="result()" [matchedRows]="matchedRows()" [unmatchedRows]="unmatchedRows()"
+        [loading]="loading()" [scanStage]="scanStage()" [error]="error()" [displayedColumns]="displayedColumns"
+        [unmatchedColumns]="unmatchedColumns" (backRequested)="stepper.previous()" (retryRequested)="scan()"
+        (saveRequested)="saveResults()" (knownBoatEntryRequested)="openKnownBoatEntry($event)"
+        (newEntryRequested)="openUnmatchedRowEntry($event)" />
+    </div>
+  </mat-step>
+</mat-stepper>

@@ -1,7 +1,6 @@
-import { HttpsError } from "firebase-functions/v2/https";
-import type { ScannerContext, ScannerTimeFormat } from "@shared/scanner-context";
+import type { ScannerContext, ScannerTimeFormat, ScanStrategy } from "@shared/scanner-context";
 
-export type { ScannerContext, ScannerTimeFormat };
+export type { ScannerContext, ScannerTimeFormat, ScanStrategy };
 
 export const LOG = "resultsSheetScanner";
 
@@ -55,12 +54,4 @@ export function logScanError(
 ): void {
   const payload = { requestId, stage, ...data };
   console.error(JSON.stringify({ severity: "ERROR", log: LOG, message, ...payload }));
-}
-
-export function httpsWithDetails(
-  code: "invalid-argument" | "permission-denied" | "unauthenticated" | "not-found" | "failed-precondition" | "internal",
-  message: string,
-  details: ScanErrorDetails,
-): HttpsError {
-  return new HttpsError(code, message, details);
 }

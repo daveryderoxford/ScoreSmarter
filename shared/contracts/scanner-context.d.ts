@@ -1,5 +1,8 @@
 export type ScannerTimeFormat = "clock_hms" | "stopwatch_hms_elapsed" | "stopwatch_ms_elapsed";
 
+/** Which backend parser pipeline to use for a scan. */
+export type ScanStrategy = "FullAIScan" | "FullAIScan-Fast" | "SplitScan";
+
 export type ScannerLapFormat = "numbers" | "ticks";
 export type ScannerListOrder = "chronological" | "firstLap" | "unsorted";
 
@@ -22,4 +25,6 @@ export interface ScannerContext {
   /** When false, the sheet has no lap column; use defaultLaps per row. Defaults to true if omitted. */
   lapsPresentOnSheet?: boolean;
   timeFormat?: ScannerTimeFormat;
+  /** Parser pipeline; defaults to OCR-Typescript when omitted. */
+  scanStrategy?: ScanStrategy;
 }

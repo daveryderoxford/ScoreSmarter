@@ -56,6 +56,12 @@ export class CurrentRaces {
     return [...orderedToday, ...manualExtras];
   });
 
+  /** Order-independent key; changes only when the selected race id set changes. */
+  readonly selectedRaceIdsKey = computed(() => {
+    const ids = this.selectedRaceIds();
+    return ids.length === 0 ? '' : ids.slice().sort().join('\0');
+  });
+
   readonly selectedRaces = computed(() => {
     const racesById = this.allRacesById();
     return this.selectedRaceIds()
@@ -70,8 +76,17 @@ export class CurrentRaces {
     return allSeries.filter(series => seriesIds.includes(series.id));
   });
 
+  readonly selectedSeriesIds = computed(() => [...new Set(this.selectedRaces().map(race => race.seriesId))]);
+
+  /** Order-independent key; changes only when series ids for selected races change. */
+  readonly selectedSeriesIdsKey = computed(() => {
+    const ids = this.selectedSeriesIds();
+    return ids.length === 0 ? '' : ids.slice().sort().join('\0');
+  });
+
   addRaceId = (raceId: string) =>
     this.manuallyAddedRaceIds.update(ids => {
+      if (ids.has(raceId)) return ids;
       const next = new Set(ids);
       next.add(raceId);
       return next;
@@ -79,6 +94,7 @@ export class CurrentRaces {
 
   removeRaceId = (raceId: string) =>
     this.manuallyAddedRaceIds.update(ids => {
+      if (!ids.has(raceId)) return ids;
       const next = new Set(ids);
       next.delete(raceId);
       return next;

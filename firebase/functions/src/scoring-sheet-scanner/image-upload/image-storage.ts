@@ -1,6 +1,6 @@
 import { getStorage } from "firebase-admin/storage";
 import { getFirestore } from "firebase-admin/firestore";
-import { logScan } from "../ai-scan-types.js";
+import { logScan } from "../ai-scan-model.js";
 
 export interface StoredResultsSheetImage {
   storagePath: string;

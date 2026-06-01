@@ -3,7 +3,9 @@ import * as admin from 'firebase-admin';
 import { getMetOfficeForcast } from './met-office.js';
 import { getFirestore } from 'firebase-admin/firestore';
 
-const db = getFirestore();
+function db() {
+  return getFirestore();
+}
 
 export const getForcast = onCall(
    {
@@ -19,7 +21,7 @@ export const getForcast = onCall(
       }
 
       // Return cached data if less than 1 hour old
-      const cacheRef = db.doc(`clubs/${clubId}/forcasts/current`);
+      const cacheRef = db().doc(`clubs/${clubId}/forcasts/current`);
       const cacheDoc = await cacheRef.get();
       const now = Date.now();
 

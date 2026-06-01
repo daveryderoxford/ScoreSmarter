@@ -95,7 +95,7 @@ export class SailNumberInput extends FormFieldBase<string> implements Validator,
     }
   }
 
-  validate(_control: AbstractControl): ValidationErrors | null {
+  validate(): ValidationErrors | null {
     return isValidSailNumber(this.inputControl.value) ? null : { sailNumber: true };
   }
 
