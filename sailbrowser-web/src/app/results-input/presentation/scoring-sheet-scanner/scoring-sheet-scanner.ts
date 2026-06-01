@@ -7,7 +7,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { BoatsStore } from 'app/boats';
 import { normalizeSailNumber, sailNumbersEqual } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
@@ -118,7 +118,6 @@ export class ScoringSheetScanner {
   private readonly clubStore = inject(ClubStore);
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
   private readonly scannerOrchestration = inject(ScannerOrchestrationService);
   private readonly captureService = inject(ResultsSheetCaptureService);
   private readonly manualResultsService = inject(ManualResultsService);
@@ -264,7 +263,6 @@ export class ScoringSheetScanner {
 
   readonly displayedColumns = ['accept', 'sailNumber', 'boatClass', 'helm', 'time', 'status', 'laps', 'overall'];
   readonly unmatchedColumns = ['sailNumber', 'boatClass', 'time', 'status', 'laps', 'helms', 'enter'];
-  readonly isMockScanMode = computed(() => this.scannerOrchestration.isMockMode(this.route.snapshot.queryParamMap.get('mockScan')));
   private findBoatMatches(row: ScannedResultRow) {
     const boatClass = row.boatClass?.value?.trim();
     const sailNumber = normalizeSailNumber(row.sailNumber?.value);
@@ -275,10 +273,6 @@ export class ScoringSheetScanner {
   }
 
   constructor() {
-    if (this.isMockScanMode()) {
-      // Allow capture step completion without image while testing review flow.
-      this.captureForm.controls.hasImage.setValue(true);
-    }
     this.form.controls.raceId.valueChanges.subscribe(raceId => {
       this.applyRaceStoredImageIfAny();
       this.result.set(null);
@@ -298,7 +292,7 @@ export class ScoringSheetScanner {
   }
 
   private syncCaptureFormValidity(): void {
-    this.captureForm.controls.hasImage.setValue(this.captureReady() || this.isMockScanMode());
+    this.captureForm.controls.hasImage.setValue(this.captureReady());
   }
 
   private applyRaceStoredImageIfAny(): void {
@@ -449,7 +443,7 @@ export class ScoringSheetScanner {
     }
 
     if (event.selectedIndex !== 3) return;
-    if (!this.isMockScanMode() && !this.captureReady()) return;
+    if (!this.captureReady()) return;
     if (this.loading()) return;
     if (this.result()) return;
     await this.scan();
@@ -634,7 +628,7 @@ export class ScoringSheetScanner {
   }
 
   async scan(): Promise<void> {
-    if (!this.isMockScanMode() && !isCaptureReady(this.captureImage())) return;
+    if (!isCaptureReady(this.captureImage())) return;
     if (this.form.invalid) return this.error.set('Select a race and complete the context form.');
 
     this.error.set(null);
@@ -660,7 +654,6 @@ export class ScoringSheetScanner {
         clubId: this.clubTenant.clubId,
         scannerContext,
         ...toScanRunFields(this.captureImage()),
-        mockMode: this.isMockScanMode(),
       }).subscribe(state => {
         if (state.status === 'running') {
           this.loading.set(true);

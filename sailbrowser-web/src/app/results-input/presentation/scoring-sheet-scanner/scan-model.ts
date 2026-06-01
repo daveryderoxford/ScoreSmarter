@@ -43,7 +43,6 @@ export interface ScanRunRequest {
   imageMimeType?: string | null;
   /** Sheet already stored for this race at the canonical server path — skip upload before parse. */
   useStoredRaceSheet?: boolean;
-  mockMode?: boolean;
 }
 
 export interface ScanRunState {
