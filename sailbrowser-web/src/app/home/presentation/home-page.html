@@ -1,10 +1,21 @@
-<app-toolbar [title]="title()"></app-toolbar>
+<app-toolbar [title]="title()">
+  <a
+    class="scoresmarter-app-link"
+    href="https://www.scoresmarter.app"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="ScoreSmarter project homepage">
+    <img src="favicon-32x32.png" alt="" width="32" height="32" />
+  </a>
+</app-toolbar>
 <div class="content">
   <mat-card class="home-card">
     <div class="club-header">
-      @if (logoSrc()) {
-        <img [src]="logoSrc()!" alt="Club Logo" class="club-logo" referrerpolicy="no-referrer">
-      }
+      <app-club-logo
+        [src]="clubLogoService.logoDownloadUrl()"
+        size="lg"
+        [showPlaceholder]="false"
+        alt="Club logo" />
       <h1 class="club-title">{{ clubStore.club().name }}</h1>
     </div>
     

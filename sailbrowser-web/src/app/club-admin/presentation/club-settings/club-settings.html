@@ -9,9 +9,11 @@
   <mat-card appearance="outlined" class="config-card">
     <mat-card-content>
       <div class="logo-row">
-        @if (logoPreviewUrl()) {
-          <img [src]="logoPreviewUrl()!" alt="Club logo preview" class="logo-preview">
-        }
+        <app-club-logo
+          [src]="logoDisplayUrl()"
+          size="lg"
+          [showPlaceholder]="false"
+          alt="Club logo preview" />
         <div class="logo-upload">
           <label class="upload-label">
             <span>Choose logo image</span>
@@ -30,6 +32,12 @@
         <mat-label>Short name</mat-label>
         <input matInput formControlName="shortName">
         <mat-hint>Used in page titles when set</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Website</mat-label>
+        <input matInput formControlName="websiteUrl" type="url" placeholder="https://example.com">
+        <mat-hint>Linked from the side menu club name</mat-hint>
       </mat-form-field>
 
       <div class="form-row">

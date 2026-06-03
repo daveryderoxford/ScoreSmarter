@@ -1,73 +1,141 @@
-<mat-action-list>
+<div class="sidenav-root">
+  <header class="club-branding">
+    <app-club-logo
+      [src]="clubLogoService.logoDownloadUrl()"
+      [alt]="clubDisplayName() + ' logo'"
+      size="sm" />
+    @if (clubWebsiteUrl(); as website) {
+      <a
+        class="club-name"
+        [href]="website"
+        target="_blank"
+        rel="noopener noreferrer"
+        (click)="onClubWebsiteClick($event)">
+        {{ clubDisplayName() }}
+      </a>
+    } @else {
+      <span class="club-name">{{ clubDisplayName() }}</span>
+    }
+  </header>
 
-   <mat-list-item mat-list-item (click)='closeSidenav(["/home"])'>
+  <mat-nav-list class="sidenav-menu">
+
+    <a
+      mat-list-item
+      class="sidenav-nav-item"
+      routerLink="/home"
+      routerLinkActive="mdc-list-item--activated"
+      [routerLinkActiveOptions]="exactNavMatch"
+      (click)="onNavClick()">
       <mat-icon matListItemIcon>home</mat-icon>
       <span matListItemTitle>Home</span>
-   </mat-list-item>
+    </a>
 
-   <button mat-list-item (click)='closeSidenav(["/entry/entries"])'>
+    <a
+      mat-list-item
+      class="sidenav-nav-item"
+      routerLink="/entry/entries"
+      routerLinkActive="mdc-list-item--activated"
+      [routerLinkActiveOptions]="prefixNavMatch"
+      (click)="onNavClick()">
       <mat-icon matListItemIcon>assignment</mat-icon>
       <span matListItemTitle>Entries</span>
-   </button>
+    </a>
 
-   <button mat-list-item (click)='closeSidenav(["/results/viewer"])'>
+    <a
+      mat-list-item
+      class="sidenav-nav-item"
+      routerLink="/results/viewer"
+      routerLinkActive="mdc-list-item--activated"
+      [routerLinkActiveOptions]="prefixNavMatch"
+      (click)="onNavClick()">
       <mat-icon matListItemIcon>emoji_events</mat-icon>
       <span matListItemTitle>Series Results</span>
-   </button>
+    </a>
 
-   <mat-divider />
+    <mat-divider />
 
-   <button mat-list-item (click)='closeSidenav(["/results-input/manual"])'>
+    <a
+      mat-list-item
+      class="sidenav-nav-item"
+      routerLink="/results-input/manual"
+      routerLinkActive="mdc-list-item--activated"
+      [routerLinkActiveOptions]="prefixNavMatch"
+      (click)="onNavClick()">
       <mat-icon matListItemIcon>schedule</mat-icon>
       <span matListItemTitle>Results Input</span>
-   </button>
+    </a>
 
-   <button mat-list-item (click)='closeSidenav(["/results-input/scan-scoring-sheet"])'>
+    <a
+      mat-list-item
+      class="sidenav-nav-item"
+      routerLink="/results-input/scan-scoring-sheet"
+      routerLinkActive="mdc-list-item--activated"
+      [routerLinkActiveOptions]="prefixNavMatch"
+      (click)="onNavClick()">
       <mat-icon matListItemIcon>document_scanner</mat-icon>
       <span matListItemTitle>Scan Scoring Sheet</span>
-   </button>
+    </a>
 
-   <mat-divider />
+    <mat-divider />
 
-   @if (auth.user()) {
-   <mat-accordion>
-      <mat-expansion-panel class="mat-elevation-z0">
-         <mat-expansion-panel-header>
-            <mat-panel-title>User</mat-panel-title>
-         </mat-expansion-panel-header>
-         <mat-nav-list>
-            <button mat-list-item (click)='closeSidenav(["/user"])'>User details</button>
-            <button mat-list-item (click)='closeSidenav(["/auth/change-password"])'>Change password</button>
-            <button mat-list-item (click)="logout()">Logout</button>
-         </mat-nav-list>
-      </mat-expansion-panel>
-   </mat-accordion>
-   } @else {
-   <button mat-list-item (click)='closeSidenav(["/auth/login"])'>Login</button>
-   }
+    @if (auth.loggedIn() && auth.isClubAdmin()) {
+      <a
+        mat-list-item
+        class="sidenav-nav-item"
+        routerLink="/club-admin"
+        routerLinkActive="mdc-list-item--activated"
+        [routerLinkActiveOptions]="prefixNavMatch"
+        (click)="onNavClick()">
+        <mat-icon matListItemIcon>admin_panel_settings</mat-icon>
+        <span matListItemTitle>Club Admin</span>
+      </a>
+    }
 
-   <mat-divider />
+    @if (auth.loggedIn() && auth.isSysAdmin()) {
+      <a
+        mat-list-item
+        class="sidenav-nav-item"
+        routerLink="/sys-admin"
+        routerLinkActive="mdc-list-item--activated"
+        [routerLinkActiveOptions]="prefixNavMatch"
+        (click)="onNavClick()">
+        <mat-icon matListItemIcon>settings</mat-icon>
+        <span matListItemTitle>System Admin</span>
+      </a>
+    }
 
-   @if (auth.user()) {
-   <mat-accordion>
-      <mat-expansion-panel class="mat-elevation-z0">
-         <mat-expansion-panel-header>
-            <mat-panel-title>System</mat-panel-title>
-         </mat-expansion-panel-header>
+    @if (auth.loggedIn() && (auth.isClubAdmin() || auth.isSysAdmin())) {
+      <mat-divider />
+    }
 
-         <mat-nav-list>
-            <button mat-list-item (click)='closeSidenav(["/club-admin"])'>Club Admin</button>
+    @if (auth.loggedIn()) {
+      <a
+        mat-list-item
+        class="sidenav-nav-item account-item"
+        routerLink="/user"
+        routerLinkActive="mdc-list-item--activated"
+        [routerLinkActiveOptions]="prefixNavMatch"
+        (click)="onNavClick()">
+        <mat-icon matListItemIcon>person</mat-icon>
+        <span matListItemTitle>{{ accountTitle() }}</span>
+      </a>
+      <button mat-list-item class="sidenav-nav-item" type="button" (click)="logout()">
+        <mat-icon matListItemIcon>logout</mat-icon>
+        <span matListItemTitle>Logout</span>
+      </button>
+    } @else {
+      <a
+        mat-list-item
+        class="sidenav-nav-item"
+        routerLink="/auth/login"
+        routerLinkActive="mdc-list-item--activated"
+        [routerLinkActiveOptions]="prefixNavMatch"
+        (click)="onNavClick()">
+        <mat-icon matListItemIcon>login</mat-icon>
+        <span matListItemTitle>Login</span>
+      </a>
+    }
 
-            @if (auth.isSysAdmin()) {
-            <button mat-list-item (click)='closeSidenav(["/sys-admin"])'>System Admin</button>
-            }
-         </mat-nav-list>
-      </mat-expansion-panel>
-   </mat-accordion>
-   }
-
-   <mat-divider />
-   <button mat-list-item (click)='closeSidenav(["/about"])'>About</button>
-   <button mat-list-item (click)='contact()'>Contact</button>
-
-</mat-action-list>
+  </mat-nav-list>
+</div>

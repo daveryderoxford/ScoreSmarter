@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { ClubLogoService } from 'app/club-admin/services/club-logo.service';
+import { ClubLogo } from 'app/shared/components/club-logo/club-logo';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
@@ -23,15 +24,15 @@ import { Title } from '@angular/platform-browser';
     DatePipe,
     MatIconModule,
     MatCardModule,
+    ClubLogo,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomePage {
   protected readonly currentRacesStore = inject(CurrentRaces);
   protected readonly clubStore = inject(ClubStore);
-  private readonly clubLogoService = inject(ClubLogoService);
+  protected readonly clubLogoService = inject(ClubLogoService);
   private readonly pageTitle = inject(Title);
-  protected readonly logoSrc = signal<string | null>(null);
 
   title = computed( () => {
     const club = this.clubStore.club();
@@ -40,13 +41,5 @@ export class HomePage {
 
   pageTitleEffect = effect(() =>
     this.pageTitle.setTitle(this.title()));
-
-  logoEffect = effect(() => {
-    const path = this.clubStore.club().logoUrl;
-    void this.clubLogoService.resolveDownloadUrl(path).then(
-      (url) => this.logoSrc.set(url),
-      () => this.logoSrc.set(null),
-    );
-  });
 
 }

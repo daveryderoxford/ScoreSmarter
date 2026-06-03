@@ -17,5 +17,4 @@ export const APP_ROUTES: Routes = [
    { path: "club-admin", loadChildren: () => import('./club-admin/club-admin.routes').then(r => r.CLUB_ADMIN_ROUTES) },
    { path: "auth", loadChildren: () => import('./auth/auth.routes').then(r => r.AUTH_ROUTES) },
    { path: "user", loadChildren: () => import('./user/user.routes').then(r => r.USER_ROUTES) },
-   { path: "about", title: 'About ScoreSmarter', loadComponent: () => import('./about/presentation/about-page').then(c => c.AboutComponent) },
 ];
