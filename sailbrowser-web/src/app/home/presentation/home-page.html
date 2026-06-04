@@ -25,10 +25,21 @@
           <mat-icon>assignment</mat-icon>
           <span>Race Entry</span>
         </a>
-        <a matButton="tonal" routerLink="/entry/entries">
+        <button matButton="tonal" type="button" [matMenuTriggerFor]="inputResultsMenu">
           <mat-icon>list_alt</mat-icon>
           <span>Input results</span>
-        </a>
+          <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+        </button>
+        <mat-menu #inputResultsMenu="matMenu">
+          <a mat-menu-item routerLink="/results-input/manual">
+            <mat-icon>schedule</mat-icon>
+            <span>Results input</span>
+          </a>
+          <a mat-menu-item routerLink="/results-input/scan-scoring-sheet">
+            <mat-icon>document_scanner</mat-icon>
+            <span>Scan scoring sheet</span>
+          </a>
+        </mat-menu>
         <a matButton="tonal" routerLink="/results/viewer">
           <mat-icon>emoji_events</mat-icon>
           <span>Results display</span>

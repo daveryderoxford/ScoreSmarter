@@ -4,6 +4,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { AuthService } from 'app/auth';
 import { ClubLogoService } from 'app/club-admin/services/club-logo.service';
 import { ClubStore } from 'app/club-tenant';
@@ -23,6 +24,7 @@ const ignoredNavMatch: Pick<IsActiveMatchOptions, 'queryParams' | 'fragment' | '
     MatListModule,
     MatButtonModule,
     MatDividerModule,
+    MatMenuModule,
     RouterModule,
     MatIconModule,
     ClubLogo,
@@ -50,15 +52,14 @@ const ignoredNavMatch: Pick<IsActiveMatchOptions, 'queryParams' | 'fragment' | '
 
     .sidenav-menu {
       padding: 8px 10px;
+    }
+
+    .sidenav-nav-item {
       border-radius: 100px;
     }
 
     a {
       margin: 5px 0;
-    }
-
-    .account-item {
-      border-radius: 100px;
     }
 
     .club-branding {
@@ -92,7 +93,7 @@ const ignoredNavMatch: Pick<IsActiveMatchOptions, 'queryParams' | 'fragment' | '
     a.club-name:hover {
       text-decoration: underline;
     }
-  
+
   `],
 })
 export class SidenavMenu {

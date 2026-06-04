@@ -1,65 +1,35 @@
 @use 'mixins' as mix;
 
-@include mix.centered-column-page('.account-page', 520px);
+@include mix.form-page('.user-form', 400px);
 
-.account-page {
+.user-form {
+  gap: 4px;
+}
+
+.detail-field {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding-bottom: 24px;
+  gap: 4px;
+  margin-bottom: 16px;
 }
 
-.section-card {
-  width: 100%;
+.detail-label {
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-on-surface-variant);
 }
 
-.detail-list,
-.claims-list {
-  padding: 0;
-}
-
-.mono,
-.claim-value {
-  font-family: var(--mat-sys-body-small-font, monospace);
-  font-size: 0.8125rem;
-  white-space: pre-wrap;
+.detail-value {
+  font: var(--mat-sys-body-large);
+  color: var(--mat-sys-on-surface);
   word-break: break-word;
 }
 
-.claim-value {
-  margin: 4px 0 0;
+.full-width {
+  width: 100%;
 }
 
-.empty-hint {
-  margin: 0;
-  color: var(--mat-sys-on-surface-variant);
-  font-size: 0.875rem;
-}
-
-.profile-form {
+.actions {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.name-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-mat-card-actions {
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-@media (min-width: 480px) {
-  .name-row {
-    flex-direction: row;
-    gap: 12px;
-  }
-
-  .name-row mat-form-field {
-    flex: 1;
-  }
+  justify-content: flex-end;
+  margin-top: 16px;
 }

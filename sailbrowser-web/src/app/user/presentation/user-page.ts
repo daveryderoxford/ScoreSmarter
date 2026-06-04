@@ -1,16 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Auth, sendPasswordResetEmail } from '@angular/fire/auth';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatListModule } from '@angular/material/list';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Router, RouterLink } from '@angular/router';
-import { FirebaseError } from '@angular/fire/app';
+import { Router } from '@angular/router';
 import { AuthService } from 'app/auth/auth.service';
-import { getFirebaseErrorMessage } from 'app/auth/firebase-error-messages';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { Toolbar } from 'app/shared/components/toolbar';
 import type { UserData } from '../model/user';
@@ -24,18 +18,13 @@ import { UserDataService } from '../services/user-data.service';
   imports: [
     Toolbar,
     ReactiveFormsModule,
-    MatCardModule,
     MatFormFieldModule,
     MatInputModule,
-    MatListModule,
-    MatButtonModule,
-    RouterLink,
     SubmitButton,
   ],
 })
 export class UserPage {
   protected readonly auth = inject(AuthService);
-  private readonly firebaseAuth = inject(Auth);
   private readonly router = inject(Router);
   private readonly userData = inject(UserDataService);
   private readonly snackBar = inject(MatSnackBar);
@@ -46,10 +35,6 @@ export class UserPage {
   });
 
   readonly busy = signal(false);
-  readonly refreshingClaims = signal(false);
-  readonly resettingPassword = signal(false);
-
-  readonly profileRole = computed(() => this.userData.user()?.role ?? null);
 
   constructor() {
     effect(() => {
@@ -82,38 +67,6 @@ export class UserPage {
       this.snackBar.open('Error saving profile.', 'Dismiss', { duration: 4000 });
     } finally {
       this.busy.set(false);
-    }
-  }
-
-  async refreshClaims(): Promise<void> {
-    if (this.refreshingClaims()) return;
-    this.refreshingClaims.set(true);
-    try {
-      await this.auth.refreshIdToken();
-      this.snackBar.open('Claims refreshed.', 'Dismiss', { duration: 3000 });
-    } catch (e) {
-      console.error('UserPage: error refreshing claims', e);
-      this.snackBar.open('Could not refresh claims.', 'Dismiss', { duration: 4000 });
-    } finally {
-      this.refreshingClaims.set(false);
-    }
-  }
-
-  async sendPasswordReset(): Promise<void> {
-    const email = this.auth.user()?.email;
-    if (!email || this.resettingPassword()) return;
-
-    this.resettingPassword.set(true);
-    try {
-      await sendPasswordResetEmail(this.firebaseAuth, email);
-      this.snackBar.open(`Password reset email sent to ${email}.`, 'Dismiss', { duration: 5000 });
-    } catch (e: unknown) {
-      const msg =
-        e instanceof FirebaseError ? getFirebaseErrorMessage(e) : 'Could not send reset email.';
-      console.error('UserPage: password reset failed', e);
-      this.snackBar.open(msg, 'Dismiss', { duration: 5000 });
-    } finally {
-      this.resettingPassword.set(false);
     }
   }
 

@@ -65,6 +65,16 @@ export class AuthService {
     return clubs?.[this.clubId] === 'race-officer';
   });
 
+  /** Human-readable role for the current club from ID token claims. */
+  readonly clubRoleLabel = computed(() => {
+    if (this.isSysAdmin()) return 'System admin';
+    const clubs = this.idTokenResult()?.claims['clubs'] as Record<string, string> | undefined;
+    const role = clubs?.[this.clubId];
+    if (role === 'club-admin') return 'Club admin';
+    if (role === 'race-officer') return 'Race officer';
+    return 'User';
+  });
+
   async signOut(): Promise<void> {
     return signOut(this.auth);
   }

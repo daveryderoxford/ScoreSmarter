@@ -1,88 +1,38 @@
-<app-toolbar title="Account" showBack />
+<app-toolbar title="Account" />
 
-<div class="account-page">
-  <mat-card class="section-card">
-    <mat-card-header>
-      <mat-card-title>Sign-in</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <mat-list class="detail-list">
-        <mat-list-item>
-          <span matListItemTitle>Email</span>
-          <span matListItemLine>{{ auth.user()?.email ?? '—' }}</span>
-        </mat-list-item>
-        <mat-list-item>
-          <span matListItemTitle>User ID</span>
-          <span matListItemLine class="mono">{{ auth.user()?.uid ?? '—' }}</span>
-        </mat-list-item>
-        @if (profileRole()) {
-          <mat-list-item>
-            <span matListItemTitle>Club role (stored)</span>
-            <span matListItemLine>{{ profileRole() }}</span>
-          </mat-list-item>
-        }
-      </mat-list>
-    </mat-card-content>
-    <mat-card-actions align="end">
-      <button matButton type="button" (click)="refreshClaims()" [disabled]="refreshingClaims()">
-        Refresh claims
-      </button>
-      <button matButton="filled" type="button" routerLink="/auth/change-password">
-        Change password
-      </button>
-      <button matButton type="button" (click)="sendPasswordReset()" [disabled]="resettingPassword()">
-        Email reset link
-      </button>
-    </mat-card-actions>
-  </mat-card>
+<form class="user-form" [formGroup]="userForm" (ngSubmit)="save()" novalidate>
+  <div class="detail-field">
+    <span class="detail-label">Email</span>
+    <span class="detail-value">{{ auth.user()?.email ?? '—' }}</span>
+  </div>
 
-  <mat-card class="section-card">
-    <mat-card-header>
-      <mat-card-title>Custom claims</mat-card-title>
-      <mat-card-subtitle>From your ID token — used for client-side access checks</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      @if (auth.customClaims().length > 0) {
-        <mat-list class="claims-list">
-          @for (claim of auth.customClaims(); track claim.key) {
-            <mat-list-item>
-              <span matListItemTitle>{{ claim.key }}</span>
-              <pre matListItemLine class="claim-value">{{ claim.value }}</pre>
-            </mat-list-item>
-          }
-        </mat-list>
-      } @else {
-        <p class="empty-hint">No custom claims on this account.</p>
-      }
-    </mat-card-content>
-  </mat-card>
+  <div class="detail-field">
+    <span class="detail-label">Role</span>
+    <span class="detail-value">{{ auth.clubRoleLabel() }}</span>
+  </div>
 
-  <mat-card class="section-card">
-    <mat-card-header>
-      <mat-card-title>Profile</mat-card-title>
-      <mat-card-subtitle>Name stored for this club</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <form [formGroup]="userForm" (ngSubmit)="save()" class="profile-form">
-        <div class="name-row">
-          <mat-form-field>
-            <mat-label>First name</mat-label>
-            <input matInput formControlName="firstname" autocomplete="given-name" />
-            <mat-error>First name is required</mat-error>
-          </mat-form-field>
-          <mat-form-field>
-            <mat-label>Last name</mat-label>
-            <input matInput formControlName="surname" autocomplete="family-name" />
-            <mat-error>Last name is required</mat-error>
-          </mat-form-field>
-        </div>
-        <app-submit-button
-          [disabled]="userForm.invalid || !userForm.dirty"
-          [busy]="busy()"
-          aria-label="Save profile">
-          Save profile
-        </app-submit-button>
-      </form>
-    </mat-card-content>
-  </mat-card>
-</div>
+  <mat-form-field class="full-width">
+    <mat-label>First name</mat-label>
+    <input matInput formControlName="firstname" autocomplete="given-name" />
+    @if (userForm.controls.firstname.invalid && userForm.controls.firstname.touched) {
+      <mat-error>First name is required</mat-error>
+    }
+  </mat-form-field>
+
+  <mat-form-field class="full-width">
+    <mat-label>Last name</mat-label>
+    <input matInput formControlName="surname" autocomplete="family-name" />
+    @if (userForm.controls.surname.invalid && userForm.controls.surname.touched) {
+      <mat-error>Last name is required</mat-error>
+    }
+  </mat-form-field>
+
+  <div class="actions">
+    <app-submit-button
+      [disabled]="userForm.invalid || !userForm.dirty"
+      [busy]="busy()"
+      aria-label="Save profile">
+      Save
+    </app-submit-button>
+  </div>
+</form>

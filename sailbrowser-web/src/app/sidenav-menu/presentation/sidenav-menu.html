@@ -112,18 +112,34 @@
     @if (auth.loggedIn()) {
       <a
         mat-list-item
-        class="sidenav-nav-item account-item"
-        routerLink="/user"
-        routerLinkActive="mdc-list-item--activated"
-        [routerLinkActiveOptions]="prefixNavMatch"
-        (click)="onNavClick()">
+        class="sidenav-nav-item"
+        [matMenuTriggerFor]="accountMenu"
+        (click)="$event.preventDefault()">
         <mat-icon matListItemIcon>person</mat-icon>
         <span matListItemTitle>{{ accountTitle() }}</span>
+        <span matListItemMeta>
+          <mat-icon>arrow_drop_down</mat-icon>
+        </span>
       </a>
-      <button mat-list-item class="sidenav-nav-item" type="button" (click)="logout()">
-        <mat-icon matListItemIcon>logout</mat-icon>
-        <span matListItemTitle>Logout</span>
-      </button>
+
+      <mat-menu
+        #accountMenu="matMenu"
+        panelClass="account-menu-panel"
+        xPosition="before"
+        yPosition="below">
+        <a mat-menu-item class="account-menu-item" routerLink="/user" (click)="onNavClick()">
+          <mat-icon matMenuItemIcon>person</mat-icon>
+          <span>User details</span>
+        </a>
+        <a mat-menu-item class="account-menu-item" routerLink="/auth/change-password" (click)="onNavClick()">
+          <mat-icon matMenuItemIcon>lock</mat-icon>
+          <span>Change password</span>
+        </a>
+        <button mat-menu-item class="account-menu-item" type="button" (click)="logout()">
+          <mat-icon matMenuItemIcon>logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      </mat-menu>
     } @else {
       <a
         mat-list-item
