@@ -21,12 +21,15 @@
 
    <main class="content-area">
       @if (!isMobile() && isPanelCollapsed()) {
-      <button mat-icon-button (click)="togglePanel()" class="panel-toggle-button"
-         title="Show panel">
-         <mat-icon>keyboard_double_arrow_right</mat-icon>
-      </button>
+      <div class="panel-toggle-bar">
+         <button mat-icon-button (click)="togglePanel()" class="panel-toggle-button"
+            title="Show season list">
+            <mat-icon>keyboard_double_arrow_right</mat-icon>
+         </button>
+      </div>
       }
 
+      <div class="tables-scroll">
       <div class="tables-container">
          @if (store.seriesLoading()) {
          <app-loading-centered />
@@ -96,6 +99,7 @@
          </div>
          }
          }
+      </div>
       </div>
    </main>
 </div>

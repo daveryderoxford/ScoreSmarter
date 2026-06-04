@@ -6,11 +6,11 @@
 .container {
    width: 100%;
    border-radius: var(--mat-sys-corner-large);
-   overflow-x: scroll;
-   overflow-y: scroll;
+   overflow-x: auto;
+   overflow-y: visible;
 }
 
-/** Wraps legend + table: width follows the table (does not stretch to the viewport). */
+/** Intrinsic table width; parent `.container` scrolls when wider than the viewport. */
 .table-with-legend {
    display: inline-flex;
    flex-direction: column;
@@ -44,12 +44,21 @@
    background-color: var(--mat-sys-primary-container);
 }
 
-/* Ensure sticky header cells are on top */
+/* Sticky rank/name: stay visible when `.container` scrolls horizontally. */
 .cdk-header-cell.cdk-column-rank,
 .cdk-header-cell.cdk-column-name {
    background-color: var(--mat-sys-surface-container-high);
    z-index: 3;
-   /* Higher z-index for sticky header corner */
+}
+
+.cdk-cell.cdk-column-rank,
+.cdk-cell.cdk-column-name {
+   z-index: 2;
+}
+
+.cdk-row:nth-child(even) .cdk-cell.cdk-column-rank,
+.cdk-row:nth-child(even) .cdk-cell.cdk-column-name {
+   background-color: var(--mat-sys-primary-container);
 }
 
 /// Column defintions

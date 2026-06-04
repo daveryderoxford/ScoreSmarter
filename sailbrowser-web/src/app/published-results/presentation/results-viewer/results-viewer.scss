@@ -54,60 +54,74 @@
 
 .content-area {
    grid-area: content;
-   position: relative;
-   /* For positioning the toggle button */
    display: flex;
-   justify-content: center;
-   /* Center the tables-container horizontally */
+   flex-direction: column;
+   min-height: 0;
+   min-width: 0;
+   overflow: hidden;
+}
+
+.panel-toggle-bar {
+   position: sticky;
+   top: 0;
+   z-index: 10;
+   flex-shrink: 0;
+   align-self: flex-start;
+   display: block;
+   width: fit-content;
+   padding: 4px 0 0 8px;
+}
+
+.tables-scroll {
+   flex: 1;
+   min-height: 0;
+   min-width: 0;
    overflow: auto;
-   padding: 2rem;
+   padding: 1rem 12px;
 }
 
 .tables-container {
    width: 100%;
-    max-width: 1200px; /* Max width for the tables */
-  }
+   min-width: 0;
+}
 
-  .panel-toggle-button {
-    position: absolute;
-    top: 7px;
-    left: 7px;
-    z-index: 10;
-  }
+.panel-toggle-button {
+   flex-shrink: 0;
+}
 
-  .race-container {
-      margin-top: 2rem;
-  }
+.race-container {
+   margin-top: 2rem;
+}
 
-  .race-title {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid var(--mat-sys-color-outline-variant);
-      margin-bottom: 0.5rem;
+.race-title {
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+   padding-bottom: 0.5rem;
+   border-bottom: 1px solid var(--mat-sys-color-outline-variant);
+   margin-bottom: 0.5rem;
 
-      h3 {
-         flex-grow: 1;
-         margin: 0;
-      }
-  }
+   h3 {
+      flex-grow: 1;
+      margin: 0;
+   }
+}
 
-  .series-header {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 1rem;
-  }
+.series-header {
+   display: flex;
+   flex-direction: column;
+   margin-bottom: 1rem;
+}
 
-  .series-title-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-  }
+.series-title-row {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   margin-bottom: 0.5rem;
+}
 
-  .config-selector-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
+.config-selector-row {
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+}

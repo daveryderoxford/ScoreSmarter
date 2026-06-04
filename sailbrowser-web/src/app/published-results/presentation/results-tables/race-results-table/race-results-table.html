@@ -5,7 +5,7 @@
          <table cdk-table class="table" [dataSource]="tableData()" [trackBy]="trackByKey" [style.font-size]="fontSize()">
 
       <!-- Initial columns -->
-      <ng-container cdkColumnDef="rank">
+      <ng-container cdkColumnDef="rank" sticky>
          <th cdk-header-cell class="rank-col" *cdkHeaderCellDef>Rank</th>
          <td cdk-cell class="rank-col" *cdkCellDef="let competitor">
             @if (isRankedRaceResult(competitor)) {

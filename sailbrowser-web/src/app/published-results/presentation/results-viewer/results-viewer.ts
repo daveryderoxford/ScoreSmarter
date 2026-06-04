@@ -141,7 +141,7 @@ export class ResultsViewer {
   }
 
   scrollToTop() {
-    this.elementRef.nativeElement.querySelector('.content-area')?.scrollTo({ top: 0, behavior: 'smooth' });
+    this.elementRef.nativeElement.querySelector('.tables-scroll')?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   editRace(raceId: string) {

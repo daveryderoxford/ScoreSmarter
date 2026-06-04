@@ -6,8 +6,9 @@ export interface HelmCrew  {
    crew?: string;
 }
 
-const MAX_NAME_WIDTH = 200;
-const MIN_NAME_WIDTH = 80;
+const MAX_NAME_WIDTH = 160;
+const MIN_NAME_WIDTH = 64;
+const NAME_WIDTH_SCALE = 0.8;
 
 export function nameColumnWidth(names: HelmCrew[]) {
 
@@ -22,8 +23,8 @@ export function nameColumnWidth(names: HelmCrew[]) {
       return Math.max(maxLength, helmLength, crewLength);
    }, 0);
 
-   // Estimate width: (char count * avg char width) + padding.
-   let maxLenPixels = maxLenChars * 8 + 15;
+   // Estimate width: (char count * avg char width) + padding, then scale down.
+   let maxLenPixels = (maxLenChars * 8 + 15) * NAME_WIDTH_SCALE;
    maxLenPixels = Math.min(MAX_NAME_WIDTH, maxLenPixels);
    maxLenPixels = Math.max(MIN_NAME_WIDTH, maxLenPixels);
 
