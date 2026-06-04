@@ -17,6 +17,7 @@ import {
   provideFirestore
 } from '@angular/fire/firestore';
 import { getFunctions, provideFunctions } from '@angular/fire/functions';
+import { provideHttpClient } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { environment } from '../environments/environment';
 import { APP_ROUTES } from './app.routes';
@@ -32,6 +33,7 @@ function browserLocaleId(): string {
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideHttpClient(),
     { provide: LOCALE_ID, useFactory: browserLocaleId },
     provideAppInitializer(() => inject(ClubTenant).initialize()),
     provideZonelessChangeDetection(),
@@ -71,7 +73,7 @@ export const appConfig: ApplicationConfig = {
         (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
       }
       return initializeAppCheck(undefined, {
-        provider: new ReCaptchaEnterpriseProvider('6LfC1dUrAAAAAH6_S3uOuk--gDUsbLivZ4lDEgH0'),
+        provider: new ReCaptchaEnterpriseProvider('6LerxgwtAAAAALtfXU4-NFl3-tXR20bGobMsKaSA'),
         isTokenAutoRefreshEnabled: true
       });
     }),
