@@ -35,6 +35,16 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideHttpClient(),
     { provide: LOCALE_ID, useFactory: browserLocaleId },
+    provideAppCheck(() => {
+      // In debug App Check to use the debug provider instead of reCAPTCHA
+      if (isDevMode() || window.location.hostname === 'localhost') {
+        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+      }
+      return initializeAppCheck(undefined, {
+        provider: new ReCaptchaEnterpriseProvider('6LerxgwtAAAAALtfXU4-NFl3-tXR20bGobMsKaSA'),
+        isTokenAutoRefreshEnabled: true
+      });
+    }),
     provideAppInitializer(() => inject(ClubTenant).initialize()),
     provideZonelessChangeDetection(),
     provideFirebaseApp(() => initializeApp(firebaseConfig)),
@@ -66,16 +76,6 @@ export const appConfig: ApplicationConfig = {
         connectFirestoreEmulator(firestore, 'localhost', 8080);
       }
       return firestore;
-    }),
-    provideAppCheck(() => {
-      // In debug App Check to use the debug provider instead of reCAPTCHA
-      if (isDevMode() || window.location.hostname === 'localhost') {
-        (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-      }
-      return initializeAppCheck(undefined, {
-        provider: new ReCaptchaEnterpriseProvider('6LerxgwtAAAAALtfXU4-NFl3-tXR20bGobMsKaSA'),
-        isTokenAutoRefreshEnabled: true
-      });
     }),
     provideRouter(APP_ROUTES,
       withComponentInputBinding(),
