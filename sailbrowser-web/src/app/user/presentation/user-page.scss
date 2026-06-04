@@ -1,5 +1,35 @@
-@use "mixins" as mix;
+@use 'mixins' as mix;
 
-@include mix.form-page("form", 400px);
+@include mix.form-page('.user-form', 400px);
 
+.user-form {
+  gap: 4px;
+}
 
+.detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.detail-label {
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.detail-value {
+  font: var(--mat-sys-body-large);
+  color: var(--mat-sys-on-surface);
+  word-break: break-word;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}

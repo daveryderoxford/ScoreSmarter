@@ -1,70 +1,70 @@
-
-import { Component, effect, OnInit, inject, signal } from "@angular/core";
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import { MatButtonModule } from "@angular/material/button";
-import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatOptionModule } from "@angular/material/core";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatIconModule } from "@angular/material/icon";
-import { MatInputModule } from "@angular/material/input";
-import { MatProgressBarModule } from "@angular/material/progress-bar";
-import { MatSelectModule } from "@angular/material/select";
-import { Router } from "@angular/router";
-import { FlexModule } from "@ngbracket/ngx-layout/flex";
-import { UserData } from '../model/user';
-import { UserDataService } from "../services/user-data.service";
-import { Toolbar } from "app/shared/components/toolbar";
-import { AuthService } from 'app/auth/auth.service';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { SubmitButton } from "app/shared/components/submit-button";
+import { Router } from '@angular/router';
+import { AuthService } from 'app/auth/auth.service';
+import { SubmitButton } from 'app/shared/components/submit-button';
+import { Toolbar } from 'app/shared/components/toolbar';
+import type { UserData } from '../model/user';
+import { UserDataService } from '../services/user-data.service';
 
 @Component({
-  selector: "app-user",
-  templateUrl: "./user-page.html",
-  styleUrls: ["./user-page.scss"],
-  imports: [Toolbar, FlexModule, ReactiveFormsModule, MatProgressBarModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatOptionModule, MatButtonModule, MatIconModule, MatCheckboxModule, SubmitButton]
+  selector: 'app-user',
+  templateUrl: './user-page.html',
+  styleUrls: ['./user-page.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    Toolbar,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    SubmitButton,
+  ],
 })
 export class UserPage {
-  private afAuth = inject(AuthService);
-  private router = inject(Router);
-  private usd = inject(UserDataService);
-  private snackBar = inject(MatSnackBar);
+  protected readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly userData = inject(UserDataService);
+  private readonly snackBar = inject(MatSnackBar);
 
-  userForm = new FormGroup({
-    firstname: new FormControl('', { validators: [Validators.required] }),
-    surname: new FormControl('', { validators: [Validators.required] }),
+  readonly userForm = new FormGroup({
+    firstname: new FormControl('', { validators: [Validators.required], nonNullable: true }),
+    surname: new FormControl('', { validators: [Validators.required], nonNullable: true }),
   });
 
-  busy = signal(false);
+  readonly busy = signal(false);
 
   constructor() {
-
     effect(() => {
-      const userData = this.usd.user();
-      if (userData) {
-        this.userForm.patchValue(userData);
-      };
+      const data = this.userData.user();
+      if (data) {
+        this.userForm.patchValue(
+          { firstname: data.firstname ?? '', surname: data.surname ?? '' },
+          { emitEvent: false },
+        );
+      }
     });
 
-    // Navigate away if we aare logged out
     effect(() => {
-      if (!this.afAuth.loggedIn()) {
-        this.router.navigate(["/"]);
+      if (!this.auth.loggedIn()) {
+        void this.router.navigate(['/auth/login']);
       }
     });
   }
 
-  async save() {
+  async save(): Promise<void> {
+    if (this.userForm.invalid || this.busy()) return;
 
     this.busy.set(true);
     try {
-      await this.usd.updateDetails(this.userForm.value as Partial<UserData>);
-      console.log('UserComponnet: User results saved');
-      this.userForm.reset();
-      this.router.navigate(["/"]);
+      await this.userData.updateDetails(this.userForm.getRawValue() as Partial<UserData>);
+      this.snackBar.open('Profile saved.', 'Dismiss', { duration: 3000 });
+      this.userForm.markAsPristine();
     } catch (e) {
-      console.error('UserComponent: Error saving user results', e);
-      this.snackBar.open("Error saving event details", "Dismiss");
+      console.error('UserPage: error saving profile', e);
+      this.snackBar.open('Error saving profile.', 'Dismiss', { duration: 4000 });
     } finally {
       this.busy.set(false);
     }

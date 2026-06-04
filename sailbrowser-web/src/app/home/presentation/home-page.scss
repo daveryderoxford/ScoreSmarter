@@ -4,6 +4,22 @@
   height: 100%;
 }
 
+.scoresmarter-app-link {
+  line-height: 0;
+  opacity: 0.85;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  img {
+    display: block;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+}
+
 .content {
   flex: 1;
   padding: 24px;
@@ -20,29 +36,27 @@
 
 .club-header {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
+  gap: 16px;
   margin-bottom: 32px;
   margin-top: 16px;
-  text-align: center;
-  gap: 16px;
-}
-
-.club-logo {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  object-fit: cover;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  padding: 0 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .club-title {
   font: var(--mat-sys-headline-medium);
   color: var(--mat-sys-on-surface);
   margin: 0;
-  white-space: normal;
-  text-align: center;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+  word-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.25;
 }
 
 .actions {
@@ -52,7 +66,8 @@
   margin-bottom: 32px;
   flex-wrap: wrap;
 
-  a {
+  a,
+  button {
     text-decoration: none;
     border-radius: 20px;
   }

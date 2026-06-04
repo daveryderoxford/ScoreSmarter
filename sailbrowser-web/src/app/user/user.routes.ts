@@ -4,5 +4,5 @@ import { pendingChangesGuard } from 'app/shared/services/pending-changes-guard-s
 import { UserPage } from './presentation/user-page';
 
 export const USER_ROUTES: Routes = [
-  { path: "", title: 'User details', component: UserPage, canActivate: [authGuard], canDeactivate: [pendingChangesGuard] },
+  { path: '', title: 'Account', component: UserPage, canActivate: [authGuard], canDeactivate: [pendingChangesGuard] },
 ];

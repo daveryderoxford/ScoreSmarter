@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -10,6 +10,7 @@ import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { ClubLogoService } from '../../services/club-logo.service';
+import { ClubLogo } from 'app/shared/components/club-logo/club-logo';
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const ALLOWED_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -24,6 +25,7 @@ const ALLOWED_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
     MatInputModule,
     MatButtonModule,
     SubmitButton,
+    ClubLogo,
   ],
   templateUrl: './club-settings.html',
   styleUrl: './club-settings.scss',
@@ -37,9 +39,15 @@ export class ClubSettingsComponent {
   private readonly snackBar = inject(MatSnackBar);
 
   readonly busy = signal(false);
-  readonly logoPreviewUrl = signal<string | null>(null);
+  readonly pendingLogoPreviewUrl = signal<string | null>(null);
   readonly hasPendingLogo = signal(false);
   private pendingLogoFile: File | null = null;
+
+  readonly logoDisplayUrl = computed(() =>
+    this.hasPendingLogo()
+      ? this.pendingLogoPreviewUrl()
+      : this.clubLogoService.logoDownloadUrl(),
+  );
 
   readonly form = this.fb.group({
     name: ['', Validators.required],
@@ -48,6 +56,7 @@ export class ClubSettingsComponent {
     contactEmail: ['', [Validators.required, Validators.email]],
     latitude: [null as number | null],
     longitude: [null as number | null],
+    websiteUrl: [''],
   });
 
   constructor() {
@@ -64,10 +73,10 @@ export class ClubSettingsComponent {
           contactEmail: club.contactEmail,
           latitude: club.latitude ?? null,
           longitude: club.longitude ?? null,
+          websiteUrl: club.websiteUrl ?? '',
         },
         { emitEvent: false },
       );
-      void this.refreshLogoPreview(club.logoUrl);
     });
   }
 
@@ -90,7 +99,7 @@ export class ClubSettingsComponent {
     this.pendingLogoFile = file;
     this.hasPendingLogo.set(true);
     this.form.markAsDirty();
-    this.logoPreviewUrl.set(URL.createObjectURL(file));
+    this.pendingLogoPreviewUrl.set(URL.createObjectURL(file));
   }
 
   async save(): Promise<void> {
@@ -117,11 +126,11 @@ export class ClubSettingsComponent {
         contactEmail: v.contactEmail!.trim(),
         latitude: this.toOptionalNumber(v.latitude),
         longitude: this.toOptionalNumber(v.longitude),
+        websiteUrl: v.websiteUrl?.trim() || undefined,
       });
 
       this.form.markAsPristine();
       this.snackBar.open('Club settings saved.', 'Dismiss', { duration: 3000 });
-      await this.refreshLogoPreview(this.clubStore.club().logoUrl);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to save club settings.';
       this.snackBar.open(message, 'Dismiss', { duration: 6000 });
@@ -132,15 +141,6 @@ export class ClubSettingsComponent {
 
   canDeactivate(): boolean {
     return !this.form.dirty && !this.pendingLogoFile;
-  }
-
-  private async refreshLogoPreview(path: string | undefined): Promise<void> {
-    try {
-      const url = await this.clubLogoService.resolveDownloadUrl(path);
-      this.logoPreviewUrl.set(url);
-    } catch {
-      this.logoPreviewUrl.set(null);
-    }
   }
 
   private toOptionalNumber(value: number | null | undefined): number | undefined {

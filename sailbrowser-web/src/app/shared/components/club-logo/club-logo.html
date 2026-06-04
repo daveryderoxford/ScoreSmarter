@@ -1,0 +1,11 @@
+@if (src()) {
+  <img
+    [src]="src()!"
+    [alt]="alt()"
+    class="club-logo"
+    referrerpolicy="no-referrer" />
+} @else if (showPlaceholder()) {
+  <div class="club-logo club-logo--placeholder" aria-hidden="true">
+    <mat-icon>sailing</mat-icon>
+  </div>
+}

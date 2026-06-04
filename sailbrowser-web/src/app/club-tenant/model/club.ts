@@ -34,8 +34,10 @@ export interface Club {
    fleets: Fleet[];
    classes: BoatClass[];
    seasons: Season[];
-   /** Firebase Storage object path (e.g. clubs/{clubId}/club-logo.jpg), not an external URL. */
+   /** Firebase Storage object path (e.g. clubs/{clubId}/club-logo.jpg). */
    logoUrl?: string;
+   /** Public club website; shown in navigation and sidenav. */
+   websiteUrl?: string;
    supportedHandicapSchemes: HandicapScheme[];
    laps?: boolean;
    oodScoring?: OODScoring;
