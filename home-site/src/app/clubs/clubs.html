@@ -12,7 +12,7 @@
     </div>
     } @else if (clubs.error()) {
     <div class="glass p-12 rounded-[2.5rem] text-center max-w-xl mx-auto border-red-500/20">
-      <mat-icon class="text-red-500 !text-5xl mb-6">error_outline</mat-icon>
+      <span class="material-icons text-red-500 !text-5xl mb-6">error_outline</span>
       <h3 class="text-2xl font-light text-white mb-2">Connection Issue</h3>
       <p class="text-slate-400 mb-8">{{ clubs.error() }}</p>
       <button (click)="clubs.reload()" class="btn-primary mx-auto">Try Again</button>
@@ -29,7 +29,7 @@
             <img [src]="club.logoUrl" [alt]="club.name" class="w-full h-full object-contain p-2"
               referrerpolicy="no-referrer">
             } @else {
-            <mat-icon class="text-slate-700 !text-3xl">sailing</mat-icon>
+            <span class="material-icons text-slate-700 !text-3xl">sailing</span>
             }
           </div>
           <div>
@@ -41,13 +41,13 @@
           <div
             class="pt-6 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-white transition-colors">
             <span>View Results</span>
-            <mat-icon class="!text-sm group-hover:translate-x-1 transition-transform">arrow_outward</mat-icon>
+            <span class="material-icons !text-sm group-hover:translate-x-1 transition-transform">arrow_outward</span>
           </div>
         </div>
       </a>
       } @empty {
       <div class="col-span-full py-32 text-center glass rounded-[3rem]">
-        <mat-icon class="text-slate-800 !text-8xl mb-6">sailing</mat-icon>
+        <span class="material-icons text-slate-800 !text-8xl mb-6">sailing</span>
         <p class="text-2xl text-slate-500 font-display font-light">No clubs found yet. Be the first to join!</p>
       </div>
       }
@@ -57,7 +57,7 @@
       <div class="mt-10 flex justify-start">
         <a routerLink="/clubs/register" class="btn-primary inline-flex !py-4 !px-8 text-lg w-[240px] justify-center">
           Add Your Club
-          <mat-icon>arrow_forward</mat-icon>
+          <span class="material-icons">arrow_forward</span>
         </a>
       </div>
 

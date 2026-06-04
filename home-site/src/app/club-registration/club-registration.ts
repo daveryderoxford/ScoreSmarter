@@ -3,11 +3,9 @@ import { Component, inject, signal } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
 import { collection, doc, getDoc, getFirestore, serverTimestamp, writeBatch } from '@angular/fire/firestore';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
-
 @Component({
   selector: 'app-club-registration',
-  imports: [CommonModule, ReactiveFormsModule, MatIconModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './club-registration.html'
 })
 export class ClubRegistration {

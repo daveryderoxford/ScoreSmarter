@@ -3,7 +3,6 @@ import { Component, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FirebaseApp } from '@angular/fire/app';
 import { collection, collectionData, CollectionReference, getFirestore } from '@angular/fire/firestore';
-import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 
 export interface Club {
@@ -16,7 +15,7 @@ export interface Club {
 
 @Component({
   selector: 'app-clubs',
-  imports: [CommonModule, MatIconModule, RouterLink],
+  imports: [CommonModule, RouterLink],
   templateUrl: './clubs.html'
 })
 export class Clubs {

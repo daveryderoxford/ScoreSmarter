@@ -1,9 +1,7 @@
 import { Component } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
-
 @Component({
   selector: 'app-marketing',
-  imports: [MatIconModule],
+  imports: [],
   templateUrl: 'marketing.html',
 })
 export class Marketing {

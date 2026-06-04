@@ -1,10 +1,8 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MatIconModule } from '@angular/material/icon';
-
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, MatIconModule],
+  imports: [RouterLink],
   templateUrl: 'home.html',
   styles: [`
     @keyframes bounce-slow {
