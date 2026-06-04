@@ -24,7 +24,6 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(), 
     provideRouter(routes),
-    provideFirebaseApp(() => initializeApp(firebaseConfig)),
     provideAppCheck(() => {
       // In debug App Check to use the debug provider instead of reCAPTCHA
       if (isDevMode() || window.location.hostname === 'localhost') {
@@ -35,5 +34,6 @@ export const appConfig: ApplicationConfig = {
         isTokenAutoRefreshEnabled: true
       });
     }),
+    provideFirebaseApp(() => initializeApp(firebaseConfig)),
   ],
 };
