@@ -8,6 +8,7 @@ import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { initializeAppCheck, provideAppCheck, ReCaptchaEnterpriseProvider } from '@angular/fire/app-check';
 
 import {routes} from './app.routes';
+import { getFirestore, provideFirestore } from '@angular/fire/firestore';
 
 // Placeholder config - user will need to update this with their actual Firebase config
 export const firebaseConfig = {
@@ -35,5 +36,6 @@ export const appConfig: ApplicationConfig = {
       });
     }),
     provideFirebaseApp(() => initializeApp(firebaseConfig)),
+    provideFirestore(() => getFirestore()),
   ],
 };

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FirebaseApp } from '@angular/fire/app';
-import { collection, collectionData, CollectionReference, getFirestore } from '@angular/fire/firestore';
+import { collection, collectionData, CollectionReference, Firestore, getFirestore } from '@angular/fire/firestore';
 import { RouterLink } from '@angular/router';
 
 export interface Club {
@@ -19,8 +19,8 @@ export interface Club {
   templateUrl: './clubs.html'
 })
 export class Clubs {
-  private firestore = getFirestore(inject(FirebaseApp));
-  
+  private firestore = inject(Firestore);
+    
   clubs = rxResource<Club[], null>( {
     stream: () => {
     const clubsCollection = collection(this.firestore, 'clubs') as CollectionReference<Club>;
