@@ -113,7 +113,7 @@ export function buildPrompt(ctx: ScannerContext, raceId: string): string {
 
 2. CLASS ALIASES:
   - Class Aliases: ${aliasesStr}
-  - If you see a shorthand class name (e.g., 'A9', 'LR'), check the aliases and output the mapped, correct value (e.g., 'Aero 9', 'ILCA 6').
+  - If you see a shorthand class name (e.g., 'A9', 'LR'), check the aliases and output the mapped, correct value (e.g. 'ILCA 6' rather than 'Laser R').
 
 3. STATUS CODES & CROSSED-OUT ROWS:
    - Check the time column for standard sailing status codes (DNS, RET, OCS, BFD, DNF, DSQ, etc.). 

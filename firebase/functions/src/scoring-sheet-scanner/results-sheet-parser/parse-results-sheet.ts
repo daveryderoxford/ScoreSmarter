@@ -14,6 +14,14 @@ import { normalizeScanStrategy, resolveStrategyExecution } from "./scan-strategy
 import { resultsSheetStoragePath } from "../image-upload/image-storage.js";
 import { detailedHttpsError } from "../../shared/https-error.js";
 import { assertAuthenticated, assertCallerRole } from "../../shared/authorisation.js";
+import {
+  buildExecutionMetrics,
+  buildScanMetricsDocument,
+  extractScanQualityMetrics,
+  type ScanExecutionMetrics,
+  type ScanRaceSummary,
+  type ScanTokenCapture,
+} from "../scan-metrics.js";
 
 function db() {
   return getFirestore();
@@ -127,6 +135,63 @@ async function getRaceCompetitors(
   return competitors;
 }
 
+async function loadRaceSummary(clubId: string, raceId: string): Promise<ScanRaceSummary> {
+  const summary: ScanRaceSummary = { raceId };
+  try {
+    const snap = await db().doc(`clubs/${clubId}/races/${raceId}`).get();
+    if (!snap.exists) return summary;
+    const data = snap.data() ?? {};
+    if (typeof data["seriesName"] === "string") summary.seriesName = data["seriesName"];
+    if (typeof data["index"] === "number") summary.raceNumber = data["index"];
+    const scheduledStart = data["scheduledStart"];
+    if (scheduledStart && typeof scheduledStart.toDate === "function") {
+      summary.scheduledStart = scheduledStart;
+    }
+  } catch {
+    // Race metadata is optional for metrics persistence.
+  }
+  return summary;
+}
+
+async function persistScanMetrics(
+  requestId: string,
+  doc: ReturnType<typeof buildScanMetricsDocument>,
+): Promise<void> {
+  try {
+    await db().doc(`system/private/scans/${requestId}`).set(doc);
+    logScan(requestId, "persist_scan_metrics", "Saved scan metrics", {
+      scanId: requestId,
+      clubId: doc.clubId,
+      success: doc.success,
+    });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logScanError(requestId, "persist_scan_metrics", `Failed to save scan metrics: ${msg}`, {
+      cause: "firestore_set_failed",
+      clubId: doc.clubId,
+    });
+  }
+}
+
+function emptyTokenCapture(): ScanTokenCapture {
+  return {
+    executionTimeSec: 0,
+    inputTokens: null,
+    outputTokens: null,
+    estimatedApiCostUsd: null,
+  };
+}
+
+function buildCallableScanResponse(
+  parsed: Record<string, unknown>,
+  metrics: ScanExecutionMetrics,
+): Record<string, unknown> {
+  return {
+    ...extractScanResponseForPersistence(parsed),
+    metrics,
+  };
+}
+
 export function validateStoredRequest(data: unknown, requestId: string): ParseStoredResultsSheetRequest {
   const requestData = data as ParseStoredResultsSheetRequest;
   const { scannerContext, clubId, raceId } = requestData;
@@ -215,71 +280,133 @@ async function parseFromStoredImage(
   clubId: string,
   raceId: string,
   scannerContext: ScannerContext,
+  uid?: string,
 ) {
+  const parseStartMs = Date.now();
   const storagePath = resultsSheetStoragePath(clubId, raceId);
-  const roster = await getRaceCompetitors(clubId, raceId, requestId);
-  const bucket = getStorage().bucket();
-  const file = bucket.file(storagePath);
-  const [exists] = await file.exists();
-  if (!exists) {
-    logScanError(requestId, "save_image", "No results sheet image in storage for race", {
-      clubId,
-      raceId,
+  const scanStrategy = normalizeScanStrategy(scannerContext.scanStrategy);
+  const execution = resolveStrategyExecution(scanStrategy);
+  const raceSummary = await loadRaceSummary(clubId, raceId);
+  const tokenCapture = emptyTokenCapture();
+  let parsed: unknown = null;
+  let executionMetrics: ScanExecutionMetrics | undefined;
+  let caughtError: unknown;
+
+  try {
+    const roster = await getRaceCompetitors(clubId, raceId, requestId);
+    const bucket = getStorage().bucket();
+    const file = bucket.file(storagePath);
+    const [exists] = await file.exists();
+    if (!exists) {
+      logScanError(requestId, "save_image", "No results sheet image in storage for race", {
+        clubId,
+        raceId,
+        storagePath,
+        cause: "missing_sheet_image",
+      });
+      throw detailedHttpsError(
+        "failed-precondition",
+        "No results sheet image for this race. Capture or upload a sheet first.",
+        { requestId, stage: "save_image", cause: "missing_sheet_image", clubId, raceId },
+      );
+    }
+    const [buffer] = await file.download();
+    const [metadata] = await file.getMetadata();
+    const imageMimeType = metadata.contentType || "image/jpeg";
+    const imageBase64 = buffer.toString("base64");
+
+    const mergedContext: ScannerContext = {
+      ...scannerContext,
+      timeFormat: normalizeScannerTimeFormat(scannerContext.timeFormat),
+      roster,
+      targetRaces: [raceId, ...(scannerContext.targetRaces ?? [])].filter(
+        (id, i, arr) => arr.indexOf(id) === i,
+      ),
+    };
+    logScan(requestId, "merge_scanner_context", "Merged Firestore roster into scanner context", {
+      targetRaces: mergedContext.targetRaces,
+      lapFormat: mergedContext.lapFormat,
+      listOrder: mergedContext.listOrder,
+      hasHours: mergedContext.hasHours,
+      defaultHour: mergedContext.defaultHour,
+      defaultLaps: mergedContext.defaultLaps,
+      lapsPresentOnSheet: mergedContext.lapsPresentOnSheet ?? true,
+      timeFormat: mergedContext.timeFormat ?? "clock_hms",
       storagePath,
-      cause: "missing_sheet_image",
     });
-    throw detailedHttpsError(
-      "failed-precondition",
-      "No results sheet image for this race. Capture or upload a sheet first.",
-      { requestId, stage: "save_image", cause: "missing_sheet_image", clubId, raceId },
+
+    logScan(requestId, "merge_scanner_context", "Resolved scan strategy for AI parser", {
+      scanStrategy: execution.strategy,
+      model: execution.model,
+      location: execution.location,
+    });
+
+    parsed = await execution.parser(
+      execution,
+      requestId,
+      imageBase64,
+      imageMimeType,
+      mergedContext,
+      raceId,
+      tokenCapture,
+    );
+
+    if (parsed !== null) {
+      await persistScanResponse(requestId, clubId, raceId, parsed);
+    }
+
+    executionMetrics = buildExecutionMetrics({
+      success: true,
+      strategy: execution.strategy,
+      model: execution.model,
+      location: execution.location,
+      tokenCapture: tokenCapture.executionTimeSec > 0
+        ? tokenCapture
+        : {
+          ...tokenCapture,
+          executionTimeSec: Number(((Date.now() - parseStartMs) / 1000).toFixed(2)),
+        },
+    });
+  } catch (e: unknown) {
+    caughtError = e;
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    executionMetrics = buildExecutionMetrics({
+      success: false,
+      errorMessage,
+      strategy: execution.strategy,
+      model: execution.model,
+      location: execution.location,
+      tokenCapture: tokenCapture.executionTimeSec > 0
+        ? tokenCapture
+        : {
+          ...tokenCapture,
+          executionTimeSec: Number(((Date.now() - parseStartMs) / 1000).toFixed(2)),
+        },
+    });
+  }
+
+  if (executionMetrics) {
+    const quality = parsed != null
+      ? extractScanQualityMetrics(parsed)
+      : extractScanQualityMetrics({ scannedResults: [] });
+    await persistScanMetrics(
+      requestId,
+      buildScanMetricsDocument({
+        clubId,
+        race: raceSummary,
+        requestId,
+        uid,
+        execution: executionMetrics,
+        quality,
+      }),
     );
   }
-  const [buffer] = await file.download();
-  const [metadata] = await file.getMetadata();
-  const imageMimeType = metadata.contentType || "image/jpeg";
-  const imageBase64 = buffer.toString("base64");
 
-  const mergedContext: ScannerContext = {
-    ...scannerContext,
-    timeFormat: normalizeScannerTimeFormat(scannerContext.timeFormat),
-    roster,
-    targetRaces: [raceId, ...(scannerContext.targetRaces ?? [])].filter(
-      (id, i, arr) => arr.indexOf(id) === i,
-    ),
-  };
-  logScan(requestId, "merge_scanner_context", "Merged Firestore roster into scanner context", {
-    targetRaces: mergedContext.targetRaces,
-    lapFormat: mergedContext.lapFormat,
-    listOrder: mergedContext.listOrder,
-    hasHours: mergedContext.hasHours,
-    defaultHour: mergedContext.defaultHour,
-    defaultLaps: mergedContext.defaultLaps,
-    lapsPresentOnSheet: mergedContext.lapsPresentOnSheet ?? true,
-    timeFormat: mergedContext.timeFormat ?? "clock_hms",
-    storagePath,
-  });
-
-  const scanStrategy = normalizeScanStrategy(mergedContext.scanStrategy);
-  const execution = resolveStrategyExecution(scanStrategy);
-  logScan(requestId, "merge_scanner_context", "Resolved scan strategy for AI parser", {
-    scanStrategy: execution.strategy,
-    model: execution.model,
-    location: execution.location,
-  });
-
-  const parsed = await execution.parser(
-    execution,
-    requestId,
-    imageBase64,
-    imageMimeType,
-    mergedContext,
-    raceId,
-  );
-
-  if (parsed !== null) {
-    await persistScanResponse(requestId, clubId, raceId, parsed);
+  if (caughtError) {
+    throw caughtError;
   }
-  return parsed;
+
+  return buildCallableScanResponse(parsed as Record<string, unknown>, executionMetrics!);
 }
 
 export const parseStoredResultsSheet = onCall({
@@ -299,5 +426,5 @@ export const parseStoredResultsSheet = onCall({
     raceId,
     storagePath: resultsSheetStoragePath(clubId, raceId),
   });
-  return parseFromStoredImage(requestId, clubId, raceId, scannerContext);
+  return parseFromStoredImage(requestId, clubId, raceId, scannerContext, request.auth.uid);
 });

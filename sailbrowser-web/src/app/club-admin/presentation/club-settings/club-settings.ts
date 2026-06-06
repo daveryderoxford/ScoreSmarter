@@ -54,8 +54,8 @@ export class ClubSettingsComponent {
     shortName: [''],
     contactName: ['', Validators.required],
     contactEmail: ['', [Validators.required, Validators.email]],
-    latitude: [null as number | null],
-    longitude: [null as number | null],
+    latitude: [null as number | null, [Validators.min(-90), Validators.max(90)]],
+    longitude: [null as number | null, [Validators.min(-180), Validators.max(180)]],
     websiteUrl: [''],
   });
 

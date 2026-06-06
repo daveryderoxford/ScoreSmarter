@@ -3,70 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: clubs
-    // Document ID: {clubId}
-    // Fields: 
-    //   - name: string (required)
-    //   - fleets: list of strings
-    //   - classes: list of strings
-    //   - seasons: list of strings
-    //
-    // Collection: clubs/{clubId}/boats
-    // Document ID: {boatId}
-    // Fields: 
-    //   - name: string (required)
-    //   - ownerUid: string (required) - UID of the boat owner
-    //   - class: string
-    //   - handicap: number (legacy, optional)
-    //   - handicaps: list of { scheme: string, value: number } (optional)
-    //
-    // Collection: clubs/{clubId}/race-results
-    // Document ID: {resultId}
-    // Fields: 
-    //   - raceId: string (required)
-    //   - boatId: string (required)
-    //   - position: int
-    //   - points: number
-    //
-    // Collection: clubs/{clubId}/series-entries
-    // Document ID: {entryId}
-    // Fields: 
-    //   - seriesId: string (required)
-    //   - boatId: string (required)
-    //
-    // Collection: clubs/{clubId}/races
-    // Document ID: {raceId}
-    // Fields: 
-    //   - name: string (required)
-    //   - date: timestamp (required)
-    //   - seriesId: string
-    //
-    // Collection: clubs/{clubId}/series
-    // Document ID: {seriesId}
-    // Fields: 
-    //   - name: string (required)
-    //   - seasonId: string
-    //
-    // Collection: clubs/{clubId}/results-sheet-capture-sessions
-    // Document ID: {sessionId}
-    // Fields (written only by Cloud Functions / Admin SDK):
-    //   - clubId, raceId, tokenHash, expiresAt, status, storagePath, etc.
-    //
-    // Collection: users
-    // Document ID: {uid}
-    // Fields: 
-    //   - email: string (required)
-    //   - firstname: string (required)
-    //   - surname: string (required)
-    //   - role: string (sys-admin, user)
-    //
-    // ===============================================================
-
-    // ===============================================================
-    // Helper Functions
+    // Auth helpers (mirrors firebase/functions/src/shared/authorisation.ts)
     // ===============================================================
 
     function isAuthenticated() {
@@ -74,9 +11,11 @@ service cloud.firestore {
     }
 
     function isSysAdmin() {
-      return isAuthenticated() && 
-        (request.auth.token.sysAdmin == true || 
-         (request.auth.token.email == "DaveRyderOxford@gmail.com" && request.auth.token.email_verified == true));
+      return isAuthenticated() && (
+        request.auth.token.sysAdmin == true ||
+        request.auth.uid == 'Uw4HKGlcHla1Fm8Zw8B7DBVyl1j1' ||
+        request.auth.uid == 'ybV4KPBh7xY067dNQBSYfrzwtVI2'
+      );
     }
 
     function getClubRole(clubId) {
@@ -99,171 +38,162 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function hasOnlyAllowedFields(fields) {
-      return request.resource.data.keys().hasOnly(fields);
-    }
+    // ===============================================================
+    // Validation helpers
+    // ===============================================================
 
     function hasRequiredFields(fields) {
       return request.resource.data.keys().hasAll(fields);
     }
 
-    function isValidHandicapScheme(scheme) {
-      return scheme == 'Level Rating' ||
-             scheme == 'PY' ||
-             scheme == 'IRC' ||
-             scheme == 'Personal';
+    // On create/update: if field is present it must equal the path segment.
+    function createPathKey(field, pathValue) {
+      return !(field in request.resource.data) || request.resource.data[field] == pathValue;
     }
 
-    function isValidHandicaps(handicaps) {
-      // Firestore Rules has limited expressiveness for deep list validation.
-      // We validate the list itself and (at least) the first element's shape.
-      return handicaps is list &&
-             handicaps.size() > 0 &&
-             handicaps[0] is map &&
-             handicaps[0].scheme is string &&
-             isValidHandicapScheme(handicaps[0].scheme) &&
-             handicaps[0].value is number;
+    // On update: keyed fields cannot change once stored.
+    function pathKeyUnchanged(field) {
+      return resource == null
+        || !(field in request.resource.data)
+        || !(field in resource.data)
+        || request.resource.data[field] == resource.data[field];
     }
 
-    // ===============================================================
-    // Domain Validators
-    // ===============================================================
-
-    function isValidUser(data) {
-      return hasRequiredFields(['email', 'firstname', 'surname']) &&
-             hasOnlyAllowedFields(['email', 'firstname', 'surname', 'role']) &&
-             data.email is string && data.email.size() < 100 &&
-             data.firstname is string && data.firstname.size() < 50 &&
-             data.surname is string && data.surname.size() < 50 &&
-             (!('role' in data) || data.role in ['sys-admin', 'user']);
+    function idFieldMatches(docId) {
+      return createPathKey('id', docId) && pathKeyUnchanged('id');
     }
 
-    function isValidBoat(data) {
-      return hasRequiredFields(['name', 'ownerUid']) &&
-             hasOnlyAllowedFields(['name', 'ownerUid', 'class', 'handicap', 'handicaps']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.ownerUid is string &&
-             (!('class' in data) || (data.class is string && data.class.size() < 50)) &&
-             (!('handicap' in data) || data.handicap is number) &&
-             (!('handicaps' in data) || isValidHandicaps(data.handicaps));
+    function isValidBoat(boatId) {
+      return hasRequiredFields(['name', 'ownerUid'])
+        && idFieldMatches(boatId);
     }
 
-    function isValidRaceResult(data) {
-      return hasRequiredFields(['raceId', 'boatId']) &&
-             hasOnlyAllowedFields(['raceId', 'boatId', 'position', 'points', 'handicaps', 'handicap']) &&
-             data.raceId is string && data.raceId.size() > 0 && data.raceId.size() < 100 &&
-             data.boatId is string && data.boatId.size() > 0 && data.boatId.size() < 100 &&
-             (!('position' in data) || data.position is int) &&
-             (!('points' in data) || data.points is number) &&
-             (!('handicap' in data) || data.handicap is number) &&
-             (!('handicaps' in data) || isValidHandicaps(data.handicaps));
+    function isValidRaceResult() {
+      return hasRequiredFields(['raceId', 'seriesEntryId', 'seriesId'])
+        && pathKeyUnchanged('raceId')
+        && pathKeyUnchanged('seriesId')
+        && pathKeyUnchanged('seriesEntryId');
     }
 
-    function isValidSeriesEntry(data) {
-      return hasRequiredFields(['seriesId', 'boatId']) &&
-             hasOnlyAllowedFields(['seriesId', 'boatId', 'handicaps', 'handicap']) &&
-             data.seriesId is string && data.seriesId.size() > 0 && data.seriesId.size() < 100 &&
-             data.boatId is string && data.boatId.size() > 0 && data.boatId.size() < 100 &&
-             (!('handicap' in data) || data.handicap is number) &&
-             (!('handicaps' in data) || isValidHandicaps(data.handicaps));
+    function isValidSeriesEntry() {
+      return hasRequiredFields(['seriesId'])
+        && pathKeyUnchanged('seriesId');
     }
 
-    function isValidRace(data) {
-      return hasRequiredFields(['name', 'date']) &&
-             hasOnlyAllowedFields(['name', 'date', 'seriesId']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.date is timestamp &&
-             (!('seriesId' in data) || (data.seriesId is string && data.seriesId.size() < 100));
+    function isValidRace(raceId) {
+      return hasRequiredFields(['seriesId'])
+        && idFieldMatches(raceId)
+        && createPathKey('raceId', raceId)
+        && pathKeyUnchanged('raceId');
     }
 
-    function isValidSeries(data) {
-      return hasRequiredFields(['name']) &&
-             hasOnlyAllowedFields(['name', 'seasonId']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             (!('seasonId' in data) || (data.seasonId is string && data.seasonId.size() < 100));
+    function isValidSeries(seriesId) {
+      return hasRequiredFields(['name'])
+        && idFieldMatches(seriesId)
+        && createPathKey('seriesId', seriesId)
+        && pathKeyUnchanged('seriesId');
+    }
+
+    function clubUserRequiredFields() {
+      return hasRequiredFields(['role', 'tenantId', 'firstname', 'surname']);
+    }
+
+    function clubUserPathKeys(userId, clubId) {
+      return createPathKey('id', userId)
+        && createPathKey('tenantId', clubId)
+        && pathKeyUnchanged('id')
+        && pathKeyUnchanged('tenantId');
+    }
+
+    function clubUserRoleUnchanged() {
+      return resource == null
+        || request.resource.data.role == resource.data.role;
+    }
+
+    function clubUserCreateValid(userId, clubId) {
+      return clubUserRequiredFields()
+        && clubUserPathKeys(userId, clubId);
+    }
+
+    function clubUserOwnerUpdateValid(userId, clubId) {
+      return clubUserRequiredFields()
+        && clubUserPathKeys(userId, clubId)
+        && clubUserRoleUnchanged();
     }
 
     // ===============================================================
     // Rules
     // ===============================================================
 
-    // Clubs
     match /clubs/{clubId} {
-      allow read: if true; // All users can read club info
+      allow read: if true;
       allow write: if isClubAdmin(clubId);
-      
-      // Boats
+
       match /boats/{boatId} {
-        allow read: if true; // All users can see boats
-        allow create, update: if isAuthorisedUser(clubId) && isValidBoat(request.resource.data);
+        allow read: if true;
+        allow create, update: if isAuthorisedUser(clubId) && isValidBoat(boatId);
         allow delete: if isRO(clubId);
       }
 
-      // Race Data
       match /race-results/{resultId} {
-        allow read: if true; // All users can see results
-        allow create, update: if isAuthorisedUser(clubId) && isValidRaceResult(request.resource.data);
+        allow read: if true;
+        allow create, update: if isAuthorisedUser(clubId) && isValidRaceResult();
         allow delete: if isRO(clubId);
       }
 
       match /series-entries/{entryId} {
-        allow read: if true; // All users can see entries
-        allow create, update: if isAuthorisedUser(clubId) && isValidSeriesEntry(request.resource.data);
+        allow read: if true;
+        allow create, update: if isAuthorisedUser(clubId) && isValidSeriesEntry();
         allow delete: if isRO(clubId);
       }
 
-      // Race Data
       match /races/{raceId} {
-        allow read: if true; // All users can see race metadata
-        allow create, update: if isRO(clubId) && isValidRace(request.resource.data);
+        allow read: if true;
+        allow create, update: if isRO(clubId) && isValidRace(raceId);
         allow delete: if isClubAdmin(clubId);
       }
 
       match /series/{seriesId} {
-        allow read: if true; // All users can see series
-        allow create, update: if isRO(clubId) && isValidSeries(request.resource.data);
+        allow read: if true;
+        allow create, update: if isRO(clubId) && isValidSeries(seriesId);
         allow delete: if isClubAdmin(clubId);
       }
 
-      // Results (Published)
-      match /published-seasons/{seasonId} {
-        allow read: if true;
-        allow write: if isRO(clubId);
-      }
-      match /published-races/{raceId} {
-        allow read: if true;
-        allow write: if isRO(clubId);
-      }
-      match /published-series/{seriesId} {
+      match /published_seasons/{seasonId} {
         allow read: if true;
         allow write: if isRO(clubId);
       }
 
-      // Ephemeral QR phone-capture sessions: desktop observes status via docData().
+      match /published_series/{seriesId} {
+        allow read: if true;
+        allow write: if isRO(clubId);
+
+        match /races/{raceId} {
+          allow read: if true;
+          allow write: if isRO(clubId);
+        }
+      }
+
       match /results-sheet-capture-sessions/{sessionId} {
         allow read: if true;
-        // Creates/updates are performed by Cloud Functions (Admin SDK bypasses rules).
         allow create, update, delete: if false;
       }
 
-      // Parsed results-sheet scan blobs (written by Cloud Functions; RO may clear after review).
       match /scan-results/{raceId} {
         allow read: if isRO(clubId);
         allow create, update: if isRO(clubId);
         allow delete: if isRO(clubId);
       }
+
+      match /users/{userId} {
+        allow read: if isOwner(userId) || isClubAdmin(clubId) || isSysAdmin();
+        allow create: if isOwner(userId) && clubUserCreateValid(userId, clubId);
+        allow update: if isSysAdmin() && clubUserCreateValid(userId, clubId)
+          || isOwner(userId) && clubUserOwnerUpdateValid(userId, clubId);
+        allow delete: if isSysAdmin();
+      }
     }
 
-    // User Management
-    match /users/{userId} {
-      // Strictly limit read access to the owner to protect PII
-      allow read: if isOwner(userId) || isSysAdmin();
-      allow update: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isSysAdmin());
-      allow create: if isSysAdmin() && isValidUser(request.resource.data);
-      allow delete: if isSysAdmin();
-    }
-
-    // System Data
     match /system/public/{id} {
       allow read: if true;
       allow write: if isSysAdmin();
@@ -271,6 +201,11 @@ service cloud.firestore {
 
     match /system/private/{id} {
       allow read, write: if isSysAdmin();
+    }
+
+    match /system/private/scans/{scanId} {
+      allow read: if isSysAdmin();
+      allow write: if false;
     }
   }
 }

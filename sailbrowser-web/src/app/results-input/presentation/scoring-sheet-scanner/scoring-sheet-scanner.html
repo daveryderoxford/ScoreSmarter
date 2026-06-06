@@ -90,7 +90,7 @@
   <mat-step>
     <ng-template matStepLabel>Review</ng-template>
     <div class="step-container review-container">
-      <app-review-step [result]="result()" [matchedRows]="matchedRows()" [unmatchedRows]="unmatchedRows()"
+      <app-review-step [result]="result()" [metrics]="result()?.metrics ?? null" [matchedRows]="matchedRows()" [unmatchedRows]="unmatchedRows()"
         [loading]="loading()" [scanStage]="scanStage()" [error]="error()" [displayedColumns]="displayedColumns"
         [unmatchedColumns]="unmatchedColumns" (backRequested)="stepper.previous()" (retryRequested)="scan()"
         (saveRequested)="saveResults()" (knownBoatEntryRequested)="openKnownBoatEntry($event)"

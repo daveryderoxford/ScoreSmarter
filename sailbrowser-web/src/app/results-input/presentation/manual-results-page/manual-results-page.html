@@ -48,19 +48,19 @@
   } @else {
       @if (sr.type === 'Handicap') {
         @let numStarts = selectedRace()?.starts?.length ?? 0;
-        <button matButton="text" [matBadge]="numStarts" [matBadgeHidden]="numStarts === 0" (click)="setStartTime(sr)">
+        <button matButton="text" type="button" matTooltip="Start times" [matBadge]="numStarts" [matBadgeHidden]="numStarts === 0" (click)="setStartTime(sr)">
           Start
         </button>
       }
-      <button mat-icon-button type="button" [disabled]=loadingImage() aria-label="Open scoring sheet" (click)="displayOrCaptureImage()">
+      <button mat-icon-button type="button" matTooltip="Scoring Sheet Photo" [disabled]=loadingImage() aria-label="Open scoring sheet" (click)="displayOrCaptureImage()">
         <mat-icon matBadge="1" [matBadgeHidden]="!selectedRace()?.resultsSheetImage">
           photo_camera
         </mat-icon>
       </button>
-      <app-busy-button [style]="'text'" [busy]="publishing()" (click)="publish()">
+      <app-busy-button matTooltip="Publish results" [style]="'text'" [busy]="publishing()" (click)="publish()">
         Publish
       </app-busy-button>
-      <button matButton="text" type="button" (click)="viewResultsForSelectedRace()">
+      <button matButton="text" type="button" matTooltip="Results" (click)="viewResultsForSelectedRace()">
         Results
       </button>
       }

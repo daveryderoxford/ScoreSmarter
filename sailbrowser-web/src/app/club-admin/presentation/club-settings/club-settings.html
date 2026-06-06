@@ -6,7 +6,7 @@
     <p>Configure club identity, contact details, venue coordinates, and logo.</p>
   </div>
 
-  <mat-card appearance="outlined" class="config-card">
+  <mat-card class="config-card">
     <mat-card-content>
       <div class="logo-row">
         <app-club-logo
@@ -16,50 +16,53 @@
           alt="Club logo preview" />
         <div class="logo-upload">
           <label class="upload-label">
-            <span>Choose logo image</span>
+            <span>Upload logo image</span>
             <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onLogoSelected($event)">
           </label>
-          <p class="hint">Saved to Cloud Storage at a fixed path per club. Shown on the home screen.</p>
         </div>
       </div>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field class="full-width" >
         <mat-label>Club name</mat-label>
         <input matInput formControlName="name" required>
+        <mat-error>Club name required</mat-error>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field class="full-width" >
         <mat-label>Short name</mat-label>
         <input matInput formControlName="shortName">
-        <mat-hint>Used in page titles when set</mat-hint>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field class="full-width" >
         <mat-label>Website</mat-label>
         <input matInput formControlName="websiteUrl" type="url" placeholder="https://example.com">
-        <mat-hint>Linked from the side menu club name</mat-hint>
       </mat-form-field>
 
       <div class="form-row">
-        <mat-form-field appearance="outline" class="flex-1">
+        <mat-form-field class="flex-1">
           <mat-label>Contact name</mat-label>
           <input matInput formControlName="contactName" required>
+          <mat-error>Contact name required</mat-error>
         </mat-form-field>
-        <mat-form-field appearance="outline" class="flex-1">
+        <mat-form-field class="flex-1">
           <mat-label>Contact email</mat-label>
           <input matInput type="email" formControlName="contactEmail" required>
+          <mat-error>Contact email required</mat-error>
         </mat-form-field>
       </div>
 
       <div class="form-row">
-        <mat-form-field appearance="outline" class="flex-1">
+        <mat-form-field class="flex-1" >
           <mat-label>Latitude</mat-label>
           <input matInput type="number" formControlName="latitude" step="any">
-          <mat-hint>WGS84, for Met Office forecasts</mat-hint>
+          <mat-hint>Decimal WGS84 lat (-90 to 90)</mat-hint>
+          <mat-error>Lat between -90 and 90</mat-error>
         </mat-form-field>
-        <mat-form-field appearance="outline" class="flex-1">
+        <mat-form-field class="flex-1">
           <mat-label>Longitude</mat-label>
           <input matInput type="number" formControlName="longitude" step="any">
+          <mat-hint>Decimal WGS84 lat (-180 to 180)</mat-hint>
+          <mat-error>Long between -180 and 180</mat-error>
         </mat-form-field>
       </div>
     </mat-card-content>

@@ -1,13 +1,15 @@
 import type { ScanStrategy } from "../ai-scan-model.js";
 import { singlePassAIParser } from './single-pass-ai-parser.js'
 
+export type AIParserFn = typeof singlePassAIParser;
+
 export type { ScanStrategy };
 
 export const DEFAULT_SCAN_STRATEGY: ScanStrategy = "FullAIScan";
 
 export interface StratageyParemeters {
   strategy: "FullAIScan" | "FullAIScan-Fast";
-  parser: any;
+  parser: AIParserFn;
   model: string;
   location: string;
 }
@@ -34,7 +36,7 @@ export function resolveStrategyExecution(strategy: ScanStrategy): StratageyParem
       return {
         strategy,
         parser: singlePassAIParser,
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash",
         location: "global",
       };
     default: 

@@ -113,12 +113,13 @@ export function boatFilter(boat: Boat, search: string | null): boolean {
 export function uniqueHelmNamesFromBoats(boats: readonly Boat[]): string[] {
   const seen = new Set<string>();
   const names: string[] = [];
-  for (const boat of boats) { 
-    const key = normaliseString(boat.helm);
+  for (const boat of boats) {
+    const trimmed = boat.helm.trim();
+    const key = normaliseString(trimmed);
     if (key !== '') {
       if (seen.has(key)) continue;
       seen.add(key);
-      names.push(boat.helm);
+      names.push(trimmed);
     }
   }
   return names.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));

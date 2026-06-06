@@ -41,6 +41,11 @@
         "ownerUid": { "type": "string" },
         "class": { "type": "string" },
         "handicap": { "type": "number" },
+        "handicaps": {
+          "type": "array",
+          "items": { "type": "object" },
+          "description": "Optional handicap list."
+        },
         "tags": {
           "type": "array",
           "items": { "type": "string" },
@@ -51,14 +56,17 @@
     },
     "Race": {
       "title": "Race",
-      "description": "A single race event.",
+      "description": "A single scheduled race.",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" },
-        "seriesId": { "type": "string" }
+        "seriesId": { "type": "string" },
+        "seriesName": { "type": "string" },
+        "scheduledStart": { "type": "string", "format": "date-time" },
+        "index": { "type": "integer" },
+        "status": { "type": "string" },
+        "type": { "type": "string" }
       },
-      "required": ["name", "date"]
+      "required": ["seriesId"]
     },
     "Series": {
       "title": "Series",
@@ -81,21 +89,21 @@
       "required": ["name", "year"]
     },
     "RaceResult": {
-      "title": "Race Result",
-      "description": "Results for a specific boat in a race.",
+      "title": "Race Competitor Result",
+      "description": "Per-race competitor row (race-results collection).",
       "type": "object",
       "properties": {
         "raceId": { "type": "string" },
-        "boatId": { "type": "string" },
-        "position": { "type": "integer" },
-        "points": { "type": "number" },
+        "seriesId": { "type": "string" },
+        "seriesEntryId": { "type": "string" },
+        "resultCode": { "type": "string" },
         "tags": {
           "type": "array",
           "items": { "type": "string" },
           "description": "Tag ids copied from the contributing series entry. Default []."
         }
       },
-      "required": ["raceId", "boatId"]
+      "required": ["raceId", "seriesId", "seriesEntryId"]
     },
     "PublishedRace": {
       "title": "Published Race",
@@ -123,30 +131,38 @@
     },
     "SeriesEntry": {
       "title": "Series Entry",
-      "description": "A boat's entry into a series.",
+      "description": "A hull entry into a series.",
       "type": "object",
       "properties": {
         "seriesId": { "type": "string" },
-        "boatId": { "type": "string" },
+        "helm": { "type": "string" },
+        "boatClass": { "type": "string" },
+        "sailNumber": { "type": "object" },
+        "handicaps": { "type": "array", "items": { "type": "object" } },
         "tags": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Tag ids carried on the entry (user tags + personal-band:<band>). Default []."
+          "description": "Tag ids carried on this entry. Default []."
         }
       },
-      "required": ["seriesId", "boatId"]
+      "required": ["seriesId"]
     },
-    "User": {
-      "title": "User",
-      "description": "User profile and global role.",
+    "ClubUser": {
+      "title": "Club User",
+      "description": "Club-scoped user profile and role.",
       "type": "object",
       "properties": {
-        "email": { "type": "string", "format": "email" },
+        "id": { "type": "string" },
+        "role": { "type": "string", "enum": ["sys-admin", "club-admin", "race-officer", "user"] },
+        "tenantId": { "type": "string" },
         "firstname": { "type": "string" },
         "surname": { "type": "string" },
-        "role": { "type": "string", "enum": ["sys-admin", "user"] }
+        "email": { "type": "string", "format": "email" },
+        "updatedBy": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "boats": { "type": "array", "items": { "type": "object" } }
       },
-      "required": ["email", "firstname", "surname"]
+      "required": ["role", "tenantId", "firstname", "surname"]
     },
     "SystemData": {
       "title": "System Data",
@@ -169,7 +185,7 @@
     },
     "/clubs/{clubId}/race-results/{resultId}": {
       "schema": "RaceResult",
-      "description": "Race results."
+      "description": "Race competitor rows."
     },
     "/clubs/{clubId}/series-entries/{entryId}": {
       "schema": "SeriesEntry",
@@ -177,7 +193,7 @@
     },
     "/clubs/{clubId}/races/{raceId}": {
       "schema": "Race",
-      "description": "Scheduled races for the club (includes resultsSheetImage storage path when set)."
+      "description": "Scheduled races for the club."
     },
     "/clubs/{clubId}/results-sheet-capture-sessions/{sessionId}": {
       "schema": "ResultsSheetCaptureSession",
@@ -191,21 +207,21 @@
       "schema": "Series",
       "description": "Series definitions."
     },
-    "/clubs/{clubId}/published-seasons/{seasonId}": {
+    "/clubs/{clubId}/users/{userId}": {
+      "schema": "ClubUser",
+      "description": "Club-scoped user profiles and roles."
+    },
+    "/clubs/{clubId}/published_seasons/{seasonId}": {
       "schema": "Season",
-      "description": "Published season results."
+      "description": "Published season index documents."
     },
-    "/clubs/{clubId}/published-races/{raceId}": {
-      "schema": "Race",
-      "description": "Published race results."
+    "/clubs/{clubId}/published_series/{seriesId}": {
+      "schema": "PublishedSeries",
+      "description": "Published series aggregate documents."
     },
-    "/clubs/{clubId}/published-series/{seriesId}": {
-      "schema": "Series",
-      "description": "Published series results."
-    },
-    "/users/{uid}": {
-      "schema": "User",
-      "description": "Global user profiles."
+    "/clubs/{clubId}/published_series/{seriesId}/races/{raceId}": {
+      "schema": "PublishedRace",
+      "description": "Published per-race result documents."
     },
     "/system/public/{id}": {
       "schema": "SystemData",
@@ -214,6 +230,10 @@
     "/system/private/{id}": {
       "schema": "SystemData",
       "description": "Private system data."
+    },
+    "/system/private/scans/{scanId}": {
+      "schema": "SystemData",
+      "description": "Scan metrics (written by Cloud Functions; sys-admin read)."
     }
   }
 }

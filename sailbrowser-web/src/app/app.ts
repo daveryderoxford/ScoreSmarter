@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, viewChild } from '@angular/core';
 import { RouteConfigLoadEnd, RouteConfigLoadStart, Router, RouterOutlet } from "@angular/router";
+import { AppUpdateService } from './shared/services/app-update.service';
 import { LazyInject } from './shared/services/lazy-injector';
 import { SidenavService } from './shared/services/sidenav.service';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -17,6 +18,7 @@ import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
 })
 export class App implements OnInit {
   sidebarService = inject(SidenavService);
+  private appUpdate = inject(AppUpdateService);
   private lazyInject = inject(LazyInject);
   private router = inject(Router);
 
@@ -33,6 +35,7 @@ export class App implements OnInit {
   ngOnInit() {
     console.log('App component: Initializing...');
     this.sidebarService.setSidenav(this.sidenav());
+    this.appUpdate.initialize();
     this.cookieConsent();
   }
 

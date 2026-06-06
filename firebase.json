@@ -6,22 +6,22 @@
   "firestore": [
     {
       "database": "(default)",
-      "rules": "firebase/firestore_default.rules",
+      "rules": "firebase/firestore.rules",
       "indexes": "firebase/firestore.indexes.json"
     },
     {
       "database": "ibrsc-z6xbt",
-      "rules": "firebase/firestore_club.rules",
+      "rules": "firebase/firestore.rules",
       "indexes": "firebase/firestore.indexes.json"
     },
     {
       "database": "demo-rvj2t",
-      "rules": "firebase/firestore_club.rules",
+      "rules": "firebase/firestore.rules",
       "indexes": "firebase/firestore.indexes.json"
     },
     {
       "database": "test-80a5u",
-      "rules": "firebase/firestore_club.rules",
+      "rules": "firebase/firestore.rules",
       "indexes": "firebase/firestore.indexes.json"
     }
   ],

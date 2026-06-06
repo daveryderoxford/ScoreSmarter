@@ -13,6 +13,10 @@
 </div>
 } @else if (result(); as _res) {
 
+@if (auth.isSysAdmin() && metrics(); as scanMetrics) {
+<p class="scan-metrics-summary">{{ formatScanMetricsSummary(scanMetrics) }}</p>
+}
+
 @if (error()) {
 <p class="error-text" style="margin-bottom: 1rem;">{{ error() }}</p>
 }

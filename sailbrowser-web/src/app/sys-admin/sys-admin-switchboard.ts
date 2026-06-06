@@ -13,13 +13,14 @@ import { Toolbar } from 'app/shared/components/toolbar';
       <div class=buttons>
         <a matButton='tonal' routerLink="/sys-admin/users">
             User administration
-        </a>. 
+        </a>
         <a matButton='tonal' routerLink="/sys-admin/data">
             System Data Import/Export
         </a>
-         <a matButton='tonal' routerLink="/results-input/scan-scoring-sheet">
-            Scan scoring sheet
-        </a>.
+        <a matButton='tonal' routerLink="/sys-admin/scans">
+            Scan history
+        </a>
+
       </div>
       <span class="message">
          {{msgText()}}

@@ -10,7 +10,8 @@
       "app/*": ["src/app/*"],
       "@env/*": ["src/environments/*"],
       "@testing/*": ["src/testing/*"],
-      "@shared/scanner-context": ["../shared/contracts/scanner-context.d.ts"]
+      "@shared/scanner-context": ["../shared/contracts/scanner-context.d.ts"],
+      "@shared/scan-metrics": ["../shared/contracts/scan-metrics.d.ts"]
     }
   },
   "include": [

@@ -1,12 +1,14 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
+import { AuthService } from 'app/auth/auth.service';
 import { RaceCompetitor } from '../../../model/race-competitor';
-import { ScannedResultRow, ScanResponse } from '../scan-model';
+import { ScannedResultRow, ScanExecutionMetrics, ScanResponse } from '../scan-model';
+import { formatScanMetricsSummary } from '../scan-metrics-format';
 
 export interface MatchedRowVm {
   row: ScannedResultRow;
@@ -36,7 +38,11 @@ export interface UnmatchedRowVm {
 
 })
 export class ReviewStep {
+  protected auth = inject(AuthService);
+  protected formatScanMetricsSummary = formatScanMetricsSummary;
+
   result = input<ScanResponse | null>(null);
+  metrics = input<ScanExecutionMetrics | null>(null);
   matchedRows = input.required<MatchedRowVm[]>();
   unmatchedRows = input.required<UnmatchedRowVm[]>();
   loading = input.required<boolean>();

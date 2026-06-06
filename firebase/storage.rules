@@ -1,10 +1,9 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Public read for scanner/race sheet assets.
+    // Public read for scanner/race sheet assets (uploads via Cloud Functions only).
     match /clubs/{clubId}/results-sheets/{fileName} {
       allow read: if true;
-      // Uploads are mediated by Cloud Functions/Admin SDK.
       allow write: if false;
     }
 
@@ -14,8 +13,7 @@ service firebase.storage {
     }
 
     match /{allPaths=**} {
-      allow read, write: if request.auth != null &&
-        !allPaths.matches('clubs/[^/]+/results-sheets/.*');
+      allow read, write: if false;
     }
   }
 }

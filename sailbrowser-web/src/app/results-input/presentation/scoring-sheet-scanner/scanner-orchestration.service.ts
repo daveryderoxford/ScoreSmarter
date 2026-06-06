@@ -131,13 +131,14 @@ export class ScannerOrchestrationService {
   }
 
   private applyAutoAccept(response: ScanResponse): ScanResponse {
-    const scannedResults = response.scannedResults.map(row => ({
+    const { metrics, ...scanPayload } = response;
+    const scannedResults = scanPayload.scannedResults.map(row => ({
       ...row,
       accepted: row.overallRowConfidence === 'HIGH' &&
         row.sailNumber?.confidence === 'HIGH' &&
         row.time?.confidence === 'HIGH',
     }));
-    return { ...response, scannedResults };
+    return { ...scanPayload, scannedResults, ...(metrics ? { metrics } : {}) };
   }
 
   private async runCallableScan(request: ScanRunRequest): Promise<ScanResponse> {

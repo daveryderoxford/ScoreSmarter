@@ -1,4 +1,7 @@
 import type { ScannerContext as SharedScannerContext } from '@shared/scanner-context';
+import type { ScanExecutionMetrics as SharedScanExecutionMetrics } from '@shared/scan-metrics';
+
+export type ScanExecutionMetrics = SharedScanExecutionMetrics;
 
 export interface ScannedValue<T> {
   value: T;
@@ -31,6 +34,7 @@ export interface ScanResponse {
   scannedResults: ScannedResultRow[];
   pageNotes?: string;
   unreadableRowsCount: number;
+  metrics?: ScanExecutionMetrics;
 }
 
 export type ScannerContext = SharedScannerContext;
@@ -49,6 +53,7 @@ export interface ScanRunState {
   status: 'running' | 'success' | 'error';
   stageMessage?: string;
   result?: ScanResponse;
+  metrics?: ScanExecutionMetrics;
   error?: string;
 }
 

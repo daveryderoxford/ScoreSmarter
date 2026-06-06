@@ -1,7 +1,7 @@
 <app-toolbar [title]="title()">
   <a
     class="scoresmarter-app-link"
-    href="https://www.scoresmarter.app"
+    href="https://scoresmarter.app"
     target="_blank"
     rel="noopener noreferrer"
     aria-label="ScoreSmarter project homepage">
@@ -23,7 +23,7 @@
       <div class="actions">
         <a matButton="tonal" routerLink="/entry/enter">
           <mat-icon>assignment</mat-icon>
-          <span>Race Entry</span>
+          <span>Entry</span>
         </a>
         <button matButton="tonal" type="button" [matMenuTriggerFor]="inputResultsMenu">
           <mat-icon>list_alt</mat-icon>
@@ -33,7 +33,7 @@
         <mat-menu #inputResultsMenu="matMenu">
           <a mat-menu-item routerLink="/results-input/manual">
             <mat-icon>schedule</mat-icon>
-            <span>Results input</span>
+            <span>Manual input</span>
           </a>
           <a mat-menu-item routerLink="/results-input/scan-scoring-sheet">
             <mat-icon>document_scanner</mat-icon>
@@ -42,7 +42,7 @@
         </mat-menu>
         <a matButton="tonal" routerLink="/results/viewer">
           <mat-icon>emoji_events</mat-icon>
-          <span>Results display</span>
+          <span>Results</span>
         </a>
       </div>
 

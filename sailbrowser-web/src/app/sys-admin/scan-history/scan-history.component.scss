@@ -1,0 +1,27 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.failed {
+  color: var(--mat-sys-error);
+  font-weight: 600;
+}
+
+.pager {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 1rem 2rem;
+}

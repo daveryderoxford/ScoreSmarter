@@ -3,6 +3,7 @@ import { ScannerContext, ScannerTimeFormat, logScan, logScanError } from "../ai-
 import { buildPrompt } from "./prompt-builder.js";
 import { detailedHttpsError } from '../../shared/https-error.js';
 import { StratageyParemeters } from './scan-strategy.js';
+import { type ScanTokenCapture, captureTokenUsage } from '../scan-metrics.js';
 
 const GCP_PROJECT = process.env.GCLOUD_PROJECT || "sailbrowser-efef0";
 
@@ -16,6 +17,7 @@ export async function singlePassAIParser(
   imageMimeType: string,
   mergedContext: ScannerContext,
   raceId: string,
+  tokenCapture?: ScanTokenCapture,
 ): Promise<unknown> {
   let prompt: string;
   try {
@@ -48,6 +50,7 @@ export async function singlePassAIParser(
   });
 
   let result: GenerateContentResponse;
+  const generateStartMs = Date.now();
   try {
     result = await genai.models.generateContent({
       model: stratagy.model,
@@ -91,6 +94,19 @@ export async function singlePassAIParser(
         vertexMessage: msg.slice(0, 500),
         httpStatus: status,
       },
+    );
+  }
+
+  if (tokenCapture) {
+    const usage = result.usageMetadata;
+    Object.assign(
+      tokenCapture,
+      captureTokenUsage(
+        stratagy.model,
+        generateStartMs,
+        usage?.promptTokenCount,
+        usage?.candidatesTokenCount,
+      ),
     );
   }
 

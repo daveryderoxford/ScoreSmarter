@@ -62,6 +62,16 @@
   font-family: ui-monospace, monospace;
 }
 
+.scan-metrics-summary {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 0.875rem;
+  font-family: ui-monospace, monospace;
+}
+
 .review-actions {
   width: 100%;
   display: flex;
