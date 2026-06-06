@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { HeaderComponent } from './header.component';
@@ -63,6 +63,7 @@ import type { User } from './user';
     </div>
   </section>
 </article>`,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./page.css'],
 })
 export class PageComponent {

@@ -1,8 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { FirebaseApp } from '@angular/fire/app';
-import { collection, collectionData, CollectionReference, Firestore, getFirestore } from '@angular/fire/firestore';
+import { collection, collectionData, CollectionReference, Firestore } from '@angular/fire/firestore';
 import { RouterLink } from '@angular/router';
 
 export interface Club {

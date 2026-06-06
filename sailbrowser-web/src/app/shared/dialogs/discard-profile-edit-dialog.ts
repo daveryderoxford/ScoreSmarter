@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -111,10 +111,11 @@ function ordinalEn(n: number): string {
       </button>
       <div class="action-right">
         <button mat-button type="button" (click)="cancel()">Cancel</button>
-        <button mat-raised-button type="button" color="primary" (click)="save()">Save</button>
+        <button matButton="filled" type="button"  (click)="save()">Save</button>
       </div>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     .discard-dlg-body {
       min-width: 360px;

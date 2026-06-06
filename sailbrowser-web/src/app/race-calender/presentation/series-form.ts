@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, output, computed, signal } from '@angular/core';
+import { Component, effect, inject, input, output, computed, signal, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -157,6 +157,7 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
       </div>
     </form>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     @use "mixins" as mix;
 

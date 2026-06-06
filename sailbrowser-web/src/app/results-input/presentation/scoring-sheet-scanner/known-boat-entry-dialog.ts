@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -23,6 +23,7 @@ export interface KnownBoatEntryDialogResult {
   selector: 'app-known-boat-entry-dialog',
   standalone: true,
   imports: [MatDialogModule, MatButtonModule, MatFormFieldModule, MatSelectModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <h2 mat-dialog-title>Known boat found</h2>
     <mat-dialog-content>

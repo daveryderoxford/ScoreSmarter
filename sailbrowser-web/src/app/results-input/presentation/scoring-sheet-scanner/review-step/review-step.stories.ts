@@ -87,6 +87,7 @@ const meta: Meta<ReviewStep> = {
     backRequested: () => undefined,
     saveRequested: () => undefined,
     retryRequested: () => undefined,
+    acceptanceChanged: () => undefined,
     knownBoatEntryRequested: () => undefined,
     newEntryRequested: () => undefined,
   },

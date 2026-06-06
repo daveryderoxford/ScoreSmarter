@@ -70,10 +70,9 @@ export class DialogsService {
         title = 'Unsaved changes',
         message = 'Save your edits before switching?'
     ): Promise<UnsavedChangesChoice> {
-        let dialogRef: MatDialogRef<UnsavedChangesDialog, UnsavedChangesChoice>;
-        dialogRef = this.dialog.open(UnsavedChangesDialog);
-        dialogRef.componentInstance.title = title;
-        dialogRef.componentInstance.message = message;
+        const dialogRef = this.dialog.open(UnsavedChangesDialog, {
+            data: { title, message },
+        });
         const result = await firstValueFrom(dialogRef.afterClosed());
         return result ?? 'cancel';
     }

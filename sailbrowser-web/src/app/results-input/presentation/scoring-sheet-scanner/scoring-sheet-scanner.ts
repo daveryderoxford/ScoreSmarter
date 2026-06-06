@@ -1,5 +1,5 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { ChangeDetectorRef, Component, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, computed, effect, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -33,7 +33,7 @@ import { CaptureStep, CaptureStepMode, CaptureStepViewModel } from './capture-st
 import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
 import { PhoneCaptureQrDialog, PhoneCaptureQrDialogResult } from './phone-capture-qr-dialog/phone-capture-qr-dialog';
 import { RaceStep } from './race-step/race-step';
-import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step/review-step';
+import { MatchedRowVm, ReviewStep, UnmatchedRowVm, AcceptanceChangedEvent } from './review-step/review-step';
 import {
   CaptureImage,
   ScanResponse,
@@ -66,6 +66,7 @@ import {
     Toolbar
   ],
   templateUrl: './scoring-sheet-scanner.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './scoring-sheet-scanner.scss',
 })
 export class ScoringSheetScanner {
@@ -544,6 +545,19 @@ export class ScoringSheetScanner {
     row.accepted = true;
     const current = this.result();
     if (current) this.result.set({ ...current, scannedResults: [...current.scannedResults] });
+  }
+
+  onAcceptanceChanged({ rowIndex, accepted }: AcceptanceChangedEvent): void {
+    this.result.update(current =>
+      current
+        ? {
+            ...current,
+            scannedResults: current.scannedResults.map(row =>
+              row.rowIndex === rowIndex ? { ...row, accepted } : row,
+            ),
+          }
+        : null,
+    );
   }
 
   async openKnownBoatEntry(row: ScannedResultRow): Promise<void> {

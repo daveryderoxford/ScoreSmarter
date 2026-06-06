@@ -1,15 +1,23 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 
 export type UnsavedChangesChoice = 'save' | 'discard' | 'cancel';
 
+export interface UnsavedChangesDialogData {
+  title?: string;
+  message?: string;
+}
+
+const DEFAULT_TITLE = 'Unsaved changes';
+const DEFAULT_MESSAGE = 'Save your edits before switching competitor?';
+
 @Component({
   selector: 'app-unsaved-changes-dialog',
   template: `
-    <h3 mat-dialog-title>{{ title }}</h3>
-    <p mat-dialog-content>{{ message }}</p>
+    <h3 mat-dialog-title>{{ title() }}</h3>
+    <p mat-dialog-content>{{ message() }}</p>
     <mat-divider />
     <div mat-dialog-actions>
       <button type="button" mat-raised-button (click)="dialogRef.close('save')">Save</button>
@@ -17,11 +25,15 @@ export type UnsavedChangesChoice = 'save' | 'discard' | 'cancel';
       <button type="button" mat-button (click)="dialogRef.close('cancel')">Cancel</button>
     </div>
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MatDialogModule, MatDividerModule, MatButtonModule],
 })
 export class UnsavedChangesDialog {
-  dialogRef = inject<MatDialogRef<UnsavedChangesDialog, UnsavedChangesChoice>>(MatDialogRef);
+  protected readonly dialogRef =
+    inject<MatDialogRef<UnsavedChangesDialog, UnsavedChangesChoice>>(MatDialogRef);
 
-  title = 'Unsaved changes';
-  message = 'Save your edits before switching competitor?';
+  private readonly data = inject<UnsavedChangesDialogData | null>(MAT_DIALOG_DATA, { optional: true });
+
+  readonly title = signal(this.data?.title ?? DEFAULT_TITLE);
+  readonly message = signal(this.data?.message ?? DEFAULT_MESSAGE);
 }

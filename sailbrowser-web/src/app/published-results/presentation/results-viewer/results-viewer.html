@@ -92,7 +92,7 @@
             <app-race-results-table
                [results]="race.results"
                [raceType]="race.type"
-               [scoringHandicapScheme]="series()!.competitors[0]?.handicapScheme"
+               [scoringHandicapScheme]="firstCompetitorHandicapScheme()"
                [tagDefinitions]="tagDefinitionsForRace(race)"
             />
             }

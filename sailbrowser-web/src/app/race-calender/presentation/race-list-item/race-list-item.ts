@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { MatListModule } from '@angular/material/list';
 import { DatePipe } from '@angular/common';
 import { MatIconModule } from "@angular/material/icon";
@@ -9,6 +9,7 @@ import { Race } from 'app/race-calender';
   selector: 'app-race-list-item',
   imports: [MatListModule, DatePipe, MatIconModule, MatButtonModule],
   templateUrl: './race-list-item.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
   .gap {
     margin-right: 15px;

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
@@ -55,6 +55,7 @@ export interface EntryConflictSummary {
     .reason { font-style: italic; opacity: 0.8; }
     .hint { margin-top: 1rem; opacity: 0.8; font-size: 0.9rem; }
   `],
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [MatDialogModule, MatDividerModule, MatButtonModule, MatListModule],
 })
 export class EntryConflictDialog {

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
@@ -12,6 +12,7 @@ import { PublishedResultsReader } from 'app/published-results/services/published
   selector: 'app-season-page',
   imports: [Toolbar, SeasonList, MatButtonModule, RouterLink],
   templateUrl: './season-page.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: ``,
 })
 export class SeasonPage {

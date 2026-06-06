@@ -1,7 +1,6 @@
 import { Component, computed, inject, input, output } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatCheckboxChange, MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
@@ -23,10 +22,14 @@ export interface UnmatchedRowVm {
   possibleHelms: string[];
 }
 
+export interface AcceptanceChangedEvent {
+  rowIndex: number;
+  accepted: boolean;
+}
+
 @Component({
   selector: 'app-review-step',
   imports: [
-    FormsModule,
     MatButtonModule,
     MatCheckboxModule,
     MatIconModule,
@@ -35,7 +38,6 @@ export interface UnmatchedRowVm {
   ],
   templateUrl: './review-step.html',
   styleUrl: './review-step.scss',
-
 })
 export class ReviewStep {
   protected auth = inject(AuthService);
@@ -56,6 +58,11 @@ export class ReviewStep {
   backRequested = output<void>();
   saveRequested = output<void>();
   retryRequested = output<void>();
+  acceptanceChanged = output<AcceptanceChangedEvent>();
   knownBoatEntryRequested = output<ScannedResultRow>();
   newEntryRequested = output<ScannedResultRow>();
+
+  onAcceptanceChanged(rowIndex: number, event: MatCheckboxChange): void {
+    this.acceptanceChanged.emit({ rowIndex, accepted: event.checked });
+  }
 }
