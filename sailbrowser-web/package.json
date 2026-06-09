@@ -80,13 +80,6 @@
       "@angular/router": "$@angular/router",
       "@angular/platform-server": "22.0.0",
       "@angular/platform-browser-dynamic": "$@angular/platform-browser-dynamic"
-    },
-    "@storybook/angular": {
-      "@angular/common": "^22.0.0",
-      "@angular/core": "^22.0.0",
-      "@angular/compiler": "^22.0.0",
-      "@angular/forms": "^22.0.0",
-      "@angular/platform-browser": "^22.0.0"
     }
   }
 }
