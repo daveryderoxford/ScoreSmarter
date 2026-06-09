@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, ChangeDetectionStrategy, output, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { ButtonComponent } from './button.component';
@@ -27,50 +27,47 @@ import type { User } from './user';
       <h1>Acme</h1>
     </div>
     <div>
-      <div *ngIf="user">
+      @if (user()) {
+      <div>
         <span class="welcome">
-          Welcome, <b>{{ user.name }}</b
+          Welcome, <b>{{ user()?.name }}</b
           >!
         </span>
         <storybook-button
-          *ngIf="user"
           size="small"
-          (onClick)="onLogout.emit($event)"
+          (onClick)="logout.emit($event)"
           label="Log out"
         ></storybook-button>
       </div>
-      <div *ngIf="!user">
+      } @else {
+      <div>
         <storybook-button
-          *ngIf="!user"
           size="small"
           class="margin-left"
-          (onClick)="onLogin.emit($event)"
+          (onClick)="login.emit($event)"
           label="Log in"
         ></storybook-button>
         <storybook-button
-          *ngIf="!user"
           size="small"
           [primary]="true"
           class="margin-left"
-          (onClick)="onCreateAccount.emit($event)"
+          (onClick)="createAccount.emit($event)"
           label="Sign up"
         ></storybook-button>
       </div>
+      }
     </div>
   </div>
 </header>`,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./header.css'],
 })
 export class HeaderComponent {
-  @Input()
-  user: User | null = null;
+  user = input<User | null>(null);
 
-  @Output()
-  onLogin = new EventEmitter<Event>();
+  login = output<Event>({ alias: 'onLogin' });
 
-  @Output()
-  onLogout = new EventEmitter<Event>();
+  logout = output<Event>({ alias: 'onLogout' });
 
-  @Output()
-  onCreateAccount = new EventEmitter<Event>();
+  createAccount = output<Event>({ alias: 'onCreateAccount' });
 }

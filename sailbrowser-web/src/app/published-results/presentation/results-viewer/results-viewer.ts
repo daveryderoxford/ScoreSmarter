@@ -1,7 +1,5 @@
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { DatePipe } from '@angular/common';
-import { afterRenderEffect, Component, computed, effect, ElementRef, inject, input, Signal, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { afterRenderEffect, Component, computed, effect, ElementRef, inject, input, Signal, signal, ChangeDetectionStrategy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
@@ -19,7 +17,7 @@ import { RaceResultsTable } from "../results-tables/race-results-table/race-resu
 import { SeriesResultsTable } from "../results-tables/series-results-table/series-results-table";
 import { SeasonList } from "../season-list/season-list";
 import { CenteredText } from 'app/shared/components/centered-text';
-import { ClubStore, Fleet } from 'app/club-tenant';
+import { ClubStore } from 'app/club-tenant';
 import { getFleetName } from 'app/club-tenant/model/fleet';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { AuthService } from 'app/auth/auth.service';
@@ -86,6 +84,8 @@ export class ResultsViewer {
   });
 
   readonly selectedSeriesName = computed(() => this.series()?.name?.trim() ?? '');
+
+  readonly firstCompetitorHandicapScheme = computed(() => this.series()?.competitors[0]?.handicapScheme);
 
   readonly selectedScoringAlgorithmLabel = computed(() => {
     const publishedSeries = this.series();

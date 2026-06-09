@@ -12,6 +12,7 @@ export interface CaptureStepViewModel {
   isMobile: boolean;
   previewSrc: string | null;
   storedImageError: string | null;
+  previewLoading: boolean;
 }
 
 @Component({

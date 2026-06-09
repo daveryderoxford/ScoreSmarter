@@ -1,5 +1,5 @@
 import { MatDialogRef as MatDialogRef, MatDialogModule } from '@angular/material/dialog';
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 
@@ -14,6 +14,7 @@ import { MatDividerModule } from '@angular/material/divider';
             (click)="dialogRef.close(true)">OK</button>
         </div>
     `,
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatDialogModule, MatDividerModule, MatButtonModule]
 })
 export class MessageDialog {

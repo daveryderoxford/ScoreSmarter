@@ -1,5 +1,5 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { ChangeDetectorRef, Component, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, computed, effect, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -33,7 +33,7 @@ import { CaptureStep, CaptureStepMode, CaptureStepViewModel } from './capture-st
 import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
 import { PhoneCaptureQrDialog, PhoneCaptureQrDialogResult } from './phone-capture-qr-dialog/phone-capture-qr-dialog';
 import { RaceStep } from './race-step/race-step';
-import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step/review-step';
+import { MatchedRowVm, ReviewStep, UnmatchedRowVm, AcceptanceChangedEvent } from './review-step/review-step';
 import {
   CaptureImage,
   ScanResponse,
@@ -66,6 +66,7 @@ import {
     Toolbar
   ],
   templateUrl: './scoring-sheet-scanner.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './scoring-sheet-scanner.scss',
 })
 export class ScoringSheetScanner {
@@ -172,12 +173,23 @@ export class ScoringSheetScanner {
   });
 
   readonly captureViewModel = computed((): CaptureStepViewModel => {
+    const img = this.captureImage();
     const mode = this.captureMode();
+    const previewSrc =
+      img?.kind === 'storagePath'
+        ? this.raceSheetImageUrl()
+        : capturePreviewUrl(img);
+    const storedImageError = this.raceSheetImageLoadError();
     return {
       mode,
       isMobile: this.isMobile(),
-      previewSrc: mode === 'stored' ? this.raceSheetImageUrl() : capturePreviewUrl(this.captureImage()),
-      storedImageError: this.raceSheetImageLoadError(),
+      previewSrc,
+      storedImageError,
+      previewLoading:
+        this.captureReady() &&
+        img?.kind === 'storagePath' &&
+        !previewSrc &&
+        !storedImageError,
     };
   });
   readonly hasConfiguredStartTimes = computed(() => {
@@ -285,8 +297,12 @@ export class ScoringSheetScanner {
       void this.loadStoredScanOffer(raceId);
     });
     effect(() => {
-      const imageRef = this.raceStoredPath() ?? '';
-      void this.resolveRaceSheetImageUrl(imageRef);
+      const img = this.captureImage();
+      const path =
+        img?.kind === 'storagePath'
+          ? img.path
+          : (this.raceStoredPath() ?? '');
+      void this.resolveRaceSheetImageUrl(path);
     });
 
     this.applyRaceStoredImageIfAny();
@@ -458,8 +474,14 @@ export class ScoringSheetScanner {
   }
 
   async onStepChange(event: { selectedIndex: number; previouslySelectedIndex?: number; }): Promise<void> {
-    if (event.selectedIndex === 1 && event.previouslySelectedIndex === 0) {
-      this.applyRaceStoredImageIfAny();
+    if (event.selectedIndex === 1) {
+      if (event.previouslySelectedIndex === 0) {
+        this.applyRaceStoredImageIfAny();
+      }
+      const img = this.captureImage();
+      if (img?.kind === 'storagePath' && !this.raceSheetImageUrl()) {
+        void this.resolveRaceSheetImageUrl(img.path);
+      }
     }
 
     if (event.selectedIndex !== 3) return;
@@ -489,7 +511,6 @@ export class ScoringSheetScanner {
   }
 
   private applyUploadedImageFromPhoneSession(storagePath: string): void {
-    this.dismissedStoredRaceSheet.set(true);
     this.result.set(null);
     this.error.set(null);
     this.captureImage.set({ kind: 'storagePath', path: storagePath });
@@ -544,6 +565,19 @@ export class ScoringSheetScanner {
     row.accepted = true;
     const current = this.result();
     if (current) this.result.set({ ...current, scannedResults: [...current.scannedResults] });
+  }
+
+  onAcceptanceChanged({ rowIndex, accepted }: AcceptanceChangedEvent): void {
+    this.result.update(current =>
+      current
+        ? {
+            ...current,
+            scannedResults: current.scannedResults.map(row =>
+              row.rowIndex === rowIndex ? { ...row, accepted } : row,
+            ),
+          }
+        : null,
+    );
   }
 
   async openKnownBoatEntry(row: ScannedResultRow): Promise<void> {

@@ -1,5 +1,5 @@
 import { MatDialogRef as MatDialogRef, MatDialogModule } from '@angular/material/dialog';
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 
@@ -14,11 +14,12 @@ import { MatDividerModule } from '@angular/material/divider';
             <button type="button" mat-button (click)="dialogRef.close(false)">Cancel</button>
         </div>
     `,
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatDialogModule, MatDividerModule, MatButtonModule]
 })
 export class ConfirmDialog {
     dialogRef = inject<MatDialogRef<ConfirmDialog>>(MatDialogRef);
 
-    public title: string = '';
-    public message: string = '';
+    public title = '';
+    public message = '';
 }

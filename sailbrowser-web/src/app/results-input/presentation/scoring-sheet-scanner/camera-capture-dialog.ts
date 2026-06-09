@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, signal, viewChild, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, signal, viewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -33,6 +33,7 @@ import { ImageViewerComponent } from 'app/shared/components/image-viewer';
       }
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .video-container {
       position: relative;

@@ -29,7 +29,12 @@
 
     <ng-container matColumnDef="accept">
       <th mat-header-cell *matHeaderCellDef>Accept</th>
-      <td mat-cell *matCellDef="let vm"><mat-checkbox [(ngModel)]="vm.row.accepted" /></td>
+      <td mat-cell *matCellDef="let vm">
+        <mat-checkbox
+          [checked]="!!vm.row.accepted"
+          (change)="onAcceptanceChanged(vm.row.rowIndex, $event)"
+        />
+      </td>
     </ng-container>
 
     <ng-container matColumnDef="sailNumber">

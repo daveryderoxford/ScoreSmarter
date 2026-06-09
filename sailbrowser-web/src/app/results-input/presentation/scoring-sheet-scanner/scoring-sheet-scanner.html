@@ -93,7 +93,7 @@
       <app-review-step [result]="result()" [metrics]="result()?.metrics ?? null" [matchedRows]="matchedRows()" [unmatchedRows]="unmatchedRows()"
         [loading]="loading()" [scanStage]="scanStage()" [error]="error()" [displayedColumns]="displayedColumns"
         [unmatchedColumns]="unmatchedColumns" (backRequested)="stepper.previous()" (retryRequested)="scan()"
-        (saveRequested)="saveResults()" (knownBoatEntryRequested)="openKnownBoatEntry($event)"
+        (acceptanceChanged)="onAcceptanceChanged($event)" (saveRequested)="saveResults()" (knownBoatEntryRequested)="openKnownBoatEntry($event)"
         (newEntryRequested)="openUnmatchedRowEntry($event)" />
     </div>
   </mat-step>

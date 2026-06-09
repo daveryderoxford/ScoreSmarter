@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink } from '@angular/router';
 @Component({
   selector: 'app-home',
   imports: [RouterLink],
   templateUrl: 'home.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     @keyframes bounce-slow {
       0%, 100% { transform: translateY(-5%); }
