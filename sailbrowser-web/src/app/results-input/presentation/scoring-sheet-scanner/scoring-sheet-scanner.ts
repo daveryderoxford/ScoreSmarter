@@ -173,12 +173,23 @@ export class ScoringSheetScanner {
   });
 
   readonly captureViewModel = computed((): CaptureStepViewModel => {
+    const img = this.captureImage();
     const mode = this.captureMode();
+    const previewSrc =
+      img?.kind === 'storagePath'
+        ? this.raceSheetImageUrl()
+        : capturePreviewUrl(img);
+    const storedImageError = this.raceSheetImageLoadError();
     return {
       mode,
       isMobile: this.isMobile(),
-      previewSrc: mode === 'stored' ? this.raceSheetImageUrl() : capturePreviewUrl(this.captureImage()),
-      storedImageError: this.raceSheetImageLoadError(),
+      previewSrc,
+      storedImageError,
+      previewLoading:
+        this.captureReady() &&
+        img?.kind === 'storagePath' &&
+        !previewSrc &&
+        !storedImageError,
     };
   });
   readonly hasConfiguredStartTimes = computed(() => {
@@ -286,8 +297,12 @@ export class ScoringSheetScanner {
       void this.loadStoredScanOffer(raceId);
     });
     effect(() => {
-      const imageRef = this.raceStoredPath() ?? '';
-      void this.resolveRaceSheetImageUrl(imageRef);
+      const img = this.captureImage();
+      const path =
+        img?.kind === 'storagePath'
+          ? img.path
+          : (this.raceStoredPath() ?? '');
+      void this.resolveRaceSheetImageUrl(path);
     });
 
     this.applyRaceStoredImageIfAny();
@@ -459,8 +474,14 @@ export class ScoringSheetScanner {
   }
 
   async onStepChange(event: { selectedIndex: number; previouslySelectedIndex?: number; }): Promise<void> {
-    if (event.selectedIndex === 1 && event.previouslySelectedIndex === 0) {
-      this.applyRaceStoredImageIfAny();
+    if (event.selectedIndex === 1) {
+      if (event.previouslySelectedIndex === 0) {
+        this.applyRaceStoredImageIfAny();
+      }
+      const img = this.captureImage();
+      if (img?.kind === 'storagePath' && !this.raceSheetImageUrl()) {
+        void this.resolveRaceSheetImageUrl(img.path);
+      }
     }
 
     if (event.selectedIndex !== 3) return;
@@ -490,7 +511,6 @@ export class ScoringSheetScanner {
   }
 
   private applyUploadedImageFromPhoneSession(storagePath: string): void {
-    this.dismissedStoredRaceSheet.set(true);
     this.result.set(null);
     this.error.set(null);
     this.captureImage.set({ kind: 'storagePath', path: storagePath });

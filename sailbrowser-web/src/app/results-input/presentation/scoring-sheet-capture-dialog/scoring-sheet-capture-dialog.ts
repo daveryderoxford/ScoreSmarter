@@ -62,6 +62,7 @@ export class ScoringSheetCaptureDialog {
       isMobile: this.data.isMobile,
       previewSrc: capturePreviewUrl(img),
       storedImageError: null,
+      previewLoading: false,
     };
   });
 

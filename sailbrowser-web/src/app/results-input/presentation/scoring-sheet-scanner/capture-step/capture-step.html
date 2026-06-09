@@ -36,6 +36,8 @@
           <div class="preview-container">
             <app-image-viewer [src]="previewUrl" />
           </div>
+        } @else if (vm().previewLoading) {
+          <p class="reuse-caption">Loading preview…</p>
         }
         <div class="capture-actions">
           <button matButton="outlined" type="button" (click)="clearImage.emit()">Retake/Upload Another</button>
