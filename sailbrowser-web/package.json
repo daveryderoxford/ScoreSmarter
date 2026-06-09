@@ -1,6 +1,6 @@
 {
-  "name": "sailbrowser-web",
-  "version": "0.0.0",
+  "name": "scoresmarter-web",
+  "version": "0.1.0",
   "scripts": {
     "dev": "ng serve --port 3000",
     "serve": "ng serve",
@@ -26,7 +26,7 @@
     ]
   },
   "private": true,
-  "packageManager": "npm@10.9.2",
+  "packageManager": "npm@11.16.0",
   "dependencies": {
     "@angular/cdk": "22.0.0",
     "@angular/common": "22.0.0",
@@ -61,7 +61,7 @@
     "@storybook/addon-onboarding": "^10.2.10",
     "@storybook/addon-styling-webpack": "^3.0.0",
     "@storybook/angular": "^10.2.10",
-    "angular-eslint": "21.4.0",
+    "angular-eslint": "22.0.0",
     "eslint": "^10.0.3",
     "eslint-plugin-storybook": "^10.2.10",
     "firebase-tools": "^14.0.0",
@@ -69,7 +69,7 @@
     "postcss": "^8.5.3",
     "storybook": "^10.2.10",
     "typescript": "~6.0.3",
-    "typescript-eslint": "8.56.1",
+    "typescript-eslint": "8.61.0",
     "vitest": "^4.0.8"
   },
   "overrides": {
@@ -80,6 +80,13 @@
       "@angular/router": "$@angular/router",
       "@angular/platform-server": "22.0.0",
       "@angular/platform-browser-dynamic": "$@angular/platform-browser-dynamic"
+    },
+    "@storybook/angular": {
+      "@angular/common": "^22.0.0",
+      "@angular/core": "^22.0.0",
+      "@angular/compiler": "^22.0.0",
+      "@angular/forms": "^22.0.0",
+      "@angular/platform-browser": "^22.0.0"
     }
   }
 }
