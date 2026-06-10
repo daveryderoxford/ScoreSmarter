@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, ElementRef, forwardRef, inject, input, OnInit, viewChild, ChangeDetectionStrategy } from '@angular/core';
+import { Component, computed, DestroyRef, ElementRef, forwardRef, inject, input, OnInit, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormControl, NG_VALIDATORS, NG_VALUE_ACCESSOR, ReactiveFormsModule, ValidationErrors, Validator } from '@angular/forms';
 import { MatFormFieldControl, MatFormFieldModule } from '@angular/material/form-field';
@@ -58,7 +58,6 @@ export function parseElapsedStopwatchReading(
       color: transparent;
     }
   `],
-  changeDetection: ChangeDetectionStrategy.Eager,
   host: {
     '[class.floating]': 'shouldLabelFloat',
     '[id]': 'id',
@@ -93,6 +92,10 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
   override get disabled(): boolean {
     const c = this.ngControl?.control;
     return c ? c.disabled : super.disabled;
+  }
+
+  override set disabled(value: boolean) {
+    this.applyDisabledFromParent(value);
   }
 
   override get empty(): boolean {
@@ -136,9 +139,7 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
     this.stateChanges.next();
   }
 
-  override set disabled(value: boolean) {
-    this.applyDisabledFromParent(value);
-  }
+
 
   override writeValue(value: Date | null): void {
     super.writeValue(value); // Let base class store the value

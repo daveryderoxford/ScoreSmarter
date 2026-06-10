@@ -1,4 +1,4 @@
-import { Component, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import {
   MAT_DIALOG_DATA,
@@ -24,7 +24,6 @@ export type PhoneCaptureQrDialogResult =
   selector: 'app-phone-capture-qr-dialog',
   imports: [LoadingCentered, MatButtonModule, MatDialogModule, MatIconModule, QRCodeComponent],
   templateUrl: './phone-capture-qr-dialog.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './phone-capture-qr-dialog.scss',
 })
 export class PhoneCaptureQrDialog implements OnDestroy {

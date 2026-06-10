@@ -1,5 +1,5 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { ChangeDetectorRef, Component, computed, effect, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
+import { ChangeDetectorRef, Component, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -66,7 +66,6 @@ import {
     Toolbar
   ],
   templateUrl: './scoring-sheet-scanner.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './scoring-sheet-scanner.scss',
 })
 export class ScoringSheetScanner {

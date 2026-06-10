@@ -1,5 +1,4 @@
-import { Component, input, ChangeDetectionStrategy } from '@angular/core';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-centered-text',
@@ -9,7 +8,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
       <ng-content/>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     :host {
       display: block;

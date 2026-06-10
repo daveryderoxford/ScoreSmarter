@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -61,7 +61,6 @@ type CapturePhase = 'idle' | 'uploading' | 'success' | 'error';
       </mat-card>
     </div>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`
     .page { display: flex; justify-content: center; padding: 1rem; }
     .card { width: min(520px, 100%); display: grid; gap: 1rem; }
