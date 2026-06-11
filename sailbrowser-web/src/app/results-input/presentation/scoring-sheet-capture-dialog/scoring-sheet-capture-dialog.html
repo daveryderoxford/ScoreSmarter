@@ -5,11 +5,12 @@
     (fileChanged)="onFileChange($event)"
     (openCamera)="openCameraDialog()"
     (startPhoneCapture)="startPhoneCapture()"
+    (captureNewInstead)="captureNewInstead()"
     (clearImage)="clearImage()" />
 </mat-dialog-content>
 <mat-dialog-actions align="end">
   <button matButton type="button" (click)="cancel()">Cancel</button>
-  <button matButton="filled" type="button" [disabled]="!hasImage()" (click)="confirm()">
-    Use this image
+  <button matButton="filled" type="button" [disabled]="!hasImage() || confirming()" (click)="confirm()">
+    {{ confirming() ? 'Saving…' : 'Use this image' }}
   </button>
 </mat-dialog-actions>

@@ -1,40 +1,36 @@
-import { Component, input, output
- } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { Component, computed, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
-import type { Race } from 'app/race-calender';
 import { RacesPanel } from 'app/race-calender/presentation/races-panel/races-panel';
 import type { RacesPanelFilter } from 'app/race-calender/presentation/races-panel/races-panel-utils';
+import { RaceSelectionStore } from '../select-race/race-selection.store';
 
 const SCANNER_RACE_FILTERS: readonly RacesPanelFilter[] = ['past', 'hideCompleted'];
 
 @Component({
   selector: 'app-race-step',
-  imports: [
-    ReactiveFormsModule,
-    MatCardModule,
-    RacesPanel,
-  ],
+  imports: [MatCardModule, RacesPanel],
   template: `
     <mat-card appearance="outlined" class="form-card">
-      <form [formGroup]="form()">
-        <app-races-panel
-          [races]="races()"
-          [selectedRaceIds]="selectedRaceIds()"
-          [maxSelections]="1"
-          [availableFilters]="filters"
-          (selectedRaceIdsChange)="raceSelectionChange.emit($event)" />
-      </form>
+      <app-races-panel
+        [races]="raceSelection.raceOptions()"
+        [selectedRaceIds]="selectedRaceIds()"
+        [maxSelections]="1"
+        [availableFilters]="filters"
+        (selectedRaceIdsChange)="onSelectionChange($event)" />
     </mat-card>
   `,
   styleUrl: './race-step.scss',
 })
 export class RaceStep {
-  form = input.required<FormGroup>();
-  races = input.required<readonly Race[]>();
-  selectedRaceIds = input<readonly string[]>([]);
-  raceSelectionChange = output<string[]>();
-
+  protected readonly raceSelection = inject(RaceSelectionStore);
   protected readonly filters = SCANNER_RACE_FILTERS;
-}
 
+  readonly selectedRaceIds = computed<readonly string[]>(() => {
+    const id = this.raceSelection.selectedRaceId();
+    return id ? [id] : [];
+  });
+
+  onSelectionChange(ids: string[]): void {
+    this.raceSelection.select(ids[0] ?? '');
+  }
+}

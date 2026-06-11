@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxChange, MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
@@ -6,8 +6,10 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
 import { AuthService } from 'app/auth/auth.service';
 import { RaceCompetitor } from '../../../model/race-competitor';
-import { ScannedResultRow, ScanExecutionMetrics, ScanResponse } from '../scan-model';
+import { ScannedResultRow } from '../scan-model';
 import { formatScanMetricsSummary } from '../scan-metrics-format';
+import { ScanRunStore } from '../run-scan/scan-run.store';
+import { ScanReviewStore } from '../review-save/scan-review.store';
 
 export interface MatchedRowVm {
   row: ScannedResultRow;
@@ -40,29 +42,14 @@ export interface AcceptanceChangedEvent {
   styleUrl: './review-step.scss',
 })
 export class ReviewStep {
-  protected auth = inject(AuthService);
-  protected formatScanMetricsSummary = formatScanMetricsSummary;
-
-  result = input<ScanResponse | null>(null);
-  metrics = input<ScanExecutionMetrics | null>(null);
-  matchedRows = input.required<MatchedRowVm[]>();
-  unmatchedRows = input.required<UnmatchedRowVm[]>();
-  loading = input.required<boolean>();
-  scanStage = input<string | null>(null);
-  error = input<string | null>(null);
-
-  displayedColumns = input.required<string[]>();
-  unmatchedColumns = input.required<string[]>();
-  readonly acceptedMatchedCount = computed(() => this.matchedRows().filter(vm => !!vm.row.accepted).length);
+  protected readonly scanRun = inject(ScanRunStore);
+  protected readonly review = inject(ScanReviewStore);
+  protected readonly auth = inject(AuthService);
+  protected readonly formatScanMetricsSummary = formatScanMetricsSummary;
 
   backRequested = output<void>();
-  saveRequested = output<void>();
-  retryRequested = output<void>();
-  acceptanceChanged = output<AcceptanceChangedEvent>();
-  knownBoatEntryRequested = output<ScannedResultRow>();
-  newEntryRequested = output<ScannedResultRow>();
 
   onAcceptanceChanged(rowIndex: number, event: MatCheckboxChange): void {
-    this.acceptanceChanged.emit({ rowIndex, accepted: event.checked });
+    this.review.setAcceptance({ rowIndex, accepted: event.checked });
   }
 }

@@ -1,20 +1,20 @@
 import { inject, Injectable } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
-import { Firestore, doc, docData, getDoc, setDoc } from '@angular/fire/firestore';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
-import { environment } from '../../../../environments/environment';
-import { map, Observable } from 'rxjs';
-import { CaptureSessionUploadService } from 'app/results-sheet-phone-capture/capture-session-upload.service';
-import { ScanResponse, ScanRunRequest, ScanRunState } from './scan-model';
+import { Observable } from 'rxjs';
+import { environment } from '../../../../../environments/environment';
+import { applyAutoAccept, ScanResponse, ScanRunRequest, ScanRunState } from '../scan-model';
 
 const PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS = 318_000;
 const UPLOAD_RESULTS_SHEET_IMAGE_CALLABLE_TIMEOUT_MS = 120_000;
 
+/**
+ * Drives a live scan run: uploads the sheet (when not already stored), calls the
+ * parse callable, streams staged progress messages, and formats callable errors.
+ */
 @Injectable({ providedIn: 'root' })
-export class ScannerOrchestrationService {
+export class ScanExecutionService {
   private readonly app = inject(FirebaseApp);
-  private readonly firestore = inject(Firestore);
-  private readonly captureSessionUpload = inject(CaptureSessionUploadService);
 
   private readonly scanActivityMessages = [
     'Loading scan...',
@@ -28,78 +28,6 @@ export class ScannerOrchestrationService {
 
   defaultStageMessage(): string {
     return this.scanActivityMessages[0];
-  }
-
-  async createCaptureSession(clubId: string, raceId: string): Promise<{
-    sessionId: string;
-    token: string;
-    clubId: string;
-    raceId: string;
-    expiresAt: string;
-  }> {
-    const functions = getFunctions(this.app, 'europe-west1');
-    if (environment.useEmulators) {
-      try { connectFunctionsEmulator(functions, 'localhost', 5001); } catch { /* already configured */ }
-    }
-    const createFn = httpsCallable(functions, 'createPhoneUploadRequest', { timeout: 60_000 });
-    const res = await createFn({ clubId, raceId });
-    return res.data as {
-      sessionId: string;
-      token: string;
-      clubId: string;
-      raceId: string;
-      expiresAt: string;
-    };
-  }
-
-  async uploadFromCaptureSession(payload: {
-    clubId: string;
-    sessionId: string;
-    token: string;
-    imageBase64: string;
-    imageMimeType: string;
-  }): Promise<{ status: string; storagePath?: string }> {
-    return this.captureSessionUpload.uploadFromCaptureSession(payload);
-  }
-
-  watchCaptureSession(clubId: string, sessionId: string): Observable<{
-    status?: string;
-    storagePath?: string;
-    uploadedAt?: Date;
-    expiresAt?: Date;
-    scanResponse?: ScanResponse;
-  } | null> {
-    const ref = doc(this.firestore, `clubs/${clubId}/results-sheet-capture-sessions/${sessionId}`);
-    return docData(ref).pipe(
-      map(v => (v ?? null) as {
-        status?: string;
-        storagePath?: string;
-        uploadedAt?: Date;
-        expiresAt?: Date;
-        scanResponse?: ScanResponse;
-      } | null),
-    );
-  }
-
-
-
-  async getScanResponse(clubId: string, raceId: string): Promise<ScanResponse | null> {
-    const ref = doc(this.firestore, `clubs/${clubId}/scan-results/${raceId}`);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return null;
-    const stored = snap.data()['scanResponse'];
-    if (!stored || typeof stored !== 'object') return null;
-    return stored as ScanResponse;
-  }
-
-  async clearScanResponse(clubId: string, raceId: string): Promise<void> {
-    const ref = doc(this.firestore, `clubs/${clubId}/scan-results/${raceId}`);
-    await setDoc(ref, { scanResponse: null }, { merge: true });
-  }
-
-  /** Applies the same auto-accept rules used after a live scan. */
-  prepareScanResponseForReview(response: ScanResponse): ScanResponse {
-    return this.applyAutoAccept(response);
   }
 
   runScan(request: ScanRunRequest): Observable<ScanRunState> {
@@ -116,7 +44,7 @@ export class ScannerOrchestrationService {
       void (async () => {
         try {
           const result = await this.runCallableScan(request);
-          subscriber.next({ status: 'success', result: this.applyAutoAccept(result) });
+          subscriber.next({ status: 'success', result: applyAutoAccept(result) });
           subscriber.complete();
         } catch (err: unknown) {
           subscriber.next({ status: 'error', error: this.formatParseSheetError(err) });
@@ -128,17 +56,6 @@ export class ScannerOrchestrationService {
 
       return finish;
     });
-  }
-
-  private applyAutoAccept(response: ScanResponse): ScanResponse {
-    const { metrics, ...scanPayload } = response;
-    const scannedResults = scanPayload.scannedResults.map(row => ({
-      ...row,
-      accepted: row.overallRowConfidence === 'HIGH' &&
-        row.sailNumber?.confidence === 'HIGH' &&
-        row.time?.confidence === 'HIGH',
-    }));
-    return { ...scanPayload, scannedResults, ...(metrics ? { metrics } : {}) };
   }
 
   private async runCallableScan(request: ScanRunRequest): Promise<ScanResponse> {

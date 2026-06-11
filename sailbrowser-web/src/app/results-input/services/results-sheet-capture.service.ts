@@ -17,6 +17,7 @@ export interface CaptureAndStoreOptions {
   clubId: string;
   raceId: string;
   isMobile: boolean;
+  storedImagePath?: string | null;
 }
 
 export interface UploadInlineImageOptions {
@@ -31,25 +32,12 @@ export class ResultsSheetCaptureService {
   private readonly app = inject(FirebaseApp);
   private readonly dialog = inject(MatDialog);
 
-  /**
-   * Resolve a Firebase Storage object path (as stored on `Race.resultsSheetImage`)
-   * to an HTTPS download URL. Returns `null` for empty/missing paths and rethrows
-   * underlying SDK errors so the caller can surface them.
-   *
-   * Callers are responsible for cancellation guards (e.g. version counters) when
-   * the path can change while a resolution is pending.
-   */
   async resolveDownloadUrl(path: string | null | undefined): Promise<string | null> {
     const trimmed = path?.trim();
     if (!trimmed) return null;
     return await getDownloadURL(storageRef(getStorage(this.app), trimmed));
   }
 
-  /**
-   * Upload an inline (base64) image to the `uploadResultsSheetImage` callable.
-   * The callable persists the image in Storage and updates the race document's
-   * `resultsSheetImage` field to the resulting `storagePath`.
-   */
   async uploadInlineImage(
     { clubId, raceId, base64, mimeType }: UploadInlineImageOptions,
   ): Promise<{ storagePath: string }> {
@@ -71,14 +59,8 @@ export class ResultsSheetCaptureService {
     return { storagePath };
   }
 
-  /**
-   * Open the shared capture dialog and resolve to the persisted `storagePath`
-   * once the user confirms. Inline (PC camera / file upload) payloads are
-   * uploaded via {@link uploadInlineImage}; phone-QR captures are already
-   * stored when the dialog closes. Returns `null` when the user cancels.
-   */
   async captureAndStore(
-    { clubId, raceId, isMobile }: CaptureAndStoreOptions,
+    { clubId, raceId, isMobile, storedImagePath }: CaptureAndStoreOptions,
   ): Promise<{ storagePath: string } | null> {
     const ref = this.dialog.open<
       ScoringSheetCaptureDialog,
@@ -88,7 +70,7 @@ export class ResultsSheetCaptureService {
       width: 'min(95vw, 720px)',
       maxWidth: '95vw',
       disableClose: true,
-      data: { clubId, raceId, isMobile },
+      data: { clubId, raceId, isMobile, storedImagePath },
     });
 
     const result = await firstValueFrom(ref.afterClosed());

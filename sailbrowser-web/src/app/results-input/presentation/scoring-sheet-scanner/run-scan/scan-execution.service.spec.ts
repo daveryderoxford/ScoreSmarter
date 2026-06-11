@@ -1,27 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { FirebaseApp } from '@angular/fire/app';
-import { Firestore } from '@angular/fire/firestore';
-import { CaptureSessionUploadService } from 'app/results-sheet-phone-capture/capture-session-upload.service';
-import { ScannerOrchestrationService } from './scanner-orchestration.service';
-import { ScanRunState } from './scan-model';
+import { ScanExecutionService } from './scan-execution.service';
+import { ScanRunState } from '../scan-model';
 
-describe('ScannerOrchestrationService', () => {
-  let service: ScannerOrchestrationService;
+describe('ScanExecutionService', () => {
+  let service: ScanExecutionService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        ScannerOrchestrationService,
+        ScanExecutionService,
         { provide: FirebaseApp, useValue: {} },
-        { provide: Firestore, useValue: {} },
-        {
-          provide: CaptureSessionUploadService,
-          useValue: { uploadFromCaptureSession: vi.fn() },
-        },
       ],
     });
-    service = TestBed.inject(ScannerOrchestrationService);
+    service = TestBed.inject(ScanExecutionService);
   });
 
   it('returns error state when scan is missing image', async () => {

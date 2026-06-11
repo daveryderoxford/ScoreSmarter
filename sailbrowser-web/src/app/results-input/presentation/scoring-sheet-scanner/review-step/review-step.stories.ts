@@ -1,4 +1,8 @@
-import { Meta, StoryObj } from '@storybook/angular';
+import { signal } from '@angular/core';
+import { Meta, moduleMetadata, StoryObj } from '@storybook/angular';
+import { AuthService } from 'app/auth/auth.service';
+import { ScanReviewStore } from '../review-save/scan-review.store';
+import { ScanRunStore } from '../run-scan/scan-run.store';
 import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from '../review-step/review-step';
 import { ScanResponse, ScannedResultRow } from '../scan-model';
 
@@ -73,6 +77,43 @@ function responseFor(rows: ScannedResultRow[]): ScanResponse {
   };
 }
 
+interface ReviewState {
+  result?: ScanResponse | null;
+  matchedRows?: MatchedRowVm[];
+  unmatchedRows?: UnmatchedRowVm[];
+  running?: boolean;
+}
+
+/** Stub the area stores so the store-driven component renders in isolation. */
+function storeProviders(state: ReviewState) {
+  const scanRunStub = {
+    running: signal(state.running ?? false),
+    scanResult: signal<ScanResponse | null>(state.result ?? null),
+    scanStage: signal<string | null>('Scanning sheet…'),
+    error: signal<string | null>(null),
+    runScan: () => undefined,
+  };
+  const reviewStub = {
+    displayedColumns,
+    unmatchedColumns,
+    matchedRows: signal(state.matchedRows ?? []),
+    unmatchedRows: signal(state.unmatchedRows ?? []),
+    acceptedMatchedCount: signal((state.matchedRows ?? []).filter(vm => !!vm.row.accepted).length),
+    error: signal<string | null>(null),
+    saving: signal(false),
+    setAcceptance: () => undefined,
+    enterKnownBoat: () => undefined,
+    enterUnmatched: () => undefined,
+    save: () => undefined,
+  };
+  const authStub = { isSysAdmin: signal(false) };
+  return [
+    { provide: ScanRunStore, useValue: scanRunStub },
+    { provide: ScanReviewStore, useValue: reviewStub },
+    { provide: AuthService, useValue: authStub },
+  ];
+}
+
 const meta: Meta<ReviewStep> = {
   title: 'Results Input/Scoring Sheet Scanner/Review Step',
   component: ReviewStep,
@@ -80,51 +121,51 @@ const meta: Meta<ReviewStep> = {
   parameters: {
     layout: 'fullscreen',
   },
-  args: {
-    loading: false,
-    displayedColumns,
-    unmatchedColumns,
-    backRequested: () => undefined,
-    saveRequested: () => undefined,
-    retryRequested: () => undefined,
-    acceptanceChanged: () => undefined,
-    knownBoatEntryRequested: () => undefined,
-    newEntryRequested: () => undefined,
-  },
 };
 
 export default meta;
 type Story = StoryObj<ReviewStep>;
 
 export const MixedMatchedAndUnmatched: Story = {
-  args: {
-    result: responseFor([...matchedRows, ...unmatchedRows]),
-    matchedRows: matchedRowVms,
-    unmatchedRows: unmatchedRowVms,
-  },
+  decorators: [
+    moduleMetadata({
+      providers: storeProviders({
+        result: responseFor([...matchedRows, ...unmatchedRows]),
+        matchedRows: matchedRowVms,
+        unmatchedRows: unmatchedRowVms,
+      }),
+    }),
+  ],
 };
 
 export const MatchedOnly: Story = {
-  args: {
-    result: responseFor(matchedRows),
-    matchedRows: matchedRowVms,
-    unmatchedRows: [],
-  },
+  decorators: [
+    moduleMetadata({
+      providers: storeProviders({
+        result: responseFor(matchedRows),
+        matchedRows: matchedRowVms,
+        unmatchedRows: [],
+      }),
+    }),
+  ],
 };
 
 export const UnmatchedOnly: Story = {
-  args: {
-    result: responseFor(unmatchedRows),
-    matchedRows: [],
-    unmatchedRows: unmatchedRowVms,
-  },
+  decorators: [
+    moduleMetadata({
+      providers: storeProviders({
+        result: responseFor(unmatchedRows),
+        matchedRows: [],
+        unmatchedRows: unmatchedRowVms,
+      }),
+    }),
+  ],
 };
 
 export const Loading: Story = {
-  args: {
-    loading: true,
-    result: null,
-    matchedRows: [],
-    unmatchedRows: [],
-  },
+  decorators: [
+    moduleMetadata({
+      providers: storeProviders({ running: true, result: null, matchedRows: [], unmatchedRows: [] }),
+    }),
+  ],
 };

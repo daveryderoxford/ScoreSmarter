@@ -178,24 +178,13 @@ export class ManualResultsPage {
       return;
     }
 
-    if (race.resultsSheetImage) {
-      // Image already stored - resolve a URL (if not cached yet) then pop it open.
-      let url = this.sheetImageUrl();
-      if (!url) {
-        await this.refreshSheetImageUrl(race.resultsSheetImage.trim());
-        url = this.sheetImageUrl();
-      }
-      if (url) this.openBrowserWindow(url);
-      return;
-    }
-
-    // No image yet - capture, persist, resolve a URL, then open it
     try {
       this.loadingImage.set(true);
       const result = await this.captureService.captureAndStore({
         clubId: this.clubTenant.clubId,
         raceId: race.id,
         isMobile: this.isMobile(),
+        storedImagePath: race.resultsSheetImage?.trim() ?? null,
       });
 
       if (!result) return;

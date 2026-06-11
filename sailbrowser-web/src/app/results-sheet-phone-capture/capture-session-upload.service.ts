@@ -5,7 +5,7 @@ import { environment } from '../../environments/environment';
 
 /**
  * Upload-only callable for the phone capture lazy route ({@link MobileCapturePage}),
- * avoiding {@link ScannerOrchestrationService} and its Firestore / store graph.
+ * avoiding {@link ScannerPhoneCaptureService} and its Firestore / store graph.
  */
 @Injectable({ providedIn: 'root' })
 export class CaptureSessionUploadService {

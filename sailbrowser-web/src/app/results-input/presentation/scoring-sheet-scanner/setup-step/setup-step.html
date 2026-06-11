@@ -1,77 +1,100 @@
-<mat-card appearance="outlined" class="form-card">
-  <form [formGroup]="form()">
-    <mat-form-field subscriptSizing="dynamic">
-      <mat-label>Scan strategy</mat-label>
-      <mat-select formControlName="scanStrategy">
-        <mat-option value="FullAIScan-Fast">Full AI scan (fast)</mat-option>
-        <mat-option value="FullAIScan">Full AI scan (Pro, legacy)</mat-option>
-      </mat-select>
-      <mat-hint>Compare strategies on the same sheet by re-scanning with the other option.</mat-hint>
-    </mat-form-field>
-
-    <mat-form-field subscriptSizing="dynamic">
-      <mat-label>Results ordering</mat-label>
-      <mat-select formControlName="listOrder">
-        <mat-option value="chronological">Finish order (approximate)</mat-option>
-        <mat-option value="firstLap">First lap order</mat-option>
-        <mat-option value="unsorted">Unsorted / random</mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    <div class="toggle-group-container">
-      <div class="toggle-label">Time recording format - Clock/Stopwatch</div>
-      <mat-button-toggle-group hideSingleSelectionIndicator class="time-format-toggle-group" formControlName="timeFormat" aria-label="Time format">
-        <mat-button-toggle
-          value="clock_hms"
-          aria-label="Clock hh:mm:ss"
-          matTooltip="Clock hours, minutes,seconds">
-          <mat-icon aria-hidden="true">schedule</mat-icon>
-          <span class="time-format-text"> hh:mm:ss</span>
-        </mat-button-toggle>
-        <mat-button-toggle
-          value="stopwatch_hms_elapsed"
-          aria-label="Stopwatch h:mm:ss"
-          matTooltip="Stopwatch hours, minutes, seconds">
-          <mat-icon aria-hidden="true">timer</mat-icon>
-          <span class="time-format-text"> h:mm:ss</span>
-        </mat-button-toggle>
-        <mat-button-toggle
-          value="stopwatch_ms_elapsed"
-          aria-label="Stopwatch mm:ss"
-          matTooltip="Stopwatch decimal minutes">
-          <mat-icon aria-hidden="true">timer</mat-icon>
-          <span class="time-format-text"> mm:ss</span>
-        </mat-button-toggle>
-      </mat-button-toggle-group>
+<div class="setup-step">
+  <!-- Start time panel -->
+  <div class="detail-panel">
+    <div class="detail-panel-header">
+      <div class="detail-panel-title">{{ raceSelection.startTimesSummary().title }}</div>
+      <div class="detail-panel-summary" [class.missing]="!raceSelection.startTimesSummary().configured">
+        @if (raceSelection.startTimesSummary().configured) {
+          @for (line of raceSelection.startTimesSummary().lines; track line) {
+            <div class="detail-panel-time">{{ line }}</div>
+          }
+        } @else {
+          <span class="detail-panel-required">Required</span>
+        }
+      </div>
     </div>
+    <div class="detail-panel-actions">
+      <button matButton="outlined" type="button" (click)="raceSelection.setStartTimes()">
+        Set Start Time(s)
+      </button>
+    </div>
+  </div>
 
-    @if (form().value.timeFormat === 'clock_hms') {
-    <mat-form-field>
-      <mat-label>Hour if not recorded</mat-label>
-      <input matInput type="number" formControlName="defaultHour">
-      <mat-error>Must be between 0 and 23</mat-error>
-    </mat-form-field>
-    }
+  <mat-card appearance="outlined" class="form-card">
+    <form [formGroup]="scanRun.contextForm">
+      <mat-form-field subscriptSizing="dynamic">
+        <mat-label>Scan strategy</mat-label>
+        <mat-select formControlName="scanStrategy">
+          <mat-option value="FullAIScan-Fast">Full AI scan (fast)</mat-option>
+          <mat-option value="FullAIScan">Full AI scan (Pro, legacy)</mat-option>
+        </mat-select>
+        <mat-hint>Compare strategies on the same sheet by re-scanning with the other option.</mat-hint>
+      </mat-form-field>
 
-    <mat-slide-toggle formControlName="lapsPresentOnSheet" class="margin-bottom">
-      Lap column present on sheet
-    </mat-slide-toggle>
-
-    @if (form().value.lapsPresentOnSheet) {
-    <div class="laps-row">
-      <mat-form-field>
-        <mat-label>Lap format</mat-label>
-        <mat-select formControlName="lapFormat">
-          <mat-option value="numbers">Numbers (1, 2, 3)</mat-option>
-          <mat-option value="ticks">Ticks/Tallies (|||)</mat-option>
+      <mat-form-field subscriptSizing="dynamic">
+        <mat-label>Results ordering</mat-label>
+        <mat-select formControlName="listOrder">
+          <mat-option value="chronological">Finish order (approximate)</mat-option>
+          <mat-option value="firstLap">First lap order</mat-option>
+          <mat-option value="unsorted">Unsorted / random</mat-option>
         </mat-select>
       </mat-form-field>
+
+      <div class="toggle-group-container">
+        <div class="toggle-label">Time recording format - Clock/Stopwatch</div>
+        <mat-button-toggle-group hideSingleSelectionIndicator class="time-format-toggle-group" formControlName="timeFormat" aria-label="Time format">
+          <mat-button-toggle
+            value="clock_hms"
+            aria-label="Clock hh:mm:ss"
+            matTooltip="Clock hours, minutes,seconds">
+            <mat-icon aria-hidden="true">schedule</mat-icon>
+            <span class="time-format-text"> hh:mm:ss</span>
+          </mat-button-toggle>
+          <mat-button-toggle
+            value="stopwatch_hms_elapsed"
+            aria-label="Stopwatch h:mm:ss"
+            matTooltip="Stopwatch hours, minutes, seconds">
+            <mat-icon aria-hidden="true">timer</mat-icon>
+            <span class="time-format-text"> h:mm:ss</span>
+          </mat-button-toggle>
+          <mat-button-toggle
+            value="stopwatch_ms_elapsed"
+            aria-label="Stopwatch mm:ss"
+            matTooltip="Stopwatch decimal minutes">
+            <mat-icon aria-hidden="true">timer</mat-icon>
+            <span class="time-format-text"> mm:ss</span>
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+
+      @if (scanRun.contextForm.value.timeFormat === 'clock_hms') {
       <mat-form-field>
-        <mat-label>Default laps</mat-label>
-        <input matInput type="number" formControlName="defaultLaps">
-        <mat-error>Must be between 1 and 100</mat-error>
+        <mat-label>Hour if not recorded</mat-label>
+        <input matInput type="number" formControlName="defaultHour">
+        <mat-error>Must be between 0 and 23</mat-error>
       </mat-form-field>
-    </div>
-    }
-  </form>
-</mat-card>
+      }
+
+      <mat-slide-toggle formControlName="lapsPresentOnSheet" class="margin-bottom">
+        Lap column present on sheet
+      </mat-slide-toggle>
+
+      @if (scanRun.contextForm.value.lapsPresentOnSheet) {
+      <div class="laps-row">
+        <mat-form-field>
+          <mat-label>Lap format</mat-label>
+          <mat-select formControlName="lapFormat">
+            <mat-option value="numbers">Numbers (1, 2, 3)</mat-option>
+            <mat-option value="ticks">Ticks/Tallies (|||)</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Default laps</mat-label>
+          <input matInput type="number" formControlName="defaultLaps">
+          <mat-error>Must be between 1 and 100</mat-error>
+        </mat-form-field>
+      </div>
+      }
+    </form>
+  </mat-card>
+</div>

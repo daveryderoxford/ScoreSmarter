@@ -9,7 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { Subscription } from 'rxjs';
 import { LoadingCentered } from 'app/shared/components/loading-centered';
-import { ScannerOrchestrationService } from '../scanner-orchestration.service';
+import { ScannerPhoneCaptureService } from '../capture-image/scanner-phone-capture.service';
 
 export interface PhoneCaptureQrDialogData {
   clubId: string;
@@ -29,7 +29,7 @@ export type PhoneCaptureQrDialogResult =
 export class PhoneCaptureQrDialog implements OnDestroy {
   readonly data = inject<PhoneCaptureQrDialogData>(MAT_DIALOG_DATA);
   private readonly dialogRef = inject(MatDialogRef<PhoneCaptureQrDialog, PhoneCaptureQrDialogResult | undefined>);
-  private readonly orchestration = inject(ScannerOrchestrationService);
+  private readonly phoneCapture = inject(ScannerPhoneCaptureService);
 
   private watchSub?: Subscription;
   private finalized = false;
@@ -49,11 +49,11 @@ export class PhoneCaptureQrDialog implements OnDestroy {
   private async startSession(): Promise<void> {
     if (this.finalized) return;
     try {
-      const session = await this.orchestration.createCaptureSession(this.data.clubId, this.data.raceId);
+      const session = await this.phoneCapture.createCaptureSession(this.data.clubId, this.data.raceId);
       if (this.finalized) return;
       const url = `${window.location.origin}/results-sheet-phone-capture/${encodeURIComponent(session.sessionId)}/${encodeURIComponent(session.token)}`;
       this.captureUrl.set(url);
-      this.watchSub = this.orchestration.watchCaptureSession(session.clubId, session.sessionId).subscribe(doc => {
+      this.watchSub = this.phoneCapture.watchCaptureSession(session.sessionId).subscribe(doc => {
         if (this.finalized || !doc) return;
         const status = doc.status ?? 'pending';
         this.sessionStatus.set(status);
