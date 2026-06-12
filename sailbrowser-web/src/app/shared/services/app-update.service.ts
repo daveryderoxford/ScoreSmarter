@@ -39,6 +39,14 @@ export class AppUpdateService {
     });
 
     if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.info(`${LOG_PREFIX} Service worker now controlling this tab — update checks active.`, {
+          appVersion: environment.appVersion,
+          swScriptUrl: navigator.serviceWorker.controller?.scriptURL ?? null,
+        });
+        void this.checkForUpdate();
+      });
+
       concat(
         from(navigator.serviceWorker.ready.then(() => undefined)),
         interval(UPDATE_CHECK_INTERVAL_MS),
@@ -73,14 +81,22 @@ export class AppUpdateService {
 
   private async logRuntimeState(): Promise<void> {
     const controller = navigator.serviceWorker?.controller;
+    const swControllingPage = !!controller;
     console.info(`${LOG_PREFIX} Runtime`, {
       appVersion: environment.appVersion,
       production: environment.production,
       devMode: isDevMode(),
       swUpdateEnabled: this.swUpdate.isEnabled,
-      swControllingPage: !!controller,
+      swControllingPage,
       swScriptUrl: controller?.scriptURL ?? null,
     });
+
+    if (this.swUpdate.isEnabled && !swControllingPage) {
+      console.info(
+        `${LOG_PREFIX} Service worker is installed but not controlling this tab yet — reload once. ` +
+          'Update checks and the reload snackbar only work after the SW controls the page.',
+      );
+    }
 
     if (!('serviceWorker' in navigator)) {
       console.info(`${LOG_PREFIX} Service workers not supported in this browser.`);
