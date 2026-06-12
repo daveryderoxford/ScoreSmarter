@@ -9,7 +9,7 @@ import {
   query,
   startAfter,
 } from '@angular/fire/firestore';
-import { formatUsd } from 'app/results-input/presentation/scoring-sheet-scanner/scan-metrics-format';
+import { formatUsd } from 'app/results-input/scoring-sheet-scanner/model/scan-metrics-format';
 
 export interface ScanHistoryRecord {
   id: string;

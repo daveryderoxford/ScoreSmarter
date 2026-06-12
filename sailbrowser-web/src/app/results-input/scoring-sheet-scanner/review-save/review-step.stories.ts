@@ -3,8 +3,8 @@ import { Meta, moduleMetadata, StoryObj } from '@storybook/angular';
 import { AuthService } from 'app/auth/auth.service';
 import { ScanReviewStore } from '../review-save/scan-review.store';
 import { ScanRunStore } from '../run-scan/scan-run.store';
-import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from '../review-step/review-step';
-import { ScanResponse, ScannedResultRow } from '../scan-model';
+import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step';
+import { ScanResponse, ScannedResultRow } from '../model/scan-model';
 
 const displayedColumns = ['accept', 'sailNumber', 'boatClass', 'time', 'status', 'laps', 'overall'];
 const unmatchedColumns = ['sailNumber', 'boatClass', 'time', 'status', 'laps', 'enter'];

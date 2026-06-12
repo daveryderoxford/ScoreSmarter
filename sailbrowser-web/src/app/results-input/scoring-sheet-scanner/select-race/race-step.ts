@@ -2,7 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { RacesPanel } from 'app/race-calender/presentation/races-panel/races-panel';
 import type { RacesPanelFilter } from 'app/race-calender/presentation/races-panel/races-panel-utils';
-import { RaceSelectionStore } from '../select-race/race-selection.store';
+import { RaceSelectionStore } from './race-selection.store';
 
 const SCANNER_RACE_FILTERS: readonly RacesPanelFilter[] = ['past', 'hideCompleted'];
 

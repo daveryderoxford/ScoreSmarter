@@ -5,8 +5,8 @@ import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/
 import { map, Observable } from 'rxjs';
 import { CaptureSessionUploadService } from 'app/results-sheet-phone-capture/capture-session-upload.service';
 import { FirestoreTenantService } from 'app/club-tenant';
-import { environment } from '../../../../../environments/environment';
-import { CaptureSession, CaptureSessionDoc, UploadFromSessionInput } from '../scan-model';
+import { environment } from '../../../../environments/environment';
+import { CaptureSession, CaptureSessionDoc, UploadFromSessionInput } from '../capture-phone-session.model';
 
 /**
  * Manages phone-capture sessions: creating an upload request, relaying the

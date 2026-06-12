@@ -9,7 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { Subscription } from 'rxjs';
 import { LoadingCentered } from 'app/shared/components/loading-centered';
-import { ScannerPhoneCaptureService } from '../capture-step/scanner-phone-capture.service';
+import { ScannerPhoneCaptureService } from '../services/scanner-phone-capture.service';
 
 export interface PhoneCaptureQrDialogData {
   clubId: string;

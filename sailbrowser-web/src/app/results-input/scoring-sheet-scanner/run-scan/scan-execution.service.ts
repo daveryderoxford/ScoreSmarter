@@ -2,8 +2,8 @@ import { inject, Injectable } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
 import { Observable } from 'rxjs';
-import { environment } from '../../../../../environments/environment';
-import { applyAutoAccept, ScanResponse, ScanRunRequest, ScanRunState } from '../scan-model';
+import { environment } from '../../../../environments/environment';
+import { applyAutoAccept, ScanResponse, ScanRunRequest, ScanRunState } from '../model/scan-model';
 
 const PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS = 318_000;
 const UPLOAD_RESULTS_SHEET_IMAGE_CALLABLE_TIMEOUT_MS = 120_000;

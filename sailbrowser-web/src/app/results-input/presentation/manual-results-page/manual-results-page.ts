@@ -21,7 +21,7 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { firstValueFrom, map } from 'rxjs';
 import { RaceTitlePipe } from '../../../shared/pipes/race-title-pipe';
 import { manualRaceTableSort, ManualResultsService } from '../../services/manual-results.service';
-import { ResultsSheetCaptureService } from '../../services/results-sheet-capture.service';
+import { ResultsSheetCaptureService } from '../../capture';
 import { HandicapInputPanel } from '../handicap/handicap-input-panel/handicap-input-panel';
 import { HandicapResultsTable } from '../handicap/handicap-results-table/handicap-results-table';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../handicap/race-start-time-dialog';
