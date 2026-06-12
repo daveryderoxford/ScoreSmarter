@@ -130,12 +130,22 @@ export class AppUpdateService {
         break;
       case 'VERSION_DETECTED':
       case 'NO_NEW_VERSION_DETECTED':
-      case 'VERSION_INSTALLATION_FAILED':
         console.info(`${LOG_PREFIX} Update event`, {
           ...base,
           hash: evt.version.hash,
-          ...(evt.type === 'VERSION_INSTALLATION_FAILED' ? { error: evt.error } : {}),
         });
+        break;
+      case 'VERSION_INSTALLATION_FAILED':
+        console.error(`${LOG_PREFIX} Update installation failed`, {
+          ...base,
+          hash: evt.version.hash,
+          error: evt.error,
+        });
+        console.error(
+          `${LOG_PREFIX} A deployed file did not match ngsw.json (CDN cache, partial deploy, or ` +
+            'post-build file changes). Expand the error above for the file URL. ' +
+            'Fix hosting cache headers for index.html, ngsw.json, and ngsw-worker.js.',
+        );
         break;
     }
   }
