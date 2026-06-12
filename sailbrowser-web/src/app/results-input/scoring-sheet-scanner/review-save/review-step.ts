@@ -9,7 +9,8 @@ import { RaceCompetitor } from '../../model/race-competitor';
 import { ScannedResultRow } from '../model/scan-model';
 import { formatScanMetricsSummary } from '../model/scan-metrics-format';
 import { ScanRunStore } from '../run-scan/scan-run.store';
-import { ScanReviewStore } from '../review-save/scan-review.store';
+import { ScanReviewStore } from './scan-review.store';
+import { ScanRowMatchingService } from './scan-row-matching.service';
 
 export interface MatchedRowVm {
   row: ScannedResultRow;
@@ -38,6 +39,7 @@ export interface AcceptanceChangedEvent {
     MatProgressBarModule,
     MatTableModule,
   ],
+  providers: [ScanReviewStore, ScanRowMatchingService],
   templateUrl: './review-step.html',
   styleUrl: './review-step.scss',
 })

@@ -24,7 +24,7 @@ export function boatClassesMatch(a: string | undefined | null, b: string | undef
  * (boats, classes, resolved competitors, race) as arguments so it stays free of
  * store/signal dependencies and is easy to unit test.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class ScanRowMatchingService {
   private readonly allowedResultCodes = new Set<string>(RESULT_CODES as readonly string[]);
 

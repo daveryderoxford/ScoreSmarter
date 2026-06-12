@@ -1,13 +1,15 @@
 import { afterNextRender, Component, computed, effect, inject, Injector, signal, untracked, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
+import { CAPTURE_PROVIDERS } from '../capture/capture.providers';
 import { CaptureStep, CaptureStepViewModel } from '../capture/capture-step/capture-step';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { SheetCaptureStore } from './capture-image/sheet-capture.store';
+import { ScanExecutionService } from './run-scan/scan-execution.service';
 import { ScanRunStore } from './run-scan/scan-run.store';
-import { ScanReviewStore } from './review-save/scan-review.store';
 import { ReviewStep } from './review-save/review-step';
+import { ScanPersistenceService } from './shared/scan-persistence.service';
 import { RaceSelectionStore } from './select-race/race-selection.store';
 import { RaceStep } from './select-race/race-step';
 import { SetupStep } from './run-scan/setup-step';
@@ -20,7 +22,14 @@ const REVIEW_STEP_INDEX = 3;
   imports: [MatStepperModule, MatButtonModule, Toolbar, RaceStep, CaptureStep, SetupStep, ReviewStep],
   templateUrl: './scoring-sheet-scanner.html',
   styleUrl: './scoring-sheet-scanner.scss',
-  providers: [RaceSelectionStore, SheetCaptureStore, ScanRunStore, ScanReviewStore],
+  providers: [
+    ...CAPTURE_PROVIDERS,
+    RaceSelectionStore,
+    SheetCaptureStore,
+    ScanRunStore,
+    ScanPersistenceService,
+    ScanExecutionService,
+  ],
 })
 export class ScoringSheetScanner {
   private readonly injector = inject(Injector);
@@ -28,7 +37,6 @@ export class ScoringSheetScanner {
   protected readonly raceSelection = inject(RaceSelectionStore);
   protected readonly sheetCapture = inject(SheetCaptureStore);
   protected readonly scanRun = inject(ScanRunStore);
-  protected readonly review = inject(ScanReviewStore);
 
   readonly isMobile = this.breakpoints.isMobile;
   protected readonly capturePersisting = signal(false);

@@ -27,7 +27,7 @@ export interface UploadInlineImageOptions {
   mimeType: string;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class ResultsSheetCaptureService {
   private readonly app = inject(FirebaseApp);
   private readonly dialog = inject(MatDialog);

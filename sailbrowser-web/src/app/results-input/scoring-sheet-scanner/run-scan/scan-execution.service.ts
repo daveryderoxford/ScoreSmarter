@@ -12,7 +12,7 @@ const UPLOAD_RESULTS_SHEET_IMAGE_CALLABLE_TIMEOUT_MS = 120_000;
  * Drives a live scan run: uploads the sheet (when not already stored), calls the
  * parse callable, streams staged progress messages, and formats callable errors.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class ScanExecutionService {
   private readonly app = inject(FirebaseApp);
 
