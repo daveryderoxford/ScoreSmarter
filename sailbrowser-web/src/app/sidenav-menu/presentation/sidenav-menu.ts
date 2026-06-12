@@ -6,7 +6,6 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { AuthService } from 'app/auth';
-import { ClubLogoService } from 'app/club-admin/services/club-logo.service';
 import { ClubStore } from 'app/club-tenant';
 import { ClubLogo } from 'app/shared/components/club-logo/club-logo';
 import { SidenavService } from 'app/shared/services/sidenav.service';
@@ -112,7 +111,6 @@ export class SidenavMenu {
   };
   private readonly userData = inject(UserDataService);
   protected readonly clubStore = inject(ClubStore);
-  protected readonly clubLogoService = inject(ClubLogoService);
 
   protected readonly club = computed(() => this.clubStore.club());
 

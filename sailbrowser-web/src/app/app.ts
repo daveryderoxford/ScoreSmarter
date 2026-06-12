@@ -6,8 +6,8 @@ import { SidenavService } from './shared/services/sidenav.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs/operators';
 import { MatProgressBarModule } from "@angular/material/progress-bar";
-import { SidenavMenu } from './sidenav-menu/presentation/sidenav-menu';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
+import { SidenavMenu } from './sidenav-menu/presentation/sidenav-menu';
 
 @Component({
   selector: 'app-root',
@@ -17,7 +17,7 @@ import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App implements OnInit {
-  sidebarService = inject(SidenavService);
+  protected readonly sidenavService = inject(SidenavService);
   private appUpdate = inject(AppUpdateService);
   private lazyInject = inject(LazyInject);
   private router = inject(Router);
@@ -34,7 +34,7 @@ export class App implements OnInit {
 
   ngOnInit() {
     console.log('App component: Initializing...');
-    this.sidebarService.setSidenav(this.sidenav());
+    this.sidenavService.setSidenav(this.sidenav());
     this.appUpdate.initialize();
     this.cookieConsent();
   }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -42,12 +42,6 @@ export class ClubSettingsComponent {
   readonly pendingLogoPreviewUrl = signal<string | null>(null);
   readonly hasPendingLogo = signal(false);
   private pendingLogoFile: File | null = null;
-
-  readonly logoDisplayUrl = computed(() =>
-    this.hasPendingLogo()
-      ? this.pendingLogoPreviewUrl()
-      : this.clubLogoService.logoDownloadUrl(),
-  );
 
   readonly form = this.fb.group({
     name: ['', Validators.required],

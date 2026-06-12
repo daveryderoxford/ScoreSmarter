@@ -9,11 +9,18 @@
   <mat-card class="config-card">
     <mat-card-content>
       <div class="logo-row">
-        <app-club-logo
-          [src]="logoDisplayUrl()"
-          size="lg"
-          [showPlaceholder]="false"
-          alt="Club logo preview" />
+        @if (pendingLogoPreviewUrl(); as previewUrl) {
+          <img
+            class="logo-preview"
+            [src]="previewUrl"
+            alt="Club logo preview"
+            referrerpolicy="no-referrer" />
+        } @else {
+          <app-club-logo
+            size="lg"
+            [showPlaceholder]="false"
+            alt="Club logo preview" />
+        }
         <div class="logo-upload">
           <label class="upload-label">
             <span>Upload logo image</span>
