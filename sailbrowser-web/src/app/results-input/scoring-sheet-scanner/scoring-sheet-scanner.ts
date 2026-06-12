@@ -1,7 +1,6 @@
 import { afterNextRender, Component, computed, effect, inject, Injector, signal, untracked, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
-import { CAPTURE_PROVIDERS } from '../capture/capture.providers';
 import { CaptureStep, CaptureStepViewModel } from '../capture/capture-step/capture-step';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
@@ -23,7 +22,6 @@ const REVIEW_STEP_INDEX = 3;
   templateUrl: './scoring-sheet-scanner.html',
   styleUrl: './scoring-sheet-scanner.scss',
   providers: [
-    ...CAPTURE_PROVIDERS,
     RaceSelectionStore,
     SheetCaptureStore,
     ScanRunStore,

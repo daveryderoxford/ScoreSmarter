@@ -21,7 +21,6 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { firstValueFrom, map } from 'rxjs';
 import { RaceTitlePipe } from '../../../shared/pipes/race-title-pipe';
 import { manualRaceTableSort, ManualResultsService } from '../../services/manual-results.service';
-import { CAPTURE_PROVIDERS } from '../../capture/capture.providers';
 import { ResultsSheetCaptureService } from '../../capture';
 import { HandicapInputPanel } from '../handicap/handicap-input-panel/handicap-input-panel';
 import { HandicapResultsTable } from '../handicap/handicap-results-table/handicap-results-table';
@@ -36,7 +35,6 @@ const SHEET_POPUP_FEATURES = 'popup,width=720,height=900';
   selector: 'app-manual-results-page',
   templateUrl: './manual-results-page.html',
   styleUrls: ['./manual-results-page.scss'],
-  providers: [...CAPTURE_PROVIDERS],
   imports: [
     Toolbar,
     MatButtonModule,

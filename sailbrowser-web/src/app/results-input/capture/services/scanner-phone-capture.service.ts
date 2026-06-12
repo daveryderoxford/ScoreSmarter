@@ -14,7 +14,7 @@ import { CaptureSession, CaptureSessionDoc, UploadFromSessionInput } from '../ca
  * document reference is scoped to the current club via
  * {@link FirestoreTenantService}.
  */
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class ScannerPhoneCaptureService {
   private readonly app = inject(FirebaseApp);
   private readonly tenant = inject(FirestoreTenantService);
