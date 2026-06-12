@@ -13,7 +13,7 @@ interface ScanResultDoc {
  * references come from {@link FirestoreTenantService}, which scopes them to the
  * current club tenant.
  */
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class ScanPersistenceService {
   private readonly tenant = inject(FirestoreTenantService);
 
