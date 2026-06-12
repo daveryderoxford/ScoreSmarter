@@ -1,15 +1,10 @@
-import {
-  DestroyRef,
-  EnvironmentInjector,
-  Injectable,
-  afterNextRender,
-  inject,
-  isDevMode,
-} from '@angular/core';
+import { DestroyRef, Injectable, inject, isDevMode, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
+import { SwUpdate, VersionEvent } from '@angular/service-worker';
+import { environment } from '../../../environments/environment';
 import { concat, filter, from, fromEvent, interval } from 'rxjs';
+
+const LOG_PREFIX = '[ScoreSmarter]';
 
 /** How often to poll for a new deployment once the service worker is active. */
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
@@ -19,32 +14,31 @@ const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 })
 export class AppUpdateService {
   private readonly swUpdate = inject(SwUpdate);
-  private readonly snackbar = inject(MatSnackBar);
-  private readonly envInjector = inject(EnvironmentInjector);
   private readonly destroyRef = inject(DestroyRef);
 
-  private updatePromptOpen = false;
+  private readonly _updateMessage = signal<string | null>(null);
+
+  /** Non-null when the UI should show an update snackbar. Read from App via effect. */
+  readonly updateMessage = this._updateMessage.asReadonly();
 
   initialize(): void {
+    void this.logRuntimeState();
+
     if (isDevMode() || !this.swUpdate.isEnabled) {
+      console.info(`${LOG_PREFIX} Update checks inactive (dev mode or service worker disabled).`);
       return;
     }
 
     this.swUpdate.versionUpdates
-      .pipe(
-        filter((evt): evt is VersionReadyEvent => evt.type === 'VERSION_READY'),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => this.promptReload());
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(evt => this.logVersionEvent(evt));
 
-    this.swUpdate.unrecoverable.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      this.promptReload('Something went wrong. Reload to continue.');
+    this.swUpdate.unrecoverable.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(err => {
+      console.error(`${LOG_PREFIX} Service worker unrecoverable:`, err);
+      this.requestReload('Something went wrong. Reload to continue.');
     });
 
     if ('serviceWorker' in navigator) {
-      // Zoneless: avoid ApplicationRef.isStable — it becomes true immediately and
-      // RxJS interval before stability blocks SW registration. Wait for the SW to
-      // be active, then poll on a fixed interval.
       concat(
         from(navigator.serviceWorker.ready.then(() => undefined)),
         interval(UPDATE_CHECK_INTERVAL_MS),
@@ -61,42 +55,88 @@ export class AppUpdateService {
       .subscribe(() => void this.checkForUpdate());
   }
 
+  requestReload(message = 'A new version is available.'): void {
+    this._updateMessage.set(message);
+  }
+
+  dismissPrompt(): void {
+    this._updateMessage.set(null);
+  }
+
+  async activateAndReload(): Promise<void> {
+    try {
+      await this.swUpdate.activateUpdate();
+    } finally {
+      location.reload();
+    }
+  }
+
+  private async logRuntimeState(): Promise<void> {
+    const controller = navigator.serviceWorker?.controller;
+    console.info(`${LOG_PREFIX} Runtime`, {
+      appVersion: environment.appVersion,
+      production: environment.production,
+      devMode: isDevMode(),
+      swUpdateEnabled: this.swUpdate.isEnabled,
+      swControllingPage: !!controller,
+      swScriptUrl: controller?.scriptURL ?? null,
+    });
+
+    if (!('serviceWorker' in navigator)) {
+      console.info(`${LOG_PREFIX} Service workers not supported in this browser.`);
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      console.info(`${LOG_PREFIX} Service worker ready`, {
+        scope: registration.scope,
+        activeScript: registration.active?.scriptURL ?? null,
+        waitingScript: registration.waiting?.scriptURL ?? null,
+        installingScript: registration.installing?.scriptURL ?? null,
+      });
+    } catch (err) {
+      console.warn(`${LOG_PREFIX} Service worker not ready:`, err);
+    }
+  }
+
+  private logVersionEvent(evt: VersionEvent): void {
+    const base = { type: evt.type, appVersion: environment.appVersion };
+
+    switch (evt.type) {
+      case 'VERSION_READY':
+        console.info(`${LOG_PREFIX} Update event`, {
+          ...base,
+          currentHash: evt.currentVersion.hash,
+          latestHash: evt.latestVersion.hash,
+        });
+        this.requestReload();
+        break;
+      case 'VERSION_DETECTED':
+      case 'NO_NEW_VERSION_DETECTED':
+      case 'VERSION_INSTALLATION_FAILED':
+        console.info(`${LOG_PREFIX} Update event`, {
+          ...base,
+          hash: evt.version.hash,
+          ...(evt.type === 'VERSION_INSTALLATION_FAILED' ? { error: evt.error } : {}),
+        });
+        break;
+    }
+  }
+
   private async checkForUpdate(): Promise<void> {
     if (!('serviceWorker' in navigator)) {
       return;
     }
     try {
       await navigator.serviceWorker.ready;
-      await this.swUpdate.checkForUpdate();
-    } catch {
-      /* SW not controlling the page yet */
+      const found = await this.swUpdate.checkForUpdate();
+      console.info(`${LOG_PREFIX} checkForUpdate`, {
+        appVersion: environment.appVersion,
+        updateFound: found,
+      });
+    } catch (err) {
+      console.warn(`${LOG_PREFIX} checkForUpdate failed:`, err);
     }
-  }
-
-  private promptReload(message = 'A new version is available.'): void {
-    if (this.updatePromptOpen) {
-      return;
-    }
-
-    this.updatePromptOpen = true;
-
-    // Zoneless: VERSION_READY arrives outside Angular — schedule UI on the next render.
-    afterNextRender(
-      () => {
-        const ref = this.snackbar.open(message, 'Reload', { politeness: 'assertive' });
-
-        ref.onAction().subscribe(() => {
-          void this.swUpdate.activateUpdate().then(
-            () => location.reload(),
-            () => location.reload(),
-          );
-        });
-
-        ref.afterDismissed().subscribe(() => {
-          this.updatePromptOpen = false;
-        });
-      },
-      { injector: this.envInjector },
-    );
   }
 }

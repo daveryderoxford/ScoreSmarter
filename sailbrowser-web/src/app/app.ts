@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, OnInit, viewChild } from '@angular/core';
 import { RouteConfigLoadEnd, RouteConfigLoadStart, Router, RouterOutlet } from "@angular/router";
 import { AppUpdateService } from './shared/services/app-update.service';
 import { LazyInject } from './shared/services/lazy-injector';
@@ -6,6 +6,7 @@ import { SidenavService } from './shared/services/sidenav.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs/operators';
 import { MatProgressBarModule } from "@angular/material/progress-bar";
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
 import { SidenavMenu } from './sidenav-menu/presentation/sidenav-menu';
 
@@ -18,11 +19,14 @@ import { SidenavMenu } from './sidenav-menu/presentation/sidenav-menu';
 })
 export class App implements OnInit {
   protected readonly sidenavService = inject(SidenavService);
-  private appUpdate = inject(AppUpdateService);
-  private lazyInject = inject(LazyInject);
-  private router = inject(Router);
+  private readonly appUpdate = inject(AppUpdateService);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly lazyInject = inject(LazyInject);
+  private readonly router = inject(Router);
 
   sidenav = viewChild.required(MatSidenav);
+
+  private updateSnackbarOpen = false;
 
   protected isLazyLoading = toSignal(
     this.router.events.pipe(
@@ -32,8 +36,28 @@ export class App implements OnInit {
     { initialValue: false }
   );
 
+  constructor() {
+    // Zoneless: SW events set a signal; this effect runs inside the component graph so
+    // MatSnackBar renders reliably (afterNextRender from a service often never fires).
+    effect(() => {
+      const message = this.appUpdate.updateMessage();
+      if (!message || this.updateSnackbarOpen) {
+        return;
+      }
+
+      this.updateSnackbarOpen = true;
+      const ref = this.snackBar.open(message, 'Reload', { politeness: 'assertive' });
+
+      ref.onAction().subscribe(() => void this.appUpdate.activateAndReload());
+
+      ref.afterDismissed().subscribe(() => {
+        this.updateSnackbarOpen = false;
+        this.appUpdate.dismissPrompt();
+      });
+    });
+  }
+
   ngOnInit() {
-    console.log('App component: Initializing...');
     this.sidenavService.setSidenav(this.sidenav());
     this.appUpdate.initialize();
     this.cookieConsent();

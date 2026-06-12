@@ -88,7 +88,9 @@ export const appConfig: ApplicationConfig = {
       }
     }, provideServiceWorker('ngsw-worker.js', {
             enabled: !isDevMode(),
-            registrationStrategy: 'registerWhenStable:30000'
+            // Zoneless apps reach stability quickly; register immediately so update
+            // checks are not blocked behind a 30s stability wait.
+            registrationStrategy: 'registerImmediately',
           }),
   ],
 };
