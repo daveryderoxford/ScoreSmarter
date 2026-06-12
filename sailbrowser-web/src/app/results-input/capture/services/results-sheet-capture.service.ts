@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
 import { MatDialog } from '@angular/material/dialog';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
-import { getDownloadURL, getStorage, ref as storageRef } from 'firebase/storage';
+import { resolveStorageDownloadUrl } from 'app/shared/firebase/storage-download';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
@@ -35,7 +35,7 @@ export class ResultsSheetCaptureService {
   async resolveDownloadUrl(path: string | null | undefined): Promise<string | null> {
     const trimmed = path?.trim();
     if (!trimmed) return null;
-    return await getDownloadURL(storageRef(getStorage(this.app), trimmed));
+    return await resolveStorageDownloadUrl(this.app, trimmed);
   }
 
   async uploadInlineImage(

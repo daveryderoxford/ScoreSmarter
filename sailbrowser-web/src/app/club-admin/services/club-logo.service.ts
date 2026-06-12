@@ -2,8 +2,8 @@ import { Injectable, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FirebaseApp } from '@angular/fire/app';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
-import { getDownloadURL, getStorage, ref as storageRef } from 'firebase/storage';
 import { ClubStore } from 'app/club-tenant';
+import { resolveStorageDownloadUrl } from 'app/shared/firebase/storage-download';
 import { from, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
@@ -27,7 +27,7 @@ export class ClubLogoService {
       if (!trimmed) {
         return of(null);
       }
-      return from(getDownloadURL(storageRef(getStorage(this.app), trimmed)));
+      return from(resolveStorageDownloadUrl(this.app, trimmed));
     },
     defaultValue: null,
   });

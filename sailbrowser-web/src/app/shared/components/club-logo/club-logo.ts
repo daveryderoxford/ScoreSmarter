@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { ClubLogoService } from 'app/club-admin/services/club-logo.service';
 
 @Component({
   selector: 'app-club-logo',
@@ -14,8 +15,11 @@ import { MatIconModule } from '@angular/material/icon';
   },
 })
 export class ClubLogo {
-  readonly src = input<string | null>(null);
+  private readonly clubLogoService = inject(ClubLogoService);
+
   readonly alt = input('Club logo');
   readonly size = input<'sm' | 'lg'>('sm');
   readonly showPlaceholder = input(true);
+
+  protected readonly logoUrl = this.clubLogoService.logoDownloadUrl;
 }

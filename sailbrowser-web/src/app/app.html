@@ -1,7 +1,9 @@
 <mat-sidenav-container class="clipped-container">
 
   <mat-sidenav #sidenav>
-    <app-sidenav-menu />
+    @defer (when sidenavService.menuRequested()) {
+      <app-sidenav-menu />
+    }
   </mat-sidenav>
 
 <mat-sidenav-content class="clipped-container">
