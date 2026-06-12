@@ -1,13 +1,15 @@
-.form-card form {
+.form-card {
    display: flex;
    flex-direction: column;
    gap: 1rem;
    padding-left: 25px;
    padding-right: 25px;
    padding-top: 15px;
+   min-width: min(500px, 100%);
+   max-width: 500px;
 }
 
-.form-card mat-form-field {
+.form-card {
    width: 100%;
 }
 

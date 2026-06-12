@@ -5,7 +5,7 @@ import type { ScanStrategy, ScannerTimeFormat } from '@shared/scanner-context';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { from, of } from 'rxjs';
 import { RaceSelectionStore } from '../select-race/race-selection.store';
-import { SheetCaptureStore } from '../capture-image/sheet-capture.store';
+import { SheetCaptureStore } from '../capture-step/sheet-capture.store';
 import { ScanPersistenceService } from '../shared/scan-persistence.service';
 import { ScanExecutionService } from './scan-execution.service';
 import { ScannerContext, ScanResponse } from '../scan-model';

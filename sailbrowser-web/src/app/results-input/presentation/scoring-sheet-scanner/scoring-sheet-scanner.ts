@@ -8,7 +8,7 @@ import { RaceStep } from './race-step/race-step';
 import { ReviewStep } from './review-step/review-step';
 import { SetupStep } from './setup-step/setup-step';
 import { RaceSelectionStore } from './select-race/race-selection.store';
-import { SheetCaptureStore } from './capture-image/sheet-capture.store';
+import { SheetCaptureStore } from './capture-step/sheet-capture.store';
 import { ScanRunStore } from './run-scan/scan-run.store';
 import { ScanReviewStore } from './review-save/scan-review.store';
 

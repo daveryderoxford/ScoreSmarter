@@ -6,7 +6,7 @@ import { from, of } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import { ResultsSheetCaptureService } from '../../../services/results-sheet-capture.service';
 import { CameraCaptureDialog } from '../camera-capture-dialog';
-import { CaptureStepMode } from '../capture-step/capture-step';
+import { CaptureStepMode } from './capture-step';
 import {
   PhoneCaptureQrDialog,
   PhoneCaptureQrDialogResult,
