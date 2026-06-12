@@ -5,9 +5,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
 import { AuthService } from 'app/auth/auth.service';
-import { RaceCompetitor } from '../../../model/race-competitor';
-import { ScannedResultRow } from '../scan-model';
-import { formatScanMetricsSummary } from '../scan-metrics-format';
+import { RaceCompetitor } from '../../model/race-competitor';
+import { ScannedResultRow } from '../model/scan-model';
+import { formatScanMetricsSummary } from '../model/scan-metrics-format';
 import { ScanRunStore } from '../run-scan/scan-run.store';
 import { ScanReviewStore } from '../review-save/scan-review.store';
 

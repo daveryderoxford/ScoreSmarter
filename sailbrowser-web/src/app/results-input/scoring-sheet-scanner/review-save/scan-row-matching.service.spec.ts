@@ -1,5 +1,5 @@
 import { boatClassesMatch, ScanRowMatchingService } from './scan-row-matching.service';
-import { ScannedResultRow } from '../scan-model';
+import { ScannedResultRow } from '../model/scan-model';
 import { Race } from 'app/race-calender/model/race';
 
 function row(partial: Partial<ScannedResultRow>): ScannedResultRow {

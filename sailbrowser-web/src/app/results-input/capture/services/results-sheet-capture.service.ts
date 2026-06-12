@@ -4,12 +4,12 @@ import { MatDialog } from '@angular/material/dialog';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
 import { getDownloadURL, getStorage, ref as storageRef } from 'firebase/storage';
 import { firstValueFrom } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../../environments/environment';
 import {
   ScoringSheetCaptureDialog,
   ScoringSheetCaptureDialogData,
   ScoringSheetCaptureDialogResult,
-} from '../presentation/scoring-sheet-capture-dialog/scoring-sheet-capture-dialog';
+} from '../scoring-sheet-capture-dialog/scoring-sheet-capture-dialog';
 
 const UPLOAD_RESULTS_SHEET_IMAGE_CALLABLE_TIMEOUT_MS = 120_000;
 

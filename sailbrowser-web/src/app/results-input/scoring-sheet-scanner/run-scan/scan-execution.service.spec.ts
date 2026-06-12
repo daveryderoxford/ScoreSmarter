@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { FirebaseApp } from '@angular/fire/app';
 import { ScanExecutionService } from './scan-execution.service';
-import { ScanRunState } from '../scan-model';
+import { ScanRunState } from '../model/scan-model';
 
 describe('ScanExecutionService', () => {
   let service: ScanExecutionService;

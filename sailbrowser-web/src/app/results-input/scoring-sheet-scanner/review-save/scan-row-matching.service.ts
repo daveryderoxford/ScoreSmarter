@@ -6,9 +6,9 @@ import { Race } from 'app/race-calender/model/race';
 import { RESULT_CODES, ResultCode } from 'app/scoring/model/result-code-scoring';
 import type { ScannerTimeFormat } from '@shared/scanner-context';
 import { normaliseString } from 'app/shared/utils/string-utils';
-import { ResolvedRaceCompetitor } from '../../../model/resolved-race-competitor';
-import { ScannedResultRow } from '../scan-model';
-import { MatchedRowVm, UnmatchedRowVm } from '../review-step/review-step';
+import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
+import { ScannedResultRow } from '../model/scan-model';
+import { MatchedRowVm, UnmatchedRowVm } from './review-step';
 
 /** Boat-class matching: whitespace/case insensitive, treats Laser as ILCA. */
 function normaliseBoatClassForMatch(className: string | undefined | null): string {

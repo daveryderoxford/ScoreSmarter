@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { getDoc, setDoc } from '@angular/fire/firestore';
 import { FirestoreTenantService } from 'app/club-tenant';
-import { applyAutoAccept, ScanResponse } from '../scan-model';
+import { applyAutoAccept, ScanResponse } from '../model/scan-model';
 
 interface ScanResultDoc {
   scanResponse?: ScanResponse | null;

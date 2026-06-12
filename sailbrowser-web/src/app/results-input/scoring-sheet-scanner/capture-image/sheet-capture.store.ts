@@ -2,24 +2,24 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
-import { from, of } from 'rxjs';
-import { firstValueFrom } from 'rxjs';
-import { ResultsSheetCaptureService } from '../../../services/results-sheet-capture.service';
-import { CameraCaptureDialog } from '../camera-capture-dialog';
-import { CaptureStepMode } from './capture-step';
-import {
-  PhoneCaptureQrDialog,
-  PhoneCaptureQrDialogResult,
-} from '../phone-capture-qr-dialog/phone-capture-qr-dialog';
-import { RaceSelectionStore } from '../select-race/race-selection.store';
+import { CameraCaptureDialog } from '../../capture/camera-capture-dialog/camera-capture-dialog';
 import {
   AcquisitionEvent,
   CaptureImage,
   CapturePreview,
-  ScanRunRequest,
   capturePreviewUrl,
   isCaptureReady,
-} from '../scan-model';
+} from '../../capture/capture-image.model';
+import { CaptureStepMode } from '../../capture/capture-step/capture-step';
+import {
+  PhoneCaptureQrDialog,
+  PhoneCaptureQrDialogResult,
+} from '../../capture/phone-capture-qr-dialog/phone-capture-qr-dialog';
+import { ResultsSheetCaptureService } from '../../capture/services/results-sheet-capture.service';
+import { from, of } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
+import { ScanRunRequest } from '../model/scan-model';
+import { RaceSelectionStore } from '../select-race/race-selection.store';
 
 interface CameraCaptureResult {
   base64: string;

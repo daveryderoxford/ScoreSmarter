@@ -5,14 +5,14 @@ import { BoatsStore } from 'app/boats';
 import { normalizeSailNumber, sailNumbersEqual } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
 import { firstValueFrom } from 'rxjs';
-import { ManualResultsService } from '../../../services/manual-results.service';
-import { RaceCompetitorReader } from '../../../services/race-competitor-reader';
-import { RaceCompetitorStore } from '../../../services/race-competitor-store';
-import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from '../known-boat-entry-dialog';
+import { ManualResultsService } from '../../services/manual-results.service';
+import { RaceCompetitorReader } from '../../services/race-competitor-reader';
+import { RaceCompetitorStore } from '../../services/race-competitor-store';
+import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
 import {
   UnmatchedRowEntryDialog,
   type UnmatchedRowEntryDialogResult,
-} from '../unmatched-row-entry-dialog';
+} from './unmatched-row-entry-dialog';
 import { RaceSelectionStore } from '../select-race/race-selection.store';
 import { ScanRunStore } from '../run-scan/scan-run.store';
 import { ScanPersistenceService } from '../shared/scan-persistence.service';
@@ -21,8 +21,8 @@ import {
   AcceptanceChangedEvent,
   MatchedRowVm,
   UnmatchedRowVm,
-} from '../review-step/review-step';
-import { ScannedResultRow } from '../scan-model';
+} from './review-step';
+import { ScannedResultRow } from '../model/scan-model';
 
 /**
  * Area 4 — owns the matched/unmatched view models, manual-entry dialogs, and the

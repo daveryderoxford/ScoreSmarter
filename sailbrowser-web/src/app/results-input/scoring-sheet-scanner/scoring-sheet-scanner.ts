@@ -1,16 +1,16 @@
 import { afterNextRender, Component, computed, effect, inject, Injector, signal, untracked, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
+import { CaptureStep, CaptureStepViewModel } from '../capture/capture-step/capture-step';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
-import { CaptureStep, CaptureStepViewModel } from './capture-step/capture-step';
-import { RaceStep } from './race-step/race-step';
-import { ReviewStep } from './review-step/review-step';
-import { SetupStep } from './setup-step/setup-step';
-import { RaceSelectionStore } from './select-race/race-selection.store';
-import { SheetCaptureStore } from './capture-step/sheet-capture.store';
+import { SheetCaptureStore } from './capture-image/sheet-capture.store';
 import { ScanRunStore } from './run-scan/scan-run.store';
 import { ScanReviewStore } from './review-save/scan-review.store';
+import { ReviewStep } from './review-save/review-step';
+import { RaceSelectionStore } from './select-race/race-selection.store';
+import { RaceStep } from './select-race/race-step';
+import { SetupStep } from './run-scan/setup-step';
 
 const CAPTURE_STEP_INDEX = 1;
 const REVIEW_STEP_INDEX = 3;

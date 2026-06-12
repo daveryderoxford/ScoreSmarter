@@ -6,10 +6,10 @@ import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
 import { format } from 'date-fns';
 import { firstValueFrom } from 'rxjs';
-import { CurrentRaces } from '../../../services/current-races-store';
-import { ManualResultsService } from '../../../services/manual-results.service';
-import { RaceStartTimeDialog, RaceStartTimeResult } from '../../handicap/race-start-time-dialog';
-import { StartTimesSummary } from '../scan-model';
+import { CurrentRaces } from '../../services/current-races-store';
+import { ManualResultsService } from '../../services/manual-results.service';
+import { RaceStartTimeDialog, RaceStartTimeResult } from '../../presentation/handicap/race-start-time-dialog';
+import { StartTimesSummary } from '../model/scan-model';
 
 /**
  * Area 1 — owns the selected race and its start-time configuration (read + set).

@@ -9,19 +9,19 @@ import {
 import { MatDialog } from '@angular/material/dialog';
 import { from, of } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
-import { ResultsSheetCaptureService } from '../../services/results-sheet-capture.service';
-import { CameraCaptureDialog } from '../scoring-sheet-scanner/camera-capture-dialog';
-import { CaptureStep, CaptureStepMode, CaptureStepViewModel } from '../scoring-sheet-scanner/capture-step/capture-step';
-import {
-  PhoneCaptureQrDialog,
-  PhoneCaptureQrDialogData,
-  PhoneCaptureQrDialogResult,
-} from '../scoring-sheet-scanner/phone-capture-qr-dialog/phone-capture-qr-dialog';
+import { CameraCaptureDialog } from '../camera-capture-dialog/camera-capture-dialog';
+import { CaptureStep, CaptureStepMode, CaptureStepViewModel } from '../capture-step/capture-step';
 import {
   CaptureImage,
   capturePreviewUrl,
   isCaptureReady,
-} from '../scoring-sheet-scanner/scan-model';
+} from '../capture-image.model';
+import {
+  PhoneCaptureQrDialog,
+  PhoneCaptureQrDialogData,
+  PhoneCaptureQrDialogResult,
+} from '../phone-capture-qr-dialog/phone-capture-qr-dialog';
+import { ResultsSheetCaptureService } from '../services/results-sheet-capture.service';
 
 export interface ScoringSheetCaptureDialogData {
   clubId: string;
