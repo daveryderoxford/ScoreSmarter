@@ -3,7 +3,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -11,6 +10,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatStepperModule } from '@angular/material/stepper';
+import { MatTabsModule } from '@angular/material/tabs';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   Boat,
@@ -70,7 +70,7 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     HelmNameAutocomplete,
     MatButtonModule,
     MatAutocompleteModule,
-    MatButtonToggleModule,
+    MatTabsModule,
     MatCardModule,
     Toolbar,
     MatIcon,
@@ -140,9 +140,15 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     .actions {
       margin-top: 10px;
       margin-right: 10px;
+      margin-left: 10px;
       display: flex;
-      justify-content: end;
       gap: 12px;
+    }
+    .details-step-actions {
+      align-items: center;
+    }
+    .details-step-actions .step-next {
+      margin-left: auto;
     }
     .race-step-actions {
       justify-content: space-between;
@@ -154,17 +160,16 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
       margin-left: 0;
     }
 
-    .category-toggle {
-      margin-bottom: 24px;
-      margin-left: 10%;
-      margin-right: 10%;
-      width: 80%;
-      display: flex;
+    .category-header {
+      margin-bottom: 16px;
+    }
 
-      mat-button-toggle {
-        flex: 1;
-      }
+    .category-tabs {
+      width: 100%;
+    }
 
+    .category-tabs ::ng-deep .mat-mdc-tab-body-wrapper {
+      display: none;
     }
 
     .helm-crew-row {
@@ -191,6 +196,7 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
       line-height: 1.35;
       color: var(--mat-sys-on-surface-variant);
     }
+
     .handicap-line-title {
       font-weight: 500;
       margin-right: 2px;
@@ -207,6 +213,8 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
       display: flex;
       align-items: baseline;
       gap: 8px;
+      margin-top: 30px;
+            margin-bottom: 30px;
     }
     .search-field {
       flex-grow: 1;
@@ -233,6 +241,7 @@ export class EntryPage {
   private readonly dialogs = inject(DialogsService);
 
   boatCategory = signal<'club' | 'member'>('member');
+  readonly categoryTabIndex = computed(() => (this.boatCategory() === 'member' ? 0 : 1));
   selectedBoat = signal<Boat | null>(null);
   busy = signal(false);
 
@@ -491,6 +500,10 @@ export class EntryPage {
 
   onBoatSelected(event: MatAutocompleteSelectedEvent) {
     this.selectedBoat.set(event.option.value as Boat);
+  }
+
+  onCategoryTabChange(index: number): void {
+    this.boatCategory.set(index === 0 ? 'member' : 'club');
   }
 
   onEntryRaceIdsChange(ids: string[]): void {

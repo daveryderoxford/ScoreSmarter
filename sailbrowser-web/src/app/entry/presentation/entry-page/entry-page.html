@@ -4,11 +4,16 @@
     <form [formGroup]="competitorDetailsGroup">
       <ng-template matStepLabel>Details</ng-template>
 
-      <mat-button-toggle-group class="category-toggle" hideSingleSelectionIndicator [value]="boatCategory()"
-        (change)="boatCategory.set($event.value)" aria-label="Boat Category">
-        <mat-button-toggle value="member">Member's Boats</mat-button-toggle>
-        <mat-button-toggle value="club">Club Boats</mat-button-toggle>
-      </mat-button-toggle-group> 
+      <div class="category-header">
+        <mat-tab-group
+          class="category-tabs"
+          animationDuration="0ms"
+          [selectedIndex]="categoryTabIndex()"
+          (selectedIndexChange)="onCategoryTabChange($event)">
+          <mat-tab label="Member's Boats" />
+          <mat-tab label="Club Boats" />
+        </mat-tab-group>
+      </div>
 
       <div class="boat-selection">
         <mat-form-field subscriptSizing="dynamic" class="search-field">
@@ -40,9 +45,6 @@
           </button>
           }
         </mat-form-field>
-        @if (boatCategory() === 'member') {
-        <button matButton="tonal" type="button" (click)="createNewBoat()">New</button>
-        }
       </div>
 
       <mat-card appearance="outlined" class="boat-details-panel">
@@ -85,25 +87,22 @@
               </mat-form-field>
             }
             <mat-form-field>
-              <mat-label>Crew</mat-label>
+              <mat-label>Crew (optional)</mat-label>
               <input matInput formControlName="crew" placeholder="Optional" autocomplete="off" />
             </mat-form-field>
           </div>
         } @else {
           <div class="boat-details-instructions">
-            <b>Search for boat</b>
-            @if (boatCategory() === 'club') {
-              <p>Enter class of club boat and select bow number</p>
-            } @else {
-              <p>Enter class, helm or sail number to search</p>
-              <p>Press <b>New</b> to enter with a boat not currently saved</p>
-            }
+
           </div>
         }
       </mat-card>
 
-      <div class="actions">
-        <button matButton="filled" matStepperNext [disabled]="!canProceedToRaces()">Next</button>
+      <div class="actions details-step-actions">
+        @if (boatCategory() === 'member') {
+          <button matButton="text" type="button" (click)="createNewBoat()">New Members Boat</button>
+        }
+        <button matButton="filled" matStepperNext class="step-next" [disabled]="!canProceedToRaces()">Next</button>
       </div>
     </form>
   </mat-step>
