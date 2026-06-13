@@ -1,11 +1,5 @@
-# The Angular App Hosting adapter serves static files via Express by default,
-# which ignores superstatic.json. Override the run command so Cache-Control
-# headers apply to index.html, ngsw.json, and ngsw-worker.js.
+# Override the Angular adapter's default Express static server so superstatic.json
+# Cache-Control headers apply. Do not set outputFiles here — restricting include
+# to dist/ alone strips node_modules and prevents the container from starting.
 scripts:
-  runCommand: npm start
-
-outputFiles:
-  serverApp:
-    include:
-      - dist
-      - superstatic.json
+  runCommand: node node_modules/superstatic/lib/bin/server.js dist/sailbrowser-web/browser --port $PORT --host 0.0.0.0 -c superstatic.json

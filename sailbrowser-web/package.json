@@ -5,7 +5,7 @@
     "dev": "ng serve --port 3000",
     "serve": "ng serve",
     "build": "ng build",
-    "start": "superstatic dist/sailbrowser-web/browser --port ${PORT:-8080} --host 0.0.0.0 -c superstatic.json",
+    "start": "node node_modules/superstatic/lib/bin/server.js dist/sailbrowser-web/browser --port ${PORT:-8080} --host 0.0.0.0 -c superstatic.json",
     "stats": "ng build --stats-json --named-chunks && npx @angular-experts/hawkeye dist/sailbrowser/stats.json",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
