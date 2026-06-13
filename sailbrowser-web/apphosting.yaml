@@ -2,4 +2,4 @@
 # Cache-Control headers apply. Do not set outputFiles here — restricting include
 # to dist/ alone strips node_modules and prevents the container from starting.
 scripts:
-  runCommand: node node_modules/superstatic/lib/bin/server.js dist/sailbrowser-web/browser --port $PORT --host 0.0.0.0 -c superstatic.json
+  runCommand: node serve.cjs
