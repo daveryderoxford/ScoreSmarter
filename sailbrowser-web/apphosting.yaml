@@ -1,0 +1,11 @@
+# The Angular App Hosting adapter serves static files via Express by default,
+# which ignores superstatic.json. Override the run command so Cache-Control
+# headers apply to index.html, ngsw.json, and ngsw-worker.js.
+scripts:
+  runCommand: npm start
+
+outputFiles:
+  serverApp:
+    include:
+      - dist
+      - superstatic.json
