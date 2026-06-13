@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "ng serve --port 3000",
     "serve": "ng serve",
-    "build": "ng build",
+    "build": "ng build && node node_modules/@angular/service-worker/ngsw-config.js dist/sailbrowser-web/browser ngsw-config.json /",
     "start": "node serve.cjs",
     "stats": "ng build --stats-json --named-chunks && npx @angular-experts/hawkeye dist/sailbrowser/stats.json",
     "watch": "ng build --watch --configuration development",

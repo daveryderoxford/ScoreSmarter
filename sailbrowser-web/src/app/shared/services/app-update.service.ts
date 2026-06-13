@@ -141,10 +141,11 @@ export class AppUpdateService {
           hash: evt.version.hash,
           error: evt.error,
         });
+        console.error(`${LOG_PREFIX} Hash mismatch detail:`, evt.error);
         console.error(
-          `${LOG_PREFIX} A deployed file did not match ngsw.json (CDN cache, partial deploy, or ` +
-            'post-build file changes). Expand the error above for the file URL. ' +
-            'Fix hosting cache headers for index.html, ngsw.json, and ngsw-worker.js.',
+          `${LOG_PREFIX} A file listed in ngsw.json did not match the server (stale CDN/browser cache, ` +
+            'partial deploy, or SPA rewrite returning index.html for a missing .js). ' +
+            'In Network, filter "ngsw-cache-bust" and check for text/html responses on .js URLs.',
         );
         break;
     }
