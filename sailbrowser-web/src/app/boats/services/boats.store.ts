@@ -114,7 +114,7 @@ export function uniqueHelmNamesFromBoats(boats: readonly Boat[]): string[] {
   const seen = new Set<string>();
   const names: string[] = [];
   for (const boat of boats) {
-    const trimmed = boat.helm.trim();
+    const trimmed = boat.helm?.trim();
     const key = normaliseString(trimmed);
     if (key !== '') {
       if (seen.has(key)) continue;

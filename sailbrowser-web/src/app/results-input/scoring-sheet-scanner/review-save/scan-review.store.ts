@@ -133,10 +133,6 @@ export class ScanReviewStore {
     const preSaveCompetitorsById = new Map(
       this.competitorStore.selectedCompetitors().map(c => [c.id, c] as const),
     );
-    if (!(await this.raceSelection.ensureStartTimesConfigured())) {
-      this._error.set(this.raceSelection.error());
-      return;
-    }
     const acceptedMatchedItems = this.matchedRows().filter(
       vm => vm.row.accepted && !!vm.row.matchedCompetitorId,
     );
@@ -169,7 +165,7 @@ export class ScanReviewStore {
       }
 
       const timeFormat = this.scanRun.contextForm.controls.timeFormat.value;
-      const defaultHour = this.scanRun.contextForm.controls.defaultHour.value;
+      const defaultHour = this.scanRun.defaultHourForParsing();
       for (const vm of acceptedMatchedItems) {
         const competitor = vm.competitor!;
         const finishTime = vm.row.time?.value
