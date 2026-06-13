@@ -44,14 +44,14 @@
     </div>
   </mat-step>
 
-  <mat-step [completed]="(scanRun.contextForm.valid && raceSelection.hasConfiguredStartTimes()) || !!scanRun.scanResult()">
+  <mat-step [completed]="scanRun.contextForm.valid || !!scanRun.scanResult()">
     <ng-template matStepLabel>Details</ng-template>
     <div class="step-container">
       <app-setup-step />
       <div class="step-actions">
         <button matButton matStepperPrevious>Previous</button>
         <button matButton="filled" type="button" matStepperNext
-          [disabled]="scanRun.contextForm.invalid || !raceSelection.hasConfiguredStartTimes()"
+          [disabled]="scanRun.contextForm.invalid"
           style="margin-left:auto;">Next</button>
       </div>
     </div>

@@ -78,20 +78,10 @@ export function applyAutoAccept(response: ScanResponse): ScanResponse {
   return { ...scanPayload, scannedResults, ...(metrics ? { metrics } : {}) };
 }
 
-/** Summary view of a race's configured start times (Area 1: select race). */
-export interface StartTimesSummary {
-  title: string;
-  configured: boolean;
-  lines: string[];
-}
-
 /** Typed reactive form for the scanner-context setup step (Area 3: run scan). */
 export interface ScannerContextForm {
   listOrder: FormControl<string>;
   timeFormat: FormControl<ScannerTimeFormat>;
-  lapsPresentOnSheet: FormControl<boolean>;
-  lapFormat: FormControl<string>;
-  defaultHour: FormControl<number>;
   defaultLaps: FormControl<number>;
   scanStrategy: FormControl<ScanStrategy>;
 }

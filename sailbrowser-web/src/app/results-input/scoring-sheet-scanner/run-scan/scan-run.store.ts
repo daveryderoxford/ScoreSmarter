@@ -29,10 +29,7 @@ export class ScanRunStore {
   readonly contextForm = this.fb.nonNullable.group({
     listOrder: ['chronological', Validators.required],
     timeFormat: this.fb.nonNullable.control<ScannerTimeFormat>('clock_hms', Validators.required),
-    lapsPresentOnSheet: this.fb.nonNullable.control(true, Validators.required),
-    lapFormat: ['numbers', Validators.required],
-    defaultHour: [10, [Validators.min(0), Validators.max(23)]],
-    defaultLaps: [1, [Validators.min(1), Validators.max(100)]],
+    defaultLaps: [1, [Validators.min(1), Validators.max(20)]],
     scanStrategy: this.fb.nonNullable.control<ScanStrategy>('FullAIScan', Validators.required),
   });
 
@@ -148,20 +145,28 @@ export class ScanRunStore {
     this._error.set(null);
   }
 
+  /** Hour assumed for clock times recorded without hours (from race scheduled start). */
+  defaultHourForParsing(): number {
+    const race = this.raceSelection.selectedRace();
+    if (!race) return 10;
+    return new Date(race.scheduledStart).getHours();
+  }
+
   private buildScannerContext(): ScannerContext {
-    const v = this.contextForm.getRawValue();
+    const formData = this.contextForm.getRawValue();
+    const isMultilap = this.raceSelection.selectedRace()?.isAverageLap ?? false;
     return {
       targetRaces: [] as string[],
-      lapFormat: v.lapFormat as 'numbers' | 'ticks',
-      defaultHour: v.defaultHour,
-      defaultLaps: v.defaultLaps,
-      hasHours: v.timeFormat !== 'stopwatch_ms_elapsed',
-      listOrder: v.listOrder as 'chronological' | 'firstLap' | 'unsorted',
+      lapFormat: 'numbers',
+      defaultHour: this.defaultHourForParsing(),
+      defaultLaps: formData.defaultLaps,
+      hasHours: formData.timeFormat !== 'stopwatch_ms_elapsed',
+      listOrder: formData.listOrder as 'chronological' | 'unsorted',
       classAliases: {} as Record<string, string>,
       roster: [] as { id: string; class: string; sailNumber: string; name?: string }[],
-      lapsPresentOnSheet: v.lapsPresentOnSheet,
-      timeFormat: v.timeFormat,
-      scanStrategy: v.scanStrategy,
+      lapsPresentOnSheet: isMultilap,
+      timeFormat: formData.timeFormat,
+      scanStrategy: formData.scanStrategy,
     };
   }
 }

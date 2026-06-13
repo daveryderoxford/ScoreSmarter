@@ -6,49 +6,6 @@
    gap: 1rem;
 }
 
-.detail-panel {
-   border: 1px solid var(--mat-sys-outline-variant);
-   border-radius: 12px;
-   padding: 0.85rem;
-   background: var(--mat-sys-surface-container-lowest);
-}
-
-.detail-panel-header {
-   display: flex;
-   justify-content: space-between;
-   align-items: flex-start;
-   gap: 0.75rem;
-}
-
-.detail-panel-title {
-   font-weight: 600;
-}
-
-.detail-panel-summary {
-   text-align: right;
-   font-size: 0.9rem;
-   color: var(--mat-sys-on-surface);
-   display: grid;
-   gap: 0.2rem;
-
-   &.missing {
-      color: var(--mat-sys-error);
-   }
-}
-
-.detail-panel-time {
-   font-weight: 500;
-}
-
-.detail-panel-required {
-   font-size: 0.8rem;
-   font-weight: 600;
-}
-
-.detail-panel-actions {
-   margin-top: 0.75rem;
-}
-
 .form-card form {
    display: flex;
    flex-direction: column;
@@ -62,73 +19,26 @@
    width: 100%;
 }
 
-.race-summary {
-   border: 1px solid var(--mat-sys-outline-variant);
-   border-bottom: 2px solid var(--mat-sys-outline);
-   border-radius: 12px;
-   padding: 1rem;
-   margin: 0.25rem 0 0.5rem;
-   background: var(--mat-sys-surface-container-lowest);
-}
-
-.toggle-group-container {
-   margin-top: 0px;
-   margin-bottom: 0.5rem;
+.option-group {
    display: flex;
    flex-direction: column;
    align-items: flex-start;
-
-   .toggle-label {
-      display: block;
-      font-size: 12px;
-      color: var(--mat-sys-on-surface-variant);
-      margin-bottom: 6px;
-   }
-
-   .time-format-toggle-group {
-      width: auto;
-      display: inline-flex;
-   }
-
-   .time-format-toggle-group :global(.mat-button-toggle-button) {
-      padding-inline: 0.25rem;
-   }
-
-   .time-format-toggle-group :global(.mat-button-toggle-label-content) {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.25rem;
-      white-space: nowrap;
-      font-size: 0.8rem;
-      line-height: 1.2;
-   }
-
-   .time-format-toggle-group mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-      line-height: 20px;
-      vertical-align: middle;
-   }
-
-   .time-format-text {
-      letter-spacing: 0.01em;
-   }
+   gap: 0.35rem;
 }
 
-.margin-bottom {
-   margin-bottom: 1.5rem;
+.option-group-label {
+   font-size: 12px;
+   color: var(--mat-sys-on-surface-variant);
+   margin-bottom: 2px;
 }
 
-.laps-row {
-   display: grid;
-   grid-template-columns: 1fr 1fr;
-   gap: 0.75rem;
+.radio-group {
+   display: flex;
+   flex-direction: column;
+   align-items: flex-start;
+   gap: 0.25rem;
 }
 
-@media (max-width: 680px) {
-   .laps-row {
-      grid-template-columns: 1fr;
-   }
+.hidden-control {
+   display: none;
 }
