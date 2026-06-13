@@ -19,22 +19,24 @@
         </mat-radio-group>
       </div>
 
-      <mat-form-field [class.hidden-control]="!isMultilapRace()">
-        <mat-label>Default laps (if not specified)</mat-label>
-        <input matInput type="number" formControlName="defaultLaps" min="1">
-        <mat-error>Must be between 1 and 20</mat-error>
-      </mat-form-field>
+      <div [hidden]="!isMultilapRace()">
+        <mat-form-field>
+          <mat-label>Default laps (if not specified)</mat-label>
+          <input matInput type="number" formControlName="defaultLaps" min="1">
+          <mat-error>Must be between 1 and 20</mat-error>
+        </mat-form-field>
+      </div>
 
-      <mat-form-field
-        subscriptSizing="dynamic"
-        [class.hidden-control]="!auth.isSysAdmin()">
-        <mat-label>Scan strategy</mat-label>
-        <mat-select formControlName="scanStrategy">
-          <mat-option value="FullAIScan-Fast">Full AI scan (fast)</mat-option>
-          <mat-option value="FullAIScan">Full AI scan (Pro, legacy)</mat-option>
-        </mat-select>
-        <mat-hint>Compare strategies on the same sheet by re-scanning with the other option.</mat-hint>
-      </mat-form-field>
+      <div [hidden]="!auth.isSysAdmin()">
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>Scan strategy</mat-label>
+          <mat-select formControlName="scanStrategy">
+            <mat-option value="FullAIScan-Fast">Full AI scan (fast)</mat-option>
+            <mat-option value="FullAIScan">Full AI scan (Pro, legacy)</mat-option>
+          </mat-select>
+          <mat-hint>Compare strategies on the same sheet by re-scanning with the other option.</mat-hint>
+        </mat-form-field>
+      </div>
     </form>
   </mat-card>
 </div>
