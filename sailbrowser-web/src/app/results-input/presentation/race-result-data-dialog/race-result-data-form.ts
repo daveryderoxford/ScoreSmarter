@@ -2,11 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   input,
   OnInit,
   output,
 } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
   FormBuilder,
   FormControl,
@@ -16,6 +18,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { format } from 'date-fns';
 import { Race } from 'app/race-calender/model/race';
 import { RaceResultDraft } from 'app/results-input/model/race-result-draft';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
@@ -24,6 +27,12 @@ import { RaceResultDataCommand } from '../../services/race-competitor-edit.servi
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { ResultCodeSelect } from '../result-code-select';
 import { RaceTimeInput } from '../handicap/race-time-input';
+import {
+  formatElapsedOffsetInput,
+  toElapsedOffsetMinutes,
+  toStartDateFromElapsedOffset,
+} from '../handicap/race-start-time-dialog';
+import { startWith, map } from 'rxjs';
 
 @Component({
   selector: 'app-race-result-data-form',
@@ -49,11 +58,12 @@ export class RaceResultDataForm implements OnInit {
   readonly cancelled = output<void>();
 
   private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly isHandicapRace = computed(() => this.race().type === 'Handicap');
 
   readonly form = this.fb.group({
-    startTime: new FormControl<Date | null>(null),
+    startTimeInput: new FormControl<string | null>(''),
     manualFinishTime: new FormControl<Date | null>(null),
     manualLaps: new FormControl<number>(1, { nonNullable: true }),
     resultCode: new FormControl<ResultCode>('OK', { nonNullable: true }),
@@ -61,26 +71,37 @@ export class RaceResultDataForm implements OnInit {
     crew: new FormControl('', { nonNullable: true }),
   });
 
-  readonly timeInputContext = computed(() => {
+  readonly timeInputMode = computed(() => this.race().timeInputMode || 'tod');
+
+  private readonly startTimeInputValue = toSignal(
+    this.form.controls.startTimeInput.valueChanges.pipe(
+      startWith(this.form.controls.startTimeInput.value),
+      map(v => (v == null ? '' : String(v))),
+    ),
+    { initialValue: '' },
+  );
+
+  /** Effective start for finish-time validation (override, competitor, or fleet). */
+  readonly finishTimeBase = computed(() => {
     const race = this.race();
-    const mode = race.timeInputMode || 'tod';
-    const baseTime =
-      this.form.controls.startTime.value ??
+    const parsed = this.parseStartTimeInput(this.startTimeInputValue());
+    const base =
+      parsed ??
       this.competitor().startTime ??
       race.actualStart ??
       new Date();
-    return { mode, baseTime: new Date(baseTime) };
+    return new Date(base);
   });
 
   ngOnInit(): void {
     const c = this.competitor();
     const d = this.draft();
-    const race = this.race();
 
     const crewDisplay = c.crewOverride !== undefined ? c.crewOverride : (c.entry.crew ?? '');
+    const startDate = d?.startTime !== undefined ? d.startTime : (c.startTime ?? null);
 
     this.form.patchValue({
-      startTime: d?.startTime !== undefined ? d.startTime : (c.startTime ?? null),
+      startTimeInput: this.formatStartTimeForInput(startDate),
       manualFinishTime:
         d?.finishTime !== undefined ? d.finishTime : (c.manualFinishTime ?? null),
       manualLaps: d?.laps ?? (c.manualLaps || 1),
@@ -90,9 +111,11 @@ export class RaceResultDataForm implements OnInit {
       crew: d?.crewOverride !== undefined ? d.crewOverride : crewDisplay,
     });
 
-    if (!this.isHandicapRace() && race.actualStart) {
-      this.form.controls.startTime.setValue(c.startTime ?? race.actualStart);
-    }
+    this.form.controls.startTimeInput.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.form.controls.manualFinishTime.updateValueAndValidity();
+      });
   }
 
   onSubmit(): void {
@@ -104,7 +127,7 @@ export class RaceResultDataForm implements OnInit {
       crewOverride: v.crew === '' ? '' : v.crew,
     };
     if (this.isHandicapRace()) {
-      cmd.startTime = v.startTime ?? undefined;
+      cmd.startTime = this.parseStartTimeInput(v.startTimeInput) ?? undefined;
       cmd.manualFinishTime = v.manualFinishTime;
       cmd.manualLaps = v.manualLaps;
     } else {
@@ -116,5 +139,27 @@ export class RaceResultDataForm implements OnInit {
 
   onCancel(): void {
     this.cancelled.emit();
+  }
+
+  private formatStartTimeForInput(date: Date | null | undefined): string {
+    if (!date) return '';
+    if (this.timeInputMode() === 'elapsed') {
+      return formatElapsedOffsetInput(
+        toElapsedOffsetMinutes(this.race().scheduledStart, date),
+      );
+    }
+    return format(new Date(date), 'HH:mm:ss');
+  }
+
+  private parseStartTimeInput(raw: string | null | undefined): Date | null {
+    const trimmed = String(raw ?? '').trim();
+    if (!trimmed) return null;
+    if (this.timeInputMode() === 'elapsed') {
+      const offsetMinutes = Number(trimmed);
+      if (!Number.isFinite(offsetMinutes)) return null;
+      return toStartDateFromElapsedOffset(this.race().scheduledStart, offsetMinutes);
+    }
+    const dateStr = new Date(this.race().scheduledStart).toDateString();
+    return new Date(`${dateStr} ${trimmed}`);
   }
 }

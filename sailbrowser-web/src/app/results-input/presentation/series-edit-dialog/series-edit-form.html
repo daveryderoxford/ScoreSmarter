@@ -3,7 +3,15 @@
 
   <mat-form-field class="field-full">
     <mat-label>Helm</mat-label>
-    <input matInput formControlName="helm" autocomplete="name" autocapitalize="words" />
+    <input
+      matInput
+      formControlName="helm"
+      autocomplete="off"
+      autocapitalize="words"
+      [matAutocomplete]="helmAutocomplete.panel()" />
+    <app-helm-name-autocomplete
+      #helmAutocomplete
+      [control]="form.controls.helm" />
     @if (form.controls.helm.hasError('required')) {
       <mat-error>Helm required</mat-error>
     }

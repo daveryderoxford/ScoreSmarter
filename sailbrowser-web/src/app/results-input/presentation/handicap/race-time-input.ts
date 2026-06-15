@@ -70,6 +70,8 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
   mode = input.required<'tod' | 'elapsed' | undefined>();
   baseTime = input.required<Date>(); // Reference time: Race Date (TOD) or Start Time (Elapsed)
   scheduledStart = input.required<Date>();
+  /** When false, skip "must be after baseTime" validation (e.g. editable start time). */
+  validateGreaterThanBase = input(true);
 
   inputPlaceholder = computed(() => this.mode() === 'elapsed' ? 'mm:ss' : 'hh:mm:ss');
   inputControl = new FormControl<string>('', { nonNullable: true });
@@ -152,6 +154,8 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
 
   // --- Validator implementation ---
   validate(control: AbstractControl): ValidationErrors | null {
+    if (!this.validateGreaterThanBase()) return null;
+
     const value = control.value as Date | null;
     const base = this.baseTime();
     if (!value || !base) return null;

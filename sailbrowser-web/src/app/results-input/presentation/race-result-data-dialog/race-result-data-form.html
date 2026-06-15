@@ -2,25 +2,34 @@
   <app-result-code-select formControlName="resultCode" />
 
   @if (isHandicapRace()) {
-    <mat-form-field class="field-full">
-      <mat-label>Start time</mat-label>
-      <app-race-time-input
-        formControlName="startTime"
-        [mode]="timeInputContext().mode"
-        [baseTime]="timeInputContext().baseTime"
-        [scheduledStart]="race().scheduledStart"
-      />
-      <mat-hint>Leave blank to use fleet start time</mat-hint>
-    </mat-form-field>
+    @if (timeInputMode() === 'tod') {
+      <mat-form-field class="field-full">
+        <mat-label>Start time</mat-label>
+        <input matInput type="time" step="1" formControlName="startTimeInput" />
+        <mat-hint>Leave blank to use fleet start time</mat-hint>
+      </mat-form-field>
+    } @else {
+      <mat-form-field class="field-full">
+        <mat-label>Stopwatch reading (minutes)</mat-label>
+        <input matInput type="number" step="any" formControlName="startTimeInput" />
+        <mat-hint>Leave blank to use fleet start time</mat-hint>
+      </mat-form-field>
+    }
 
     <mat-form-field class="field-full">
       <mat-label>Finish time</mat-label>
       <app-race-time-input
         formControlName="manualFinishTime"
-        [mode]="timeInputContext().mode"
-        [baseTime]="timeInputContext().baseTime"
+        [mode]="timeInputMode()"
+        [baseTime]="finishTimeBase()"
         [scheduledStart]="race().scheduledStart"
       />
+      @if (form.controls.manualFinishTime.hasError('timeGreaterThan')) {
+        <mat-error>Finish time must be after start time</mat-error>
+      }
+      @if (form.controls.manualFinishTime.hasError('positiveDuration')) {
+        <mat-error>Elapsed time must be positive</mat-error>
+      }
     </mat-form-field>
 
     <mat-form-field class="field-full">

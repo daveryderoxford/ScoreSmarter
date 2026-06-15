@@ -36,7 +36,7 @@ export function toElapsedOffsetMinutes(scheduledStart: Date | string | number, t
   return seconds / 60;
 }
 
-function formatElapsedOffsetInput(offsetMinutes: number): string {
+export function formatElapsedOffsetInput(offsetMinutes: number): string {
   if (Number.isInteger(offsetMinutes)) return String(offsetMinutes);
   return String(Number(offsetMinutes.toFixed(4)));
 }

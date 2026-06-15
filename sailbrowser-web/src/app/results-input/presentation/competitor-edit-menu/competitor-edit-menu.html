@@ -35,9 +35,10 @@
       <span class="menu-item-hint">Changes apply to all races in series</span>
     </span>
   </button>
-  <button matButton="tonal" type="button" class="delete-item" (click)="confirmDelete()">
-    <span class="menu-item-body">
-      <span class="menu-item-title">Delete Race Entry</span>
-    </span>
+  <div class="delete-container">
+  <button matButton="filled" type="button" class="delete-button" (click)="confirmDelete()">
+      Delete Race Entry
   </button>
+</div>
+
 </ng-template>

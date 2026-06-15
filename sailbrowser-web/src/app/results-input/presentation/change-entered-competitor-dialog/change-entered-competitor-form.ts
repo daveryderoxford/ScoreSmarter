@@ -18,8 +18,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ClubStore } from 'app/club-tenant';
 import { normalizeSailNumber, sailNumberValidator } from 'app/boats/model/sail-number';
+import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
 import { SailNumberInput } from 'app/boats/presentation/sail-number-input';
 import { seriesEntryMatchingStrategys } from 'app/entry/model/entry-grouping';
 import { Series } from 'app/race-calender/model/series';
@@ -35,7 +37,9 @@ import { SubmitButton } from 'app/shared/components/submit-button';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatAutocompleteModule,
     SailNumberInput,
+    HelmNameAutocomplete,
     SubmitButton,
   ],
   templateUrl: './change-entered-competitor-form.html',

@@ -17,7 +17,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ClubStore } from 'app/club-tenant';
+import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
 import { TagValuePicker } from 'app/club-tenant/presentation/tags/tag-value-picker';
 import { Series } from 'app/race-calender/model/series';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
@@ -42,9 +44,11 @@ type PersonalBandFormValue = 'unknown' | PersonalHandicapBand;
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatAutocompleteModule,
     SubmitButton,
     TagValuePicker,
     HandicapSchemeInputs,
+    HelmNameAutocomplete,
   ],
   templateUrl: './series-edit-form.html',
   styleUrls: ['../_competitor-edit-form.scss'],
