@@ -46,7 +46,9 @@
     }
     @case ('empty') {
       <div class="capture-zone">
-        @if (vm().isMobile) {
+        @if (hasBackCamera.isLoading()) {
+
+        } @else if (hasBackCamera.value()) {
           <button matFab extended type="button" (click)="mobileFileInput.click()">
             <mat-icon>camera_alt</mat-icon>
             Take Photo

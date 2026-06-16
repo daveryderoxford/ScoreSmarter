@@ -96,4 +96,3 @@ export const uploadResultsSheetImage = onCall({
     ...image,
   };
 });
-

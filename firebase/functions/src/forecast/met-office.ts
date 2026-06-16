@@ -1,5 +1,5 @@
 import { HttpsError } from 'firebase-functions/https';
-import { ForecastData } from './forcast.model.js';
+import { ForecastData } from './forecast.model.js';
 
 /** Fixed forecast window stored in cache. */
 export const FORECAST_HOURS = 24;

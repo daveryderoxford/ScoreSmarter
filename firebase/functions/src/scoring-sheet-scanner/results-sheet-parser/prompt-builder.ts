@@ -35,7 +35,7 @@ export function buildPrompt(ctx: ScannerContext, raceId: string): string {
   - A two-part value may be written as MM:SS when hour is omitted.
   - If only 2 fields are present:
   -- consider the hour field is missing 
-  -- Use hour value in adjacent rows to estimate it or use default value of ${ctx.defaultHour ?? "Unknown"}.  
+  -- Use hour value in adjacent rows to estimate it.  
   - Preserve clock semantics; do not reinterpret this mode as pure elapsed stopwatch mode.
   - Ensure minutes and seconds are 0-59; provide alternatives when ambiguous.`;
   if (timeFormat === "stopwatch_hms_elapsed") {
@@ -113,7 +113,10 @@ export function buildPrompt(ctx: ScannerContext, raceId: string): string {
 
 2. CLASS ALIASES:
   - Class Aliases: ${aliasesStr}
-  - If you see a shorthand class name (e.g., 'A9', 'LR'), check the aliases and output the mapped, correct value (e.g. 'ILCA 6' rather than 'Laser R').
+  - For the class column, check if a shorthand/alternate class name has been used ('A7' or 'Laser R') 
+  - If an aliased class name is found use the mapped value (eg 'Laser R' to 'ILCA 6') for:
+  -- boatClass output field 
+  -- when checking the entry list (rule 1).    
 
 3. STATUS CODES & CROSSED-OUT ROWS:
    - Check the time column for standard sailing status codes (DNS, RET, OCS, BFD, DNF, DSQ, etc.). 
