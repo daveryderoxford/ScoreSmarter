@@ -1,6 +1,4 @@
 <mat-card appearance="outlined" class="form-card capture-card">
-  <input #mobileFileInput type="file" accept="image/*" style="display:none;" (change)="fileChanged.emit($event)">
-
   @if (vm().storedImageError; as raceImageError) {
     <div class="race-image-error-banner" role="status">
       <mat-icon>warning</mat-icon>
@@ -49,10 +47,10 @@
         @if (hasBackCamera.isLoading()) {
 
         } @else if (hasBackCamera.value()) {
-          <button matFab extended type="button" (click)="mobileFileInput.click()">
-            <mat-icon>camera_alt</mat-icon>
-            Take Photo
-          </button>
+          <app-mobile-photo-picker
+            buttonLabel="Take Photo"
+            buttonStyle="fab"
+            (fileSelected)="onMobileFileSelected($event)" />
         } @else {
           <button matFab extended class="large-capture-btn" type="button" (click)="startPhoneCapture.emit()">
             <mat-icon>smartphone</mat-icon>
@@ -66,7 +64,7 @@
             <span>OR</span>
           </div>
           <div class="upload-zone">
-            <input type="file" accept="image/*" (change)="fileChanged.emit($event)">
+            <input type="file" accept="image/*" (change)="onFileInputChange($event)">
             <mat-icon>upload_file</mat-icon>
             <p><strong>Click to upload</strong> or drag photo here</p>
           </div>

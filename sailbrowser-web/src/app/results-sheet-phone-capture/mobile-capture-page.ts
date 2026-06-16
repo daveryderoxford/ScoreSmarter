@@ -5,24 +5,18 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
+import { MobilePhotoPicker } from 'app/results-input/capture/mobile-photo-picker';
 import { CaptureSessionUploadService } from './capture-session-upload.service';
 
 type CapturePhase = 'idle' | 'uploading' | 'success' | 'error';
 
 @Component({
   selector: 'app-mobile-capture-page',
-  imports: [MatButtonModule, MatCardModule, MatIconModule, MatProgressBarModule],
+  imports: [MatButtonModule, MatCardModule, MatIconModule, MatProgressBarModule, MobilePhotoPicker],
   template: `
     <div class="page">
       <mat-card appearance="outlined" class="card">
         <h2>ScoreSmarter Capture Results Sheet</h2>
-        <input
-          #fileInput
-          type="file"
-          accept="image/*"
-          style="display: none;"
-          (change)="onFileSelected($event, fileInput)"
-        />
 
         @if (phase() === 'success') {
           <p class="success-msg">
@@ -39,7 +33,7 @@ type CapturePhase = 'idle' | 'uploading' | 'success' | 'error';
             <mat-icon>refresh</mat-icon>
             Retry upload
           </button>
-          <button matButton type="button" class="full" (click)="chooseDifferentPhoto(fileInput)">
+          <button matButton type="button" class="full" (click)="chooseDifferentPhoto()">
             Choose different photo
           </button>
         } @else if (phase() === 'uploading') {
@@ -53,10 +47,10 @@ type CapturePhase = 'idle' | 'uploading' | 'success' | 'error';
             <p class="upload-label">Uploading results sheet</p>
           </div>
         } @else {
-          <button matButton="filled" class="full" type="button" (click)="fileInput.click()">
-            <mat-icon>photo_camera</mat-icon>
-            Capture photo
-          </button>
+          <app-mobile-photo-picker
+            buttonLabel="Capture photo"
+            buttonStyle="filled"
+            (fileSelected)="onFileSelected($event)" />
         }
       </mat-card>
     </div>
@@ -112,9 +106,7 @@ export class MobileCapturePage {
   readonly preview = signal<string | null>(null);
   readonly uploadError = signal<string | null>(null);
 
-  onFileSelected(event: Event, fileInput: HTMLInputElement): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
+  onFileSelected(file: File): void {
     this.uploadError.set(null);
     this.imageMimeType.set(file.type || 'image/jpeg');
     const reader = new FileReader();
@@ -135,8 +127,7 @@ export class MobileCapturePage {
     await this.runUpload();
   }
 
-  chooseDifferentPhoto(fileInput: HTMLInputElement): void {
-    fileInput.value = '';
+  chooseDifferentPhoto(): void {
     this.preview.set(null);
     this.imageBase64.set(null);
     this.uploadError.set(null);

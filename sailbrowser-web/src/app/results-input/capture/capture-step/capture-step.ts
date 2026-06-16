@@ -1,8 +1,9 @@
-import { Component, input, output, resource, signal } from '@angular/core';
+import { Component, input, output, resource } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { ImageViewerComponent } from 'app/shared/components/image-viewer';
+import { MobilePhotoPicker } from '../mobile-photo-picker';
 
 export type CaptureStepMode = 'stored' | 'newPreview' | 'empty';
 
@@ -17,14 +18,14 @@ export interface CaptureStepViewModel {
 
 @Component({
   selector: 'app-capture-step',
-  imports: [MatButtonModule, MatCardModule, MatIconModule, ImageViewerComponent],
+  imports: [MatButtonModule, MatCardModule, MatIconModule, ImageViewerComponent, MobilePhotoPicker],
   templateUrl: './capture-step.html',
   styleUrl: './capture-step.scss',
 })
 export class CaptureStep {
   vm = input.required<CaptureStepViewModel>();
 
-  fileChanged = output<Event>();
+  fileChanged = output<File>();
   openCamera = output<void>();
   captureNewInstead = output<void>();
   clearImage = output<void>();
@@ -33,6 +34,17 @@ export class CaptureStep {
   hasBackCamera = resource({
     loader: () => hasBackCamera()
   });
+
+  onMobileFileSelected(file: File): void {
+    this.fileChanged.emit(file);
+  }
+
+  onFileInputChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (file) this.fileChanged.emit(file);
+  }
 }
 
 /** Returns true if the device has a back camera */

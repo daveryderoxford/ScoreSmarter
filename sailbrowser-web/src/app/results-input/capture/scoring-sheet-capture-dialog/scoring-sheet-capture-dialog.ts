@@ -112,12 +112,7 @@ export class ScoringSheetCaptureDialog {
     return 'newPreview';
   }
 
-  protected onFileChange(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) {
-      this.clearImage();
-      return;
-    }
+  protected onFileChange(file: File): void {
     this.dismissedStoredRaceSheet.set(true);
     const reader = new FileReader();
     reader.onload = () => {

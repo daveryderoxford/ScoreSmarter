@@ -111,12 +111,7 @@ export class ScoringSheetScanner {
     this.scanRun.reset();
   }
 
-  onCaptureFile(event: Event): void {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) {
-      this.sheetCapture.clear();
-      return;
-    }
+  onCaptureFile(file: File): void {
     this.scanRun.reset();
     void this.sheetCapture.setFromFile(file);
   }
