@@ -1,8 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, inject, inputBinding, outputBinding } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  inputBinding,
+  outputBinding,
+  signal,
+} from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { Race } from 'app/race-calender';
@@ -15,6 +24,10 @@ import { CurrentRaces } from '../../results-input/services/current-races-store';
 import { RaceCompetitorMutator } from '../../results-input/services/race-competitor-mutator';
 import { RaceCompetitorReader } from '../../results-input/services/race-competitor-reader';
 import { DeleteEntryDialog, DeleteEntryRaceRow } from './delete-entry-dialog';
+import { MatCard } from "@angular/material/card";
+
+/** View filter only — does not change which competitors are loaded from Firestore. */
+type EntriesViewScope = 'today' | 'current';
 
 interface BoatSeriesSummary {
   seriesName: string;
@@ -30,6 +43,11 @@ interface BoatEntrySummary {
   competitors: ResolvedRaceCompetitor[];
 }
 
+interface RaceEntryCountRow {
+  race: Race;
+  count: number;
+}
+
 @Component({
   selector: 'app-entries-list-page',
   imports: [
@@ -39,67 +57,12 @@ interface BoatEntrySummary {
     MatButtonModule,
     MatIconModule,
     MatListModule,
+    MatMenuModule,
     CenteredText,
-  ],
-  template: `
-    <app-toolbar title="Entries"></app-toolbar>
-    <div class="content">
-      <a matFab extended class="entry-button" [routerLink]="['/entry', 'enter']">
-        Enter Races
-      </a>
-
-      @if (reader.loading()) {
-        <app-loading-centered />
-      } @else if (resolved().length === 0) {
-        <app-centered-text>No entries yet</app-centered-text>
-      } @else {
-        <mat-list class="dense-list">
-          @for (boat of boatEntries(); track boat.boatId) {
-            <mat-list-item>
-              <span matListItemTitle>
-                <b class="gap">{{ boat.helm }}</b>
-                <span class="gap">{{ boat.boatClass }} {{ boat.sailNumber }}</span>
-              </span>
-              <span matListItemLine>
-                @for (summary of boat.seriesSummaries; track summary.seriesName) {
-                  <span class="gap">{{ summary.seriesName }} {{ summary.raceCount }} race(s)</span>
-                }
-              </span>
-              <span matListItemMeta>
-                <button
-                  mat-icon-button
-                  type="button"
-                  aria-label="Delete entries"
-                  (click)="openDeleteDialog(boat)"
-                >
-                  <mat-icon class="warning">delete</mat-icon>
-                </button>
-              </span>
-            </mat-list-item>
-          }
-        </mat-list>
-      }
-    </div>
-  `,
-  styles: [`
-    @use "mixins" as mix;
-
-    @include mix.centered-column-page(".content", 400px);
-
-    .entry-button {
-      margin-top: 20px;
-      margin-bottom: 20px;
-      align-self: center;
-    }
-
-    .gap {
-      margin-right: 14px;
-    }
-
-    .warning {
-      color: var(--mat-sys-error);
-    }
-  `],
+    MatCard
+],
+  templateUrl: './entries-list.page.html',
+  styleUrl: './entries-list.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EntriesListPage {
@@ -109,16 +72,46 @@ export class EntriesListPage {
   private readonly dialog = inject(MatDialog);
   private readonly snackbar = inject(MatSnackBar);
 
-  resolved = this.reader.selectedResolvedCompetitors;
+  /** Default: today's races only. */
+  readonly viewScope = signal<EntriesViewScope>('today');
 
-  private readonly races = computed(() => this.currentRaces.selectedRaces());
+  readonly scopeLabel = computed(() =>
+    this.viewScope() === 'current' ? 'Recent' : "Today",
+  );
 
-  boatEntries = computed((): BoatEntrySummary[] => {
-    const competitors = this.resolved();
-    const races = this.races();
-    const racesById = new Map(races.map(r => [r.id, r]));
+  private readonly visibleRaces = computed(() =>
+    this.viewScope() === 'today'
+      ? this.currentRaces.todaysRaces()
+      : this.currentRaces.selectedRaces(),
+  );
 
-    const boats = new Map<string, { comp: ResolvedRaceCompetitor; series: Map<string, number>; competitors: ResolvedRaceCompetitor[] }>();
+  private readonly visibleRaceIds = computed(
+    () => new Set(this.visibleRaces().map(race => race.id)),
+  );
+
+  readonly filteredCompetitors = computed(() =>
+    this.reader.selectedResolvedCompetitors().filter(c => this.visibleRaceIds().has(c.raceId)),
+  );
+
+  readonly raceEntryRows = computed((): RaceEntryCountRow[] => {
+    const countsByRace = new Map<string, number>();
+    for (const comp of this.filteredCompetitors()) {
+      countsByRace.set(comp.raceId, (countsByRace.get(comp.raceId) ?? 0) + 1);
+    }
+    return this.visibleRaces().map(race => ({
+      race,
+      count: countsByRace.get(race.id) ?? 0,
+    }));
+  });
+
+  readonly boatEntries = computed((): BoatEntrySummary[] => {
+    const competitors = this.filteredCompetitors();
+    const racesById = new Map(this.visibleRaces().map(r => [r.id, r]));
+
+    const boats = new Map<
+      string,
+      { comp: ResolvedRaceCompetitor; series: Map<string, number>; competitors: ResolvedRaceCompetitor[] }
+    >();
 
     for (const comp of competitors) {
       const boatId = `${comp.boatClass}-${comp.sailNumber}`;
@@ -133,23 +126,34 @@ export class EntriesListPage {
       }
     }
 
-    return Array.from(boats.values()).map(({ comp, series, competitors: comps }) => ({
-      boatId: `${comp.boatClass}-${comp.sailNumber}`,
-      boatClass: comp.boatClass,
-      sailNumber: comp.sailNumber,
-      helm: comp.helm,
-      competitors: comps,
-      seriesSummaries: Array.from(series.entries())
-        .map(([seriesName, raceCount]) => ({ seriesName, raceCount }))
-        .sort((a, b) => a.seriesName.localeCompare(b.seriesName)),
-    })).sort((a, b) =>
-      a.boatClass.localeCompare(b.boatClass) ||
-      a.sailNumber.toString().localeCompare(b.sailNumber.toString()),
-    );
+    return Array.from(boats.values())
+      .map(({ comp, series, competitors: comps }) => ({
+        boatId: `${comp.boatClass}-${comp.sailNumber}`,
+        boatClass: comp.boatClass,
+        sailNumber: comp.sailNumber,
+        helm: comp.helm,
+        competitors: comps,
+        seriesSummaries: Array.from(series.entries())
+          .map(([seriesName, raceCount]) => ({ seriesName, raceCount }))
+          .sort((a, b) => a.seriesName.localeCompare(b.seriesName)),
+      }))
+      .sort(
+        (a, b) =>
+          a.boatClass.localeCompare(b.boatClass) ||
+          a.sailNumber.toString().localeCompare(b.sailNumber.toString()),
+      );
   });
 
+  setViewScope(scope: EntriesViewScope): void {
+    this.viewScope.set(scope);
+  }
+
+  formatRaceTitle(race: Race): string {
+    return formatRaceTitle(race);
+  }
+
   openDeleteDialog(boat: BoatEntrySummary): void {
-    const racesById = new Map(this.races().map((r: Race) => [r.id, r]));
+    const racesById = new Map(this.visibleRaces().map((r: Race) => [r.id, r]));
     const rows: DeleteEntryRaceRow[] = boat.competitors
       .map(comp => {
         const race = racesById.get(comp.raceId);
