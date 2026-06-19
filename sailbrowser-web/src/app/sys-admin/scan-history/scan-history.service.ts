@@ -9,7 +9,7 @@ import {
   query,
   startAfter,
 } from '@angular/fire/firestore';
-import { formatUsd } from 'app/results-input/scoring-sheet-scanner/model/scan-metrics-format';
+import { formatGbp } from 'app/results-input/scoring-sheet-scanner/model/scan-metrics-format';
 
 export interface ScanHistoryRecord {
   id: string;
@@ -84,7 +84,7 @@ export class ScanHistoryService {
   }
 
   formatCost(value: number | null): string {
-    return formatUsd(value);
+    return formatGbp(value);
   }
 
   private toRecord(id: string, data: Record<string, unknown>): ScanHistoryRecord {

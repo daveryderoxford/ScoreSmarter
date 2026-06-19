@@ -2,6 +2,9 @@
 lib/**/*.js
 lib/**/*.js.map
 
+# Ad-hoc / full test compile output (see also repo root .gitignore)
+lib-test*/
+
 # TypeScript v1 declaration files
 typings/
 

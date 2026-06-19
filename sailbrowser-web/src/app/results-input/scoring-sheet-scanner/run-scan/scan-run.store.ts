@@ -162,7 +162,6 @@ export class ScanRunStore {
       defaultLaps: formData.defaultLaps,
       hasHours: formData.timeFormat !== 'stopwatch_ms_elapsed',
       listOrder: formData.listOrder as 'chronological' | 'unsorted',
-      classAliases: {} as Record<string, string>,
       roster: [] as { id: string; class: string; sailNumber: string; name?: string }[],
       lapsPresentOnSheet: isMultilap,
       timeFormat: formData.timeFormat,

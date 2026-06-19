@@ -12,10 +12,15 @@ export function formatScanMetricsSummary(metrics: ScanExecutionMetrics): string 
   }
 
   if (metrics.estimatedApiCostUsd != null) {
-    parts.push(`est. $${metrics.estimatedApiCostUsd.toFixed(5)}`);
+    parts.push(`est. £${metrics.estimatedApiCostUsd.toFixed(5)}`);
   }
 
   return parts.join(' · ');
+}
+
+export function formatGbp(value: number | null | undefined): string {
+  if (value == null) return '—';
+  return `£${value.toFixed(5)}`;
 }
 
 export function formatUsd(value: number | null | undefined): string {

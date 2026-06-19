@@ -10,6 +10,7 @@ import {
   logScan,
   logScanError,
 } from "../ai-scan-model.js";
+import { mergeClassAliases } from "./class-aliases.js";
 import { normalizeScanStrategy, resolveStrategyExecution } from "./scan-strategy.js";
 import { resultsSheetStoragePath } from "../image-upload/image-storage.js";
 import { detailedHttpsError } from "../../shared/https-error.js";
@@ -318,6 +319,7 @@ async function parseFromStoredImage(
     const mergedContext: ScannerContext = {
       ...scannerContext,
       timeFormat: normalizeScannerTimeFormat(scannerContext.timeFormat),
+      classAliases: mergeClassAliases(scannerContext.classAliases),
       roster,
       targetRaces: [raceId, ...(scannerContext.targetRaces ?? [])].filter(
         (id, i, arr) => arr.indexOf(id) === i,

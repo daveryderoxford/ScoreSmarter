@@ -34,4 +34,4 @@ node_modules/
 
 # Firebase Functions build/test artifacts
 /firebase/functions/lib/
-/firebase/functions/lib-test/
+/firebase/functions/lib-test*/
