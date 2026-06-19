@@ -7,10 +7,9 @@ function row(partial: Partial<ScannedResultRow>): ScannedResultRow {
 }
 
 describe('boatClassesMatch', () => {
-  it('is case/whitespace insensitive and treats Laser as ILCA', () => {
+  it('is case and whitespace insensitive', () => {
     expect(boatClassesMatch(' ILCA 7 ', 'ilca7')).toBe(true);
-    expect(boatClassesMatch('Laser', 'ILCA')).toBe(true);
-    expect(boatClassesMatch('ILCA', 'RS Aero')).toBe(false);
+    expect(boatClassesMatch('ILCA 7', 'ILCA 6')).toBe(false);
   });
 });
 
@@ -53,11 +52,11 @@ describe('ScanRowMatchingService', () => {
   describe('findBoatMatches', () => {
     it('matches on class + sail number', () => {
       const boats = [
-        { id: 'b1', boatClass: 'Laser', sailNumber: '12345', helm: 'A', name: '', crew: '', isClub: false, tags: [] },
+        { id: 'b1', boatClass: 'ILCA 7', sailNumber: '12345', helm: 'A', name: '', crew: '', isClub: false, tags: [] },
         { id: 'b2', boatClass: 'RS Aero', sailNumber: '12345', helm: 'B', name: '', crew: '', isClub: false, tags: [] },
       ];
       const matches = service.findBoatMatches(
-        row({ boatClass: { value: 'ILCA', confidence: 'HIGH' }, sailNumber: { value: '12345', confidence: 'HIGH' } }),
+        row({ boatClass: { value: 'ilca 7', confidence: 'HIGH' }, sailNumber: { value: '12345', confidence: 'HIGH' } }),
         boats,
       );
       expect(matches.map(m => m.id)).toEqual(['b1']);

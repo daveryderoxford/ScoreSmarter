@@ -2,17 +2,17 @@ import test from "node:test";
 import * as assert from "node:assert/strict";
 import {
   captureTokenUsage,
-  estimateApiCostUsd,
+  estimateApiCost,
   extractScanQualityMetrics,
 } from "./scan-metrics.js";
 
-test("estimateApiCostUsd uses gemini-3.5-flash pricing", () => {
-  const cost = estimateApiCostUsd("gemini-3.5-flash", 1_000_000, 1_000_000);
-  assert.equal(cost, 1.5 + 9.0);
+test("estimateApiCostUsd delegates to calculateRealizedApiCost", () => {
+  const cost = estimateApiCost("gemini-3.5-flash", 1_000_000, 1_000_000);
+  assert.equal(cost, (1.5 + 9.0) * 0.76 * 1.20);
 });
 
 test("estimateApiCostUsd returns null when tokens are missing", () => {
-  assert.equal(estimateApiCostUsd("gemini-3.5-flash", null, 100), null);
+  assert.equal(estimateApiCost("gemini-3.5-flash", null, 100), null);
 });
 
 test("captureTokenUsage rounds execution time and cost", () => {

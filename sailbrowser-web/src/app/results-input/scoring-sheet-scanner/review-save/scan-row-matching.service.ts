@@ -10,13 +10,8 @@ import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
 import { ScannedResultRow } from '../model/scan-model';
 import { MatchedRowVm, UnmatchedRowVm } from './review-step';
 
-/** Boat-class matching: whitespace/case insensitive, treats Laser as ILCA. */
-function normaliseBoatClassForMatch(className: string | undefined | null): string {
-  return normaliseString(className).replace(/laser/g, 'ilca');
-}
-
 export function boatClassesMatch(a: string | undefined | null, b: string | undefined | null): boolean {
-  return normaliseBoatClassForMatch(a) === normaliseBoatClassForMatch(b);
+  return normaliseString(a) === normaliseString(b);
 }
 
 /**
@@ -32,10 +27,10 @@ export class ScanRowMatchingService {
     const boatClass = row.boatClass?.value;
     const sailNumber = normalizeSailNumber(row.sailNumber?.value);
     if (!boatClass?.trim() || !sailNumber) return [];
-    const scannedClass = normaliseBoatClassForMatch(boatClass);
+    const scannedClass = normaliseString(boatClass);
     return boats.filter(
       b =>
-        normaliseBoatClassForMatch(b.boatClass) === scannedClass &&
+        normaliseString(b.boatClass) === scannedClass &&
         sailNumbersEqual(b.sailNumber, sailNumber),
     );
   }

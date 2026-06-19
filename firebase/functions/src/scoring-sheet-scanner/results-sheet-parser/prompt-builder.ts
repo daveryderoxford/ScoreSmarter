@@ -1,9 +1,9 @@
-import { defaultClassAliases } from "./class-aliases.js";
+import { mergeClassAliases } from "./class-aliases.js";
 import { ScannerContext } from "../ai-scan-model.js";
 
 export function buildPrompt(ctx: ScannerContext, raceId: string): string {
 
-  const aliasesStr = ctx.classAliases ? JSON.stringify(ctx.classAliases) : JSON.stringify(defaultClassAliases);
+  const aliasesStr = JSON.stringify(mergeClassAliases(ctx.classAliases));
   const roster = ctx.roster && ctx.roster.length > 0 ? JSON.stringify(ctx.roster) : "No entry list provided";
   const targetRacesStr = ctx.targetRaces?.length ? JSON.stringify(ctx.targetRaces) : JSON.stringify([raceId]);
 

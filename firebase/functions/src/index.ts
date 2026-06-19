@@ -20,7 +20,7 @@ export { uploadClubLogo } from "./club/upload-club-logo.js";
 export { createNewTenant } from "./sys-admin/newTenant.js";
 export { assignRole } from "./sys-admin/roles.js";
 export { ensureUserData } from "./user/user.js";
-export { getForcast } from "./forcast/forcast.js";
+export { getForcast } from "./forecast/forecast.js";
 export {
   cancelStaleFutureRacesWeekly,
 } from "./maintenance/weekly-maintenance.js";

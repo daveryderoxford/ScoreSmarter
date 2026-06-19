@@ -64,3 +64,9 @@ test("buildPrompt ticks lap mode excludes numeric-only instructions", () => {
   assert.match(prompt, /Interpret lap marks as tallies\/checkmarks/i);
   assert.doesNotMatch(prompt, /Read lap counts only as explicit numbers/i);
 });
+
+test("buildPrompt includes default class aliases when client sends empty object", () => {
+  const prompt = buildPrompt({ ...baseContext, classAliases: {} }, "race-1");
+  assert.match(prompt, /"Laser R":"ILCA 6"/);
+  assert.doesNotMatch(prompt, /Class Aliases: \{\}/);
+});

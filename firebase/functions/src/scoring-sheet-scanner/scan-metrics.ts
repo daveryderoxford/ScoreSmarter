@@ -1,16 +1,10 @@
 import type { ScanExecutionMetrics } from "@shared/scan-metrics";
 import { FieldValue, type Timestamp } from "firebase-admin/firestore";
+import { calculateRealizedApiCost, DEFAULT_SCAN_COST_OPTIONS } from "./api-cost-estimation.js";
 
 export type { ScanExecutionMetrics };
 
 export const SCAN_PARSER_NAME = "singlePassAIParser" as const;
-
-/** Per-million-token pricing (USD). */
-const MODEL_COSTS_PER_MILLION: Record<string, { input: number; output: number }> = {
-  "gemini-3.1-pro-preview": { input: 2.0, output: 12.0 },
-  "gemini-3.5-flash": { input: 1.5, output: 9.0 },
-  "gemini-2.5-flash": { input: 0.3, output: 2.5 },
-};
 
 export interface ScanTokenCapture {
   executionTimeSec: number;
@@ -65,15 +59,17 @@ export interface ScanMetricsDocument {
   estimatedApiCostUsd: number | null;
 }
 
-export function estimateApiCostUsd(
+export function estimateApiCost(
   model: string,
   inputTokens: number | null,
   outputTokens: number | null,
 ): number | null {
-  if (inputTokens == null || outputTokens == null) return null;
-  const pricing = MODEL_COSTS_PER_MILLION[model];
-  if (!pricing) return null;
-  return ((inputTokens * pricing.input) + (outputTokens * pricing.output)) / 1_000_000;
+  return calculateRealizedApiCost(
+    model,
+    inputTokens,
+    outputTokens,
+    DEFAULT_SCAN_COST_OPTIONS,
+  );
 }
 
 export function captureTokenUsage(
@@ -84,7 +80,7 @@ export function captureTokenUsage(
 ): ScanTokenCapture {
   const input = typeof inputTokens === "number" ? inputTokens : null;
   const output = typeof outputTokens === "number" ? outputTokens : null;
-  const estimatedApiCostUsd = estimateApiCostUsd(model, input, output);
+  const estimatedApiCostUsd = estimateApiCost(model, input, output);
   return {
     executionTimeSec: Number(((Date.now() - startMs) / 1000).toFixed(2)),
     inputTokens: input,
