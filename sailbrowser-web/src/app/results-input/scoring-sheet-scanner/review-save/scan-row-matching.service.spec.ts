@@ -1,6 +1,9 @@
 import { boatClassesMatch, ScanRowMatchingService } from './scan-row-matching.service';
 import { ScannedResultRow } from '../model/scan-model';
 import { Race } from 'app/race-calender/model/race';
+import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
+import { RaceCompetitor } from '../../model/race-competitor';
+import { SeriesEntry } from '../../model/series-entry';
 
 function row(partial: Partial<ScannedResultRow>): ScannedResultRow {
   return { rowIndex: 0, overallRowConfidence: 'HIGH', ...partial };
@@ -60,6 +63,33 @@ describe('ScanRowMatchingService', () => {
         boats,
       );
       expect(matches.map(m => m.id)).toEqual(['b1']);
+    });
+  });
+
+  describe('buildMatchedRows', () => {
+    it('attaches resolved competitor for matched rows', () => {
+      const scanRow = row({
+        rowIndex: 1,
+        matchedCompetitorId: 'c1',
+        boatClass: { value: 'Laser R', confidence: 'HIGH' },
+        sailNumber: { value: '1234S', confidence: 'HIGH' },
+        competitorName: { value: 'Sam S', confidence: 'MANUAL_CHECK' },
+      });
+      const competitor = new ResolvedRaceCompetitor(
+        { id: 'c1', raceId: 'r1', seriesEntryId: 'e1', resultCode: 'NOT FINISHED' } as RaceCompetitor,
+        {
+          id: 'e1',
+          seriesId: 's1',
+          helm: 'Sam Smith',
+          boatClass: 'ILCA 6',
+          sailNumber: '12345',
+        } as SeriesEntry,
+      );
+      const [vm] = service.buildMatchedRows([scanRow], new Map([['c1', competitor]]));
+      expect(vm.competitor?.boatClass).toBe('ILCA 6');
+      expect(vm.competitor?.sailNumber).toBe('12345');
+      expect(vm.competitor?.helm).toBe('Sam Smith');
+      expect(vm.row.boatClass?.value).toBe('Laser R');
     });
   });
 });

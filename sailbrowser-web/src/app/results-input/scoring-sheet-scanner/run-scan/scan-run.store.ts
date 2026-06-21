@@ -4,7 +4,7 @@ import { FormBuilder, Validators } from '@angular/forms';
 import type { ScanStrategy, ScannerTimeFormat } from '@shared/scanner-context';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { from, of } from 'rxjs';
-import { RaceSelectionStore } from '../select-race/race-selection.store';
+import { ScanSelectedRace } from '../select-race/race-selection.store';
 import { SheetCaptureStore } from '../capture-image/sheet-capture.store';
 import { ScanPersistenceService } from '../shared/scan-persistence.service';
 import { ScanExecutionService } from './scan-execution.service';
@@ -21,7 +21,7 @@ import { ScannerContext, ScanResponse } from '../model/scan-model';
 export class ScanRunStore {
   private readonly fb = inject(FormBuilder);
   private readonly clubTenant = inject(ClubTenant);
-  private readonly raceSelection = inject(RaceSelectionStore);
+  private readonly raceSelection = inject(ScanSelectedRace);
   private readonly sheetCapture = inject(SheetCaptureStore);
   private readonly scanExecution = inject(ScanExecutionService);
   private readonly scanPersistence = inject(ScanPersistenceService);

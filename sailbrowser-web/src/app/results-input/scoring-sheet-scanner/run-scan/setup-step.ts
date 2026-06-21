@@ -6,7 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
-import { RaceSelectionStore } from '../select-race/race-selection.store';
+import { ScanSelectedRace } from '../select-race/race-selection.store';
 import { ScanRunStore } from '../run-scan/scan-run.store';
 import { AuthService } from 'app/auth';
 
@@ -26,7 +26,7 @@ import { AuthService } from 'app/auth';
 })
 export class SetupStep {
   protected readonly scanRun = inject(ScanRunStore);
-  private readonly raceSelection = inject(RaceSelectionStore);
+  private readonly raceSelection = inject(ScanSelectedRace);
   protected readonly auth = inject(AuthService);
 
   readonly isMultilapRace = computed(() => this.raceSelection.selectedRace()?.isAverageLap ?? false);

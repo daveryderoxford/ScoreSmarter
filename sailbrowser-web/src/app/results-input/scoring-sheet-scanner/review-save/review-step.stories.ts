@@ -5,6 +5,7 @@ import { ScanReviewStore } from '../review-save/scan-review.store';
 import { ScanRunStore } from '../run-scan/scan-run.store';
 import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step';
 import { ScanResponse, ScannedResultRow } from '../model/scan-model';
+import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
 
 const displayedColumns = ['accept', 'sailNumber', 'boatClass', 'time', 'status', 'laps', 'overall'];
 const unmatchedColumns = ['sailNumber', 'boatClass', 'time', 'status', 'laps', 'enter'];
@@ -59,10 +60,43 @@ const unmatchedRows: ScannedResultRow[] = [
   }),
 ];
 
+function mkCompetitor(partial: { helm: string; boatClass: string; sailNumber: string }): ResolvedRaceCompetitor {
+  return {
+    helm: partial.helm,
+    boatClass: partial.boatClass,
+    sailNumber: partial.sailNumber,
+  } as ResolvedRaceCompetitor;
+}
+
 const matchedRowVms: MatchedRowVm[] = [
-  { row: matchedRows[0], helm: 'Alex' },
-  { row: matchedRows[1], helm: 'Blake' },
+  {
+    row: matchedRows[0],
+    helm: 'Alex',
+    competitor: mkCompetitor({ helm: 'Alex', boatClass: 'ILCA 7', sailNumber: '1234' }),
+  },
+  {
+    row: matchedRows[1],
+    helm: 'Blake',
+    competitor: mkCompetitor({ helm: 'Blake', boatClass: 'ILCA 6', sailNumber: '9988' }),
+  },
 ];
+
+const identityMismatchRow = mkRow(5, {
+  matchedCompetitorId: 'c3',
+  accepted: true,
+  overallRowConfidence: 'HIGH',
+  sailNumber: { value: '1234S', confidence: 'HIGH' },
+  boatClass: { value: 'Laser R', confidence: 'HIGH' },
+  competitorName: { value: 'Sam S', confidence: 'MANUAL_CHECK' },
+  time: { value: '15:10:00', confidence: 'HIGH' },
+  laps: { value: 3, confidence: 'HIGH' },
+});
+
+const identityMismatchVm: MatchedRowVm = {
+  row: identityMismatchRow,
+  helm: 'Sam Smith',
+  competitor: mkCompetitor({ helm: 'Sam Smith', boatClass: 'ILCA 6', sailNumber: '12345' }),
+};
 
 const unmatchedRowVms: UnmatchedRowVm[] = [
   { row: unmatchedRows[0], matchedBoat: true, possibleHelms: ['Dana', 'Chris'], matchedClass: true },
@@ -144,6 +178,18 @@ export const MatchedOnly: Story = {
       providers: storeProviders({
         result: responseFor(matchedRows),
         matchedRows: matchedRowVms,
+        unmatchedRows: [],
+      }),
+    }),
+  ],
+};
+
+export const LinkedVsReportedIdentity: Story = {
+  decorators: [
+    moduleMetadata({
+      providers: storeProviders({
+        result: responseFor([identityMismatchRow]),
+        matchedRows: [identityMismatchVm],
         unmatchedRows: [],
       }),
     }),

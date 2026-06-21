@@ -9,7 +9,7 @@ import { ScanExecutionService } from './run-scan/scan-execution.service';
 import { ScanRunStore } from './run-scan/scan-run.store';
 import { ReviewStep } from './review-save/review-step';
 import { ScanPersistenceService } from './shared/scan-persistence.service';
-import { RaceSelectionStore } from './select-race/race-selection.store';
+import { ScanSelectedRace } from './select-race/race-selection.store';
 import { RaceStep } from './select-race/race-step';
 import { SetupStep } from './run-scan/setup-step';
 
@@ -22,7 +22,7 @@ const REVIEW_STEP_INDEX = 3;
   templateUrl: './scoring-sheet-scanner.html',
   styleUrl: './scoring-sheet-scanner.scss',
   providers: [
-    RaceSelectionStore,
+    ScanSelectedRace,
     SheetCaptureStore,
     ScanRunStore,
     ScanPersistenceService,
@@ -32,7 +32,7 @@ const REVIEW_STEP_INDEX = 3;
 export class ScoringSheetScanner {
   private readonly injector = inject(Injector);
   private readonly breakpoints = inject(AppBreakpoints);
-  protected readonly raceSelection = inject(RaceSelectionStore);
+  protected readonly raceSelection = inject(ScanSelectedRace);
   protected readonly sheetCapture = inject(SheetCaptureStore);
   protected readonly scanRun = inject(ScanRunStore);
 

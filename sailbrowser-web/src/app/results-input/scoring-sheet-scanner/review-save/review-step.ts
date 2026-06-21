@@ -4,8 +4,10 @@ import { MatCheckboxChange, MatCheckboxModule } from '@angular/material/checkbox
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
+import { sailNumbersEqual } from 'app/boats/model/sail-number';
 import { AuthService } from 'app/auth/auth.service';
-import { RaceCompetitor } from '../../model/race-competitor';
+import { normaliseString } from 'app/shared/utils/string-utils';
+import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
 import { ScannedResultRow } from '../model/scan-model';
 import { formatScanMetricsSummary } from '../model/scan-metrics-format';
 import { ScanRunStore } from '../run-scan/scan-run.store';
@@ -15,7 +17,35 @@ import { ScanRowMatchingService } from './scan-row-matching.service';
 export interface MatchedRowVm {
   row: ScannedResultRow;
   helm?: string;
-  competitor?: RaceCompetitor;
+  competitor?: ResolvedRaceCompetitor;
+}
+
+interface MatchedIdentityOpts {
+  compareSail?: boolean;
+}
+
+/** Linked race-entry value shown in the matched grid. */
+export function matchedEntryText(linked: string | undefined | null): string {
+  return linked?.trim() || '-';
+}
+
+/** Scan-reported value when it differs from the linked entry; otherwise null. */
+export function matchedScanText(
+  linked: string | undefined | null,
+  reported: string | undefined | null,
+  opts?: MatchedIdentityOpts,
+): string | null {
+  const reportedTrimmed = reported?.trim() ?? '';
+  if (!reportedTrimmed) return null;
+
+  const linkedTrimmed = linked?.trim() ?? '';
+  if (!linkedTrimmed) return reportedTrimmed;
+
+  const equal = opts?.compareSail
+    ? sailNumbersEqual(linkedTrimmed, reportedTrimmed)
+    : normaliseString(linkedTrimmed) === normaliseString(reportedTrimmed);
+
+  return equal ? null : reportedTrimmed;
 }
 
 export interface UnmatchedRowVm {
@@ -48,6 +78,8 @@ export class ReviewStep {
   protected readonly review = inject(ScanReviewStore);
   protected readonly auth = inject(AuthService);
   protected readonly formatScanMetricsSummary = formatScanMetricsSummary;
+  protected readonly matchedEntryText = matchedEntryText;
+  protected readonly matchedScanText = matchedScanText;
 
   backRequested = output<void>();
 

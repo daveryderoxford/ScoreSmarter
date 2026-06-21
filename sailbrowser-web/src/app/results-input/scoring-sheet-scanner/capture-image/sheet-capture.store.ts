@@ -19,7 +19,7 @@ import { ResultsSheetCaptureService } from '../../capture/services/results-sheet
 import { from, of } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 import { ScanRunRequest } from '../model/scan-model';
-import { RaceSelectionStore } from '../select-race/race-selection.store';
+import { ScanSelectedRace } from '../select-race/race-selection.store';
 
 interface CameraCaptureResult {
   base64: string;
@@ -43,7 +43,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
  */
 @Injectable()
 export class SheetCaptureStore {
-  private readonly raceSelection = inject(RaceSelectionStore);
+  private readonly raceSelection = inject(ScanSelectedRace);
   private readonly capture = inject(ResultsSheetCaptureService);
   private readonly dialog = inject(MatDialog);
   private readonly clubTenant = inject(ClubTenant);

@@ -13,7 +13,7 @@ import {
   UnmatchedRowEntryDialog,
   type UnmatchedRowEntryDialogResult,
 } from './unmatched-row-entry-dialog';
-import { RaceSelectionStore } from '../select-race/race-selection.store';
+import { ScanSelectedRace } from '../select-race/race-selection.store';
 import { ScanRunStore } from '../run-scan/scan-run.store';
 import { ScanPersistenceService } from '../shared/scan-persistence.service';
 import { boatClassesMatch, ScanRowMatchingService } from './scan-row-matching.service';
@@ -32,7 +32,7 @@ import { ScannedResultRow } from '../model/scan-model';
 @Injectable()
 export class ScanReviewStore {
   private readonly scanRun = inject(ScanRunStore);
-  private readonly raceSelection = inject(RaceSelectionStore);
+  private readonly raceSelection = inject(ScanSelectedRace);
   private readonly rowMatching = inject(ScanRowMatchingService);
   private readonly competitorReader = inject(RaceCompetitorReader);
   private readonly competitorStore = inject(RaceCompetitorStore);
@@ -148,7 +148,10 @@ export class ScanReviewStore {
         .map(vm => vm.row.matchedCompetitorId!)
         .filter(Boolean);
       const missingMatchedIds = acceptedMatchedItems
-        .filter(vm => !vm.competitor)
+        .filter(vm => {
+          const competitorId = vm.row.matchedCompetitorId;
+          return !competitorId || !this.resolvedByCompetitorId().has(competitorId);
+        })
         .map(vm => vm.row.matchedCompetitorId!);
       if (missingMatchedIds.length > 0) {
         const diagnostic = {
@@ -157,7 +160,7 @@ export class ScanReviewStore {
           missingMatchedIds,
           availableCompetitorIds: Array.from(preSaveCompetitorsById.keys()),
         };
-        console.log('ScanReviewStore.save: competitor invariant failed', diagnostic);
+        console.error('ScanReviewStore.save: competitor invariant failed', diagnostic);
         this._error.set(
           `Could not save accepted results: ${missingMatchedIds.length} matched competitors were not available in memory.`,
         );
@@ -167,7 +170,8 @@ export class ScanReviewStore {
       const timeFormat = this.scanRun.contextForm.controls.timeFormat.value;
       const defaultHour = this.scanRun.defaultHourForParsing();
       for (const vm of acceptedMatchedItems) {
-        const competitor = vm.competitor!;
+        const competitor = this.resolvedByCompetitorId().get(vm.row.matchedCompetitorId!);
+        if (!competitor) continue;
         const finishTime = vm.row.time?.value
           ? this.rowMatching.parseScannedTime(vm.row.time.value, race, { timeFormat, defaultHour })
           : null;
@@ -179,9 +183,16 @@ export class ScanReviewStore {
       }
       await this.scanPersistence.clearScanResponse(raceId);
       await this.router.navigate(['/results-input/manual'], { queryParams: { raceId } });
+    } catch (err: unknown) {
+      console.error('ScanReviewStore.save: save failed', err);
+      this._error.set(this.saveErrorMessage(err));
     } finally {
       this._saving.set(false);
     }
+  }
+
+  private saveErrorMessage(err: unknown): string {
+    return err instanceof Error ? err.message : 'Could not save scan results.';
   }
 
   private refreshScanRowMatch(

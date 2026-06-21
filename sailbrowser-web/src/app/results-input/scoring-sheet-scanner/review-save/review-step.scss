@@ -78,6 +78,15 @@
   justify-content: space-between;
 }
 
+.matched-identity {
+  font-size: 0.85rem;
+}
+
+.matched-scan {
+  font-size: 0.75rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .possible-helms {
   margin-top: 0.35rem;
   font-size: 0.8rem;

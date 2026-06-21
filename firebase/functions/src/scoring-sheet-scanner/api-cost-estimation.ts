@@ -66,8 +66,8 @@ export function calculateRealizedApiCost(
 
   const costUsd = ((inputTokens * inputRate) + (outputTokens * outputRate)) / 1_000_000;
 
-  const exchangeRate = options.exchangeRate ?? 1.0;
-  const taxMultiplier = options.taxMultiplier ?? 1.0;
+  const exchangeRate = options.exchangeRate ?? DEFAULT_SCAN_COST_OPTIONS.exchangeRate;
+  const taxMultiplier = options.taxMultiplier ?? DEFAULT_SCAN_COST_OPTIONS.taxMultiplier;
 
   return costUsd * exchangeRate * taxMultiplier;
 }

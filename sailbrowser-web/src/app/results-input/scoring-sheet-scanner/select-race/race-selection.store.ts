@@ -9,7 +9,7 @@ import { CurrentRaces } from '../../services/current-races-store';
  * instance and state resets when the scanner is left.
  */
 @Injectable()
-export class RaceSelectionStore {
+export class ScanSelectedRace {
   private readonly raceCalendarStore = inject(RaceCalendarStore);
   private readonly currentRaces = inject(CurrentRaces);
 
