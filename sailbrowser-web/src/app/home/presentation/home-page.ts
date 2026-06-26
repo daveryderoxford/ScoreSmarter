@@ -5,10 +5,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatMenuModule } from '@angular/material/menu';
 import { RouterLink } from '@angular/router';
-import { ClubStore } from 'app/club-tenant';
+import { ClubStore, ClubTenant } from 'app/club-tenant';
+import { DUTY_REGISTER_CLUB_ID } from 'app/duties';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { Title } from '@angular/platform-browser';
 import { HomeRacesSection } from './home-races-section';
+import { HomeDutiesSection } from './home-duties-section';
 
 @Component({
   selector: 'app-home',
@@ -23,12 +25,16 @@ import { HomeRacesSection } from './home-races-section';
     MatMenuModule,
     ClubLogo,
     HomeRacesSection,
+    HomeDutiesSection,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomePage {
   protected readonly clubStore = inject(ClubStore);
+  private readonly clubTenant = inject(ClubTenant);
   private readonly pageTitle = inject(Title);
+
+  protected readonly showDuties = computed(() => this.clubTenant.clubId === DUTY_REGISTER_CLUB_ID);
 
   title = computed(() => {
     const club = this.clubStore.club();

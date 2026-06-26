@@ -16,6 +16,10 @@ export function isCompletedRace(race: Race): boolean {
   return COMPLETED_RACE_STATUSES.has(race.status);
 }
 
+export function isCanceledRace(race: Race): boolean {
+  return race.status === 'Canceled';
+}
+
 export interface RaceDayGroup {
   readonly dateKey: string;
   readonly heading: string;
