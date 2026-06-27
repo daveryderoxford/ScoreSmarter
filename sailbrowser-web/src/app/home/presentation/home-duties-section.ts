@@ -30,15 +30,19 @@ import { DutiesService } from 'app/duties';
               <div matListItemMeta>
                 @if (auth.loggedIn()) {
                   @if (!member.attending) {
-                    <mat-chip (click)="toggleAttending(member)">Check in</mat-chip>
+                    <mat-chip
+                      [disabled]="isUpdating(member)"
+                      (click)="!isUpdating(member) && toggleAttending(member)">
+                      Check in
+                    </mat-chip>
                   } @else {
+                    Present
                     <button
-                      matIconButton
+                      matButton
                       type="button"
                       [disabled]="isUpdating(member)"
-                      [attr.aria-label]="toggleLabel(member)"
                       (click)="toggleAttending(member)">
-                      <mat-icon>{{ member.attending ? 'close' : 'check' }}</mat-icon>
+                      <mat-icon>Confirmed</mat-icon>
                     </button>
                   }
                 }
