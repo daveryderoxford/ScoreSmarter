@@ -18,6 +18,7 @@ import {
   emptyMessagePeriodSuffix,
   groupRacesForPanel,
   isCompletedRace,
+  isCanceledRace,
   isRaceVisibleForPeriodChip,
   periodChipNeededForRace,
   racePanelLabelLine1,
@@ -90,6 +91,10 @@ const DEFAULT_AVAILABLE_FILTERS: readonly RacesPanelFilter[] = ['past', 'future'
                   @if (isCompletedRace(race)) {
                   <span matListItemIcon>
                     <mat-icon>check</mat-icon>
+                  </span>
+                  } @else if (isCanceledRace(race)) {
+                  <span matListItemIcon>
+                    <mat-icon>close</mat-icon>
                   </span>
                   }
                 </mat-list-option>
@@ -283,6 +288,7 @@ export class RacesPanel {
   }
 
   protected readonly isCompletedRace = isCompletedRace;
+  protected readonly isCanceledRace = isCanceledRace;
 
   protected readonly isMultiSelect = computed(() => this.maxSelections() !== 1);
 

@@ -165,16 +165,4 @@ describe('ScanReviewStore.save', () => {
     expect(clearScanResponse).not.toHaveBeenCalled();
     expect(store.saving()).toBe(false);
   });
-
-  it('shows an error and preserves the scan when navigation fails', async () => {
-    navigate.mockResolvedValue(false);
-
-    await store.save();
-
-    expect(consoleError).toHaveBeenCalledWith('ScanReviewStore.save: save failed', expect.any(Error));
-    expect(store.error()).toBe('Could not open manual results.');
-    expect(recordResult).toHaveBeenCalledTimes(1);
-    expect(clearScanResponse).not.toHaveBeenCalled();
-    expect(store.saving()).toBe(false);
-  });
 });

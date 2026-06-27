@@ -18,6 +18,9 @@
       ],
       "@shared/scan-metrics": [
         "../../shared/contracts/scan-metrics.d.ts"
+      ],
+      "@shared/duty-member": [
+        "../../shared/contracts/duty-member.d.ts"
       ]
     },
     "rootDir": "src",

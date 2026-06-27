@@ -4,6 +4,7 @@ import {
   emptyMessagePeriodSuffix,
   groupRacesForPanel,
   isCompletedRace,
+  isCanceledRace,
   isRaceVisibleForPeriodChip,
   isScheduledToday,
   periodChipNeededForRace,
@@ -114,6 +115,18 @@ describe('races-panel-utils', () => {
       expect(isCompletedRace(race({ status: 'In progress' }))).toBe(false);
       expect(isCompletedRace(race({ status: 'Canceled' }))).toBe(false);
       expect(isCompletedRace(race({ status: 'Postponed' }))).toBe(false);
+    });
+  });
+
+  describe('isCanceledRace', () => {
+    it('treats Canceled status as canceled', () => {
+      expect(isCanceledRace(race({ status: 'Canceled' }))).toBe(true);
+    });
+
+    it('treats other statuses as not canceled', () => {
+      expect(isCanceledRace(race({ status: 'Future' }))).toBe(false);
+      expect(isCanceledRace(race({ status: 'Completed' }))).toBe(false);
+      expect(isCanceledRace(race({ status: 'Postponed' }))).toBe(false);
     });
   });
 

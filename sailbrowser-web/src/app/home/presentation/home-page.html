@@ -46,7 +46,12 @@
       </div>
 
       @defer (on idle) {
-        <app-home-races-section />
+        <div class="home-panels" [class.home-panels--single]="!showDuties()">
+          <app-home-races-section />
+          @if (showDuties()) {
+            <app-home-duties-section />
+          }
+        </div>
       } @placeholder {
         <p class="placeholder">Loading today's races…</p>
       }

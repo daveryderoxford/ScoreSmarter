@@ -1,0 +1,180 @@
+<div class="kiosk">
+  <header class="kiosk-header">
+    @if (showBack()) {
+      <button matIconButton type="button" aria-label="Back" (click)="goBack()">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+    } @else {
+      <span class="header-spacer"></span>
+    }
+    <h1 class="kiosk-title">{{ stepTitle() }}</h1>
+    @if (view() !== 'category' && view() !== 'success') {
+      <button matButton type="button" (click)="resetToCategory()">Return to start</button>
+    } @else {
+      <span class="header-spacer"></span>
+    }
+  </header>
+
+  <div class="kiosk-body">
+    @switch (view()) {
+      @case ('category') {
+        <div class="category-grid">
+          <button mat-flat-button type="button" class="category-btn" (click)="startMember()">
+            Member's Boats
+          </button>
+          <button mat-stroked-button type="button" class="category-btn" (click)="startClub()">
+            Club Boats
+          </button>
+        </div>
+      }
+
+      @case ('memberHelm') {
+        <p class="instruction">Select helm surname</p>
+        <div class="chip-bar">
+          <mat-chip-listbox hideSingleSelectionIndicator aria-label="Filter helms by surname">
+            @for (range of letterRanges; track range.id) {
+              <mat-chip-option
+                [selected]="letterRange() === range.id"
+                (click)="setLetterRange(range.id)">
+                {{ range.label }}
+              </mat-chip-option>
+            }
+          </mat-chip-listbox>
+        </div>
+        <div class="kiosk-scroll centered-list">
+          @if (filteredMemberHelms().length === 0) {
+            <p class="placeholder">No helms in this range.</p>
+          } @else {
+            <mat-list>
+              @for (helm of filteredMemberHelms(); track helm) {
+                <mat-list-item (click)="selectMemberHelm(helm)">
+                  <span matListItemTitle>{{ formatHelm(helm) }}</span>
+                </mat-list-item>
+              }
+            </mat-list>
+          }
+        </div>
+        <div class="actions actions-end">
+          <button mat-fab extended type="button" (click)="addNewHelm()">
+            <mat-icon>add</mat-icon>
+            Add new helm
+          </button>
+        </div>
+      }
+
+      @case ('memberBoat') {
+        <div class="kiosk-scroll">
+          @if (boatsForSelectedHelm().length === 0) {
+            <p class="placeholder">No boats for this helm.</p>
+          } @else {
+            <mat-list>
+              @for (boat of boatsForSelectedHelm(); track boat.id) {
+                <mat-list-item (click)="selectMemberBoat(boat)">
+                  <span matListItemTitle>{{ boat.boatClass }} · {{ boat.sailNumber }}</span>
+                </mat-list-item>
+              }
+            </mat-list>
+          }
+        </div>
+        <div class="actions actions-end">
+          <button mat-fab extended type="button" (click)="addNewBoat()">
+            <mat-icon>add</mat-icon>
+            Add new boat
+          </button>
+        </div>
+      }
+
+      @case ('memberConfirm') {
+        @if (selectedBoat(); as boat) {
+          <div class="summary">
+            <p><strong>{{ boat.helm }}</strong></p>
+            <p>{{ boat.boatClass }} · {{ boat.sailNumber }}</p>
+          </div>
+        }
+        <form class="helm-form">
+          <mat-form-field>
+            <mat-label>Crew (optional)</mat-label>
+            <input matInput [formControl]="memberCrewControl" autocomplete="off" />
+          </mat-form-field>
+        </form>
+        <div class="summary">
+          <p>{{ raceCountLabel() }}</p>
+        </div>
+        <div class="actions">
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            class="enter-btn"
+            [disabled]="!canEnter() || busy()"
+            (click)="submit()">
+            Enter
+          </button>
+        </div>
+      }
+
+      @case ('clubClass') {
+        <div class="kiosk-scroll grid-list">
+          @for (cls of clubClasses(); track cls) {
+            <button mat-stroked-button type="button" class="grid-btn" (click)="selectClubClass(cls)">
+              {{ cls }}
+            </button>
+          }
+        </div>
+      }
+
+      @case ('clubSail') {
+        <div class="kiosk-scroll grid-list">
+          @for (boat of clubBoatsForClass(); track boat.id) {
+            <button mat-stroked-button type="button" class="grid-btn" (click)="selectClubBoat(boat)">
+              {{ boat.sailNumber }}
+            </button>
+          }
+        </div>
+      }
+
+      @case ('clubHelm') {
+        @if (selectedBoat(); as boat) {
+          <div class="summary">
+            <p>{{ boat.boatClass }} · {{ boat.sailNumber }}</p>
+          </div>
+        }
+        <form [formGroup]="clubHelmForm" class="helm-form">
+          <mat-form-field>
+            <mat-label>Helm</mat-label>
+            <input matInput formControlName="helm" autocomplete="off" [matAutocomplete]="clubHelmAuto.panel()" />
+            <app-helm-name-autocomplete #clubHelmAuto [control]="clubHelmForm.controls.helm" />
+            @if (clubHelmForm.controls.helm.hasError('required')) {
+              <mat-error>Helm required</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Crew (optional)</mat-label>
+            <input matInput formControlName="crew" autocomplete="off" />
+          </mat-form-field>
+        </form>
+        <div class="summary">
+          <p>{{ raceCountLabel() }}</p>
+        </div>
+        <div class="actions">
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            class="enter-btn"
+            [disabled]="!canEnter() || busy()"
+            (click)="submit()">
+            Enter
+          </button>
+        </div>
+      }
+
+      @case ('success') {
+        <div class="success-panel">
+          <mat-icon>check_circle</mat-icon>
+          <p class="summary">{{ successMessage() }}</p>
+        </div>
+      }
+    }
+  </div>
+</div>

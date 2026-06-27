@@ -24,6 +24,8 @@ import { CurrentRaces } from 'app/results-input/services/current-races-store';
     </div>
   `,
   styles: `
+    @use '@angular/material' as mat;
+
     .races-section {
       margin-top: 16px;
     }
@@ -40,6 +42,14 @@ import { CurrentRaces } from 'app/results-input/services/current-races-store';
       text-align: center;
       font: var(--mat-sys-body-large);
       color: var(--mat-sys-on-surface-variant);
+    }
+
+    :host {
+      @include mat.list-overrides((
+        list-item-label-text-size: var(--mat-sys-body-large-size),
+        list-item-supporting-text-size: var(--mat-sys-body-small-size),
+        list-item-trailing-supporting-text-size: var(--mat-sys-body-small-size),
+      ));
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

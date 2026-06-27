@@ -23,7 +23,7 @@
 .content {
   flex: 1;
   padding: 24px;
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
@@ -82,4 +82,36 @@
   text-align: center;
   font: var(--mat-sys-body-large);
   color: var(--mat-sys-on-surface-variant);
+}
+
+.home-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+
+  app-home-races-section,
+  app-home-duties-section {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+.home-panels--single {
+  grid-template-columns: 1fr;
+  justify-items: center;
+
+  app-home-races-section {
+    max-width: calc((100% - 24px) / 2);
+  }
+}
+
+@media (max-width: 600px) {
+  .home-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .home-panels--single app-home-races-section {
+    max-width: none;
+  }
 }
