@@ -30,7 +30,12 @@
     label-text-size: var(--mat-sys-title-medium-size),
     container-height: 40px,
     outline-width: 2px,
+  ));
 
+  @include mat.fab-overrides((
+    extended-container-height: 64px,
+    extended-label-text-size: var(--mat-sys-title-medium-size),
+    extended-label-text-weight: var(--mat-sys-title-medium-weight),
   ));
 
   @include mat.form-field-overrides((
@@ -104,9 +109,17 @@
 .instruction {
   flex-shrink: 0;
   margin: 0;
-  text-align: center;
+  text-align: left;
   font: var(--mat-sys-title-medium);
   color: var(--mat-sys-on-surface-variant);
+}
+
+.instruction-lg {
+  text-align: center;
+  font-size: calc(var(--mat-sys-title-medium-size) * 2);
+  line-height: 1.2;
+  margin-top: 8px;
+  margin-bottom: 24px;
 }
 
 .chip-bar {
@@ -121,8 +134,9 @@
   gap: 10px;
 }
 
-.chip-bar mat-chip-option {
-  min-width: 72px;
+.chip-bar mat-chip-option .mat-mdc-chip-action-label {
+  text-align: center;
+  width: 100%;
 }
 
 .centered-list {
@@ -177,6 +191,12 @@
 
 .actions.actions-end {
   justify-content: flex-end;
+}
+
+.actions-end .mat-mdc-extended-fab .mat-icon {
+  width: 28px;
+  height: 28px;
+  font-size: 28px;
 }
 
 .actions .spacer {

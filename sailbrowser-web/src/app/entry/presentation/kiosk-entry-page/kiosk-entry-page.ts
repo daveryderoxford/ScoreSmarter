@@ -348,13 +348,15 @@ export class KioskEntryPage {
     await this.addNewBoat(helm);
   }
 
-  async addNewBoat(prefilledHelm?: string): Promise<void> {
+  async addNewBoat(prefilledHelm?: string, prefilledClass?: string): Promise<void> {
+    const data =
+      prefilledHelm || prefilledClass ? { prefilledHelm, prefilledClass } : undefined;
     const dialogRef = this.dialog.open(NewBoatDialog, {
       width: '480px',
       maxWidth: '95vw',
       maxHeight: '90vh',
       disableClose: true,
-      data: prefilledHelm ? { prefilledHelm } : undefined,
+      data,
     });
     const created = (await firstValueFrom(dialogRef.afterClosed())) as NewBoatDialogResult | undefined;
     if (!created) return;

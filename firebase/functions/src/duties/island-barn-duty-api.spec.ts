@@ -29,10 +29,11 @@ test("parseDutyTeamResponse maps duty members", () => {
   ]);
 });
 
-test("parseDutyTeamResponse skips invalid rows", () => {
+test("parseDutyTeamResponse maps ack_key to key and skips rows without ack_key", () => {
   const duties = parseDutyTeamResponse([
-    { role: "catering", name: "Sam", key: "abc" },
-    { role: "missing ack" },
+    { role: "catering", name: "Sam", ack_key: "abc" },
+    { role: "missing ack", name: "No Ack" },
+    { role: "wrong field", name: "Has Key Not Ack", key: "xyz" },
   ]);
   assert.deepEqual(duties, [
     { role: "catering", name: "Sam", attending: false, key: "abc" },

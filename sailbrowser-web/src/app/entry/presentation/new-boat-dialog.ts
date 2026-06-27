@@ -19,6 +19,7 @@ export interface NewBoatDialogResult {
 
 export interface NewBoatDialogData {
   prefilledHelm?: string;
+  prefilledClass?: string;
 }
 
 @Component({
@@ -65,7 +66,7 @@ export class NewBoatDialog {
   );
 
   readonly form: FormGroup = this.fb.group({
-    boatClass: ['', Validators.required],
+    boatClass: [this.dialogData?.prefilledClass ?? '', Validators.required],
     sailNumber: ['', [Validators.required, sailNumberValidator]],
     name: [''],
     helm: [this.dialogData?.prefilledHelm ?? '', Validators.required],

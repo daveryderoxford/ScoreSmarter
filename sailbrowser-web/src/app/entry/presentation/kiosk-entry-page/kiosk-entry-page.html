@@ -29,7 +29,7 @@
       }
 
       @case ('memberHelm') {
-        <p class="instruction">Select helm surname</p>
+        <p class="instruction">Select helm by surname</p>
         <div class="chip-bar">
           <mat-chip-listbox hideSingleSelectionIndicator aria-label="Filter helms by surname">
             @for (range of letterRanges; track range.id) {
@@ -77,7 +77,11 @@
           }
         </div>
         <div class="actions actions-end">
-          <button mat-fab extended type="button" (click)="addNewBoat()">
+          <button
+            mat-fab
+            extended
+            type="button"
+            (click)="addNewBoat(selectedHelm() ?? undefined)">
             <mat-icon>add</mat-icon>
             Add new boat
           </button>
@@ -124,6 +128,7 @@
       }
 
       @case ('clubSail') {
+        <p class="instruction instruction-lg">Select bow number</p>
         <div class="kiosk-scroll grid-list">
           @for (boat of clubBoatsForClass(); track boat.id) {
             <button mat-stroked-button type="button" class="grid-btn" (click)="selectClubBoat(boat)">
