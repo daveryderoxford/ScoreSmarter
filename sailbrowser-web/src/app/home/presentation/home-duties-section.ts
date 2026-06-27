@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChip } from '@angular/material/chips';
-import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { AuthService } from 'app/auth/auth.service';
 import type { DutyMember } from 'app/duties';
@@ -9,7 +8,7 @@ import { DutiesService } from 'app/duties';
 
 @Component({
   selector: 'app-home-duties-section',
-  imports: [MatButtonModule, MatIconModule, MatChip, MatListModule],
+  imports: [MatButtonModule, MatChip, MatListModule],
   template: `
     <div class="duties-section">
       <h2 class="duties-title">Duty Team</h2>
@@ -42,7 +41,7 @@ import { DutiesService } from 'app/duties';
                       type="button"
                       [disabled]="isUpdating(member)"
                       (click)="toggleAttending(member)">
-                      <mat-icon>Confirmed</mat-icon>
+                      Confirmed
                     </button>
                   }
                 }
