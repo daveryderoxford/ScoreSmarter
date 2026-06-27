@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import type { Boat } from 'app/boats';
 import { normalizeSailNumber, sailNumberValidator } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
@@ -15,6 +15,10 @@ import { BoatCoreFields } from 'app/boats/presentation/boat-form/boat-core-field
 export interface NewBoatDialogResult {
   boat: Partial<Boat>;
   saveToRepository: boolean;
+}
+
+export interface NewBoatDialogData {
+  prefilledHelm?: string;
 }
 
 @Component({
@@ -54,6 +58,7 @@ export class NewBoatDialog {
   private readonly fb = inject(FormBuilder);
   private readonly cs = inject(ClubStore);
   private readonly dialogRef = inject(MatDialogRef<NewBoatDialog, NewBoatDialogResult | undefined>);
+  private readonly dialogData = inject<NewBoatDialogData | null>(MAT_DIALOG_DATA, { optional: true });
 
   readonly boatSchemes = computed<HandicapScheme[]>(() =>
     getSchemesForTarget(this.cs.club().supportedHandicapSchemes, 'boat')
@@ -63,7 +68,7 @@ export class NewBoatDialog {
     boatClass: ['', Validators.required],
     sailNumber: ['', [Validators.required, sailNumberValidator]],
     name: [''],
-    helm: ['', Validators.required],
+    helm: [this.dialogData?.prefilledHelm ?? '', Validators.required],
     crew: [''],
     personalHandicapBand: ['unknown' as PersonalHandicapBand | 'unknown'],
     tags: this.fb.nonNullable.control<string[]>([]),

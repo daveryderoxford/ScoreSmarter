@@ -1,0 +1,227 @@
+@use '@angular/material' as mat;
+
+:host {
+  display: block;
+  height: 100%;
+  min-height: 100dvh;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+
+  @include mat.button-overrides((
+    filled-container-height: 50px,
+    outlined-container-height: 50px,
+    outlined-outline-width: 3px,
+    text-container-height: 48px,
+    filled-label-text-size: var(--mat-sys-title-large-size),
+    filled-label-text-weight: var(--mat-sys-title-large-weight),
+    outlined-label-text-size: var(--mat-sys-title-large-size),
+    text-label-text-size: var(--mat-sys-title-medium-size),
+  ));
+
+  @include mat.list-overrides((
+    list-item-label-text-size: var(--mat-sys-title-medium-size),
+    list-item-supporting-text-size: var(--mat-sys-body-large-size),
+    list-item-leading-icon-start-space: 16px,
+    list-item-one-line-container-height: 64px,
+    list-item-two-line-container-height: 72px,
+  ));
+
+  @include mat.chips-overrides((
+    label-text-size: var(--mat-sys-title-medium-size),
+    container-height: 40px,
+    outline-width: 2px,
+
+  ));
+
+  @include mat.form-field-overrides((
+    container-height: 56px,
+    container-text-size: var(--mat-sys-body-large-size),
+    outlined-outline-width: 2px,
+    outlined-focus-outline-width: 3px,
+  ));
+}
+
+.kiosk {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100dvh;
+  padding: 16px;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  box-sizing: border-box;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.kiosk-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.kiosk-title {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  font: var(--mat-sys-headline-large);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.kiosk-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kiosk-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-content: center;
+  flex: 1;
+}
+
+.category-btn {
+  min-height: 120px;
+}
+
+.header-spacer {
+  width: 48px;
+  flex-shrink: 0;
+}
+
+.instruction {
+  flex-shrink: 0;
+  margin: 0;
+  text-align: center;
+  font: var(--mat-sys-title-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.chip-bar {
+  flex-shrink: 0;
+  padding-bottom: 4px;
+}
+
+.chip-bar mat-chip-listbox {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.chip-bar mat-chip-option {
+  min-width: 72px;
+}
+
+.centered-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.centered-list mat-list {
+  width: 100%;
+  max-width: 420px;
+}
+
+.grid-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: 16px;
+  padding: 8px;
+}
+
+.grid-btn {
+  flex: 0 0 auto;
+  width: 180px;
+  min-height: 96px;
+  white-space: normal;
+  line-height: 1.25;
+}
+
+.summary {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--mat-sys-surface-container-low);
+  font: var(--mat-sys-body-large);
+}
+
+.summary p {
+  margin: 0 0 8px;
+}
+
+.summary p:last-child {
+  margin-bottom: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.actions.actions-end {
+  justify-content: flex-end;
+}
+
+.actions .spacer {
+  flex: 1;
+}
+
+.enter-btn {
+  min-height: 64px;
+  min-width: 160px;
+}
+
+.placeholder {
+  text-align: center;
+  padding: 24px;
+  font: var(--mat-sys-body-large);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.success-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.success-panel mat-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: #166534;
+}
+
+.helm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.helm-form mat-form-field {
+  width: 100%;
+}
+
+mat-list-item {
+  cursor: pointer;
+}

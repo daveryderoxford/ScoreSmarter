@@ -24,7 +24,7 @@ export class DutiesService {
   private readonly clubTenant = inject(ClubTenant);
 
   /** `undefined` = today's duty team (omit date on the API). Set explicitly for testing. */
-  private readonly requestedDate = signal<string | undefined>('2026-06-24');
+  private readonly requestedDate = signal<string | undefined>(undefined);
   private readonly attendanceByAckKey = signal<ReadonlyMap<string, boolean>>(new Map());
   private readonly _actionError = signal<string | null>(null);
   private readonly _updatingAckKeys = signal<ReadonlySet<string>>(new Set());
