@@ -2,8 +2,7 @@
 import { initializeApp } from '@angular/fire/app';
 import { Preview, applicationConfig, componentWrapperDecorator } from '@storybook/angular';
 import { provideFirebaseApp } from '@angular/fire/app';
-// import '../src/styles.scss';
-import '!style-loader!css-loader!sass-loader!../src/styles.scss';
+import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 
 const preview: Preview = {
   parameters: {
@@ -26,6 +25,13 @@ const preview: Preview = {
             appId: 'storybook',
           }),
         ),
+        // Match the app's global form-field config (see app.config.ts). The app forces the
+        // `outline` appearance everywhere and hides `fill` labels via styles.scss, so without
+        // this stories would render `fill` fields with no visible floating label.
+        {
+          provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
+          useValue: { appearance: 'outline' },
+        },
       ],
     }),
     // This decorator wraps every story in a div and applies the base theme styles.
