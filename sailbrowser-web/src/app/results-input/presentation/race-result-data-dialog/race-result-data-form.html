@@ -2,19 +2,16 @@
   <app-result-code-select formControlName="resultCode" />
 
   @if (isHandicapRace()) {
-    @if (timeInputMode() === 'tod') {
-      <mat-form-field class="field-full">
-        <mat-label>Start time</mat-label>
-        <input matInput type="time" step="1" formControlName="startTimeInput" />
-        <mat-hint>Leave blank to use fleet start time</mat-hint>
-      </mat-form-field>
-    } @else {
-      <mat-form-field class="field-full">
-        <mat-label>Stopwatch reading (minutes)</mat-label>
-        <input matInput type="number" step="any" formControlName="startTimeInput" />
-        <mat-hint>Leave blank to use fleet start time</mat-hint>
-      </mat-form-field>
-    }
+    <mat-form-field class="field-full">
+      <mat-label>{{ timeInputMode() === 'elapsed' ? 'Stopwatch reading (mmm:ss)' : 'Start time' }}</mat-label>
+      <app-time-input
+        formControlName="startTimeInput"
+        [format]="timeInputMode() === 'elapsed' ? 'mss' : 'hms'"
+      />
+      <mat-hint>
+        Leave blank to use fleet start time.{{ timeInputMode() === 'elapsed' ? " Use '-' if the watch was started after the gun." : '' }}
+      </mat-hint>
+    </mat-form-field>
 
     <mat-form-field class="field-full">
       <mat-label>Finish time</mat-label>

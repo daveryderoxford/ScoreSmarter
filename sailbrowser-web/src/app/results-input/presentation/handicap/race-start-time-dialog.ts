@@ -7,38 +7,17 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
-import { addSeconds, format, startOfDay } from 'date-fns';
 import { TimeRecordingMode } from '../../services/manual-results.service';
 import { Race } from 'app/race-calender';
 import { ClubStore } from 'app/club-tenant';
 import type { RaceStart } from 'app/race-calender/model/race-start';
 import { getFleetName } from 'app/club-tenant/model/fleet';
+import { TimeInput } from 'app/shared/components/time-input/time-input';
+import { dateAtSecondsOfDay, secondsSinceStartOfDay } from 'app/shared/utils/time-utils';
 
 export interface RaceStartTimeResult {
   mode: TimeRecordingMode;
   starts: RaceStart[];
-}
-
-/**
- * Elapsed (stopwatch) starts are stored as a Date relative to local midnight on
- * the race day. The dialog edits them as a signed offset in minutes so the
- * stopwatch can have been started *before* the class start (negative offset).
- */
-export function toStartDateFromElapsedOffset(scheduledStart: Date | string | number, offsetMinutes: number): Date {
-  const base = startOfDay(new Date(scheduledStart));
-  const seconds = Math.round(offsetMinutes * 60);
-  return addSeconds(base, seconds);
-}
-
-export function toElapsedOffsetMinutes(scheduledStart: Date | string | number, timeOfDay: Date | string | number): number {
-  const base = startOfDay(new Date(scheduledStart));
-  const seconds = Math.round((new Date(timeOfDay).getTime() - base.getTime()) / 1000);
-  return seconds / 60;
-}
-
-export function formatElapsedOffsetInput(offsetMinutes: number): string {
-  if (Number.isInteger(offsetMinutes)) return String(offsetMinutes);
-  return String(Number(offsetMinutes.toFixed(4)));
 }
 
 @Component({
@@ -61,18 +40,13 @@ export function formatElapsedOffsetInput(offsetMinutes: number): string {
         <div formArrayName="starts" class="starts-list">
           @for (group of starts.controls; track $index; let i = $index) {
             <div [formGroupName]="i" class="start-row">
-              @if (form.value.mode === 'tod') {
-                <mat-form-field>
-                  <mat-label>Start Time (HH:mm:ss)</mat-label>
-                  <input matInput type="time" step="1" formControlName="time">
-                </mat-form-field>
-              } @else {
-                <mat-form-field>
-                  <mat-label>Stopwatch reading (minutes)</mat-label>
-                  <input matInput type="number" step="any" formControlName="time">
-                  <mat-hint>Reading at start time.</mat-hint>
-                </mat-form-field>
-              }
+              <mat-form-field>
+                <mat-label>{{ form.value.mode === 'elapsed' ? 'Stopwatch reading (mmm:ss)' : 'Start Time (HH:mm:ss)' }}</mat-label>
+                <app-time-input formControlName="time" [format]="form.value.mode === 'elapsed' ? 'mss' : 'hms'" />
+                @if (form.value.mode === 'elapsed') {
+                  <mat-hint>Reading at start time. Use '-' if the watch was started after the gun.</mat-hint>
+                }
+              </mat-form-field>
               <mat-form-field>
                 <mat-label>Fleet (optional)</mat-label>
                 <mat-select formControlName="fleetId">
@@ -104,7 +78,7 @@ export function formatElapsedOffsetInput(offsetMinutes: number): string {
     .start-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .error { color: var(--mat-sys-error); font-size: 12px; margin-top: -8px; }
   `],
-  imports: [MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatRadioModule, MatSelectModule, ReactiveFormsModule],
+  imports: [MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatRadioModule, MatSelectModule, ReactiveFormsModule, TimeInput],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RaceStartTimeDialog {
@@ -128,11 +102,10 @@ export class RaceStartTimeDialog {
 
   constructor() {
     const { race } = this.data;
-    const initialMode = race.timeInputMode || 'tod';
     const existingStarts = race.starts?.length
-      ? race.starts.map(s => ({ time: this.formatTimeForMode(initialMode, s.timeOfDay), fleetId: s.fleetId ?? '' }))
+      ? race.starts.map(s => ({ time: this.secondsFromStored(s.timeOfDay), fleetId: s.fleetId ?? '' }))
       : [{
-          time: race.actualStart ? this.formatTimeForMode(initialMode, race.actualStart) : '',
+          time: race.actualStart != null ? this.secondsFromStored(race.actualStart) : null,
           fleetId: '',
         }];
 
@@ -140,23 +113,17 @@ export class RaceStartTimeDialog {
     for (const start of existingStarts) {
       this.starts.push(this.createStartRow(start.time, start.fleetId));
     }
-    this.form.controls.mode.valueChanges.pipe(takeUntilDestroyed()).subscribe(mode => {
+    // Switching mode reinterprets the numeric seconds (clock vs elapsed), so clear entries.
+    this.form.controls.mode.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
       for (const ctrl of this.starts.controls) {
-        const timeCtrl = ctrl.get('time');
-        if (!timeCtrl) continue;
-        if (mode === 'elapsed') {
-          if (!timeCtrl.value) timeCtrl.setValue('0');
-          else if (/^\d{2}:\d{2}/.test(String(timeCtrl.value))) timeCtrl.setValue('0');
-        } else {
-          if (!/^\d{2}:\d{2}/.test(String(timeCtrl.value))) timeCtrl.setValue('');
-        }
+        ctrl.get('time')?.setValue(null);
       }
     });
 
     this.form.controls.startCount.valueChanges.pipe(takeUntilDestroyed()).subscribe(count => {
       const next = Math.max(1, Number(count || 1));
       while (this.starts.length < next) {
-        this.starts.push(this.createStartRow('', ''));
+        this.starts.push(this.createStartRow(null, ''));
       }
       while (this.starts.length > next) {
         this.starts.removeAt(this.starts.length - 1);
@@ -164,9 +131,9 @@ export class RaceStartTimeDialog {
     });
   }
 
-  private createStartRow(time: string, fleetId: string): FormGroup {
+  private createStartRow(time: number | null, fleetId: string): FormGroup {
     return new FormGroup({
-      time: new FormControl<string>(time, Validators.required),
+      time: new FormControl<number | null>(time, Validators.required),
       fleetId: new FormControl<string>(fleetId),
     });
   }
@@ -182,25 +149,16 @@ export class RaceStartTimeDialog {
     return false;
   }
 
-  private formatTimeForMode(mode: TimeRecordingMode, timeOfDay: Date | string | number): string {
-    if (mode === 'elapsed') {
-      return formatElapsedOffsetInput(toElapsedOffsetMinutes(this.data.race.scheduledStart, timeOfDay));
-    }
-    return format(new Date(timeOfDay), 'HH:mm:ss');
+  /** Stored start Dates decompose to seconds since the scheduled start's local midnight (same for both modes). */
+  private secondsFromStored(timeOfDay: Date | string | number): number {
+    return secondsSinceStartOfDay(new Date(timeOfDay), new Date(this.data.race.scheduledStart));
   }
 
-  private toStartDateFromClock(time: string): Date {
-    const dateStr = new Date(this.data.race.scheduledStart).toDateString();
-    return new Date(`${dateStr} ${time}`);
-  }
-
-  private toStartsPayload(mode: TimeRecordingMode): RaceStart[] {
+  private toStartsPayload(): RaceStart[] {
     return this.starts.controls.map((ctrl, i) => {
-      const raw = String(ctrl.get('time')?.value ?? '');
+      const seconds = Number(ctrl.get('time')?.value ?? 0);
       const fleetId = String(ctrl.get('fleetId')?.value ?? '');
-      const timeOfDay = mode === 'elapsed'
-        ? toStartDateFromElapsedOffset(this.data.race.scheduledStart, Number(raw))
-        : this.toStartDateFromClock(raw);
+      const timeOfDay = dateAtSecondsOfDay(new Date(this.data.race.scheduledStart), seconds);
       return {
         id: `start-${i + 1}`,
         timeOfDay,
@@ -212,7 +170,7 @@ export class RaceStartTimeDialog {
   save() {
     if (this.form.valid && !this.hasDuplicateFleetSelection()) {
       const { mode } = this.form.getRawValue();
-      const starts = this.toStartsPayload(mode);
+      const starts = this.toStartsPayload();
       this.dialogRef.close({ mode, starts } as RaceStartTimeResult);
     }
   }

@@ -18,7 +18,6 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { format } from 'date-fns';
 import { Race } from 'app/race-calender/model/race';
 import { RaceResultDraft } from 'app/results-input/model/race-result-draft';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
@@ -27,12 +26,9 @@ import { RaceResultDataCommand } from '../../services/race-competitor-edit.servi
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { ResultCodeSelect } from '../result-code-select';
 import { RaceTimeInput } from '../handicap/race-time-input';
-import {
-  formatElapsedOffsetInput,
-  toElapsedOffsetMinutes,
-  toStartDateFromElapsedOffset,
-} from '../handicap/race-start-time-dialog';
-import { startWith, map } from 'rxjs';
+import { TimeInput } from 'app/shared/components/time-input/time-input';
+import { dateAtSecondsOfDay, secondsSinceStartOfDay } from 'app/shared/utils/time-utils';
+import { startWith } from 'rxjs';
 
 @Component({
   selector: 'app-race-result-data-form',
@@ -44,6 +40,7 @@ import { startWith, map } from 'rxjs';
     SubmitButton,
     ResultCodeSelect,
     RaceTimeInput,
+    TimeInput,
   ],
   templateUrl: './race-result-data-form.html',
   styleUrls: ['../_competitor-edit-form.scss'],
@@ -63,7 +60,7 @@ export class RaceResultDataForm implements OnInit {
   readonly isHandicapRace = computed(() => this.race().type === 'Handicap');
 
   readonly form = this.fb.group({
-    startTimeInput: new FormControl<string | null>(''),
+    startTimeInput: new FormControl<number | null>(null),
     manualFinishTime: new FormControl<Date | null>(null),
     manualLaps: new FormControl<number>(1, { nonNullable: true }),
     resultCode: new FormControl<ResultCode>('OK', { nonNullable: true }),
@@ -76,9 +73,8 @@ export class RaceResultDataForm implements OnInit {
   private readonly startTimeInputValue = toSignal(
     this.form.controls.startTimeInput.valueChanges.pipe(
       startWith(this.form.controls.startTimeInput.value),
-      map(v => (v == null ? '' : String(v))),
     ),
-    { initialValue: '' },
+    { initialValue: null as number | null },
   );
 
   /** Effective start for finish-time validation (override, competitor, or fleet). */
@@ -141,25 +137,13 @@ export class RaceResultDataForm implements OnInit {
     this.cancelled.emit();
   }
 
-  private formatStartTimeForInput(date: Date | null | undefined): string {
-    if (!date) return '';
-    if (this.timeInputMode() === 'elapsed') {
-      return formatElapsedOffsetInput(
-        toElapsedOffsetMinutes(this.race().scheduledStart, date),
-      );
-    }
-    return format(new Date(date), 'HH:mm:ss');
+  private formatStartTimeForInput(date: Date | null | undefined): number | null {
+    if (!date) return null;
+    return secondsSinceStartOfDay(new Date(date), new Date(this.race().scheduledStart));
   }
 
-  private parseStartTimeInput(raw: string | null | undefined): Date | null {
-    const trimmed = String(raw ?? '').trim();
-    if (!trimmed) return null;
-    if (this.timeInputMode() === 'elapsed') {
-      const offsetMinutes = Number(trimmed);
-      if (!Number.isFinite(offsetMinutes)) return null;
-      return toStartDateFromElapsedOffset(this.race().scheduledStart, offsetMinutes);
-    }
-    const dateStr = new Date(this.race().scheduledStart).toDateString();
-    return new Date(`${dateStr} ${trimmed}`);
+  private parseStartTimeInput(seconds: number | null | undefined): Date | null {
+    if (seconds == null) return null;
+    return dateAtSecondsOfDay(new Date(this.race().scheduledStart), seconds);
   }
 }

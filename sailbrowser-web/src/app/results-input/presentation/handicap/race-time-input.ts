@@ -1,31 +1,23 @@
 import { Component, computed, DestroyRef, ElementRef, forwardRef, inject, input, OnInit, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormControl, NG_VALIDATORS, NG_VALUE_ACCESSOR, ReactiveFormsModule, ValidationErrors, Validator } from '@angular/forms';
-import { MatFormFieldControl, MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldControl } from '@angular/material/form-field';
 import { FormFieldBase } from 'app/shared/components/form-field.base';
-import { addHours, addMinutes, addSeconds, format, isValid, parse, startOfDay } from 'date-fns';
+import { TimeInput } from 'app/shared/components/time-input/time-input';
+import { dateAtSecondsOfDay, secondsSinceStartOfDay } from 'app/shared/utils/time-utils';
 import { merge, of } from 'rxjs';
 
-export function parseElapsedStopwatchReading(
-  value: string,
-  scheduledStart: Date,
-): Date | null {
-  const trimmed = value.trim();
-  const match = /^(\d{1,2}):([0-5]\d)(?::([0-5]\d))?$/.exec(trimmed);
-  if (!match) return null;
-
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  const seconds = Number(match[3] ?? '0');
-  const anchor = startOfDay(scheduledStart);
-  return addSeconds(addMinutes(addHours(anchor, hours), minutes), seconds);
-}
-
+/**
+ * Outer `MatFormFieldControl` that validates handicap finish/start times against a reference
+ * time while delegating entry to the date-agnostic `app-time-input` (which emits seconds).
+ *
+ * It still exposes a `Date` to consumers. Seconds are composed into a `Date` relative to the
+ * relevant day: `baseTime` for clock (`tod`) entry, `scheduledStart` for elapsed entry.
+ */
 @Component({
   selector: 'app-race-time-input',
   standalone: true,
-  imports: [MatInputModule, ReactiveFormsModule, MatFormFieldModule],
+  imports: [ReactiveFormsModule, TimeInput],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
@@ -43,24 +35,16 @@ export function parseElapsedStopwatchReading(
     }
   ],
   template: `
-    <input
-      #nativeInput
-      matInput
-      type="time"
-      step="1"
-      [formControl]="inputControl"
-      (blur)="onBlur()"
-      (focus)="onFocus()"
-      [placeholder]="inputPlaceholder()">
+    <app-time-input #inner [formControl]="inputControl" [format]="innerFormat()" />
   `,
   styles: [`
-    :host:not(.floating) input[type='time'] {
-      color: transparent;
-    }
+    :host { display: block; }
   `],
   host: {
     '[class.floating]': 'shouldLabelFloat',
     '[id]': 'id',
+    '(focusin)': 'onFocus()',
+    '(focusout)': 'onFocusOut($event)',
   }
 })
 export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnInit {
@@ -73,15 +57,15 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
   /** When false, skip "must be after baseTime" validation (e.g. editable start time). */
   validateGreaterThanBase = input(true);
 
-  inputPlaceholder = computed(() => this.mode() === 'elapsed' ? 'mm:ss' : 'hh:mm:ss');
-  inputControl = new FormControl<string>('', { nonNullable: true });
+  readonly innerFormat = computed(() => (this.mode() === 'elapsed' ? 'mss' : 'hms'));
+  inputControl = new FormControl<number | null>(null);
 
-  private readonly nativeInput = viewChild<ElementRef<HTMLInputElement>>('nativeInput');
+  private readonly inner = viewChild<TimeInput>('inner');
 
   /** Move focus to the time field (e.g. Tab from competitor search). */
   focusInput(): void {
     if (this.disabled) return;
-    this.nativeInput()?.nativeElement?.focus();
+    this.inner()?.focusInput();
   }
 
   // --- Overrides for FormFieldBase ---
@@ -101,15 +85,16 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
   }
 
   override get empty(): boolean {
-    return !this.inputControl.value;
+    return this.inputControl.value == null;
   }
 
   // --- Lifecycle & ControlValueAccessor ---
   constructor() {
     super(inject(ElementRef));
 
-    this.inputControl.valueChanges.subscribe(val => {
-      this.processInput(val);
+    this.inputControl.valueChanges.subscribe(seconds => {
+      this.value = this.secondsToDate(seconds);
+      this._onChange(this.value);
     });
   }
 
@@ -130,6 +115,13 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
       });
   }
 
+  /** Mirror the host blur so the label floats while editing and `touched` propagates. */
+  onFocusOut(event: FocusEvent): void {
+    if (!this._elementRef.nativeElement.contains(event.relatedTarget as Node | null)) {
+      this.onBlur();
+    }
+  }
+
   /** Sets host + inner input disabled without re-entering FormControl APIs. */
   private applyDisabledFromParent(disabled: boolean): void {
     super.disabled = disabled;
@@ -141,15 +133,13 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
     this.stateChanges.next();
   }
 
-
-
   override writeValue(value: Date | null): void {
     super.writeValue(value); // Let base class store the value
     if (!value) {
-      this.inputControl.setValue('', { emitEvent: false });
+      this.inputControl.setValue(null, { emitEvent: false });
       return;
     }
-    this.inputControl.setValue(format(value, 'HH:mm:ss'), { emitEvent: false });
+    this.inputControl.setValue(this.dateToSeconds(value), { emitEvent: false });
   }
 
   // --- Validator implementation ---
@@ -169,21 +159,17 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
   }
 
   // --- Private helpers ---
-  private processInput(val: string) {
-    let newDate: Date | null = null;
-    if (val) {
-      if (this.mode() === 'elapsed') {
-        newDate = parseElapsedStopwatchReading(val, this.scheduledStart());
-      } else {
-        const base = this.baseTime();
-        // Try parsing with seconds, then without, to be more flexible.
-        let date = parse(val, 'HH:mm:ss', base);
-        if (!isValid(date)) date = parse(val, 'HH:mm', base);
-        if (isValid(date)) newDate = date;
-      }
-    }
-    // Update the value in the base class and notify forms API
-    this.value = newDate;
-    this._onChange(this.value);
+  /** Reference day used to compose/decompose seconds for the current mode. */
+  private referenceDay(): Date {
+    return this.mode() === 'elapsed' ? this.scheduledStart() : this.baseTime();
+  }
+
+  private secondsToDate(seconds: number | null): Date | null {
+    if (seconds == null) return null;
+    return dateAtSecondsOfDay(this.referenceDay(), seconds);
+  }
+
+  private dateToSeconds(value: Date): number {
+    return secondsSinceStartOfDay(value, this.referenceDay());
   }
 }
