@@ -21,12 +21,12 @@ describe('digitsToDisplay', () => {
     expect(digitsToDisplay('123456', 'hms')).toBe('12:34:56');
   });
 
-  it('formats mss digit stream with auto-dot', () => {
+  it('formats mss digit stream with auto-colon', () => {
     expect(digitsToDisplay('2', 'mss')).toBe('2');
     expect(digitsToDisplay('23', 'mss')).toBe('23');
-    expect(digitsToDisplay('234', 'mss')).toBe('23.4');
-    expect(digitsToDisplay('2345', 'mss')).toBe('23.45');
-    expect(digitsToDisplay('12345', 'mss')).toBe('123.45');
+    expect(digitsToDisplay('234', 'mss')).toBe('23:4');
+    expect(digitsToDisplay('2345', 'mss')).toBe('23:45');
+    expect(digitsToDisplay('12345', 'mss')).toBe('123:45');
   });
 });
 
@@ -50,7 +50,7 @@ describe('applyDigitInput', () => {
       text = r.text;
       sel = r.selection;
     }
-    expect(text).toBe('123.45');
+    expect(text).toBe('123:45');
   });
 });
 
@@ -77,21 +77,21 @@ describe('parseSegments and formatSegments', () => {
   });
 
   it('round-trips mss from midnight offset', () => {
-    const parsed = parseSegments('123.45', anchor, 'mss');
+    const parsed = parseSegments('123:45', anchor, 'mss');
     expect(parsed).not.toBeNull();
     const midnight = localMidnight(anchor);
     expect(parsed!.getTime() - midnight.getTime()).toBe((123 * 60 + 45) * 1000);
-    expect(formatSegments(parsed!, anchor, 'mss')).toBe('123.45');
+    expect(formatSegments(parsed!, anchor, 'mss')).toBe('123:45');
   });
 
   it('supports minutes over 60 in mss', () => {
-    const parsed = parseSegments('83.30', anchor, 'mss');
+    const parsed = parseSegments('83:30', anchor, 'mss');
     expect(parsed).not.toBeNull();
-    expect(formatSegments(parsed!, anchor, 'mss')).toBe('83.30');
+    expect(formatSegments(parsed!, anchor, 'mss')).toBe('83:30');
   });
 
   it('rejects invalid mss seconds', () => {
-    expect(parseSegments('12.99', anchor, 'mss')).toBeNull();
+    expect(parseSegments('12:99', anchor, 'mss')).toBeNull();
   });
 });
 
@@ -102,7 +102,7 @@ describe('normalizeOnBlur', () => {
   });
 
   it('zero-pads partial mss', () => {
-    expect(normalizeOnBlur('23', 'mss')).toBe('23.00');
-    expect(normalizeOnBlur('234', 'mss')).toBe('23.04');
+    expect(normalizeOnBlur('23', 'mss')).toBe('23:00');
+    expect(normalizeOnBlur('234', 'mss')).toBe('23:04');
   });
 });

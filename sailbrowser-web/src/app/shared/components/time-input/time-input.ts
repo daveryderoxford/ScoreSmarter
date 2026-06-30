@@ -31,7 +31,7 @@ import {
  * `MatFormFieldControl` (see the Angular Material custom form field control guide).
  *
  * It edits only the time portion of the supplied `anchorDate` and emits a `Date`. Two
- * layouts are supported via `format`: `hms` (HH:mm:ss clock) and `mss` (mmm.ss elapsed).
+ * layouts are supported via `format`: `hms` (HH:mm:ss clock) and `mss` (mmm:ss elapsed).
  */
 @Component({
   selector: 'app-time-input',

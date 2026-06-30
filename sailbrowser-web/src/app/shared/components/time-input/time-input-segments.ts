@@ -6,10 +6,10 @@ export interface SegmentEditResult {
 }
 
 const HMS_MAX_DIGITS = 6;
-const MSS_MAX_DIGITS = 7; // e.g. 99999.99 → practical cap
+const MSS_MAX_DIGITS = 7; // e.g. 99999:99 → practical cap
 
 export function placeholderForFormat(format: TimeInputFormat): string {
-  return format === 'hms' ? 'hh:mm:ss' : 'mmm.ss';
+  return format === 'hms' ? 'hh:mm:ss' : 'mmm:ss';
 }
 
 export function extractDigits(text: string): string {
@@ -31,13 +31,13 @@ export function digitsToDisplay(digits: string, format: TimeInputFormat): string
   }
 
   if (d.length <= 2) return d;
-  if (d.length === 3) return `${d.slice(0, -1)}.${d.slice(-1)}`;
-  return `${d.slice(0, -2)}.${d.slice(-2)}`;
+  if (d.length === 3) return `${d.slice(0, -1)}:${d.slice(-1)}`;
+  return `${d.slice(0, -2)}:${d.slice(-2)}`;
 }
 
 /** Map a display caret position to a digit index (0-based). */
 export function caretToDigitIndex(text: string, caret: number, format: TimeInputFormat): number {
-  const sep = format === 'hms' ? ':' : '.';
+  const sep = ':';
   let digitIndex = 0;
   for (let i = 0; i < caret && i < text.length; i++) {
     if (text[i] !== sep) digitIndex++;
@@ -66,7 +66,7 @@ export function formatSegments(date: Date, anchorDate: Date, format: TimeInputFo
   const elapsedSec = Math.max(0, Math.round((date.getTime() - anchor.getTime()) / 1000));
   const minutes = Math.floor(elapsedSec / 60);
   const seconds = elapsedSec % 60;
-  return `${minutes}.${String(seconds).padStart(2, '0')}`;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
 export function normalizeOnBlur(text: string, format: TimeInputFormat): string {
@@ -82,12 +82,12 @@ export function normalizeOnBlur(text: string, format: TimeInputFormat): string {
   }
 
   if (digits.length <= 2) {
-    return `${Number(digits)}.00`;
+    return `${Number(digits)}:00`;
   }
   if (digits.length === 3) {
-    return `${digits.slice(0, -1)}.${digits.slice(-1).padStart(2, '0')}`;
+    return `${digits.slice(0, -1)}:${digits.slice(-1).padStart(2, '0')}`;
   }
-  return `${digits.slice(0, -2)}.${digits.slice(-2)}`;
+  return `${digits.slice(0, -2)}:${digits.slice(-2)}`;
 }
 
 function parseHmsSegments(text: string, anchorDate: Date): Date | null {
@@ -111,7 +111,7 @@ function parseHmsSegments(text: string, anchorDate: Date): Date | null {
 }
 
 function parseMssSegments(text: string, anchorDate: Date): Date | null {
-  const match = /^(\d+)\.(\d{1,2})$/.exec(text.trim());
+  const match = /^(\d+):(\d{1,2})$/.exec(text.trim());
   if (!match) return null;
 
   const minutes = Number(match[1]);
@@ -132,7 +132,7 @@ export function isCompleteDisplay(text: string, format: TimeInputFormat): boolea
   if (format === 'hms') {
     return /^\d{2}:\d{2}:\d{2}$/.test(text);
   }
-  return /^\d+\.\d{2}$/.test(text);
+  return /^\d+:\d{2}$/.test(text);
 }
 
 export function applyDigitInput(
@@ -235,17 +235,17 @@ function getSegmentAtCaret(text: string, caret: number, format: TimeInputFormat)
     return segments[2] ?? null;
   }
 
-  const dot = text.indexOf('.');
-  if (dot < 0) {
+  const sep = text.indexOf(':');
+  if (sep < 0) {
     const minutes = Number(text) || 0;
     return { start: 0, end: text.length, value: minutes, min: 0, max: 99999 };
   }
-  if (caret <= dot) {
-    const minutes = Number(text.slice(0, dot)) || 0;
-    return { start: 0, end: dot, value: minutes, min: 0, max: 99999 };
+  if (caret <= sep) {
+    const minutes = Number(text.slice(0, sep)) || 0;
+    return { start: 0, end: sep, value: minutes, min: 0, max: 99999 };
   }
-  const seconds = Number(text.slice(dot + 1)) || 0;
-  return { start: dot + 1, end: text.length, value: seconds, min: 0, max: 59 };
+  const seconds = Number(text.slice(sep + 1)) || 0;
+  return { start: sep + 1, end: text.length, value: seconds, min: 0, max: 59 };
 }
 
 function replaceSegment(text: string, seg: SegmentBounds, newValue: number, format: TimeInputFormat): string {
@@ -258,14 +258,14 @@ function replaceSegment(text: string, seg: SegmentBounds, newValue: number, form
     return parts.join(':');
   }
 
-  const dot = text.indexOf('.');
-  if (dot < 0) {
-    return `${newValue}.00`;
+  const sep = text.indexOf(':');
+  if (sep < 0) {
+    return `${newValue}:00`;
   }
   if (seg.start === 0) {
-    return `${newValue}.${text.slice(dot + 1).padStart(2, '0')}`;
+    return `${newValue}:${text.slice(sep + 1).padStart(2, '0')}`;
   }
-  return `${text.slice(0, dot)}.${String(newValue).padStart(2, '0')}`;
+  return `${text.slice(0, sep)}:${String(newValue).padStart(2, '0')}`;
 }
 
 export function adjustSegment(

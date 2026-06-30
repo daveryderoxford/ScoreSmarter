@@ -58,7 +58,7 @@ describe('TimeInput', () => {
     fixture.componentInstance.control.setValue(elapsed);
     fixture.detectChanges();
     const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
-    expect(input.value).toBe('123.45');
+    expect(input.value).toBe('123:45');
   });
 
   it('disables inner input when parent control disabled', () => {

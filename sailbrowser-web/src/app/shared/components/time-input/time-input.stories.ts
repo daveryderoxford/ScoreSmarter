@@ -54,7 +54,7 @@ const meta: Meta<TimeInputDemoHost> = {
     docs: {
       description: {
         component:
-          'Chrome-style single-field time entry. Formats: hms (HH:mm:ss clock) and mss (mmm.ss elapsed minutes).',
+          'Chrome-style single-field time entry. Formats: hms (HH:mm:ss clock) and mss (mmm:ss elapsed minutes).',
       },
     },
   },
