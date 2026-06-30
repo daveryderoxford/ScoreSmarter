@@ -3,13 +3,12 @@ import {
   applyBackspace,
   applyDigitInput,
   digitsToDisplay,
-  formatSegments,
-  localMidnight,
+  displayToSeconds,
+  isCompleteDisplay,
   normalizeOnBlur,
-  parseSegments,
+  secondsToDisplay,
+  toggleMssSign,
 } from './time-input-segments';
-
-const anchor = new Date(2026, 5, 15);
 
 describe('digitsToDisplay', () => {
   it('formats hms digit stream with auto-colons', () => {
@@ -21,12 +20,22 @@ describe('digitsToDisplay', () => {
     expect(digitsToDisplay('123456', 'hms')).toBe('12:34:56');
   });
 
-  it('formats mss digit stream with auto-colon', () => {
+  it('formats mss digit stream with right-filled seconds', () => {
     expect(digitsToDisplay('2', 'mss')).toBe('2');
     expect(digitsToDisplay('23', 'mss')).toBe('23');
-    expect(digitsToDisplay('234', 'mss')).toBe('23:4');
+    expect(digitsToDisplay('234', 'mss')).toBe('2:34');
     expect(digitsToDisplay('2345', 'mss')).toBe('23:45');
     expect(digitsToDisplay('12345', 'mss')).toBe('123:45');
+    expect(digitsToDisplay('530', 'mss')).toBe('5:30');
+    expect(digitsToDisplay('500', 'mss')).toBe('5:00');
+  });
+
+  it('keeps rendered mss values stable under re-masking', () => {
+    // A rendered value must be a fixed point of the editing mask, otherwise
+    // the first edit shifts the minutes (the "5 becomes 50" bug).
+    const display = secondsToDisplay(300, 'mss');
+    expect(display).toBe('5:00');
+    expect(digitsToDisplay('500', 'mss')).toBe(display);
   });
 });
 
@@ -61,37 +70,89 @@ describe('applyBackspace', () => {
   });
 });
 
-describe('parseSegments and formatSegments', () => {
-  it('round-trips hms on anchor calendar day', () => {
-    const parsed = parseSegments('14:32:05', anchor, 'hms');
-    expect(parsed).not.toBeNull();
-    expect(parsed!.getHours()).toBe(14);
-    expect(parsed!.getMinutes()).toBe(32);
-    expect(parsed!.getSeconds()).toBe(5);
-    expect(parsed!.getFullYear()).toBe(anchor.getFullYear());
-    expect(formatSegments(parsed!, anchor, 'hms')).toBe('14:32:05');
+describe('displayToSeconds and secondsToDisplay', () => {
+  it('round-trips hms as seconds-of-day', () => {
+    const seconds = displayToSeconds('14:32:05', 'hms');
+    expect(seconds).toBe(14 * 3600 + 32 * 60 + 5);
+    expect(secondsToDisplay(seconds!, 'hms')).toBe('14:32:05');
   });
 
   it('rejects invalid hms ranges', () => {
-    expect(parseSegments('99:99:99', anchor, 'hms')).toBeNull();
+    expect(displayToSeconds('99:99:99', 'hms')).toBeNull();
   });
 
-  it('round-trips mss from midnight offset', () => {
-    const parsed = parseSegments('123:45', anchor, 'mss');
-    expect(parsed).not.toBeNull();
-    const midnight = localMidnight(anchor);
-    expect(parsed!.getTime() - midnight.getTime()).toBe((123 * 60 + 45) * 1000);
-    expect(formatSegments(parsed!, anchor, 'mss')).toBe('123:45');
+  it('round-trips mss as total elapsed seconds', () => {
+    const seconds = displayToSeconds('123:45', 'mss');
+    expect(seconds).toBe(123 * 60 + 45);
+    expect(secondsToDisplay(seconds!, 'mss')).toBe('123:45');
   });
 
   it('supports minutes over 60 in mss', () => {
-    const parsed = parseSegments('83:30', anchor, 'mss');
-    expect(parsed).not.toBeNull();
-    expect(formatSegments(parsed!, anchor, 'mss')).toBe('83:30');
+    const seconds = displayToSeconds('83:30', 'mss');
+    expect(seconds).toBe(83 * 60 + 30);
+    expect(secondsToDisplay(seconds!, 'mss')).toBe('83:30');
   });
 
   it('rejects invalid mss seconds', () => {
-    expect(parseSegments('12:99', anchor, 'mss')).toBeNull();
+    expect(displayToSeconds('12:99', 'mss')).toBeNull();
+  });
+});
+
+describe('negative mss support', () => {
+  it('renders negative seconds with a leading minus', () => {
+    expect(secondsToDisplay(-90, 'mss')).toBe('-1:30');
+    expect(secondsToDisplay(-30, 'mss')).toBe('-0:30');
+  });
+
+  it('parses a leading minus to negative seconds', () => {
+    expect(displayToSeconds('-1:30', 'mss')).toBe(-90);
+    expect(displayToSeconds('-0:30', 'mss')).toBe(-30);
+  });
+
+  it('round-trips negative mss values', () => {
+    for (const seconds of [-30, -90, -3630]) {
+      expect(displayToSeconds(secondsToDisplay(seconds, 'mss'), 'mss')).toBe(seconds);
+    }
+  });
+
+  it('treats a signed mss value as complete', () => {
+    expect(isCompleteDisplay('-1:30', 'mss')).toBe(true);
+    expect(isCompleteDisplay('1:30', 'mss')).toBe(true);
+  });
+
+  it('hms never emits a sign and ignores negative input', () => {
+    expect(secondsToDisplay(-90, 'hms')).toBe('00:00:00');
+    expect(displayToSeconds('-1:02:03', 'hms')).toBeNull();
+    expect(isCompleteDisplay('-1:02:03', 'hms')).toBe(false);
+  });
+
+  it('preserves the sign while editing digits', () => {
+    // Unsigned reference: type the magnitude with no sign.
+    let unsigned = '';
+    let us = 0;
+    for (const d of '130') {
+      const r = applyDigitInput(unsigned, us, us, d, 'mss')!;
+      unsigned = r.text;
+      us = r.selection;
+    }
+    // Signed: toggle the sign, then type the same digits.
+    const toggled = toggleMssSign('', 0);
+    expect(toggled.text).toBe('-');
+    let text = toggled.text;
+    let sel = toggled.selection;
+    for (const d of '130') {
+      const r = applyDigitInput(text, sel, sel, d, 'mss')!;
+      text = r.text;
+      sel = r.selection;
+    }
+    expect(text).toBe(`-${unsigned}`);
+  });
+
+  it('drops the sign once the last digit is removed', () => {
+    const afterDigit = applyDigitInput('-', 1, 1, '5', 'mss')!;
+    expect(afterDigit.text).toBe('-5');
+    const afterBackspace = applyBackspace(afterDigit.text, afterDigit.selection, afterDigit.selection, 'mss');
+    expect(afterBackspace.text).toBe('');
   });
 });
 
@@ -101,8 +162,14 @@ describe('normalizeOnBlur', () => {
     expect(normalizeOnBlur('14:3', 'hms')).toBe('14:30:00');
   });
 
-  it('zero-pads partial mss', () => {
+  it('right-fills partial mss', () => {
     expect(normalizeOnBlur('23', 'mss')).toBe('23:00');
-    expect(normalizeOnBlur('234', 'mss')).toBe('23:04');
+    expect(normalizeOnBlur('234', 'mss')).toBe('2:34');
+    expect(normalizeOnBlur('530', 'mss')).toBe('5:30');
+  });
+
+  it('right-fills partial negative mss preserving the sign', () => {
+    expect(normalizeOnBlur('-23', 'mss')).toBe('-23:00');
+    expect(normalizeOnBlur('-234', 'mss')).toBe('-2:34');
   });
 });

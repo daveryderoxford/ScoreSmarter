@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, input, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
@@ -9,32 +8,28 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { TimeInput } from './time-input';
 import type { TimeInputFormat } from './time-input-segments';
 
-const storyAnchor = new Date(2026, 5, 15, 0, 0, 0);
-
 @Component({
   selector: 'time-input-demo',
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, TimeInput, DatePipe],
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, TimeInput],
   template: `
     <mat-form-field style="width: 280px">
       <mat-label>{{ label() }}</mat-label>
-      <app-time-input [formControl]="control" [format]="format()" [anchorDate]="anchorDate()" />
+      <app-time-input [formControl]="control" [format]="format()" />
     </mat-form-field>
-    <p>Display: {{ control.value | date: 'HH:mm:ss' }}</p>
-    <p>ISO: {{ control.value?.toISOString() ?? '(empty)' }}</p>
+    <p>Seconds: {{ control.value ?? '(empty)' }}</p>
   `,
 })
 class TimeInputDemoHost implements OnInit {
   readonly label = input('Time');
   readonly format = input<TimeInputFormat>('hms');
-  readonly anchorDate = input(storyAnchor);
-  readonly initial = input<Date | null>(null);
+  readonly initial = input<number | null>(null);
   readonly disabled = input(false);
 
-  readonly control = new FormControl<Date | null>(null);
+  readonly control = new FormControl<number | null>(null);
 
   ngOnInit(): void {
     const v = this.initial();
-    if (v) this.control.setValue(v);
+    if (v != null) this.control.setValue(v);
     if (this.disabled()) this.control.disable();
   }
 }
@@ -71,7 +66,7 @@ export const HmsPrefilled: Story = {
   args: {
     label: 'Clock time',
     format: 'hms',
-    initial: new Date(2026, 5, 15, 14, 32, 5),
+    initial: 14 * 3600 + 32 * 60 + 5,
   },
 };
 
@@ -83,7 +78,7 @@ export const MssPrefilled: Story = {
   args: {
     label: 'Elapsed',
     format: 'mss',
-    initial: new Date(storyAnchor.getTime() + (123 * 60 + 45) * 1000),
+    initial: 123 * 60 + 45,
   },
 };
 
@@ -91,7 +86,7 @@ export const HmsDisabled: Story = {
   args: {
     label: 'Disabled',
     format: 'hms',
-    initial: new Date(2026, 5, 15, 10, 0, 0),
+    initial: 10 * 3600,
     disabled: true,
   },
   play: async ({ canvasElement }) => {
@@ -119,7 +114,7 @@ export const HmsTypeSequential: Story = {
     });
     await userEvent.tab();
     await waitFor(() => {
-      expect(root.getByText(/ISO:/)).toHaveTextContent('2026-06-15');
+      expect(root.getByText(/Seconds:/)).toHaveTextContent(String(14 * 3600 + 32 * 60 + 5));
     });
   },
 };
@@ -132,7 +127,7 @@ export const MssTypeSequential: Story = {
     await userEvent.clear(input);
     await userEvent.type(input, '12345');
     await waitFor(() => {
-      expect((input as HTMLInputElement).value).toBe('123.45');
+      expect((input as HTMLInputElement).value).toBe('123:45');
     });
   },
 };

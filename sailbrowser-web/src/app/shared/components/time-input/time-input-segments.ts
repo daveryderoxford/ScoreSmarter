@@ -31,7 +31,6 @@ export function digitsToDisplay(digits: string, format: TimeInputFormat): string
   }
 
   if (d.length <= 2) return d;
-  if (d.length === 3) return `${d.slice(0, -1)}:${d.slice(-1)}`;
   return `${d.slice(0, -2)}:${d.slice(-2)}`;
 }
 
@@ -47,29 +46,71 @@ export function caretToDigitIndex(text: string, caret: number, format: TimeInput
 
 /** Map digit index to display caret (after that digit). */
 export function digitIndexToCaret(digits: string, digitIndex: number, format: TimeInputFormat): number {
-  return digitsToDisplay(digits.slice(0, digitIndex), format).length;
+  const display = digitsToDisplay(digits, format);
+  if (digitIndex <= 0) return 0;
+  let count = 0;
+  for (let i = 0; i < display.length; i++) {
+    if (display[i] !== ':') {
+      count++;
+      if (count === digitIndex) return i + 1;
+    }
+  }
+  return display.length;
 }
 
-export function localMidnight(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+/**
+ * Run an unsigned editing operation while preserving an optional leading `-` (mss only).
+ * The leading sign is stripped before delegating and re-applied after, with carets shifted
+ * by one to account for it. `hms` (and unsigned mss) pass straight through.
+ */
+function withMssSign(
+  format: TimeInputFormat,
+  text: string,
+  selStart: number,
+  selEnd: number,
+  core: (t: string, s: number, e: number) => SegmentEditResult,
+): SegmentEditResult {
+  if (format !== 'mss' || !text.startsWith('-')) {
+    return core(text, selStart, selEnd);
+  }
+  const r = core(text.slice(1), Math.max(0, selStart - 1), Math.max(0, selEnd - 1));
+  if (!r.text) return { text: '', selection: 0 };
+  return { text: `-${r.text}`, selection: r.selection + 1 };
 }
 
-export function formatSegments(date: Date, anchorDate: Date, format: TimeInputFormat): string {
+/** Toggle a leading `-` on the display (mss only), keeping the caret aligned. */
+export function toggleMssSign(text: string, caret: number): SegmentEditResult {
+  if (text.startsWith('-')) {
+    return { text: text.slice(1), selection: Math.max(0, caret - 1) };
+  }
+  return { text: `-${text}`, selection: caret + 1 };
+}
+
+const pad2 = (n: number): string => String(n).padStart(2, '0');
+
+/**
+ * Render a numeric value as the masked display string.
+ * - `hms`: seconds-of-day (0..86399) -> `HH:mm:ss` (clamped non-negative).
+ * - `mss`: total elapsed seconds (unbounded, signed) -> `mmm:ss`, e.g. `-1:30`.
+ */
+export function secondsToDisplay(seconds: number, format: TimeInputFormat): string {
   if (format === 'hms') {
-    const h = String(date.getHours()).padStart(2, '0');
-    const m = String(date.getMinutes()).padStart(2, '0');
-    const s = String(date.getSeconds()).padStart(2, '0');
-    return `${h}:${m}:${s}`;
+    const total = Math.max(0, Math.round(seconds));
+    const h = Math.floor(total / 3600) % 24;
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
   }
 
-  const anchor = localMidnight(anchorDate);
-  const elapsedSec = Math.max(0, Math.round((date.getTime() - anchor.getTime()) / 1000));
-  const minutes = Math.floor(elapsedSec / 60);
-  const seconds = elapsedSec % 60;
-  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  const rounded = Math.round(seconds);
+  const neg = rounded < 0;
+  const total = Math.abs(rounded);
+  const minutes = Math.floor(total / 60);
+  const seconds_ = total % 60;
+  return `${neg ? '-' : ''}${minutes}:${pad2(seconds_)}`;
 }
 
-export function normalizeOnBlur(text: string, format: TimeInputFormat): string {
+function normalizeOnBlurCore(text: string, format: TimeInputFormat): string {
   const digits = extractDigits(text);
   if (!digits) return '';
 
@@ -84,66 +125,60 @@ export function normalizeOnBlur(text: string, format: TimeInputFormat): string {
   if (digits.length <= 2) {
     return `${Number(digits)}:00`;
   }
-  if (digits.length === 3) {
-    return `${digits.slice(0, -1)}:${digits.slice(-1).padStart(2, '0')}`;
-  }
   return `${digits.slice(0, -2)}:${digits.slice(-2)}`;
 }
 
-function parseHmsSegments(text: string, anchorDate: Date): Date | null {
-  const match = /^(\d{1,2}):(\d{1,2}):(\d{1,2})$/.exec(text.trim());
-  if (!match) return null;
-
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  const seconds = Number(match[3]);
-  if (hours > 23 || minutes > 59 || seconds > 59) return null;
-
-  return new Date(
-    anchorDate.getFullYear(),
-    anchorDate.getMonth(),
-    anchorDate.getDate(),
-    hours,
-    minutes,
-    seconds,
-    0,
-  );
+export function normalizeOnBlur(text: string, format: TimeInputFormat): string {
+  const trimmed = text.trim();
+  if (format === 'mss' && trimmed.startsWith('-')) {
+    const body = normalizeOnBlurCore(trimmed.slice(1), format);
+    return body ? `-${body}` : '';
+  }
+  return normalizeOnBlurCore(text, format);
 }
 
-function parseMssSegments(text: string, anchorDate: Date): Date | null {
-  const match = /^(\d+):(\d{1,2})$/.exec(text.trim());
-  if (!match) return null;
-
-  const minutes = Number(match[1]);
-  const seconds = Number(match[2]);
-  if (seconds > 59) return null;
-
-  const anchor = localMidnight(anchorDate);
-  return new Date(anchor.getTime() + minutes * 60_000 + seconds * 1_000);
-}
-
-export function parseSegments(text: string, anchorDate: Date, format: TimeInputFormat): Date | null {
+/**
+ * Parse a complete display string to a numeric value, or null if invalid.
+ * - `hms`: `HH:mm:ss` -> seconds-of-day, with range validation.
+ * - `mss`: `mmm:ss` -> total elapsed seconds.
+ */
+export function displayToSeconds(text: string, format: TimeInputFormat): number | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
-  return format === 'hms' ? parseHmsSegments(trimmed, anchorDate) : parseMssSegments(trimmed, anchorDate);
+
+  if (format === 'hms') {
+    const match = /^(\d{1,2}):(\d{1,2}):(\d{1,2})$/.exec(trimmed);
+    if (!match) return null;
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    const seconds = Number(match[3]);
+    if (hours > 23 || minutes > 59 || seconds > 59) return null;
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+
+  const match = /^(-?)(\d+):(\d{1,2})$/.exec(trimmed);
+  if (!match) return null;
+  const sign = match[1] === '-' ? -1 : 1;
+  const minutes = Number(match[2]);
+  const seconds = Number(match[3]);
+  if (seconds > 59) return null;
+  return sign * (minutes * 60 + seconds);
 }
 
 export function isCompleteDisplay(text: string, format: TimeInputFormat): boolean {
   if (format === 'hms') {
     return /^\d{2}:\d{2}:\d{2}$/.test(text);
   }
-  return /^\d+:\d{2}$/.test(text);
+  return /^-?\d+:\d{2}$/.test(text);
 }
 
-export function applyDigitInput(
+function applyDigitInputCore(
   text: string,
   selectionStart: number,
   selectionEnd: number,
   digit: string,
   format: TimeInputFormat,
-): SegmentEditResult | null {
-  if (!/^\d$/.test(digit)) return null;
-
+): SegmentEditResult {
   const digits = extractDigits(text);
   const max = format === 'hms' ? HMS_MAX_DIGITS : MSS_MAX_DIGITS;
   const startIdx = caretToDigitIndex(text, selectionStart, format);
@@ -156,7 +191,20 @@ export function applyDigitInput(
   return { text: display, selection: newCaret };
 }
 
-export function applyBackspace(
+export function applyDigitInput(
+  text: string,
+  selectionStart: number,
+  selectionEnd: number,
+  digit: string,
+  format: TimeInputFormat,
+): SegmentEditResult | null {
+  if (!/^\d$/.test(digit)) return null;
+  return withMssSign(format, text, selectionStart, selectionEnd, (t, s, e) =>
+    applyDigitInputCore(t, s, e, digit, format),
+  );
+}
+
+function applyBackspaceCore(
   text: string,
   selectionStart: number,
   selectionEnd: number,
@@ -184,7 +232,18 @@ export function applyBackspace(
   return { text: display, selection: digitIndexToCaret(next, newDigitIdx, format) };
 }
 
-export function applyDelete(
+export function applyBackspace(
+  text: string,
+  selectionStart: number,
+  selectionEnd: number,
+  format: TimeInputFormat,
+): SegmentEditResult {
+  return withMssSign(format, text, selectionStart, selectionEnd, (t, s, e) =>
+    applyBackspaceCore(t, s, e, format),
+  );
+}
+
+function applyDeleteCore(
   text: string,
   selectionStart: number,
   selectionEnd: number,
@@ -210,6 +269,17 @@ export function applyDelete(
 
   const display = digitsToDisplay(next, format);
   return { text: display, selection: digitIndexToCaret(next, newDigitIdx, format) };
+}
+
+export function applyDelete(
+  text: string,
+  selectionStart: number,
+  selectionEnd: number,
+  format: TimeInputFormat,
+): SegmentEditResult {
+  return withMssSign(format, text, selectionStart, selectionEnd, (t, s, e) =>
+    applyDeleteCore(t, s, e, format),
+  );
 }
 
 interface SegmentBounds {
@@ -268,7 +338,7 @@ function replaceSegment(text: string, seg: SegmentBounds, newValue: number, form
   return `${text.slice(0, sep)}:${String(newValue).padStart(2, '0')}`;
 }
 
-export function adjustSegment(
+function adjustSegmentCore(
   text: string,
   caret: number,
   delta: number,
@@ -282,4 +352,19 @@ export function adjustSegment(
   const nextValue = Math.min(seg.max, Math.max(seg.min, seg.value + delta));
   const newText = replaceSegment(normalized, seg, nextValue, format);
   return { text: newText, selection: caret };
+}
+
+export function adjustSegment(
+  text: string,
+  caret: number,
+  delta: number,
+  format: TimeInputFormat,
+): SegmentEditResult {
+  // Arrow keys adjust the unsigned magnitude; the sign is preserved (toggle with '-').
+  if (format === 'mss' && text.startsWith('-')) {
+    const r = adjustSegmentCore(text.slice(1), Math.max(0, caret - 1), delta, format);
+    if (!r.text) return { text: '', selection: 0 };
+    return { text: `-${r.text}`, selection: r.selection + 1 };
+  }
+  return adjustSegmentCore(text, caret, delta, format);
 }

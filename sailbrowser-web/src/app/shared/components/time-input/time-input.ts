@@ -18,11 +18,12 @@ import {
   applyBackspace,
   applyDelete,
   applyDigitInput,
-  formatSegments,
+  displayToSeconds,
   isCompleteDisplay,
   normalizeOnBlur,
-  parseSegments,
   placeholderForFormat,
+  secondsToDisplay,
+  toggleMssSign,
   type TimeInputFormat,
 } from './time-input-segments';
 
@@ -30,8 +31,9 @@ import {
  * Single-field, Chrome-style time entry that plugs into `<mat-form-field>` as a custom
  * `MatFormFieldControl` (see the Angular Material custom form field control guide).
  *
- * It edits only the time portion of the supplied `anchorDate` and emits a `Date`. Two
- * layouts are supported via `format`: `hms` (HH:mm:ss clock) and `mss` (mmm:ss elapsed).
+ * It is date-agnostic: the value is a plain `number` of seconds, so consumers compose the
+ * `Date` themselves (e.g. via `shared/utils/time-utils`). Two layouts are supported via
+ * `format`: `hms` (HH:mm:ss clock, seconds-of-day) and `mss` (mmm:ss elapsed, total seconds).
  */
 @Component({
   selector: 'app-time-input',
@@ -79,12 +81,11 @@ import {
     '(focusout)': 'onFocusOut($event)',
   },
 })
-export class TimeInput extends FormFieldBase<Date> implements OnInit {
+export class TimeInput extends FormFieldBase<number> implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   protected readonly parentFormField = inject(MatFormField, { optional: true });
 
   readonly format = input<TimeInputFormat>('hms');
-  readonly anchorDate = input.required<Date>();
 
   readonly textControl = new FormControl<string>('', { nonNullable: true });
 
@@ -92,7 +93,7 @@ export class TimeInput extends FormFieldBase<Date> implements OnInit {
 
   private readonly nativeInput = viewChild<ElementRef<HTMLInputElement>>('nativeInput');
 
-  private committedDate: Date | null = null;
+  private committedSeconds: number | null = null;
 
   constructor() {
     super(inject(ElementRef));
@@ -152,16 +153,14 @@ export class TimeInput extends FormFieldBase<Date> implements OnInit {
     }
   }
 
-  override writeValue(value: Date | null): void {
+  override writeValue(value: number | null): void {
     super.writeValue(value);
-    this.committedDate = value;
-    if (!value) {
+    this.committedSeconds = value;
+    if (value == null) {
       this.textControl.setValue('', { emitEvent: false });
       return;
     }
-    this.textControl.setValue(formatSegments(value, this.anchorDate(), this.format()), {
-      emitEvent: false,
-    });
+    this.textControl.setValue(secondsToDisplay(value, this.format()), { emitEvent: false });
   }
 
   onKeydown(event: KeyboardEvent): void {
@@ -190,6 +189,10 @@ export class TimeInput extends FormFieldBase<Date> implements OnInit {
     } else if (event.key === 'ArrowDown') {
       event.preventDefault();
       result = adjustSegment(this.textControl.value, selectionStart, -1, fmt);
+    } else if (fmt === 'mss' && event.key === '-') {
+      // Elapsed times can be negative (stopwatch started after the gun); '-' toggles sign.
+      event.preventDefault();
+      result = toggleMssSign(this.textControl.value, selectionStart);
     } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
       // Ignore any other printable character (letters, separators, symbols) rather than
       // letting it land in the field and invalidate the time.
@@ -206,8 +209,8 @@ export class TimeInput extends FormFieldBase<Date> implements OnInit {
     this.queueCaret(result.selection);
 
     if (isCompleteDisplay(result.text, fmt)) {
-      const parsed = parseSegments(result.text, this.anchorDate(), fmt);
-      if (parsed) {
+      const parsed = displayToSeconds(result.text, fmt);
+      if (parsed != null) {
         this.commitValue(parsed, result.text);
       }
     }
@@ -223,23 +226,21 @@ export class TimeInput extends FormFieldBase<Date> implements OnInit {
     }
 
     const normalized = normalizeOnBlur(raw, fmt);
-    const parsed = parseSegments(normalized, this.anchorDate(), fmt);
-    if (parsed) {
-      this.textControl.setValue(formatSegments(parsed, this.anchorDate(), fmt), { emitEvent: false });
+    const parsed = displayToSeconds(normalized, fmt);
+    if (parsed != null) {
+      this.textControl.setValue(secondsToDisplay(parsed, fmt), { emitEvent: false });
       this.commitValue(parsed, this.textControl.value);
-    } else if (this.committedDate) {
-      this.textControl.setValue(formatSegments(this.committedDate, this.anchorDate(), fmt), {
-        emitEvent: false,
-      });
+    } else if (this.committedSeconds != null) {
+      this.textControl.setValue(secondsToDisplay(this.committedSeconds, fmt), { emitEvent: false });
     } else {
       this.textControl.setValue('', { emitEvent: false });
     }
   }
 
-  private commitValue(date: Date | null, display: string): void {
-    this.committedDate = date;
-    this.value = date;
-    this._onChange(date);
+  private commitValue(seconds: number | null, display: string): void {
+    this.committedSeconds = seconds;
+    this.value = seconds;
+    this._onChange(seconds);
     if (display !== this.textControl.value) {
       this.textControl.setValue(display, { emitEvent: false });
     }

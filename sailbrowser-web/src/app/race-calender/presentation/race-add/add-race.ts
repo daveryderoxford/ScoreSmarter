@@ -13,6 +13,10 @@ import { Router } from '@angular/router';
 import { addDays, isAfter, startOfDay } from 'date-fns';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Race, RaceCalendarStore } from 'app/race-calender';
+import { TimeInput } from 'app/shared/components/time-input/time-input';
+import { dateAtSecondsOfDay } from 'app/shared/utils/time-utils';
+
+const DEFAULT_START_SECONDS = 10 * 3600 + 30 * 60; // 10:30:00
 @Component({
   selector: 'app-add-race',
   templateUrl: 'add-race.html',
@@ -50,7 +54,8 @@ import { Race, RaceCalendarStore } from 'app/race-calender';
     MatNativeDateModule,
     MatOption,
     MatSelectModule,
-    Toolbar
+    Toolbar,
+    TimeInput
   ],
 })
 export class RaceAdd {
@@ -88,7 +93,7 @@ export class RaceAdd {
 
   schedForm = this.fb.group({
     firstRaceDate: [new Date(), Validators.required],
-    firstStartTime: ['10:30:00', Validators.required],
+    firstStartTime: [DEFAULT_START_SECONDS as number | null, Validators.required],
     lastRaceDate: [new Date(), Validators.required],
     racesPerDay: [1, [Validators.required, Validators.min(1)]],
     repeatInterval: [this.intervals[0], Validators.required],
@@ -106,8 +111,8 @@ export class RaceAdd {
       const lastRaceDate = schedData.repeatInterval!.increment
         ? schedData.lastRaceDate!
         : firstRaceDate;
-      const firstStartTime = schedData.firstStartTime || '00:00:00';
-      const firstStart = this.mergeDateAndTime(firstRaceDate, firstStartTime);
+      const firstStartTime = schedData.firstStartTime ?? 0;
+      const firstStart = dateAtSecondsOfDay(firstRaceDate, firstStartTime);
 
       const repeatIncrement = schedData.repeatInterval!.increment;
       const dayStarts: Date[] = [];
@@ -158,12 +163,5 @@ export class RaceAdd {
   }
 
   canDeactivate = () => !this.detailsForm.dirty && !this.schedForm.dirty;
-
-  private mergeDateAndTime(date: Date, hhmmss: string): Date {
-    const [h, m, s] = hhmmss.split(':').map(v => Number(v || 0));
-    const merged = new Date(date);
-    merged.setHours(h || 0, m || 0, s || 0, 0);
-    return merged;
-  }
 
 }

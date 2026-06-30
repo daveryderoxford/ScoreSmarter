@@ -11,21 +11,19 @@ import { TimeInput } from './time-input';
     <app-time-input
       [formControl]="control"
       [format]="format()"
-      [anchorDate]="anchorDate()"
     />
   `,
 })
 class HostComponent implements OnInit {
   readonly format = input<'hms' | 'mss'>('hms');
-  readonly anchorDate = input(new Date(2026, 5, 15, 0, 0, 0));
-  readonly control = new FormControl<Date | null>(null);
+  readonly control = new FormControl<number | null>(null);
 
   ngOnInit(): void {
     const v = this.initial();
-    if (v) this.control.setValue(v);
+    if (v != null) this.control.setValue(v);
   }
 
-  readonly initial = input<Date | null>(null);
+  readonly initial = input<number | null>(null);
 }
 
 describe('TimeInput', () => {
@@ -43,7 +41,7 @@ describe('TimeInput', () => {
 
   it('writeValue displays hms', () => {
     const fixture = TestBed.createComponent(HostComponent);
-    fixture.componentInstance.control.setValue(new Date(2026, 5, 15, 14, 32, 5));
+    fixture.componentInstance.control.setValue(14 * 3600 + 32 * 60 + 5);
     fixture.detectChanges();
     const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
     expect(input.value).toBe('14:32:05');
@@ -52,13 +50,19 @@ describe('TimeInput', () => {
   it('writeValue displays mss', () => {
     const fixture = TestBed.createComponent(HostComponent);
     fixture.componentRef.setInput('format', 'mss');
-    const anchor = new Date(2026, 5, 15);
-    fixture.componentRef.setInput('anchorDate', anchor);
-    const elapsed = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate(), 0, 123, 45);
-    fixture.componentInstance.control.setValue(elapsed);
+    fixture.componentInstance.control.setValue(123 * 60 + 45);
     fixture.detectChanges();
     const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
     expect(input.value).toBe('123:45');
+  });
+
+  it('writeValue displays negative mss with a leading minus', () => {
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentRef.setInput('format', 'mss');
+    fixture.componentInstance.control.setValue(-90);
+    fixture.detectChanges();
+    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('-1:30');
   });
 
   it('disables inner input when parent control disabled', () => {
