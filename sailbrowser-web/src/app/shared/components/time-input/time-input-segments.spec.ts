@@ -6,6 +6,7 @@ import {
   displayToSeconds,
   isCompleteDisplay,
   normalizeOnBlur,
+  normalizePastedText,
   secondsToDisplay,
   toggleMssSign,
 } from './time-input-segments';
@@ -153,6 +154,45 @@ describe('negative mss support', () => {
     expect(afterDigit.text).toBe('-5');
     const afterBackspace = applyBackspace(afterDigit.text, afterDigit.selection, afterDigit.selection, 'mss');
     expect(afterBackspace.text).toBe('');
+  });
+});
+
+describe('normalizePastedText', () => {
+  it('re-masks pasted hms text regardless of separators', () => {
+    expect(normalizePastedText('14:32:05', 'hms')).toBe('14:32:05');
+    expect(normalizePastedText('143205', 'hms')).toBe('14:32:05');
+    expect(normalizePastedText('14.32.05', 'hms')).toBe('14:32:05');
+    expect(normalizePastedText(' 14:32:05 ', 'hms')).toBe('14:32:05');
+  });
+
+  it('re-masks pasted mss text', () => {
+    expect(normalizePastedText('1:30', 'mss')).toBe('1:30');
+    expect(normalizePastedText('130', 'mss')).toBe('1:30');
+    expect(normalizePastedText('123:45', 'mss')).toBe('123:45');
+  });
+
+  it('preserves a leading minus for mss', () => {
+    expect(normalizePastedText('-1:30', 'mss')).toBe('-1:30');
+    expect(normalizePastedText('-130', 'mss')).toBe('-1:30');
+    expect(displayToSeconds(normalizePastedText('-1:30', 'mss'), 'mss')).toBe(-90);
+  });
+
+  it('drops the sign for hms', () => {
+    // hms masks digits left-to-right, so "-1:30" -> digits "130" -> "13:0" (no sign).
+    expect(normalizePastedText('-1:30', 'hms')).toBe('13:0');
+    expect(normalizePastedText('-143205', 'hms')).toBe('14:32:05');
+  });
+
+  it('returns empty when there are no digits', () => {
+    expect(normalizePastedText('abc', 'hms')).toBe('');
+    expect(normalizePastedText('', 'mss')).toBe('');
+    expect(normalizePastedText('-', 'mss')).toBe('');
+  });
+
+  it('produces a value the control can commit on paste', () => {
+    const display = normalizePastedText('14:32:05', 'hms');
+    expect(isCompleteDisplay(display, 'hms')).toBe(true);
+    expect(displayToSeconds(display, 'hms')).toBe(14 * 3600 + 32 * 60 + 5);
   });
 });
 

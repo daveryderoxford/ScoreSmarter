@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   DestroyRef,
   ElementRef,
   forwardRef,
@@ -21,6 +22,7 @@ import {
   displayToSeconds,
   isCompleteDisplay,
   normalizeOnBlur,
+  normalizePastedText,
   placeholderForFormat,
   secondsToDisplay,
   toggleMssSign,
@@ -47,13 +49,14 @@ import {
     <input
       #nativeInput
       type="text"
-      inputmode="numeric"
-      pattern="[0-9]*"
+      [attr.inputmode]="inputMode()"
+      [attr.pattern]="inputPattern()"
       autocomplete="off"
       [formControl]="textControl"
       [placeholder]="shouldLabelFloat ? placeholderText() : ''"
       [attr.aria-labelledby]="parentFormField?.getLabelId()"
       (keydown)="onKeydown($event)"
+      (input)="onInput()"
     />
   `,
   styles: [
@@ -86,6 +89,11 @@ export class TimeInput extends FormFieldBase<number> implements OnInit {
   protected readonly parentFormField = inject(MatFormField, { optional: true });
 
   readonly format = input<TimeInputFormat>('hms');
+
+  // `mss` allows negative elapsed values, so the keyboard must expose '-'. `inputmode="numeric"`
+  // with a digit-only pattern hides the minus key on many mobile keyboards, so widen both for mss.
+  readonly inputMode = computed<'numeric' | 'text'>(() => (this.format() === 'mss' ? 'text' : 'numeric'));
+  readonly inputPattern = computed(() => (this.format() === 'mss' ? '-?[0-9]*' : '[0-9]*'));
 
   readonly textControl = new FormControl<string>('', { nonNullable: true });
 
@@ -212,6 +220,36 @@ export class TimeInput extends FormFieldBase<number> implements OnInit {
       const parsed = displayToSeconds(result.text, fmt);
       if (parsed != null) {
         this.commitValue(parsed, result.text);
+      }
+    }
+  }
+
+  /**
+   * Handle text changes that bypass {@link onKeydown}: paste (keyboard or context menu), mobile
+   * autofill/autocorrect, IME composition, and drag-and-drop. The keydown path `preventDefault`s
+   * physical key edits, so this fires only for these out-of-band changes. We re-mask the raw text
+   * and commit immediately when it forms a complete value, keeping the outer FormControl in sync
+   * (e.g. so `Validators.required` clears) rather than waiting for blur.
+   */
+  onInput(): void {
+    if (this.disabled) return;
+
+    const input = this.nativeInput()?.nativeElement;
+    if (!input) return;
+
+    const fmt = this.format();
+    const normalized = normalizePastedText(input.value, fmt);
+
+    // Re-mask the field in place; setting `value` directly does not re-trigger `input`.
+    if (normalized !== input.value) {
+      input.value = normalized;
+    }
+    this.textControl.setValue(normalized, { emitEvent: false });
+
+    if (isCompleteDisplay(normalized, fmt)) {
+      const parsed = displayToSeconds(normalized, fmt);
+      if (parsed != null) {
+        this.commitValue(parsed, normalized);
       }
     }
   }

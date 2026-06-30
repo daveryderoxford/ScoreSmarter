@@ -172,6 +172,21 @@ export function isCompleteDisplay(text: string, format: TimeInputFormat): boolea
   return /^-?\d+:\d{2}$/.test(text);
 }
 
+/**
+ * Normalize free-form text (paste, autofill, IME, mobile autocorrect) into the masked
+ * display string. Non-digits are dropped, a leading `-` is preserved for `mss`, and the
+ * remaining digits are re-masked via {@link digitsToDisplay}. Returns `''` when there are
+ * no usable digits.
+ */
+export function normalizePastedText(raw: string, format: TimeInputFormat): string {
+  const display = digitsToDisplay(extractDigits(raw), format);
+  if (!display) return '';
+  if (format === 'mss' && raw.trim().startsWith('-')) {
+    return `-${display}`;
+  }
+  return display;
+}
+
 function applyDigitInputCore(
   text: string,
   selectionStart: number,
