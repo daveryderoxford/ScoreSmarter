@@ -8,7 +8,7 @@ import { RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces } from 'app/results-input';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { EntryService } from '../../services/entry.service';
-import { KioskEntryPage } from './kiosk-entry-page';
+import { KioskEntryPage, helmGridLayout } from './kiosk-entry-page';
 
 describe('KioskEntryPage', () => {
   beforeEach(() => {
@@ -111,5 +111,20 @@ describe('KioskEntryPage', () => {
     page.resetToCategory();
     expect(page.view()).toBe('category');
     expect(page.selectedHelm()).toBeNull();
+  });
+});
+
+describe('helmGridLayout', () => {
+  it('uses a single centered column when names fit vertically', () => {
+    expect(helmGridLayout(5, 800, 600)).toEqual({ columns: 1, rows: 5 });
+  });
+
+  it('adds columns only when rows would overflow the viewport', () => {
+    // 600px viewport fits 9 rows at 64px (+ gaps); 10 items need 2 columns.
+    expect(helmGridLayout(10, 800, 600)).toEqual({ columns: 2, rows: 5 });
+  });
+
+  it('caps columns by available width', () => {
+    expect(helmGridLayout(30, 480, 600)).toEqual({ columns: 2, rows: 15 });
   });
 });

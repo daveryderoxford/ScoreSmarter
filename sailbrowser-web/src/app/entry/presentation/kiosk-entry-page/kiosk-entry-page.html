@@ -41,51 +41,63 @@
             }
           </mat-chip-listbox>
         </div>
-        <div class="kiosk-scroll centered-list">
+        <div class="kiosk-scroll has-add-fab" #helmScroll>
           @if (filteredMemberHelms().length === 0) {
             <p class="placeholder">No helms in this range.</p>
           } @else {
-            <mat-list>
+            <div
+              class="pick-grid"
+              role="list"
+              [style.--pick-rows]="helmGridLayout().rows">
               @for (helm of filteredMemberHelms(); track helm) {
-                <mat-list-item (click)="selectMemberHelm(helm)">
-                  <span matListItemTitle>{{ formatHelm(helm) }}</span>
-                </mat-list-item>
+                <button
+                  type="button"
+                  class="pick-grid-item"
+                  role="listitem"
+                  (click)="selectMemberHelm(helm)">
+                  {{ formatHelm(helm) }}
+                </button>
               }
-            </mat-list>
+            </div>
           }
         </div>
-        <div class="actions actions-end">
-          <button mat-fab extended type="button" (click)="addNewHelm()">
-            <mat-icon>add</mat-icon>
-            Add new helm
-          </button>
-        </div>
+        <button mat-fab extended type="button" class="add-new-fab" (click)="addNewHelm()">
+          <mat-icon>add</mat-icon>
+          Add new helm
+        </button>
       }
 
       @case ('memberBoat') {
-        <div class="kiosk-scroll">
+        <p class="instruction">Select a boat</p>
+        <div class="kiosk-scroll has-add-fab">
           @if (boatsForSelectedHelm().length === 0) {
             <p class="placeholder">No boats for this helm.</p>
           } @else {
-            <mat-list>
+            <div
+              class="pick-grid"
+              role="list"
+              [style.--pick-rows]="boatsForSelectedHelm().length">
               @for (boat of boatsForSelectedHelm(); track boat.id) {
-                <mat-list-item (click)="selectMemberBoat(boat)">
-                  <span matListItemTitle>{{ boat.boatClass }} · {{ boat.sailNumber }}</span>
-                </mat-list-item>
+                <button
+                  type="button"
+                  class="pick-grid-item"
+                  role="listitem"
+                  (click)="selectMemberBoat(boat)">
+                  {{ boat.boatClass }} · {{ boat.sailNumber }}
+                </button>
               }
-            </mat-list>
+            </div>
           }
         </div>
-        <div class="actions actions-end">
-          <button
-            mat-fab
-            extended
-            type="button"
-            (click)="addNewBoat(selectedHelm() ?? undefined)">
-            <mat-icon>add</mat-icon>
-            Add new boat
-          </button>
-        </div>
+        <button
+          mat-fab
+          extended
+          type="button"
+          class="add-new-fab"
+          (click)="addNewBoat(selectedHelm() ?? undefined)">
+          <mat-icon>add</mat-icon>
+          Add new boat
+        </button>
       }
 
       @case ('memberConfirm') {

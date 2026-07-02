@@ -6,6 +6,9 @@
   min-height: 100dvh;
   background: var(--mat-sys-surface);
   color: var(--mat-sys-on-surface);
+  --kiosk-add-fab-inset: 40px; // 2.5× the previous 16px kiosk padding
+  --kiosk-add-fab-height: 76.8px; // 20% larger than the 64px extended FAB
+  --kiosk-add-fab-icon-size: 33.6px; // 20% larger than the 28px icon
 
   @include mat.button-overrides((
     filled-container-height: 50px,
@@ -16,14 +19,6 @@
     filled-label-text-weight: var(--mat-sys-title-large-weight),
     outlined-label-text-size: var(--mat-sys-title-large-size),
     text-label-text-size: var(--mat-sys-title-medium-size),
-  ));
-
-  @include mat.list-overrides((
-    list-item-label-text-size: var(--mat-sys-title-medium-size),
-    list-item-supporting-text-size: var(--mat-sys-body-large-size),
-    list-item-leading-icon-start-space: 16px,
-    list-item-one-line-container-height: 64px,
-    list-item-two-line-container-height: 72px,
   ));
 
   @include mat.chips-overrides((
@@ -89,6 +84,11 @@
   overflow-y: auto;
 }
 
+.kiosk-scroll.has-add-fab {
+  // Keep the last list rows clear of the fixed FAB (height + 2.5× inset + gap).
+  padding-bottom: calc(var(--kiosk-add-fab-height) + var(--kiosk-add-fab-inset) + 16px);
+}
+
 .category-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -110,8 +110,11 @@
   flex-shrink: 0;
   margin: 0;
   text-align: left;
-  font: var(--mat-sys-title-medium);
+  font-size: calc(var(--mat-sys-title-medium-size) * 1.2);
+  line-height: 1.3;
+  font-weight: var(--mat-sys-title-medium-weight);
   color: var(--mat-sys-on-surface-variant);
+  opacity: 0.65;
 }
 
 .instruction-lg {
@@ -139,15 +142,40 @@
   width: 100%;
 }
 
-.centered-list {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.pick-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(var(--pick-rows, 1), minmax(64px, auto));
+  grid-auto-columns: 220px;
+  gap: 4px 16px;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
 }
 
-.centered-list mat-list {
-  width: 100%;
-  max-width: 420px;
+.pick-grid-item {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-title-medium);
+  text-align: left;
+  cursor: pointer;
+  width: 220px;
+  box-sizing: border-box;
+
+  &:hover {
+    background: var(--mat-sys-surface-container-highest);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+  }
 }
 
 .grid-list {
@@ -189,14 +217,23 @@
   flex-wrap: wrap;
 }
 
-.actions.actions-end {
-  justify-content: flex-end;
-}
+.add-new-fab {
+  @include mat.fab-overrides((
+    extended-container-height: var(--kiosk-add-fab-height),
+    extended-label-text-size: calc(var(--mat-sys-title-medium-size) * 1.2),
+  ));
 
-.actions-end .mat-mdc-extended-fab .mat-icon {
-  width: 28px;
-  height: 28px;
-  font-size: 28px;
+  position: fixed;
+  z-index: 10;
+  width: auto;
+  bottom: max(var(--kiosk-add-fab-inset), calc(env(safe-area-inset-bottom) + var(--kiosk-add-fab-inset)));
+  right: max(var(--kiosk-add-fab-inset), calc(env(safe-area-inset-right) + var(--kiosk-add-fab-inset)));
+
+  .mat-icon {
+    width: var(--kiosk-add-fab-icon-size);
+    height: var(--kiosk-add-fab-icon-size);
+    font-size: var(--kiosk-add-fab-icon-size);
+  }
 }
 
 .actions .spacer {
@@ -240,8 +277,4 @@
 
 .helm-form mat-form-field {
   width: 100%;
-}
-
-mat-list-item {
-  cursor: pointer;
 }

@@ -2,8 +2,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
+  ElementRef,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -14,7 +17,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatListModule } from '@angular/material/list';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
   Boat,
@@ -64,6 +66,35 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
   return compareSailNumbers(a.sailNumber, b.sailNumber);
 }
 
+const HELM_GRID_ROW_HEIGHT = 64;
+const HELM_GRID_ROW_GAP = 4;
+const HELM_GRID_COLUMN_WIDTH = 220;
+const HELM_GRID_COLUMN_GAP = 16;
+
+/** Column count that keeps names in vertical lists, adding columns only when rows overflow. */
+export function helmGridLayout(
+  itemCount: number,
+  viewportWidth: number,
+  viewportHeight: number,
+): { columns: number; rows: number } {
+  if (itemCount === 0) return { columns: 1, rows: 0 };
+  if (viewportWidth <= 0 || viewportHeight <= 0) {
+    return { columns: 1, rows: itemCount };
+  }
+
+  const maxColumnsByWidth = Math.max(
+    1,
+    Math.floor((viewportWidth + HELM_GRID_COLUMN_GAP) / (HELM_GRID_COLUMN_WIDTH + HELM_GRID_COLUMN_GAP)),
+  );
+  const maxRowsPerColumn = Math.max(
+    1,
+    Math.floor((viewportHeight + HELM_GRID_ROW_GAP) / (HELM_GRID_ROW_HEIGHT + HELM_GRID_ROW_GAP)),
+  );
+  const columns = Math.min(Math.ceil(itemCount / maxRowsPerColumn), maxColumnsByWidth);
+  const rows = Math.ceil(itemCount / columns);
+  return { columns, rows };
+}
+
 @Component({
   selector: 'app-kiosk-entry',
   templateUrl: './kiosk-entry-page.html',
@@ -72,7 +103,6 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     ReactiveFormsModule,
     MatButtonModule,
     MatIconModule,
-    MatListModule,
     MatChipsModule,
     MatFormFieldModule,
     MatInputModule,
@@ -139,6 +169,17 @@ export class KioskEntryPage {
     const range = this.letterRange();
     return this.memberHelms().filter(helm => helmMatchesLetterRange(helm, range));
   });
+
+  private readonly helmScrollArea = viewChild<ElementRef<HTMLElement>>('helmScroll');
+  private readonly helmScrollSize = signal({ width: 0, height: 0 });
+
+  readonly helmGridLayout = computed(() =>
+    helmGridLayout(
+      this.filteredMemberHelms().length,
+      this.helmScrollSize().width,
+      this.helmScrollSize().height,
+    ),
+  );
 
   readonly boatsForSelectedHelm = computed(() => {
     const helm = this.selectedHelm();
@@ -260,6 +301,23 @@ export class KioskEntryPage {
   });
 
   readonly canEnter = computed(() => this.todaysEligibleRaces().length > 0 && !!this.candidateBoat());
+
+  constructor() {
+    effect((onCleanup) => {
+      const el = this.helmScrollArea()?.nativeElement;
+      if (!el) {
+        this.helmScrollSize.set({ width: 0, height: 0 });
+        return;
+      }
+
+      const observer = new ResizeObserver(([entry]) => {
+        const { width, height } = entry.contentRect;
+        this.helmScrollSize.set({ width, height });
+      });
+      observer.observe(el);
+      onCleanup(() => observer.disconnect());
+    });
+  }
 
   formatHelm(helm: string): string {
     return formatHelmSurnameLast(helm);
