@@ -22,7 +22,7 @@
   ));
 
   @include mat.chips-overrides((
-    label-text-size: var(--mat-sys-title-medium-size),
+    label-text-size: calc(var(--mat-sys-title-medium-size) * 1.15),
     container-height: 40px,
     outline-width: 2px,
   ));
@@ -128,6 +128,8 @@
 .chip-bar {
   flex-shrink: 0;
   padding-bottom: 4px;
+  display: flex;
+  justify-content: center;
 }
 
 .chip-bar mat-chip-listbox {
@@ -135,6 +137,8 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .chip-bar mat-chip-option .mat-mdc-chip-action-label {
