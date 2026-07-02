@@ -76,6 +76,21 @@
       <span matListItemTitle>Scan Scoring Sheet</span>
     </a>
 
+    @if (auth.loggedIn() && auth.isClubAdmin()) {
+      <mat-divider />
+
+      <a
+        mat-list-item
+        class="sidenav-nav-item"
+        routerLink="/entry/kiosk"
+        routerLinkActive="mdc-list-item--activated"
+        [routerLinkActiveOptions]="prefixNavMatch"
+        (click)="onNavClick()">
+        <mat-icon matListItemIcon>tablet_mac</mat-icon>
+        <span matListItemTitle>Entry Kiosk</span>
+      </a>
+    }
+
     <mat-divider />
 
     @if (auth.loggedIn() && auth.isClubAdmin()) {
