@@ -110,7 +110,7 @@
   flex-shrink: 0;
   margin: 0;
   text-align: left;
-  font-size: calc(var(--mat-sys-title-medium-size) * 1.2);
+  font-size: calc(var(--mat-sys-title-medium-size) * 1.3);
   line-height: 1.3;
   font-weight: var(--mat-sys-title-medium-weight);
   color: var(--mat-sys-on-surface-variant);
@@ -119,7 +119,7 @@
 
 .instruction-lg {
   text-align: center;
-  font-size: calc(var(--mat-sys-title-medium-size) * 2);
+  font-size: calc(var(--mat-sys-title-medium-size) * 2.6);
   line-height: 1.2;
   margin-top: 8px;
   margin-bottom: 24px;
@@ -162,7 +162,9 @@
   border-radius: 8px;
   background: transparent;
   color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-title-medium);
+  font-size: calc(var(--mat-sys-title-medium-size) * 1.4);
+  font-weight: var(--mat-sys-title-medium-weight);
+  line-height: 1.2;
   text-align: left;
   cursor: pointer;
   width: 220px;
