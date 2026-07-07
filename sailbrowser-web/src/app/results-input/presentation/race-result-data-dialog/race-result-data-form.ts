@@ -19,6 +19,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Race } from 'app/race-calender/model/race';
+import { ClubStore } from 'app/club-tenant';
+import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 import { RaceResultDraft } from 'app/results-input/model/race-result-draft';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
 import { ResultCode } from 'app/scoring/model/result-code';
@@ -56,8 +58,13 @@ export class RaceResultDataForm implements OnInit {
 
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly clubStore = inject(ClubStore);
 
   readonly isHandicapRace = computed(() => this.race().type === 'Handicap');
+
+  readonly isSinglehander = computed(() =>
+    isSinglehanderClass(this.competitor().entry.boatClass, this.clubStore.club().classes),
+  );
 
   readonly form = this.fb.group({
     startTimeInput: new FormControl<number | null>(null),
@@ -93,7 +100,9 @@ export class RaceResultDataForm implements OnInit {
     const c = this.competitor();
     const d = this.draft();
 
-    const crewDisplay = c.crewOverride !== undefined ? c.crewOverride : (c.entry.crew ?? '');
+    const crewDisplay = this.isSinglehander()
+      ? ''
+      : (c.crewOverride !== undefined ? c.crewOverride : (c.entry.crew ?? ''));
     const startDate = d?.startTime !== undefined ? d.startTime : (c.startTime ?? null);
 
     this.form.patchValue({
@@ -120,7 +129,7 @@ export class RaceResultDataForm implements OnInit {
     const cmd: RaceResultDataCommand = {
       competitorId: this.competitor().id,
       resultCode: v.resultCode,
-      crewOverride: v.crew === '' ? '' : v.crew,
+      crewOverride: this.isSinglehander() ? '' : (v.crew === '' ? '' : v.crew),
     };
     if (this.isHandicapRace()) {
       cmd.startTime = this.parseStartTimeInput(v.startTimeInput) ?? undefined;

@@ -86,10 +86,12 @@
                 <mat-error>Helm name required</mat-error>
               </mat-form-field>
             }
+            @if (!isSinglehander()) {
             <mat-form-field>
               <mat-label>Crew (optional)</mat-label>
               <input matInput formControlName="crew" placeholder="Optional" autocomplete="off" />
             </mat-form-field>
+            }
           </div>
         } @else {
           <div class="boat-details-instructions">

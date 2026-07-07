@@ -21,6 +21,7 @@ import {
   sailNumbersEqual,
 } from 'app/boats';
 import { ClubStore } from 'app/club-tenant';
+import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { RacesPanel } from 'app/race-calender/presentation/races-panel/races-panel';
 import { CurrentRaces } from 'app/results-input';
@@ -276,6 +277,12 @@ export class EntryPage {
     return this.cs.club().classes.find(c => c.name === boat.boatClass)?.handicaps ?? [];
   });
 
+  readonly isSinglehander = computed(() => {
+    const boat = this.selectedBoat();
+    if (!boat) return false;
+    return isSinglehanderClass(boat.boatClass, this.cs.club().classes);
+  });
+
   readonly boatHandicaps = computed<Handicap[]>(() => this.selectedBoat()?.handicaps ?? []);
   readonly displayHandicaps = computed<Handicap[]>(() => {
     const byScheme = new Map<HandicapScheme, number>();
@@ -306,7 +313,7 @@ export class EntryPage {
 
     if (!helm) return undefined;
 
-    const crewTrim = String(this.crewValue() ?? '').trim();
+    const crewTrim = this.isSinglehander() ? '' : String(this.crewValue() ?? '').trim();
     const crew = crewTrim || undefined;
 
     return {
@@ -424,7 +431,7 @@ export class EntryPage {
         return;
       }
 
-      this.crewControl.setValue(boat.crew ?? '', { emitEvent: false });
+      this.crewControl.setValue(this.isSinglehander() ? '' : (boat.crew ?? ''), { emitEvent: false });
       this.crewControl.enable({ emitEvent: false });
 
       if (boat.isClub) {

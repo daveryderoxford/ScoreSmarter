@@ -108,10 +108,12 @@
           </div>
         }
         <form class="helm-form">
+          @if (!isSinglehander()) {
           <mat-form-field>
             <mat-label>Crew (optional)</mat-label>
             <input matInput [formControl]="memberCrewControl" autocomplete="off" />
           </mat-form-field>
+          }
         </form>
         <div class="summary">
           <p>{{ raceCountLabel() }}</p>
@@ -165,10 +167,12 @@
               <mat-error>Helm required</mat-error>
             }
           </mat-form-field>
+          @if (!isSinglehander()) {
           <mat-form-field>
             <mat-label>Crew (optional)</mat-label>
             <input matInput formControlName="crew" autocomplete="off" />
           </mat-form-field>
+          }
         </form>
         <div class="summary">
           <p>{{ raceCountLabel() }}</p>

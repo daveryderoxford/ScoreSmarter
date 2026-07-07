@@ -8,6 +8,8 @@
 
   <app-handicap-scheme-inputs [form]="form" [schemes]="classSchemes()" />
 
+  <mat-checkbox formControlName="isSinglehander">Single-hander</mat-checkbox>
+
   <div class="button-row">
     <app-submit-button [disabled]="form.invalid || !form.dirty" [busy]="busy()">
       Save

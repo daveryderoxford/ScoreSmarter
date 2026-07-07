@@ -17,11 +17,13 @@
     }
   </mat-form-field>
 
+  @if (!isSinglehander()) {
   <mat-form-field class="field-full">
     <mat-label>Crew</mat-label>
     <input matInput formControlName="crew" autocomplete="off" />
     <mat-hint>Applies to all races in series</mat-hint>
   </mat-form-field>
+  }
 
   <mat-form-field class="field-full">
     <mat-label>Club</mat-label>

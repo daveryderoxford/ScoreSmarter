@@ -27,7 +27,7 @@
         <mat-list-item [routerLink]="['edit', boatClass.id]">
           <span matListItemTitle>{{ boatClass.name }}</span>
           <span matListItemLine>
-            Handicap(PY): {{ pyHandicap(boatClass) }}
+            Handicap(PY): {{ pyHandicap(boatClass) }}@if (boatClass.isSinglehander) { · Single-hander}
           </span>
           <span matListItemMeta>
             <button matIconButton [routerLink]="['edit', boatClass.id]" (click)="$event.stopPropagation()">

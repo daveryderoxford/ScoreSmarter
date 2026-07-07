@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { SubmitButton } from 'app/shared/components/submit-button';
@@ -35,6 +36,7 @@ import { ClubStore } from 'app/club-tenant';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
+    MatCheckboxModule,
     SubmitButton,
     HandicapSchemeInputs,
   ],
@@ -50,6 +52,7 @@ export class ClassForm {
 
   form: FormGroup = new FormGroup({
     name: new FormControl('', { validators: [Validators.required] }),
+    isSinglehander: new FormControl(false, { nonNullable: true }),
   });
 
   readonly classSchemes = computed(() =>
@@ -71,7 +74,10 @@ export class ClassForm {
     effect(() => {
       const bc = this.boatClass();
       if (!bc) return;
-      const patch: Record<string, unknown> = { name: bc.name };
+      const patch: Record<string, unknown> = {
+        name: bc.name,
+        isSinglehander: bc.isSinglehander === true,
+      };
       for (const scheme of HANDICAP_SCHEMES) {
         const meta = getHandicapSchemeMetadata(scheme);
         patch[handicapControlName(scheme)] = getHandicapValue(bc.handicaps, scheme) ?? meta.defaultValue;
@@ -81,7 +87,7 @@ export class ClassForm {
   }
 
   submit() {
-    const raw = this.form.getRawValue() as Record<string, number | string | null>;
+    const raw = this.form.getRawValue() as Record<string, number | string | boolean | null>;
     const handicaps = this.classSchemes().map((scheme: HandicapScheme) => {
       const meta = getHandicapSchemeMetadata(scheme);
       const value = Number(raw[handicapControlName(scheme)] ?? meta.defaultValue);
@@ -90,6 +96,7 @@ export class ClassForm {
     const output: Partial<BoatClass> = {
       name: (raw['name'] as string) ?? '',
       handicaps,
+      isSinglehander: raw['isSinglehander'] === true,
     };
     this.submitted.emit(output);
     this.form.reset();

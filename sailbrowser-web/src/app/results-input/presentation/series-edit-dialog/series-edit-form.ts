@@ -19,6 +19,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ClubStore } from 'app/club-tenant';
+import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
 import { TagValuePicker } from 'app/club-tenant/presentation/tags/tag-value-picker';
 import { Series } from 'app/race-calender/model/series';
@@ -78,6 +79,10 @@ export class SeriesEditForm implements OnInit {
     handicapSchemesRequiredForSeries(this.series()).includes('Personal'),
   );
 
+  readonly isSinglehander = computed(() =>
+    isSinglehanderClass(this.competitor().entry.boatClass, this.clubStore.club().classes),
+  );
+
   readonly form = this.fb.group({
     helm: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     crew: new FormControl('', { nonNullable: true }),
@@ -107,7 +112,7 @@ export class SeriesEditForm implements OnInit {
     const bandForm: PersonalBandFormValue = c.personalHandicapBand ?? 'unknown';
     this.form.patchValue({
       helm: c.helm,
-      crew: c.entry.crew ?? '',
+      crew: this.isSinglehander() ? '' : (c.entry.crew ?? ''),
       club: c.club ?? '',
       personalHandicapBand: bandForm,
       tags: c.entry.tags ?? [],
@@ -144,7 +149,7 @@ export class SeriesEditForm implements OnInit {
     this.submitCommand.emit({
       competitorId: this.competitor().id,
       helm: v.helm,
-      crew: v.crew || undefined,
+      crew: this.isSinglehander() ? undefined : (v.crew || undefined),
       club: v.club || undefined,
       personalHandicapBand: supports ? personalHandicapBand : undefined,
       tags: [...v.tags],
