@@ -27,6 +27,7 @@ import {
 } from 'app/boats';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
 import { ClubStore } from 'app/club-tenant';
+import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 import { RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces } from 'app/results-input';
 import { type Handicap } from 'app/scoring/model/handicap';
@@ -209,6 +210,12 @@ export class KioskEntryPage {
       .sort(sortBoatsInGroup);
   });
 
+  readonly isSinglehander = computed(() => {
+    const boat = this.selectedBoat();
+    if (!boat) return false;
+    return isSinglehanderClass(boat.boatClass, this.clubStore.club().classes);
+  });
+
   readonly candidateBoat = computed(() => {
     const boat = this.selectedBoat();
     if (!boat) return undefined;
@@ -226,9 +233,11 @@ export class KioskEntryPage {
       : String(boat.helm ?? '').trim();
     if (!helm) return undefined;
 
-    const crewTrim = boat.isClub
-      ? String(this.clubHelmForm.controls.crew.value ?? '').trim()
-      : String(this.memberCrewValue() ?? '').trim();
+    const crewTrim = this.isSinglehander()
+      ? ''
+      : boat.isClub
+        ? String(this.clubHelmForm.controls.crew.value ?? '').trim()
+        : String(this.memberCrewValue() ?? '').trim();
     const crew = crewTrim || undefined;
 
     return {
@@ -344,7 +353,8 @@ export class KioskEntryPage {
 
   selectMemberBoat(boat: Boat): void {
     this.selectedBoat.set(boat);
-    this.memberCrewControl.setValue(boat.crew ?? '');
+    const crew = isSinglehanderClass(boat.boatClass, this.clubStore.club().classes) ? '' : (boat.crew ?? '');
+    this.memberCrewControl.setValue(crew);
     this.view.set('memberConfirm');
   }
 
@@ -355,7 +365,8 @@ export class KioskEntryPage {
 
   selectClubBoat(boat: Boat): void {
     this.selectedBoat.set(boat);
-    this.clubHelmForm.reset({ helm: '', crew: boat.crew ?? '' });
+    const crew = isSinglehanderClass(boat.boatClass, this.clubStore.club().classes) ? '' : (boat.crew ?? '');
+    this.clubHelmForm.reset({ helm: '', crew });
     this.view.set('clubHelm');
   }
 

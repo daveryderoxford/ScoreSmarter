@@ -5,7 +5,8 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getHandicapSchemeMetadata } from 'app/scoring/model/handicap-scheme-metadata';
 import { parseCsv, toCsv } from 'app/shared/utils/csv';
 
-const BASE_COLUMNS = ['id', 'name'] as const;
+const REQUIRED_COLUMNS = ['id', 'name'] as const;
+const EXPORT_COLUMNS = ['id', 'name', 'isSinglehander'] as const;
 
 export interface ClassesCsvParseResult {
   classes: Partial<BoatClass>[];
@@ -16,11 +17,12 @@ export interface ClassesCsvParseResult {
 export class ClassesCsvService {
   buildCsv(classes: BoatClass[], schemes: HandicapScheme[]): string {
     const handicapColumns = schemes.map(s => this.handicapColumn(s));
-    const columns = [...BASE_COLUMNS, ...handicapColumns];
+    const columns = [...EXPORT_COLUMNS, ...handicapColumns];
     const rows = classes.map(cls => {
       const row: Record<string, string> = {
         id: cls.id,
         name: cls.name,
+        isSinglehander: cls.isSinglehander === true ? 'true' : 'false',
       };
       for (const scheme of schemes) {
         const value = getHandicapValue(cls.handicaps, scheme);
@@ -38,10 +40,9 @@ export class ClassesCsvService {
     if (headerColumns.length === 0) {
       return { classes: [], errors: parsed.errors };
     }
-    const requiredColumns = [...BASE_COLUMNS];
+    const requiredColumns = [...REQUIRED_COLUMNS];
     const handicapColumns = schemes.map(s => this.handicapColumn(s));
-    const expectedColumns = [...requiredColumns, ...handicapColumns];
-    const missing = expectedColumns.filter(c => !headerColumns.includes(c));
+    const missing = requiredColumns.filter(c => !headerColumns.includes(c));
     if (missing.length > 0) {
       return { classes: [], errors: [`Missing required columns: ${missing.join(', ')}`] };
     }
@@ -98,6 +99,7 @@ export class ClassesCsvService {
     const cls: Partial<BoatClass> = {
       name,
       handicaps,
+      isSinglehander: this.parseBoolean(record['isSinglehander']),
     };
     if (id) {
       cls.id = id;
@@ -107,5 +109,11 @@ export class ClassesCsvService {
 
   private handicapColumn(scheme: HandicapScheme): string {
     return `handicap${scheme.replace(/[^a-zA-Z0-9]/g, '')}`;
+  }
+
+  private parseBoolean(raw: string | undefined): boolean {
+    const value = (raw ?? '').trim().toLowerCase();
+    if (!value) return false;
+    return value === 'true' || value === '1' || value === 'yes';
   }
 }

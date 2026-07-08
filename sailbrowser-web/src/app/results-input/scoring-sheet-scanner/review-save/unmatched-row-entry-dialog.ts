@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   MAT_DIALOG_DATA,
@@ -19,6 +19,8 @@ import { RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces } from '../../services/current-races-store';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dialog';
+import { ClubStore } from 'app/club-tenant';
+import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 
 export interface UnmatchedRowEntryDialogData {
   raceId: string;
@@ -63,10 +65,12 @@ export interface UnmatchedRowEntryDialogResult {
             [control]="form.controls.helm" />
           <mat-error>Helm is required</mat-error>
         </mat-form-field>
+        @if (!isSinglehander()) {
         <mat-form-field class="field">
           <mat-label>Crew (optional)</mat-label>
           <input matInput formControlName="crew" autocomplete="off" />
         </mat-form-field>
+        }
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
@@ -110,6 +114,11 @@ export class UnmatchedRowEntryDialog {
   private readonly currentRaces = inject(CurrentRaces);
   private readonly dialogs = inject(DialogsService);
   private readonly snackbar = inject(MatSnackBar);
+  private readonly clubStore = inject(ClubStore);
+
+  protected readonly isSinglehander = computed(() =>
+    isSinglehanderClass(this.data.boatClass, this.clubStore.club().classes),
+  );
 
   protected readonly saving = signal(false);
 
@@ -128,7 +137,9 @@ export class UnmatchedRowEntryDialog {
     }
 
     const helm = this.form.controls.helm.value.trim();
-    const crew = this.form.controls.crew.value.trim() || undefined;
+    const crew = this.isSinglehander()
+      ? undefined
+      : (this.form.controls.crew.value.trim() || undefined);
 
     const entryData = {
       races: [race],

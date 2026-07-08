@@ -57,10 +57,12 @@ import { SailNumberInput } from '../sail-number-input';
         <mat-error>Helm name required</mat-error>
       </mat-form-field>
 
+      @if (showCrew()) {
       <mat-form-field>
         <mat-label>Normal crew</mat-label>
         <input matInput formControlName="crew">
       </mat-form-field>
+      }
 
       <mat-form-field>
         <mat-label>Boat Name</mat-label>
@@ -121,6 +123,7 @@ export class BoatCoreFields {
 
   form = input.required<FormGroup>();
   boatLevelSchemes = input.required<HandicapScheme[]>();
+  showCrew = input(true);
 
   /** User-managed tag definitions exposed via the picker. */
   readonly availableTags = computed(() => this.cs.club().tagDefinitions);
