@@ -41,4 +41,20 @@ describe('ClassesCsvService', () => {
     expect(parsed.errors).toEqual([]);
     expect(parsed.classes[0]?.isSinglehander).toBe(true);
   });
+
+  it('rejects CSV missing handicap columns for supported schemes', () => {
+    const csv = 'id,name,isSinglehander\nILCA 7,ILCA 7,false\n';
+    const parsed = service.parseCsv(csv, ['PY']);
+
+    expect(parsed.classes).toEqual([]);
+    expect(parsed.errors).toEqual(['Missing required columns: handicapPY']);
+  });
+
+  it('rejects CSV missing multiple handicap columns', () => {
+    const csv = 'id,name\nILCA 7,ILCA 7\n';
+    const parsed = service.parseCsv(csv, ['PY', 'Level Rating']);
+
+    expect(parsed.classes).toEqual([]);
+    expect(parsed.errors).toEqual(['Missing required columns: handicapPY, handicapLevelRating']);
+  });
 });
