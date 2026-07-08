@@ -42,7 +42,8 @@ export class ClassesCsvService {
     }
     const requiredColumns = [...REQUIRED_COLUMNS];
     const handicapColumns = schemes.map(s => this.handicapColumn(s));
-    const missing = requiredColumns.filter(c => !headerColumns.includes(c));
+    const expectedColumns = [...requiredColumns, ...handicapColumns];
+    const missing = expectedColumns.filter(c => !headerColumns.includes(c));
     if (missing.length > 0) {
       return { classes: [], errors: [`Missing required columns: ${missing.join(', ')}`] };
     }
