@@ -143,13 +143,18 @@ describe('ScanReviewStore.save', () => {
     store = TestBed.inject(ScanReviewStore);
   });
 
-  it('saves results, navigates, then clears the stored scan', async () => {
+  it('saves results, clears the stored scan, then navigates', async () => {
     await store.save();
 
     expect(recordResult).toHaveBeenCalledTimes(1);
-    expect(navigate).toHaveBeenCalledWith(['/results-input/manual'], { queryParams: { raceId: RACE_ID } });
+    expect(recordResult).toHaveBeenCalledWith(
+      expect.objectContaining({ id: COMPETITOR_ID }),
+      expect.anything(),
+      expect.objectContaining({ scoringSheetRow: 1 }),
+    );
     expect(clearScanResponse).toHaveBeenCalledWith(RACE_ID);
-    expect(navigate.mock.invocationCallOrder[0]).toBeLessThan(clearScanResponse.mock.invocationCallOrder[0]);
+    expect(navigate).toHaveBeenCalledWith(['/results-input/manual'], { queryParams: { raceId: RACE_ID } });
+    expect(clearScanResponse.mock.invocationCallOrder[0]).toBeLessThan(navigate.mock.invocationCallOrder[0]);
     expect(store.error()).toBeNull();
     expect(store.saving()).toBe(false);
   });

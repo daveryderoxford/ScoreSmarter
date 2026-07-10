@@ -29,6 +29,12 @@ describe('ScanRowMatchingService', () => {
     it('falls back to OK for unknown codes', () => {
       expect(service.normalizeResultCode('ZZZ')).toBe('OK');
     });
+
+    it('maps underscore NOT_FINISHED to spaced NOT FINISHED', () => {
+      expect(service.normalizeResultCode('NOT_FINISHED')).toBe('NOT FINISHED');
+      expect(service.normalizeResultCode('not_finished')).toBe('NOT FINISHED');
+      expect(service.normalizeResultCode('NOT FINISHED')).toBe('NOT FINISHED');
+    });
   });
 
   describe('parseScannedTime', () => {

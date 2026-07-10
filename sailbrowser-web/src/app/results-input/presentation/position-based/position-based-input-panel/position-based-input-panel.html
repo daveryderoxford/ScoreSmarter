@@ -24,6 +24,7 @@
           <span class="drag-handle" cdkDragHandle aria-hidden="true" (pointerdown)="$event.stopPropagation()">
             <mat-icon>drag_indicator</mat-icon>
           </span>
+          <span class="sheet-row">{{ compById().get(id)?.scoringSheetRow ?? '' }}</span>
           <span
             class="mono"
             [class.long-number]="(compById().get(id)?.sailNumber?.toString()?.length || 0) > 5">
@@ -92,6 +93,7 @@
               <div class="tie-group-members">
                 @for (id of group.ids; track id) {
                   <div class="row queue-row-inner">
+                    <span class="sheet-row">{{ compById().get(id)?.scoringSheetRow ?? '' }}</span>
                     <span
                       class="mono"
                       [class.long-number]="(compById().get(id)?.sailNumber?.toString()?.length || 0) > 5">
@@ -166,6 +168,7 @@
                 <mat-icon>drag_indicator</mat-icon>
               </span>
               <span class="rank">—</span>
+              <span class="sheet-row">{{ compById().get(id)?.scoringSheetRow ?? '' }}</span>
               <span
                 class="mono"
                 [class.long-number]="(compById().get(id)?.sailNumber?.toString()?.length || 0) > 5">

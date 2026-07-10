@@ -10,137 +10,88 @@ export function buildPrompt(ctx: ScannerContext, raceId: string): string {
   const lapsPresent = ctx.lapsPresentOnSheet !== false;
 
   const timeFormat = ctx.timeFormat ?? "clock_hms";
-  let timeInterpretationMode = "Clock H:M:S (real time)";
-  if (timeFormat === "stopwatch_hms_elapsed") {
-    timeInterpretationMode = "Stopwatch elapsed H:MM:SS";
-  } else if (timeFormat === "stopwatch_ms_elapsed") {
-    timeInterpretationMode = "Stopwatch elapsed MM:SS";
-  }
 
-  let lapRules = `4. NO LAP COLUMN ON THIS SHEET:
-  The race officer did not record laps on this sheet. Set laps to a default of 1.`
+  let lapColumnRules = `Laps column: ABSENT on this sheet. Set laps to 1 for every row.`;
   if (lapsPresent && ctx.lapFormat === "ticks") {
-    lapRules = `4. LAP COLUMN PRESENT — TICKS/TALLIES FORMAT:
-  - Interpret lap marks as tallies/checkmarks (e.g., ||| = 3, VV = 2). If both tallies and a final number are present, use the final number.
-  - When no lap value is visible in a row default to a value of ${ctx.defaultLaps ?? "Unknown"}`;
+    lapColumnRules = `Laps column: PRESENT — ticks/tallies.
+- Count tallies/checkmarks (||| = 3, VV = 2). If both tallies and a final number exist, use the final number.
+- If a row has no lap marks, default to ${ctx.defaultLaps ?? "Unknown"}.`;
   } else if (lapsPresent) {
-    lapRules = `4. LAP COLUMN PRESENT — NUMERIC FORMAT:
-  - Read lap counts only as integer numbers (1, 2, 3, ...).
-  - Ignore tally/checkmark interpretation in this mode.
-  - If no laps are written in a row default to ${ctx.defaultLaps ?? "Unknown"}`;
+    lapColumnRules = `Laps column: PRESENT — numeric.
+- Read integer lap counts only (1, 2, 3, ...).
+- If a row has no lap value, default to ${ctx.defaultLaps ?? 1}.`;
   }
 
-  let timeRules = `5. TIME FORMAT — CLOCK TIME (H:M:S):
-  - Read times as real clock times with hours, minutes, and seconds (H:MM:SS).
-  - A two-part value may be written as MM:SS when hour is omitted.
-  - If only 2 fields are present:
-  -- consider the hour field is missing 
-  -- Use hour value in adjacent rows to estimate it.  
-  - Preserve clock semantics; do not reinterpret this mode as pure elapsed stopwatch mode.
-  - Ensure minutes and seconds are 0-59; provide alternatives when ambiguous.`;
+  let timeColumnRules = `Time column: CLOCK TIME (H:M:S).
+- Read real clock times as hours, minutes, seconds.
+- If only MM:SS is present: estimate hour from adjacent rows; if that is unclear use defaultHour=${ctx.defaultHour ?? "unknown"}.
+-- This is the ONLY allowed use of data from another row.
+- Minutes/seconds must be 0-59; provide alternatives when ambiguous.
+- Output time.value = { "hours": number, "minutes": number, "seconds": number }.
+- For non-finish/status rows use placeholder { "hours": 0, "minutes": 0, "seconds": 0 }.`;
   if (timeFormat === "stopwatch_hms_elapsed") {
-    timeRules = `5. TIME FORMAT — STOPWATCH ELAPSED WITH HOURS (H:MM:SS):
-  - Times are recorded as stopwatch durations, NOT wall-clock time.
-  - Times less than 1 hour will have minutes, seconds fields
-  - Times greater than hour will have hour, minute, second field.
-  - If only MM:SS is present, treat it as sub-hour elapsed and set hours = 0.
-  - Ensure minutes/seconds are 0-59 and provide alternatives when ambiguous.`;
+    timeColumnRules = `Time column: STOPWATCH ELAPSED WITH HOURS (H:MM:SS).
+- Durations, not wall-clock time.
+- Sub-hour times are MM:SS → set hours = 0.
+- Minutes/seconds must be 0-59; provide alternatives when ambiguous.
+- Output time.value = { "hours": number, "minutes": number, "seconds": number }.
+- For non-finish/status rows use placeholder { "hours": 0, "minutes": 0, "seconds": 0 }.`;
   } else if (timeFormat === "stopwatch_ms_elapsed") {
-    timeRules = `5. TIME FORMAT — STOPWATCH ELAPSED MINUTES/SECONDS (MM:SS):
-  - Times are recorded as stopwatch durations, NOT wall-clock time.
-  - All times will be recorded as elapsed minutes, seconds
-  -- Minutes may have any non-negative integer.
-  -- Ensure seconds are in the range 0-59. Provide alternatives when ambiguous.
-`;
+    timeColumnRules = `Time column: STOPWATCH ELAPSED MINUTES/SECONDS (MM:SS).
+- Durations, not wall-clock time.
+- elapsedMinutes may be any non-negative integer; seconds must be 0-59.
+- Output time.value = { "elapsedMinutes": number, "seconds": number }.
+- For non-finish/status rows use placeholder { "elapsedMinutes": 0, "seconds": 0 }.`;
   }
 
-  let orderExpectation = `6. ORDER EXPECTATION — UNSORTED:
-   - Do not rely on ordering; evaluate each row independently.`;
+  let orderExpectation = `Order: UNSORTED — evaluate each row independently; do not rely on sequence.`;
   if (ctx.listOrder === "chronological") {
-    orderExpectation = `6. ORDER EXPECTATION — CHRONOLOGICAL:
-   - Times should generally strictly increase as you read down.`;
+    orderExpectation = `Order: CHRONOLOGICAL — times should generally increase down the sheet. Use this to catch OCR errors; flag drastic breaks as MANUAL_CHECK and/or provide alternatives.`;
   } else if (ctx.listOrder === "firstLap") {
-    orderExpectation = `6. ORDER EXPECTATION — FIRST LAP:
-   - Times generally increase, but overtakes/laps can make ordering approximate, especially with mixed lap counts.`;
-  }
-
-  let outputTimeStructure = `
-  9. OUTPUT TIME STRUCTURE (REQUIRED):
-   This sheet uses clock time (H:M:S), so output only:
-   - time.value = { "hours": number, "minutes": number, "seconds": number }.
-   Use numeric fields only:
-   - minutes/seconds must be in the range 0-59.
-   For non-finish/status rows (DNS, DNF, RET, DSQ, etc.), return placeholder:
-   - { "hours": 0, "minutes": 0, "seconds": 0 }`;
-  if (timeFormat === "stopwatch_ms_elapsed") {
-    outputTimeStructure = `
-  9. OUTPUT TIME STRUCTURE (REQUIRED):
-   This sheet uses stopwatch elapsed minutes/seconds (MM:SS), so output only:
-   - time.value = { "elapsedMinutes": number, "seconds": number }.
-   Use numeric fields only:
-   - elapsedMinutes can be any non-negative integer.
-   - seconds must be in the range 0-59.
-   For non-finish/status rows (DNS, DNF, RET, DSQ, etc.), return placeholder:
-   - { "elapsedMinutes": 0, "seconds": 0 }`;
-  } else if (timeFormat === "stopwatch_hms_elapsed") {
-    outputTimeStructure = `
-  9. OUTPUT TIME STRUCTURE (REQUIRED):
-   This sheet uses stopwatch elapsed with hours (H:MM:SS), so output only:
-   - time.value = { "hours": number, "minutes": number, "seconds": number }.
-   Use numeric fields only:
-   - minutes/seconds must be in the range 0-59.
-   For non-finish/status rows (DNS, DNF, RET, DSQ, etc.), return placeholder:
-   - { "hours": 0, "minutes": 0, "seconds": 0 }`;
+    orderExpectation = `Order: FIRST LAP — times generally increase, but overtakes/laps can make order approximate. Flag drastic breaks as MANUAL_CHECK and/or provide alternatives.`;
   }
 
   return `
-- You are reading a handwritten race results sheet for a sailing race. 
-- You must follow these strict rules to maximize accuracy and provide structured output.
-- Ensuring results are recorded accurately is takes precidence over interpreting all content.
+You read a handwritten sailing race results sheet. Follow these rules exactly. Accuracy beats completeness. Respond with raw JSON only (no markdown).
+Target race id: ${raceId}. Target races in this scan: ${targetRacesStr}.
 
-# CONTEXT:
-- Target race id: ${raceId}
-- Target races included in this scan context: ${targetRacesStr}
-- This entry list was loaded from Firestore for that race. Each id is a race-results document id; set matchedCompetitorId to that id when you match a row to that competitor.
-- Sheet includes a lap column: ${lapsPresent ? "Yes" : "No"}
-- Time interpretation mode: ${timeInterpretationMode}
+# 1. ROW HANDLING
+- Crossed-out rows: ignore struck-through / heavily scribbled rows, or emit status STRUCK_THROUGH with FAILED confidence. If a time is crossed out and rewritten, take the new time.
+- Row integrity: 
+-- extract strictly row-by-row. Never shift data vertically. Never take a competitor's time from a different row than their class/sail number.
+-- Hour exception (clock mode only): if the hour field is blank but MM:SS is present, you MAY estimate hour from adjacent rows (see Time column). Do not copy minutes or seconds from another row.
+- Emit every data row present, including rows with a blank time cell.
+- ${orderExpectation}
 
-# RULES:
-1. THE ENTRY LIST MUST BE USED TO CORRECT MISTAKES:
-  - Expected Competitor Entry List: ${roster}
-  - When reading a class and sail number, compare it to the entry list. 
-  - If the handwritten text is messy (e.g., '1234S' instead of '12345'), but the entry list contains '12345' in that class, confidently correct it to '12345' and mark it HIGH confidence, setting 'matchedCompetitorId' to the found id.
+# 2. COLUMN DEFINITIONS
 
-2. CLASS ALIASES:
-  - Class Aliases: ${aliasesStr}
-  - For the class column, check if a shorthand/alternate class name has been used ('A7' or 'Laser R') 
-  - If an aliased class name is found use the mapped value (eg 'Laser R' to 'ILCA 6') for:
-  -- boatClass output field 
-  -- when checking the entry list (rule 1).    
+## Row index
+- First column is a typewritten integer row index.
+- Copy that number into rowIndex for each emitted row.
 
-3. STATUS CODES & CROSSED-OUT ROWS:
-   - Check the time column for standard sailing status codes (DNS, RET, OCS, BFD, DNF, DSQ, etc.). 
-   -- If you see one, set the 'time.value' to placeholder value and update the 'status' field.
-   - Ignore any data that has a distinct horizontal line drawn through it or is heavily scribbled out. If a whole row is struck through, ignore it or output it with a status of 'STRUCK_THROUGH' (in 'status') or 'FAILED' confidence. If a time is crossed out but a new one is written next to it, take the new one.
+## Class / sail number
+- Read class and sail number from the same row.
+- Class aliases: ${aliasesStr}
+- Apply aliases (e.g. 'Laser R' → 'ILCA 6') for boatClass and roster matching.
+- Roster (Firestore race-results ids): ${roster}
+- Prefer the roster to correct messy handwriting (e.g. '1234S' → '12345'); when corrected from roster, use HIGH confidence and set matchedCompetitorId to that entry's id.
 
-${lapRules}
+## Time
+${timeColumnRules}
+- Status codes in the time column (DNS, RET, OCS, BFD, DNF, DSQ, etc.): set status to that code and use the placeholder time.value.
+- Blank/missing time (no status code): still emit the row; set status to "NOT FINISHED", overallRowConfidence to MANUAL_CHECK, and use the placeholder time.value.
 
-${timeRules}
+## Laps
+${lapColumnRules}
 
-${orderExpectation}
-   Use this expectation to catch OCR errors. If a row breaks the expected sequence drastically and looks like a misread, flag it as 'MANUAL_CHECK' and/or provide alternatives.
+## Name (optional)
+- Read competitor name when present; omit if absent.
 
-7. CONFIDENCE RATINGS:
-   You must assign one of the following confidence levels to each extracted value AND the row overall:
-   - HIGH: You are certain of the read, especially if it matches the ENTRY LIST exactly.
-   - MANUAL_CHECK: The handwriting is somewhat unclear, or you corrected a typo, or the time is out of sequence.
-   - FAILED / AMBIGUOUS: It is not readable or decipherable. Only output alternatives if you have a guess. Output 'FAILED' if it's completely unreadable scribbles.
-
-8. PAGE NOTES:
-   - If there is a large note spanning multiple rows or columns (e.g., "RACE ABANDONED due to gusts"), extract it entirely into the 'pageNotes' root field on the JSON object, do not force it into competitor rows.
-
-${outputTimeStructure}
-
-Respond strictly with the requested JSON schema. Do not include markdown blocks like \`\`\`json around the response, output just raw JSON.
+# 3. CONFIDENCE + PAGE NOTES
+- Per-field and overallRowConfidence: HIGH | MANUAL_CHECK | FAILED | AMBIGUOUS.
+- HIGH: certain read, especially exact roster match.
+- MANUAL_CHECK: unclear handwriting, roster correction, out-of-sequence time, or blank time.
+- FAILED / AMBIGUOUS: not readable or decipherable. Only add alternatives if you have a guess. Use FAILED for completely unreadable scribbles.
+- Large multi-row notes (e.g. "RACE ABANDONED") go in pageNotes, not competitor rows.
 `;
 }

@@ -44,10 +44,10 @@ export class ScanReviewStore {
   private readonly router = inject(Router);
 
   readonly displayedColumns: readonly string[] = [
-    'accept', 'sailNumber', 'boatClass', 'helm', 'time', 'status', 'laps', 'overall',
+    'accept', 'rowIndex', 'sailNumber', 'boatClass', 'helm', 'time', 'status', 'laps', 'overall',
   ];
   readonly unmatchedColumns: readonly string[] = [
-    'sailNumber', 'boatClass', 'time', 'status', 'laps', 'helms', 'enter',
+    'rowIndex', 'sailNumber', 'boatClass', 'time', 'status', 'laps', 'helms', 'enter',
   ];
 
   private readonly _saving = signal(false);
@@ -179,6 +179,7 @@ export class ScanReviewStore {
           finishTime,
           laps: vm.row.laps?.value || 1,
           resultCode: this.rowMatching.normalizeResultCode(vm.row.status),
+          scoringSheetRow: vm.row.rowIndex,
         });
       }
       await this.scanPersistence.clearScanResponse(raceId);

@@ -95,7 +95,7 @@ export class ScanRowMatchingService {
   }
 
   normalizeResultCode(raw?: string): ResultCode {
-    const status = raw?.trim().toUpperCase();
+    const status = raw?.trim().toUpperCase().replace(/_/g, ' ');
     if (!status) return 'OK';
     return this.allowedResultCodes.has(status) ? (status as ResultCode) : 'OK';
   }

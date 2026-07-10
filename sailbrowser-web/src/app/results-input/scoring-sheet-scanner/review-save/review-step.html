@@ -37,6 +37,11 @@
       </td>
     </ng-container>
 
+    <ng-container matColumnDef="rowIndex">
+      <th mat-header-cell *matHeaderCellDef>Row</th>
+      <td mat-cell *matCellDef="let vm">{{ vm.row.rowIndex }}</td>
+    </ng-container>
+
     <ng-container matColumnDef="sailNumber">
       <th mat-header-cell *matHeaderCellDef>Sail #</th>
       <td mat-cell *matCellDef="let vm">
@@ -109,6 +114,11 @@
 <p class="section-hint">Add entry for boats</p>
 <div class="table-container">
   <table mat-table [dataSource]="review.unmatchedRows()" class="mat-elevation-z1">
+
+    <ng-container matColumnDef="rowIndex">
+      <th mat-header-cell *matHeaderCellDef>Row</th>
+      <td mat-cell *matCellDef="let vm">{{ vm.row.rowIndex }}</td>
+    </ng-container>
 
     <ng-container matColumnDef="sailNumber">
       <th mat-header-cell *matHeaderCellDef>Sail #</th>

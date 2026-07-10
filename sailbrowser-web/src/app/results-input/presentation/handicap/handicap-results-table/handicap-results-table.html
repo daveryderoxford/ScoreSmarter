@@ -1,6 +1,11 @@
 <table mat-table matSort [matSortActive]="sortState().active" [matSortDirection]="sortState().direction"
    [dataSource]="tabledata()" (matSortChange)="this.sortState.set($event)" class="mat-elevation-z0">
 
+   <ng-container matColumnDef="scoringSheetRow">
+      <th mat-header-cell mat-sort-header *matHeaderCellDef>Sheet</th>
+      <td mat-cell *matCellDef="let element">{{ element.scoringSheetRow ?? '' }}</td>
+   </ng-container>
+
    <ng-container matColumnDef="boatClass">
       <th mat-header-cell mat-sort-header *matHeaderCellDef>Class<br>H'Cap</th>
       <td mat-cell *matCellDef="let element">

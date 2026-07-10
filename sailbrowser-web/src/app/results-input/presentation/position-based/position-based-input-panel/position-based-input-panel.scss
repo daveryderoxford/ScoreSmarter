@@ -99,7 +99,7 @@
 
 .source-row {
   cursor: default;
-  grid-template-columns: auto auto 1fr auto;
+  grid-template-columns: auto auto auto 1fr auto;
 
   &:hover {
     background: row.$neutral-hover-bg;
@@ -210,7 +210,7 @@
 
 .queue-row-inner {
   cursor: default;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto auto 1fr auto auto;
   padding: 0.2rem 0;
   border-radius: 4px;
 
@@ -221,7 +221,7 @@
 
 .queue-row {
   cursor: default;
-  grid-template-columns: auto 2rem auto 1fr auto auto;
+  grid-template-columns: auto 2rem auto auto 1fr auto auto;
 
   &:hover {
     background: row.$neutral-hover-bg;
@@ -231,6 +231,13 @@
 .mono {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+}
+
+.sheet-row {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  min-width: 1.25rem;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.55));
 }
 
 .long-number {

@@ -57,6 +57,12 @@ export class RaceCompetitor {
    */
   manualPosition?: number;
 
+  /**
+   * Typewritten scoring-sheet row (first column). Set only when results are
+   * saved from an AI scan — not editable in manual results UI.
+   */
+  scoringSheetRow?: number;
+
   constructor(data: Partial<RaceCompetitor>) {
     this.id = data.id || '';
     this.seriesEntryId = data.seriesEntryId || '';
@@ -70,6 +76,7 @@ export class RaceCompetitor {
     this.manualLaps = data.manualLaps || 0;
     this.lapTimes = data.lapTimes || [];
     this.manualPosition = data.manualPosition;
+    this.scoringSheetRow = data.scoringSheetRow;
   }
 
   /**

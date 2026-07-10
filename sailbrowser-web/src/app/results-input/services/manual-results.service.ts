@@ -28,6 +28,8 @@ export interface ResultInput {
   laps: number;
   resultCode: ResultCode;
   position?: number | null;
+  /** Typewritten scoring-sheet row from an AI scan (display-only afterward). */
+  scoringSheetRow?: number;
 }
 
 /** Per-row editor state for pursuit / level-rating order entry UI */
@@ -299,7 +301,7 @@ export class ManualResultsService {
    * It calculates derived values and updates the competitor in the store.
    */
   async recordResult(competitor: RaceCompetitor, race: Race, input: ResultInput): Promise<void> {
-    const { finishTime, laps, resultCode, position } = input;
+    const { finishTime, laps, resultCode, position, scoringSheetRow } = input;
 
     const update: Partial<RaceCompetitor> = {
       resultCode: resultCode,
@@ -326,6 +328,10 @@ export class ManualResultsService {
 
     if (position) {
       update.manualPosition = position;
+    }
+
+    if (scoringSheetRow !== undefined) {
+      update.scoringSheetRow = scoringSheetRow;
     }
 
     // Set a dirty flag on the race to indicate that its results have changed

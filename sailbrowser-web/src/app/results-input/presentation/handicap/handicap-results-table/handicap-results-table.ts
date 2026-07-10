@@ -32,7 +32,7 @@ export class HandicapResultsTable {
   );
 
   displayedColumns = 
-    ['boatClass', 'sailNumber', 'helm', 'finishTime', 'elapsedTime', 'correctedTime', 'averageLapTime'];  
+    ['scoringSheetRow', 'boatClass', 'sailNumber', 'helm', 'finishTime', 'elapsedTime', 'correctedTime', 'averageLapTime'];  
 
   maxLaps = computed(() => this.competitors().reduce((max, comp) => {
     return (comp.numLaps > max) ? comp.numLaps : max;

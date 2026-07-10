@@ -7,8 +7,8 @@ import { MatchedRowVm, ReviewStep, UnmatchedRowVm } from './review-step';
 import { ScanResponse, ScannedResultRow } from '../model/scan-model';
 import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
 
-const displayedColumns = ['accept', 'sailNumber', 'boatClass', 'time', 'status', 'laps', 'overall'];
-const unmatchedColumns = ['sailNumber', 'boatClass', 'time', 'status', 'laps', 'enter'];
+const displayedColumns = ['accept', 'rowIndex', 'sailNumber', 'boatClass', 'time', 'status', 'laps', 'overall'];
+const unmatchedColumns = ['rowIndex', 'sailNumber', 'boatClass', 'time', 'status', 'laps', 'enter'];
 
 function mkRow(
   rowIndex: number,

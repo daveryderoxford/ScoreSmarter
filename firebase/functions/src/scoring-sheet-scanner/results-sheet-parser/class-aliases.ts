@@ -21,6 +21,7 @@ export const defaultClassAliases = [
   '500', 'RS500',
   '600', 'RS600',
   'Top', 'Topper',
+  'T', 'Topper',
 ];
 
 export function pairsToAliasRecord(pairs: readonly string[]): Record<string, string> {
