@@ -9,6 +9,10 @@ import { SheetCaptureStore } from '../capture-image/sheet-capture.store';
 import { ScanPersistenceService } from '../shared/scan-persistence.service';
 import { ScanExecutionService } from './scan-execution.service';
 import { ScannerContext, ScanResponse } from '../model/scan-model';
+import {
+  promoteRowAlternative,
+  type ScannedValueField,
+} from './promote-scanned-alternative';
 
 /**
  * Area 3 — owns the scanner-context form, the stored-scan read (a resource), and
@@ -138,6 +142,20 @@ export class ScanRunStore {
     );
   }
 
+  /** Promote an alternative value to the primary field value on the working copy. */
+  promoteAlternative(rowIndex: number, field: ScannedValueField, chosen: string | number): void {
+    this._scanResult.update((current) =>
+      current
+        ? {
+            ...current,
+            scannedResults: current.scannedResults.map((row) =>
+              row.rowIndex === rowIndex ? promoteRowAlternative(row, field, chosen) : row,
+            ),
+          }
+        : null,
+    );
+  }
+
   reset(): void {
     this._scanResult.set(null);
     this._running.set(false);
@@ -157,10 +175,8 @@ export class ScanRunStore {
     const isMultilap = this.raceSelection.selectedRace()?.isAverageLap ?? false;
     return {
       targetRaces: [] as string[],
-      lapFormat: 'numbers',
       defaultHour: this.defaultHourForParsing(),
       defaultLaps: formData.defaultLaps,
-      hasHours: formData.timeFormat !== 'stopwatch_ms_elapsed',
       listOrder: formData.listOrder as 'chronological' | 'unsorted',
       roster: [] as { id: string; class: string; sailNumber: string; name?: string }[],
       lapsPresentOnSheet: isMultilap,

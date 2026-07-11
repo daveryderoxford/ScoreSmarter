@@ -8,6 +8,8 @@ import { SheetCaptureStore } from './capture-image/sheet-capture.store';
 import { ScanExecutionService } from './run-scan/scan-execution.service';
 import { ScanRunStore } from './run-scan/scan-run.store';
 import { ReviewStep } from './review-save/review-step';
+import { ScanReviewStore } from './review-save/scan-review.store';
+import { ScanRowMatchingService } from './review-save/scan-row-matching.service';
 import { ScanPersistenceService } from './shared/scan-persistence.service';
 import { ScanSelectedRace } from './select-race/race-selection.store';
 import { RaceStep } from './select-race/race-step';
@@ -27,6 +29,8 @@ const REVIEW_STEP_INDEX = 3;
     ScanRunStore,
     ScanPersistenceService,
     ScanExecutionService,
+    ScanReviewStore,
+    ScanRowMatchingService,
   ],
 })
 export class ScoringSheetScanner {
@@ -38,6 +42,7 @@ export class ScoringSheetScanner {
 
   readonly isMobile = this.breakpoints.isMobile;
   protected readonly capturePersisting = signal(false);
+  protected readonly reviewStepIndex = REVIEW_STEP_INDEX;
   private readonly stepper = viewChild.required<MatStepper>('stepper');
 
   protected readonly captureVm = computed<CaptureStepViewModel>(() => {

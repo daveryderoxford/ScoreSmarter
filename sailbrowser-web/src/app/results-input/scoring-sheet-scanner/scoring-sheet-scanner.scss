@@ -16,6 +16,10 @@
   margin: 0 auto;
   background: transparent;
   overflow-y: auto;
+
+  &.review-wide {
+    max-width: 1120px;
+  }
 }
 
 .step-container {

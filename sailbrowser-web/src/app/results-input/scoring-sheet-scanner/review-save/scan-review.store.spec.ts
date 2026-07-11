@@ -3,6 +3,7 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BoatsStore } from 'app/boats';
@@ -15,15 +16,17 @@ import { ManualResultsService } from '../../services/manual-results.service';
 import { RaceCompetitorReader } from '../../services/race-competitor-reader';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
 import type { ScannerTimeFormat } from '@shared/scanner-context';
-import { ScanResponse } from '../model/scan-model';
+import { ScanResponse, ScannedResultRow } from '../model/scan-model';
 import { ScanSelectedRace } from '../select-race/race-selection.store';
 import { ScanRunStore } from '../run-scan/scan-run.store';
 import { ScanPersistenceService } from '../shared/scan-persistence.service';
 import { ScanReviewStore } from './scan-review.store';
 import { ScanRowMatchingService } from './scan-row-matching.service';
+import { of } from 'rxjs';
 
 const RACE_ID = 'r1';
 const COMPETITOR_ID = 'c1';
+const UNLINKED_ID = 'c2';
 
 const race: Race = {
   id: RACE_ID,
@@ -55,18 +58,28 @@ const scanResponse: ScanResponse = {
       laps: { value: 3, confidence: 'HIGH' },
       status: 'OK',
     },
+    {
+      rowIndex: 2,
+      overallRowConfidence: 'MANUAL_CHECK',
+      accepted: false,
+      sailNumber: { value: '????', confidence: 'FAILED' },
+      boatClass: { value: '', confidence: 'FAILED' },
+      time: { value: '14:50:00', confidence: 'HIGH' },
+      laps: { value: 3, confidence: 'HIGH' },
+      status: 'OK',
+    },
   ],
 };
 
-function resolvedCompetitor(): ResolvedRaceCompetitor {
+function resolvedCompetitor(id = COMPETITOR_ID, sail = '1234'): ResolvedRaceCompetitor {
   return new ResolvedRaceCompetitor(
-    { id: COMPETITOR_ID, raceId: RACE_ID, seriesEntryId: 'e1', resultCode: 'NOT FINISHED' } as RaceCompetitor,
+    { id, raceId: RACE_ID, seriesEntryId: `e-${id}`, resultCode: 'NOT FINISHED' } as RaceCompetitor,
     {
-      id: 'e1',
+      id: `e-${id}`,
       seriesId: 's1',
-      helm: 'Alex',
+      helm: id === COMPETITOR_ID ? 'Alex' : 'Blake',
       boatClass: 'ILCA 7',
-      sailNumber: '1234',
+      sailNumber: sail,
     } as SeriesEntry,
   );
 }
@@ -80,8 +93,19 @@ class FakeScanRunStore {
     defaultLaps: [1, [Validators.min(1), Validators.max(20)]],
     scanStrategy: this.fb.nonNullable.control('FullAIScan' as const, Validators.required),
   });
-  private readonly _scanResult = signal<ScanResponse | null>(scanResponse);
+  private readonly _scanResult = signal<ScanResponse | null>(structuredClone(scanResponse));
   readonly scanResult = this._scanResult.asReadonly();
+  applyRowMatch = vi.fn((rowIndex: number, competitorId: string) => {
+    this._scanResult.update(current => {
+      if (!current) return current;
+      return {
+        ...current,
+        scannedResults: current.scannedResults.map(row =>
+          row.rowIndex === rowIndex ? { ...row, matchedCompetitorId: competitorId } : row,
+        ),
+      };
+    });
+  });
   defaultHourForParsing(): number {
     return 14;
   }
@@ -96,13 +120,20 @@ class FakeRaceSelectionStore {
 
 @Injectable()
 class FakeRaceCompetitorReader {
-  readonly selectedResolvedCompetitors = signal([resolvedCompetitor()]).asReadonly();
+  readonly selectedResolvedCompetitors = signal([
+    resolvedCompetitor(COMPETITOR_ID, '1234'),
+    resolvedCompetitor(UNLINKED_ID, '9999'),
+  ]).asReadonly();
+  resolvedForRace(raceId: string): ResolvedRaceCompetitor[] {
+    return this.selectedResolvedCompetitors().filter(c => c.raceId === raceId);
+  }
 }
 
 @Injectable()
 class FakeRaceCompetitorStore {
   readonly selectedCompetitors = signal([
     { id: COMPETITOR_ID, raceId: RACE_ID, seriesEntryId: 'e1', resultCode: 'NOT FINISHED' },
+    { id: UNLINKED_ID, raceId: RACE_ID, seriesEntryId: 'e2', resultCode: 'NOT FINISHED' },
   ] as RaceCompetitor[]).asReadonly();
 }
 
@@ -112,6 +143,8 @@ describe('ScanReviewStore.save', () => {
   let clearScanResponse: ReturnType<typeof vi.fn>;
   let navigate: ReturnType<typeof vi.fn>;
   let consoleError: ReturnType<typeof vi.spyOn>;
+  let applyRowMatch: ReturnType<typeof vi.fn>;
+  let dialogOpen: ReturnType<typeof vi.fn>;
 
   afterEach(() => {
     vi.restoreAllMocks();
@@ -121,6 +154,7 @@ describe('ScanReviewStore.save', () => {
     recordResult = vi.fn().mockResolvedValue(undefined);
     clearScanResponse = vi.fn().mockResolvedValue(undefined);
     navigate = vi.fn().mockResolvedValue(true);
+    dialogOpen = vi.fn();
     consoleError = vi.spyOn(console, 'error').mockImplementation(() => { /* empty */ });
 
     TestBed.configureTestingModule({
@@ -135,12 +169,14 @@ describe('ScanReviewStore.save', () => {
         { provide: ScanPersistenceService, useValue: { clearScanResponse } },
         { provide: BoatsStore, useValue: { boats: signal([]).asReadonly() } },
         { provide: ClubStore, useValue: { club: signal({ classes: [] }).asReadonly() } },
-        { provide: MatDialog, useValue: {} },
+        { provide: MatDialog, useValue: { open: dialogOpen } },
+        { provide: MatSnackBar, useValue: { open: vi.fn() } },
         { provide: Router, useValue: { navigate } },
       ],
     });
 
     store = TestBed.inject(ScanReviewStore);
+    applyRowMatch = TestBed.inject(ScanRunStore).applyRowMatch as ReturnType<typeof vi.fn>;
   });
 
   it('saves results, clears the stored scan, then navigates', async () => {
@@ -169,5 +205,20 @@ describe('ScanReviewStore.save', () => {
     expect(navigate).not.toHaveBeenCalled();
     expect(clearScanResponse).not.toHaveBeenCalled();
     expect(store.saving()).toBe(false);
+  });
+
+  it('lists only unlinked race competitors for Link', () => {
+    expect(store.linkableCompetitors().map(c => c.id)).toEqual([UNLINKED_ID]);
+    expect(store.canLink()).toBe(true);
+  });
+
+  it('linkScanRow applies matchedCompetitorId via applyRowMatch', async () => {
+    dialogOpen.mockReturnValue({ afterClosed: () => of({ competitorId: UNLINKED_ID }) });
+    const unmatched: ScannedResultRow = scanResponse.scannedResults[1];
+
+    await store.linkScanRow(unmatched);
+
+    expect(dialogOpen).toHaveBeenCalled();
+    expect(applyRowMatch).toHaveBeenCalledWith(2, UNLINKED_ID);
   });
 });

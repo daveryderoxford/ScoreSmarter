@@ -4,15 +4,17 @@ import { MatCheckboxChange, MatCheckboxModule } from '@angular/material/checkbox
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { sailNumbersEqual } from 'app/boats/model/sail-number';
 import { AuthService } from 'app/auth/auth.service';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
 import { ScannedResultRow } from '../model/scan-model';
 import { formatScanMetricsSummary } from '../model/scan-metrics-format';
+import type { ScannedValueField } from '../run-scan/promote-scanned-alternative';
 import { ScanRunStore } from '../run-scan/scan-run.store';
+import { ScanAlternatePicker } from './scan-alternate-picker';
 import { ScanReviewStore } from './scan-review.store';
-import { ScanRowMatchingService } from './scan-row-matching.service';
 
 export interface MatchedRowVm {
   row: ScannedResultRow;
@@ -52,6 +54,8 @@ export interface UnmatchedRowVm {
   row: ScannedResultRow;
   matchedBoat: boolean;
   matchedClass: boolean;
+  /** True when Create is safe to offer (class + sail present and class known or boat matched). */
+  canCreate: boolean;
   possibleHelms: string[];
 }
 
@@ -68,8 +72,9 @@ export interface AcceptanceChangedEvent {
     MatIconModule,
     MatProgressBarModule,
     MatTableModule,
+    MatTooltipModule,
+    ScanAlternatePicker,
   ],
-  providers: [ScanReviewStore, ScanRowMatchingService],
   templateUrl: './review-step.html',
   styleUrl: './review-step.scss',
 })
@@ -85,5 +90,9 @@ export class ReviewStep {
 
   onAcceptanceChanged(rowIndex: number, event: MatCheckboxChange): void {
     this.review.setAcceptance({ rowIndex, accepted: event.checked });
+  }
+
+  promoteAlternative(rowIndex: number, field: ScannedValueField, chosen: string | number): void {
+    this.review.promoteAlternative(rowIndex, field, chosen);
   }
 }

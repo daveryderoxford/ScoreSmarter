@@ -10,7 +10,7 @@ test("validateStoredRequest accepts required fields", async () => {
   const { validateStoredRequest } = await import("./parse-results-sheet.js");
   const data = validateStoredRequest(
     {
-      scannerContext: { targetRaces: [], lapFormat: "numbers", hasHours: false, listOrder: "unsorted", roster: [] },
+      scannerContext: { targetRaces: [], listOrder: "unsorted", roster: [] },
       clubId: "club-1",
       raceId: "race-1",
     },
@@ -26,7 +26,7 @@ test("validateStoredRequest throws when raceId is missing", async () => {
   assert.throws(
     () => validateStoredRequest(
       {
-        scannerContext: { targetRaces: [], lapFormat: "numbers", hasHours: false, listOrder: "unsorted", roster: [] },
+        scannerContext: { targetRaces: [], listOrder: "unsorted", roster: [] },
         clubId: "club-1",
       },
       "req-2",

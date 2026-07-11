@@ -327,9 +327,7 @@ async function parseFromStoredImage(
     };
     logScan(requestId, "merge_scanner_context", "Merged Firestore roster into scanner context", {
       targetRaces: mergedContext.targetRaces,
-      lapFormat: mergedContext.lapFormat,
       listOrder: mergedContext.listOrder,
-      hasHours: mergedContext.hasHours,
       defaultHour: mergedContext.defaultHour,
       defaultLaps: mergedContext.defaultLaps,
       lapsPresentOnSheet: mergedContext.lapsPresentOnSheet ?? true,

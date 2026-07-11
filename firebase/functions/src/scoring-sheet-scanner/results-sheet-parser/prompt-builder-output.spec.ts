@@ -5,9 +5,7 @@ import type { ScannerContext, ScannerTimeFormat } from "../ai-scan-model.js";
 
 const baseContext: ScannerContext = {
   targetRaces: ["race-1"],
-  lapFormat: "numbers",
   defaultLaps: 3,
-  hasHours: false,
   defaultHour: 14,
   listOrder: "chronological",
   roster: [{ id: "comp-1", class: "ILCA 7", sailNumber: "12345", name: "Sam" }],
