@@ -54,20 +54,37 @@ export class ScanRowMatchingService {
     return rows
       .filter(row => !row.matchedCompetitorId)
       .map(row => {
-        const classMatches =
-          !row.boatClass?.value?.trim() ||
-          ctx.classes.some(c => boatClassesMatch(c.name, row.boatClass?.value));
+        const boatClass = row.boatClass?.value?.trim() ?? '';
+        const sailNumber = normalizeSailNumber(row.sailNumber?.value);
+        const matchedClass =
+          !!boatClass && ctx.classes.some(c => boatClassesMatch(c.name, boatClass));
         const boatMatches = this.findBoatMatches(row, ctx.boats);
+        const matchedBoat = boatMatches.length > 0;
         const possibleHelms = Array.from(
           new Set(boatMatches.map(m => m.helm).filter((h): h is string => !!h && h.trim().length > 0)),
         );
         return {
           row,
-          matchedBoat: boatMatches.length > 0,
+          matchedBoat,
+          matchedClass,
+          canCreate: !!boatClass && !!sailNumber && (matchedBoat || matchedClass),
           possibleHelms,
-          matchedClass: classMatches,
         };
       });
+  }
+
+  /**
+   * Race competitors that are not already linked to any scanned row.
+   * Used by the Link action for unreadble class/sail merges.
+   */
+  unmatchedRaceCompetitors(
+    competitors: ResolvedRaceCompetitor[],
+    scannedRows: ScannedResultRow[],
+  ): ResolvedRaceCompetitor[] {
+    const matchedIds = new Set(
+      scannedRows.map(r => r.matchedCompetitorId).filter((id): id is string => !!id),
+    );
+    return competitors.filter(c => !matchedIds.has(c.id));
   }
 
   parseScannedTime(

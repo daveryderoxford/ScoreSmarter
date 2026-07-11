@@ -4,7 +4,7 @@ import { ScannerContext } from "../ai-scan-model.js";
 export function buildPrompt(ctx: ScannerContext, raceId: string): string {
 
   const aliasesStr = JSON.stringify(mergeClassAliases(ctx.classAliases));
-  const roster = ctx.roster && ctx.roster.length > 0 ? JSON.stringify(ctx.roster) : "No entry list provided";
+  const entryList = ctx.roster && ctx.roster.length > 0 ? JSON.stringify(ctx.roster) : "No entry list provided";
   const targetRacesStr = ctx.targetRaces?.length ? JSON.stringify(ctx.targetRaces) : JSON.stringify([raceId]);
 
   const lapsPresent = ctx.lapsPresentOnSheet !== false;
@@ -12,11 +12,7 @@ export function buildPrompt(ctx: ScannerContext, raceId: string): string {
   const timeFormat = ctx.timeFormat ?? "clock_hms";
 
   let lapColumnRules = `Laps column: ABSENT on this sheet. Set laps to 1 for every row.`;
-  if (lapsPresent && ctx.lapFormat === "ticks") {
-    lapColumnRules = `Laps column: PRESENT — ticks/tallies.
-- Count tallies/checkmarks (||| = 3, VV = 2). If both tallies and a final number exist, use the final number.
-- If a row has no lap marks, default to ${ctx.defaultLaps ?? "Unknown"}.`;
-  } else if (lapsPresent) {
+  if (lapsPresent) {
     lapColumnRules = `Laps column: PRESENT — numeric.
 - Read integer lap counts only (1, 2, 3, ...).
 - If a row has no lap value, default to ${ctx.defaultLaps ?? 1}.`;
@@ -52,15 +48,17 @@ export function buildPrompt(ctx: ScannerContext, raceId: string): string {
   }
 
   return `
-You read a handwritten sailing race results sheet. Follow these rules exactly. Accuracy beats completeness. Respond with raw JSON only (no markdown).
+You are reading a handwritten sailing race results sheet for a HANDICAP race. 
+Follow these rules exactly. ACCURACY is prefered to COMPLETNESS.
+Respond with raw JSON only (no markdown).
 Target race id: ${raceId}. Target races in this scan: ${targetRacesStr}.
 
 # 1. ROW HANDLING
-- Crossed-out rows: ignore struck-through / heavily scribbled rows, or emit status STRUCK_THROUGH with FAILED confidence. If a time is crossed out and rewritten, take the new time.
+- Emit EVERY data row present, including rows with a blank time cell.
+- Crossed-out rows: Ignore struck-through / heavily scribbled rows, or emit status STRUCK_THROUGH with FAILED confidence. If a time is crossed out and rewritten, take the new time.
 - Row integrity: 
 -- extract strictly row-by-row. Never shift data vertically. Never take a competitor's time from a different row than their class/sail number.
 -- Hour exception (clock mode only): if the hour field is blank but MM:SS is present, you MAY estimate hour from adjacent rows (see Time column). Do not copy minutes or seconds from another row.
-- Emit every data row present, including rows with a blank time cell.
 - ${orderExpectation}
 
 # 2. COLUMN DEFINITIONS
@@ -71,10 +69,14 @@ Target race id: ${raceId}. Target races in this scan: ${targetRacesStr}.
 
 ## Class / sail number
 - Read class and sail number from the same row.
-- Class aliases: ${aliasesStr}
-- Apply aliases (e.g. 'Laser R' → 'ILCA 6') for boatClass and roster matching.
-- Roster (Firestore race-results ids): ${roster}
-- Prefer the roster to correct messy handwriting (e.g. '1234S' → '12345'); when corrected from roster, use HIGH confidence and set matchedCompetitorId to that entry's id.
+
+- Use the 'ENTRY LIST' to determine the matchedCompetitorId 
+-- Use the ENTRY LIST to CIRRECT messy handwriting (e.g. '1234S' → '12345'); when corrected from ENTRY LIST, use HIGH confidence and set matchedCompetitorId to that entry's id.
+-- ENTRY LIST:  (Firestore race-results ids): ${entryList}
+
+- Map class names using 'CLASS ALIASES' 
+-- (e.g. 'Laser R' → 'ILCA 6') for boatClass and ENTRY LIST matching.
+-- CLASS ALIASES list: ${aliasesStr}
 
 ## Time
 ${timeColumnRules}
@@ -83,14 +85,16 @@ ${timeColumnRules}
 
 ## Laps
 ${lapColumnRules}
+- If DITTO marks are written use lap value from the row above
 
 ## Name (optional)
 - Read competitor name when present; omit if absent.
 
 # 3. CONFIDENCE + PAGE NOTES
+- If you are unsure of a value report any alternatives that the vakue could be. 
 - Per-field and overallRowConfidence: HIGH | MANUAL_CHECK | FAILED | AMBIGUOUS.
-- HIGH: certain read, especially exact roster match.
-- MANUAL_CHECK: unclear handwriting, roster correction, out-of-sequence time, or blank time.
+- HIGH: certain read, especially exact ENTRY LIST match.
+- MANUAL_CHECK: unclear handwriting, ENTRY LIST correction, out-of-sequence time, or blank time.
 - FAILED / AMBIGUOUS: not readable or decipherable. Only add alternatives if you have a guess. Use FAILED for completely unreadable scribbles.
 - Large multi-row notes (e.g. "RACE ABANDONED") go in pageNotes, not competitor rows.
 `;

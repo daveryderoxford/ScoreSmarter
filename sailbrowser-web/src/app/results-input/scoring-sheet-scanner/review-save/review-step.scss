@@ -92,3 +92,30 @@
   font-size: 0.8rem;
   color: var(--mat-sys-on-surface-variant);
 }
+
+.section-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
+
+  &.muted {
+    margin-top: -0.35rem;
+    font-size: 0.8rem;
+  }
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.link-button {
+  color: var(--mat-sys-primary);
+}
+
+.dense-button {
+  min-height: 32px;
+  padding-inline: 0.65rem;
+}

@@ -1,5 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { BoatsStore } from 'app/boats';
 import { normalizeSailNumber, sailNumbersEqual } from 'app/boats/model/sail-number';
@@ -9,6 +10,10 @@ import { ManualResultsService } from '../../services/manual-results.service';
 import { RaceCompetitorReader } from '../../services/race-competitor-reader';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
 import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
+import {
+  LinkScanRowDialog,
+  type LinkScanRowDialogResult,
+} from './link-scan-row-dialog';
 import {
   UnmatchedRowEntryDialog,
   type UnmatchedRowEntryDialogResult,
@@ -23,6 +28,9 @@ import {
   UnmatchedRowVm,
 } from './review-step';
 import { ScannedResultRow } from '../model/scan-model';
+
+const REMATCH_ATTEMPTS = 8;
+const REMATCH_DELAY_MS = 75;
 
 /**
  * Area 4 — owns the matched/unmatched view models, manual-entry dialogs, and the
@@ -41,6 +49,7 @@ export class ScanReviewStore {
   private readonly boatsStore = inject(BoatsStore);
   private readonly clubStore = inject(ClubStore);
   private readonly dialog = inject(MatDialog);
+  private readonly snackbar = inject(MatSnackBar);
   private readonly router = inject(Router);
 
   readonly displayedColumns: readonly string[] = [
@@ -73,6 +82,18 @@ export class ScanReviewStore {
     }),
   );
 
+  /** Race competitors not already linked to a scan row — candidates for Link. */
+  readonly linkableCompetitors = computed(() => {
+    const raceId = this.raceSelection.selectedRaceId();
+    if (!raceId) return [];
+    return this.rowMatching.unmatchedRaceCompetitors(
+      this.competitorReader.resolvedForRace(raceId),
+      this.scanRun.scanResult()?.scannedResults ?? [],
+    );
+  });
+
+  readonly canLink = computed(() => this.linkableCompetitors().length > 0);
+
   readonly acceptedMatchedCount = computed(
     () => this.matchedRows().filter(vm => !!vm.row.accepted).length,
   );
@@ -81,11 +102,24 @@ export class ScanReviewStore {
     this.scanRun.updateAcceptance(e.rowIndex, e.accepted);
   }
 
+  promoteAlternative(
+    rowIndex: number,
+    field: 'sailNumber' | 'boatClass' | 'competitorName' | 'time' | 'laps',
+    chosen: string | number,
+  ): void {
+    this.scanRun.promoteAlternative(rowIndex, field, chosen);
+  }
+
   async enterKnownBoat(row: ScannedResultRow): Promise<void> {
     const raceId = this.raceSelection.selectedRaceId();
     const boatClass = row.boatClass?.value?.trim();
     const sailNumber = normalizeSailNumber(row.sailNumber?.value);
-    if (!raceId || !boatClass || !sailNumber) return;
+    if (!raceId || !boatClass || !sailNumber) {
+      this.snackbar.open('Class and sail number are required to create an entry.', 'Dismiss', {
+        duration: 4000,
+      });
+      return;
+    }
 
     const matches = this.rowMatching.findBoatMatches(row, this.boatsStore.boats());
     if (matches.length === 0) {
@@ -102,14 +136,19 @@ export class ScanReviewStore {
       | undefined;
     if (!result?.created) return;
     const selectedBoat = matches.find(b => b.id === result.selectedBoatId);
-    this.refreshScanRowMatch(row, boatClass, sailNumber, selectedBoat?.helm);
+    await this.refreshScanRowMatch(row, boatClass, sailNumber, selectedBoat?.helm);
   }
 
   async enterUnmatched(row: ScannedResultRow): Promise<void> {
     const raceId = this.raceSelection.selectedRaceId();
     const boatClass = row.boatClass?.value?.trim();
     const sailNumber = normalizeSailNumber(row.sailNumber?.value);
-    if (!raceId || !boatClass || !sailNumber) return;
+    if (!raceId || !boatClass || !sailNumber) {
+      this.snackbar.open('Class and sail number are required to create an entry.', 'Dismiss', {
+        duration: 4000,
+      });
+      return;
+    }
 
     const dialogRef = this.dialog.open(UnmatchedRowEntryDialog, {
       width: '420px',
@@ -119,7 +158,32 @@ export class ScanReviewStore {
       | UnmatchedRowEntryDialogResult
       | undefined;
     if (!result?.created) return;
-    this.refreshScanRowMatch(row, boatClass, sailNumber, result.helm);
+    await this.refreshScanRowMatch(row, boatClass, sailNumber, result.helm);
+  }
+
+  async linkScanRow(row: ScannedResultRow): Promise<void> {
+    const competitors = this.linkableCompetitors();
+    if (competitors.length === 0) {
+      this.snackbar.open('No unlinked race entries available to link.', 'Dismiss', {
+        duration: 4000,
+      });
+      return;
+    }
+
+    const dialogRef = this.dialog.open(LinkScanRowDialog, {
+      width: '480px',
+      data: {
+        rowIndex: row.rowIndex,
+        competitors,
+        scannedClass: row.boatClass?.value,
+        scannedSail: row.sailNumber?.value,
+      },
+    });
+    const result = (await firstValueFrom(dialogRef.afterClosed())) as
+      | LinkScanRowDialogResult
+      | undefined;
+    if (!result?.competitorId) return;
+    this.scanRun.applyRowMatch(row.rowIndex, result.competitorId);
   }
 
   async save(): Promise<void> {
@@ -196,21 +260,33 @@ export class ScanReviewStore {
     return err instanceof Error ? err.message : 'Could not save scan results.';
   }
 
-  private refreshScanRowMatch(
+  private async refreshScanRowMatch(
     row: ScannedResultRow,
     boatClass: string,
     sailNumber: string,
     helm?: string,
-  ): void {
+  ): Promise<void> {
     const raceId = this.raceSelection.selectedRaceId();
     if (!raceId) return;
-    const match = this.competitorReader.resolvedForRace(raceId).find(r => {
-      const classMatch = boatClassesMatch(r.boatClass, boatClass);
-      const sailMatch = sailNumbersEqual(r.sailNumber, sailNumber);
-      const helmMatch = !helm || r.helm.toLowerCase() === helm.toLowerCase();
-      return classMatch && sailMatch && helmMatch;
-    });
-    if (!match) return;
-    this.scanRun.applyRowMatch(row.rowIndex, match.id);
+
+    for (let attempt = 0; attempt < REMATCH_ATTEMPTS; attempt++) {
+      const match = this.competitorReader.resolvedForRace(raceId).find(r => {
+        const classMatch = boatClassesMatch(r.boatClass, boatClass);
+        const sailMatch = sailNumbersEqual(r.sailNumber, sailNumber);
+        const helmMatch = !helm || r.helm.toLowerCase() === helm.toLowerCase();
+        return classMatch && sailMatch && helmMatch;
+      });
+      if (match) {
+        this.scanRun.applyRowMatch(row.rowIndex, match.id);
+        return;
+      }
+      await new Promise(resolve => setTimeout(resolve, REMATCH_DELAY_MS));
+    }
+
+    this.snackbar.open(
+      'Entry was created, but the scan row could not be linked automatically. Use Link to attach it.',
+      'Dismiss',
+      { duration: 6000 },
+    );
   }
 }

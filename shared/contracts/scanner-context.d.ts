@@ -3,7 +3,6 @@ export type ScannerTimeFormat = "clock_hms" | "stopwatch_hms_elapsed" | "stopwat
 /** Which backend parser pipeline to use for a scan. */
 export type ScanStrategy = "FullAIScan" | "FullAIScan-Fast" | "SplitScan";
 
-export type ScannerLapFormat = "numbers" | "ticks";
 export type ScannerListOrder = "chronological" | "firstLap" | "unsorted";
 
 export interface ScannerRosterEntry {
@@ -15,9 +14,7 @@ export interface ScannerRosterEntry {
 
 export interface ScannerContext {
   targetRaces: string[];
-  lapFormat: ScannerLapFormat;
   defaultLaps?: number;
-  hasHours: boolean;
   defaultHour?: number;
   listOrder: ScannerListOrder;
   classAliases?: Record<string, string>;

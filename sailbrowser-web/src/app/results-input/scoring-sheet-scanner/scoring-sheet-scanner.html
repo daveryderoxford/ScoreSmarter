@@ -1,6 +1,11 @@
 <app-toolbar title="Scan Results Sheet"></app-toolbar>
 
-<mat-stepper class="stepper" [linear]="true" #stepper [orientation]="isMobile() ? 'vertical' : 'horizontal'"
+<mat-stepper
+  class="stepper"
+  [class.review-wide]="stepper.selectedIndex === reviewStepIndex"
+  [linear]="true"
+  #stepper
+  [orientation]="isMobile() ? 'vertical' : 'horizontal'"
   (selectionChange)="onStepChange($event)">
 
   <mat-step [completed]="!!raceSelection.selectedRaceId()">

@@ -98,4 +98,58 @@ describe('ScanRowMatchingService', () => {
       expect(vm.row.boatClass?.value).toBe('Laser R');
     });
   });
+
+  describe('buildUnmatchedRows', () => {
+    const classes = [{ name: 'ILCA 7' }, { name: 'ILCA 6' }] as { name: string }[];
+
+    it('sets canCreate only when class and sail are present and class is known', () => {
+      const [creatable] = service.buildUnmatchedRows(
+        [
+          row({
+            boatClass: { value: 'ILCA 7', confidence: 'HIGH' },
+            sailNumber: { value: '12345', confidence: 'HIGH' },
+          }),
+        ],
+        { boats: [], classes: classes as never[] },
+      );
+      expect(creatable.matchedClass).toBe(true);
+      expect(creatable.canCreate).toBe(true);
+    });
+
+    it('does not treat empty class as matchedClass or canCreate', () => {
+      const [emptyClass] = service.buildUnmatchedRows(
+        [row({ sailNumber: { value: '12345', confidence: 'HIGH' } })],
+        { boats: [], classes: classes as never[] },
+      );
+      expect(emptyClass.matchedClass).toBe(false);
+      expect(emptyClass.canCreate).toBe(false);
+    });
+
+    it('does not offer Create when sail is missing', () => {
+      const [noSail] = service.buildUnmatchedRows(
+        [row({ boatClass: { value: 'ILCA 7', confidence: 'HIGH' } })],
+        { boats: [], classes: classes as never[] },
+      );
+      expect(noSail.matchedClass).toBe(true);
+      expect(noSail.canCreate).toBe(false);
+    });
+  });
+
+  describe('unmatchedRaceCompetitors', () => {
+    it('excludes competitors already matched to a scan row', () => {
+      const c1 = new ResolvedRaceCompetitor(
+        { id: 'c1', raceId: 'r1', seriesEntryId: 'e1', resultCode: 'NOT FINISHED' } as RaceCompetitor,
+        { id: 'e1', seriesId: 's1', helm: 'A', boatClass: 'ILCA 7', sailNumber: '1' } as SeriesEntry,
+      );
+      const c2 = new ResolvedRaceCompetitor(
+        { id: 'c2', raceId: 'r1', seriesEntryId: 'e2', resultCode: 'NOT FINISHED' } as RaceCompetitor,
+        { id: 'e2', seriesId: 's1', helm: 'B', boatClass: 'ILCA 6', sailNumber: '2' } as SeriesEntry,
+      );
+      const result = service.unmatchedRaceCompetitors(
+        [c1, c2],
+        [row({ matchedCompetitorId: 'c1' })],
+      );
+      expect(result.map(c => c.id)).toEqual(['c2']);
+    });
+  });
 });

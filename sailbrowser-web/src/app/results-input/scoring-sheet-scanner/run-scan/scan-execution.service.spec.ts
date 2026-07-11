@@ -25,10 +25,8 @@ describe('ScanExecutionService', () => {
       clubId: 'club-1',
       scannerContext: {
         targetRaces: [],
-        lapFormat: 'numbers',
         defaultHour: 14,
         defaultLaps: 3,
-        hasHours: true,
         listOrder: 'chronological',
         classAliases: {},
         roster: [],
