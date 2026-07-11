@@ -263,6 +263,31 @@ function normalizeOkTimeValue(
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+/** Convert structured time alternatives to HH:MM:SS strings; drop invalid / duplicates of primary. */
+function normalizeTimeAlternatives(
+  alternatives: unknown,
+  timeFormat: ScannerTimeFormat,
+  defaultHour: number | undefined,
+  primaryValue: string,
+): string[] {
+  if (!Array.isArray(alternatives)) return [];
+  const seen = new Set<string>(primaryValue ? [primaryValue] : []);
+  const out: string[] = [];
+  for (const alt of alternatives) {
+    const normalized = normalizeOkTimeValue(alt, timeFormat, defaultHour);
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    out.push(normalized);
+  }
+  return out;
+}
+
+type MutableTimeField = {
+  value?: unknown;
+  confidence?: unknown;
+  alternatives?: unknown;
+};
+
 export function validateAndNormalizeTimes(
   parsed: unknown,
   requestId: string,
@@ -291,13 +316,14 @@ export function validateAndNormalizeTimes(
       rowIndex?: unknown;
       status?: unknown;
       overallRowConfidence?: unknown;
-      time?: { value?: unknown; confidence?: unknown; };
+      time?: MutableTimeField;
     };
     const status = typeof rowObj.status === "string" ? rowObj.status.toUpperCase() : "OK";
     const timeValue = rowObj.time?.value;
     if (status !== "OK") {
       if (typeof rowObj.time === "object" && rowObj.time !== null) {
-        (rowObj.time as { value?: unknown; }).value = "";
+        rowObj.time.value = "";
+        rowObj.time.alternatives = [];
       }
       continue;
     }
@@ -311,15 +337,28 @@ export function validateAndNormalizeTimes(
         timeFormat,
       });
       if (typeof rowObj.time === "object" && rowObj.time !== null) {
-        (rowObj.time as { value?: unknown; confidence?: unknown; }).value = "";
-        (rowObj.time as { value?: unknown; confidence?: unknown; }).confidence = "MANUAL_CHECK";
+        rowObj.time.value = "";
+        rowObj.time.confidence = "MANUAL_CHECK";
+        // Still normalize any readable alternatives so the review UI can promote them.
+        rowObj.time.alternatives = normalizeTimeAlternatives(
+          rowObj.time.alternatives,
+          timeFormat,
+          defaultHour,
+          "",
+        );
       }
       rowObj.overallRowConfidence = "MANUAL_CHECK";
       continue;
     }
 
     if (typeof rowObj.time === "object" && rowObj.time !== null) {
-      (rowObj.time as { value?: unknown; }).value = normalized;
+      rowObj.time.value = normalized;
+      rowObj.time.alternatives = normalizeTimeAlternatives(
+        rowObj.time.alternatives,
+        timeFormat,
+        defaultHour,
+        normalized,
+      );
     }
   }
 }

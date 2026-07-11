@@ -84,8 +84,58 @@ test("validateAndNormalizeTimes clears invalid times and downgrades confidence",
 
 test("validateAndNormalizeTimes empties non-finish row time", () => {
   const parsed = {
-    scannedResults: [{ rowIndex: 3, status: "DNS", time: { value: { hours: 14, minutes: 23, seconds: 10 } } }],
+    scannedResults: [{
+      rowIndex: 3,
+      status: "DNS",
+      time: {
+        value: { hours: 14, minutes: 23, seconds: 10 },
+        alternatives: [{ hours: 14, minutes: 23, seconds: 12 }],
+      },
+    }],
   };
   validateAndNormalizeTimes(parsed, "req-7", "clock_hms");
   assert.equal(parsed.scannedResults[0].time.value, "");
+  assert.deepEqual(parsed.scannedResults[0].time.alternatives, []);
+});
+
+test("validateAndNormalizeTimes normalizes time.alternatives to HH:mm:ss strings", () => {
+  const parsed = {
+    scannedResults: [{
+      rowIndex: 1,
+      status: "OK",
+      time: {
+        value: { hours: 14, minutes: 45, seconds: 23 },
+        confidence: "HIGH",
+        alternatives: [
+          { hours: 14, minutes: 45, seconds: 28 },
+          { hours: 14, minutes: 46, seconds: 23 },
+          { hours: 14, minutes: 45, seconds: 23 }, // duplicate of primary
+          { hours: 99, minutes: 99, seconds: 99 }, // invalid
+          { hours: 14, minutes: 45, seconds: 28 }, // duplicate alt
+        ],
+      },
+    }],
+  };
+  validateAndNormalizeTimes(parsed, "req-8", "clock_hms");
+  assert.equal(parsed.scannedResults[0].time.value, "14:45:23");
+  assert.deepEqual(parsed.scannedResults[0].time.alternatives, ["14:45:28", "14:46:23"]);
+});
+
+test("validateAndNormalizeTimes keeps readable alternatives when primary time is invalid", () => {
+  const parsed = {
+    scannedResults: [{
+      rowIndex: 1,
+      status: "OK",
+      time: {
+        value: { hours: 99, minutes: 99, seconds: 99 },
+        confidence: "HIGH",
+        alternatives: [{ hours: 14, minutes: 45, seconds: 23 }],
+      },
+      overallRowConfidence: "HIGH",
+    }],
+  };
+  validateAndNormalizeTimes(parsed, "req-9", "clock_hms");
+  assert.equal(parsed.scannedResults[0].time.value, "");
+  assert.equal(parsed.scannedResults[0].time.confidence, "MANUAL_CHECK");
+  assert.deepEqual(parsed.scannedResults[0].time.alternatives, ["14:45:23"]);
 });
