@@ -5,6 +5,7 @@ import type {
   ScanStrategy,
 } from '@shared/scanner-context';
 import type { ScanExecutionMetrics as SharedScanExecutionMetrics } from '@shared/scan-metrics';
+import { resolveClassAlias } from './class-aliases';
 
 export type ScanExecutionMetrics = SharedScanExecutionMetrics;
 
@@ -63,18 +64,62 @@ export interface ScanRunState {
 }
 
 /**
+ * Maps boatClass sheet aliases (e.g. Radial) to canonical club names (ILCA 6)
+ * and keeps the original text in alternatives when remapped.
+ */
+export function applyClassAliasesToRow(row: ScannedResultRow): ScannedResultRow {
+  const field = row.boatClass;
+  if (!field?.value?.trim()) return row;
+
+  const original = field.value.trim();
+  const resolved = resolveClassAlias(original);
+  if (resolved === original) {
+    // Still resolve any alternate strings that are aliases.
+    const alts = (field.alternatives ?? [])
+      .map(a => resolveClassAlias(a))
+      .filter((a, i, arr) => !!a && a !== resolved && arr.indexOf(a) === i);
+    if (alts.length === (field.alternatives?.length ?? 0) &&
+      alts.every((a, i) => a === field.alternatives![i])) {
+      return row;
+    }
+    return { ...row, boatClass: { ...field, alternatives: alts } };
+  }
+
+  const seen = new Set([resolved.toLowerCase().replace(/\s+/g, ''), original.toLowerCase().replace(/\s+/g, '')]);
+  const nextAlts: string[] = [original];
+  for (const alt of field.alternatives ?? []) {
+    const trimmed = alt.trim();
+    if (!trimmed) continue;
+    const altResolved = resolveClassAlias(trimmed);
+    const display = trimmed !== altResolved && altResolved === resolved ? trimmed : altResolved;
+    const key = display.toLowerCase().replace(/\s+/g, '');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    nextAlts.push(display);
+  }
+
+  return {
+    ...row,
+    boatClass: { ...field, value: resolved, alternatives: nextAlts },
+  };
+}
+
+/**
  * Applies the auto-accept rules shared by the live scan run and the stored-scan
  * read: a row is pre-accepted only when its overall, sail-number, and time
  * confidences are all HIGH. Pure; safe to reuse across services.
  */
 export function applyAutoAccept(response: ScanResponse): ScanResponse {
   const { metrics, ...scanPayload } = response;
-  const scannedResults = scanPayload.scannedResults.map(row => ({
-    ...row,
-    accepted: row.overallRowConfidence === 'HIGH' &&
-      row.sailNumber?.confidence === 'HIGH' &&
-      row.time?.confidence === 'HIGH',
-  }));
+  const scannedResults = scanPayload.scannedResults.map(row => {
+    const withAliases = applyClassAliasesToRow(row);
+    return {
+      ...withAliases,
+      accepted: withAliases.overallRowConfidence === 'HIGH' &&
+        withAliases.sailNumber?.confidence === 'HIGH' &&
+        withAliases.time?.confidence === 'HIGH',
+    };
+  });
   return { ...scanPayload, scannedResults, ...(metrics ? { metrics } : {}) };
 }
 

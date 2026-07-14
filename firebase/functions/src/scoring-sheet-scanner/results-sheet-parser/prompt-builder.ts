@@ -69,14 +69,12 @@ Target race id: ${raceId}. Target races in this scan: ${targetRacesStr}.
 
 ## Class / sail number
 - Read class and sail number from the same row.
-
-- Use the 'ENTRY LIST' to determine the matchedCompetitorId 
--- Use the ENTRY LIST to CIRRECT messy handwriting (e.g. '1234S' → '12345'); when corrected from ENTRY LIST, use HIGH confidence and set matchedCompetitorId to that entry's id.
--- ENTRY LIST:  (Firestore race-results ids): ${entryList}
-
-- Map class names using 'CLASS ALIASES' 
--- (e.g. 'Laser R' → 'ILCA 6') for boatClass and ENTRY LIST matching.
--- CLASS ALIASES list: ${aliasesStr}
+- CLASS_ALIASES maps sheet text → CLUB_CLASS_NAME: ${aliasesStr}
+- When sheet text for a CLASS_ALIASE matches, always set boatClass.value to the CLUB_CLASS_NAME (the right-hand side of CLASS ALIASES).
+-- Examples: Radial / Laser R / LR → ILCA 6; Laser / L → ILCA 7.
+-- NEVER put sheet text (Radial, Laser R, LR, L, …) in boatClass.value when a CLASS_ALIASES matches.
+- Use the ENTRY_LIST to determine matchedCompetitorId and to correct messy handwriting (e.g. '1234S' → '12345'); when corrected from ENTRY LIST, use HIGH confidence and set matchedCompetitorId to that entry's id.
+-- ENTRY_LIST: ${entryList}
 
 ## Time
 ${timeColumnRules}

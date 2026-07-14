@@ -14,6 +14,13 @@ describe('boatClassesMatch', () => {
     expect(boatClassesMatch(' ILCA 7 ', 'ilca7')).toBe(true);
     expect(boatClassesMatch('ILCA 7', 'ILCA 6')).toBe(false);
   });
+
+  it('matches sheet aliases to canonical club classes', () => {
+    expect(boatClassesMatch('Radial', 'ILCA 6')).toBe(true);
+    expect(boatClassesMatch('Laser R', 'ILCA 6')).toBe(true);
+    expect(boatClassesMatch('Laser', 'ILCA 7')).toBe(true);
+    expect(boatClassesMatch('Radial', 'ILCA 7')).toBe(false);
+  });
 });
 
 describe('ScanRowMatchingService', () => {
@@ -66,6 +73,17 @@ describe('ScanRowMatchingService', () => {
       ];
       const matches = service.findBoatMatches(
         row({ boatClass: { value: 'ilca 7', confidence: 'HIGH' }, sailNumber: { value: '12345', confidence: 'HIGH' } }),
+        boats,
+      );
+      expect(matches.map(m => m.id)).toEqual(['b1']);
+    });
+
+    it('matches boats when scan reports an aliased class name', () => {
+      const boats = [
+        { id: 'b1', boatClass: 'ILCA 6', sailNumber: '211111', helm: 'Sam', name: '', crew: '', isClub: false, tags: [] },
+      ];
+      const matches = service.findBoatMatches(
+        row({ boatClass: { value: 'Radial', confidence: 'HIGH' }, sailNumber: { value: '211111', confidence: 'HIGH' } }),
         boats,
       );
       expect(matches.map(m => m.id)).toEqual(['b1']);
@@ -132,6 +150,25 @@ describe('ScanRowMatchingService', () => {
       );
       expect(noSail.matchedClass).toBe(true);
       expect(noSail.canCreate).toBe(false);
+    });
+
+    it('offers Enter when scan class is an alias of a known club class', () => {
+      const boats = [
+        { id: 'b1', boatClass: 'ILCA 6', sailNumber: '211111', helm: 'Sam', name: '', crew: '', isClub: false, tags: [] },
+      ];
+      const [vm] = service.buildUnmatchedRows(
+        [
+          row({
+            boatClass: { value: 'Radial', confidence: 'HIGH' },
+            sailNumber: { value: '211111', confidence: 'HIGH' },
+          }),
+        ],
+        { boats: boats as never[], classes: classes as never[] },
+      );
+      expect(vm.matchedClass).toBe(true);
+      expect(vm.matchedBoat).toBe(true);
+      expect(vm.canCreate).toBe(true);
+      expect(vm.possibleHelms).toEqual(['Sam']);
     });
   });
 

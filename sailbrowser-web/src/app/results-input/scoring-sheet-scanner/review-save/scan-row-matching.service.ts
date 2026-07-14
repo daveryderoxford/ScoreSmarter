@@ -7,11 +7,13 @@ import { RESULT_CODES, ResultCode } from 'app/scoring/model/result-code-scoring'
 import type { ScannerTimeFormat } from '@shared/scanner-context';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
+import { resolveClassAlias } from '../model/class-aliases';
 import { ScannedResultRow } from '../model/scan-model';
 import { MatchedRowVm, UnmatchedRowVm } from './review-step';
 
+/** True when class names match after normalisation and class-alias resolution. */
 export function boatClassesMatch(a: string | undefined | null, b: string | undefined | null): boolean {
-  return normaliseString(a) === normaliseString(b);
+  return normaliseString(resolveClassAlias(a)) === normaliseString(resolveClassAlias(b));
 }
 
 /**
@@ -27,10 +29,10 @@ export class ScanRowMatchingService {
     const boatClass = row.boatClass?.value;
     const sailNumber = normalizeSailNumber(row.sailNumber?.value);
     if (!boatClass?.trim() || !sailNumber) return [];
-    const scannedClass = normaliseString(boatClass);
+    const scannedClass = normaliseString(resolveClassAlias(boatClass));
     return boats.filter(
       b =>
-        normaliseString(b.boatClass) === scannedClass &&
+        normaliseString(resolveClassAlias(b.boatClass)) === scannedClass &&
         sailNumbersEqual(b.sailNumber, sailNumber),
     );
   }

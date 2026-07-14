@@ -4,6 +4,7 @@ import { buildPrompt } from "./prompt-builder.js";
 import { detailedHttpsError } from '../../shared/https-error.js';
 import { StratageyParemeters } from './scan-strategy.js';
 import { type ScanTokenCapture, captureTokenUsage } from '../scan-metrics.js';
+import { mergeClassAliases, normalizeBoatClasses } from "./class-aliases.js";
 
 const GCP_PROJECT = process.env.GCLOUD_PROJECT || "sailbrowser-efef0";
 
@@ -153,6 +154,7 @@ export async function singlePassAIParser(
       mergedContext.timeFormat ?? "clock_hms",
       mergedContext.defaultHour,
     );
+    normalizeBoatClasses(parsed, mergeClassAliases(mergedContext.classAliases));
     logScan(requestId, "parse_model_json", "Successfully parsed model JSON", {
       hasScannedResults: typeof parsed === "object" && parsed !== null && "scannedResults" in parsed,
     });

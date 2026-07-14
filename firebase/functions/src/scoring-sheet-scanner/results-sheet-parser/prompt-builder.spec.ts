@@ -25,14 +25,23 @@ test("buildPrompt uses structured ROW / COLUMN sections with co-located context"
   assert.match(prompt, /## Class \/ sail number/);
   assert.match(prompt, /## Time/);
   assert.match(prompt, /## Laps/);
-  assert.match(prompt, /## Class \/ sail number[\s\S]*CLASS ALIASES/);
+  assert.match(prompt, /## Class \/ sail number[\s\S]*CLASS ALIASES maps sheet text/);
   assert.match(prompt, /## Class \/ sail number[\s\S]*ENTRY LIST/);
 });
 
 test("buildPrompt includes default class aliases when client sends empty object", () => {
   const prompt = buildPrompt({ ...baseContext, classAliases: {} }, "race-1");
   assert.match(prompt, /## Class \/ sail number[\s\S]*"Laser R":"ILCA 6"/);
-  assert.doesNotMatch(prompt, /CLASS ALIASES list: \{\}/);
+  assert.doesNotMatch(prompt, /CLASS ALIASES maps sheet text → club class name: \{\}/);
+});
+
+test("buildPrompt requires boatClass.value to be the club class from aliases", () => {
+  const prompt = buildPrompt(baseContext, "race-1");
+  assert.match(prompt, /Always set boatClass\.value to the club class name/i);
+  assert.match(prompt, /Never put sheet abbreviations[\s\S]*in boatClass\.value when an alias exists/i);
+  assert.match(prompt, /put the sheet text in boatClass\.alternatives/i);
+  assert.match(prompt, /Radial \/ Laser R \/ LR → ILCA 6/i);
+  assert.match(prompt, /Laser \/ L → ILCA 7/i);
 });
 
 test("buildPrompt requires row integrity and typewritten row index", () => {
