@@ -1,0 +1,70 @@
+<div class="panel">
+  <div class="scope-bar">
+    <button
+      matButton="text"
+      type="button"
+      [matMenuTriggerFor]="scopeMenu"
+      aria-label="Filter entries by race date">
+      {{ scopeLabel() }}
+      <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+    </button>
+    <mat-menu #scopeMenu="matMenu">
+      <button mat-menu-item type="button" (click)="setViewScope('today')">
+        @if (viewScope() === 'today') {
+          <mat-icon>check</mat-icon>
+        }
+        <span>Today</span>
+      </button>
+      <button mat-menu-item type="button" (click)="setViewScope('current')">
+        @if (viewScope() === 'current') {
+          <mat-icon>check</mat-icon>
+        }
+        <span>Recently entered</span>
+      </button>
+    </mat-menu>
+  </div>
+
+  @if (raceEntryRows().length > 0) {
+    <mat-card appearance="outlined" class="race-counts" aria-label="Entries per race">
+      <div class="race-count-grid">
+        @for (row of raceEntryRows(); track row.race.id) {
+          <div class="race-count-cell">
+            <span class="race-count-name">{{ formatRaceTitle(row.race) }}</span>
+            <span class="race-count-value">{{ row.count }}</span>
+          </div>
+        }
+      </div>
+    </mat-card>
+  }
+
+  @if (reader.loading()) {
+    <app-loading-centered />
+  } @else if (filteredCompetitors().length === 0) {
+    <app-centered-text>No entries yet</app-centered-text>
+  } @else {
+    <mat-list class="dense-list">
+      @for (boat of boatEntries(); track boat.boatId) {
+        <mat-list-item>
+          <span matListItemTitle>
+            <b class="gap">{{ boat.helm }}</b>
+            <span class="gap">{{ boat.boatClass }} {{ boat.sailNumber }}</span>
+          </span>
+          <span matListItemLine>
+            @for (summary of boat.seriesSummaries; track summary.seriesName) {
+              <span class="gap">{{ summary.seriesName }} {{ summary.raceCount }} race(s)</span>
+            }
+          </span>
+          <span matListItemMeta>
+            <button
+              mat-icon-button
+              type="button"
+              aria-label="Delete entries"
+              (click)="openDeleteDialog(boat)">
+              <mat-icon class="warning">delete</mat-icon>
+            </button>
+          </span>
+        </mat-list-item>
+      }
+    </mat-list>
+  }
+</div>

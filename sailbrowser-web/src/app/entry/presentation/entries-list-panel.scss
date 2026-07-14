@@ -1,0 +1,65 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+.scope-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0.5rem;
+}
+
+.race-counts {
+  margin-left: 1rem;
+  margin-right: 1rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.race-count-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.2rem;
+}
+
+.race-count-cell {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.2rem 0.15rem;
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.race-count-name {
+  flex: 1;
+  min-width: 0;
+  color: var(--mat-sys-on-surface-variant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.race-count-value {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface);
+}
+
+.gap {
+  margin-right: 14px;
+}
+
+.warning {
+  color: var(--mat-sys-error);
+}
+
+.dense-list {
+  flex: 1;
+  overflow: auto;
+}

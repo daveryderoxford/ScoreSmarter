@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -8,13 +9,110 @@ import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import { RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces } from 'app/results-input';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import { RaceCompetitorReader } from 'app/results-input/services/race-competitor-reader';
+import { RaceCompetitorMutator } from 'app/results-input/services/race-competitor-mutator';
 import { EntryService } from '../../services/entry.service';
 import { KioskEntryPage, helmGridLayout } from './kiosk-entry-page';
 
 const clubClasses: BoatClass[] = [
   { id: 'ILCA 7', name: 'ILCA 7', handicaps: [], isSinglehander: true },
   { id: 'RS Aero 7', name: 'RS Aero 7', handicaps: [] },
+  { id: '420', name: '420', handicaps: [{ scheme: 'PY', value: 1100 }], isSinglehander: false },
 ];
+
+const todayRace = {
+  id: 'r1',
+  seriesId: 's1',
+  seriesName: 'Spring',
+  index: 1,
+  scheduledStart: new Date(),
+};
+
+const generalSeries = {
+  id: 's1',
+  name: 'Spring',
+  primaryScoringConfiguration: {
+    id: 'cfg-py',
+    name: 'PY',
+    type: 'Handicap',
+    handicapScheme: 'PY',
+    fleet: { type: 'GeneralHandicap', id: 'f-general', name: 'General Handicap' },
+  },
+};
+function baseProviders(overrides: Record<string, unknown> = {}) {
+  return [
+    {
+      provide: BoatsStore,
+      useValue: {
+        boats: () => [
+          {
+            id: 'b1',
+            boatClass: 'ILCA 7',
+            sailNumber: '1234',
+            helm: 'Alice Smith',
+            crew: 'Bob Jones',
+            name: '',
+            isClub: false,
+            tags: [],
+          },
+          {
+            id: 'c1',
+            boatClass: '420',
+            sailNumber: '99',
+            helm: '',
+            crew: '',
+            name: '',
+            isClub: true,
+            tags: [],
+          },
+        ],
+        add: vi.fn(),
+        ...(overrides['boatsStore'] as object),
+      },
+    },
+    {
+      provide: RaceCalendarStore,
+      useValue: {
+        allRaces: () => [todayRace],
+        allSeries: () => [generalSeries],
+        ...(overrides['raceCalendar'] as object),
+      },
+    },
+    {
+      provide: ClubStore,
+      useValue: { club: () => ({ classes: clubClasses }) },
+    },
+    {
+      provide: CurrentRaces,
+      useValue: {
+        todaysRaces: () => [todayRace],
+        selectedRaces: () => [todayRace],
+      },
+    },
+    {
+      provide: EntryService,
+      useValue: {
+        findEntryConflicts: vi.fn(() => []),
+        enterRaces: vi.fn(),
+        swapAndEnter: vi.fn(),
+      },
+    },
+    {
+      provide: DialogsService,
+      useValue: { confirm: vi.fn(), promptEntryConflict: vi.fn() },
+    },
+    { provide: MatDialog, useValue: { open: vi.fn() } },
+    { provide: MatSnackBar, useValue: { open: vi.fn() } },
+    {
+      provide: RaceCompetitorReader,
+      useValue: {
+        loading: signal(false),
+        selectedResolvedCompetitors: signal([]),
+      },
+    },
+    { provide: RaceCompetitorMutator, useValue: { deleteRaceCompetitor: vi.fn() } },
+  ];
+}
 
 function createPage() {
   return TestBed.createComponent(KioskEntryPage).componentInstance;
@@ -24,82 +122,34 @@ describe('KioskEntryPage', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [KioskEntryPage],
-      providers: [
-        {
-          provide: BoatsStore,
-          useValue: {
-            boats: () => [
-              {
-                id: 'b1',
-                boatClass: 'ILCA 7',
-                sailNumber: '1234',
-                helm: 'Alice Smith',
-                crew: 'Bob Jones',
-                name: '',
-                isClub: false,
-                tags: [],
-              },
-              {
-                id: 'c1',
-                boatClass: 'RS Aero 7',
-                sailNumber: '99',
-                helm: '',
-                crew: 'Club Crew',
-                name: '',
-                isClub: true,
-                tags: [],
-              },
-            ],
-            add: vi.fn(),
-          },
-        },
-        {
-          provide: RaceCalendarStore,
-          useValue: {
-            allRaces: () => [],
-            allSeries: () => [],
-          },
-        },
-        {
-          provide: ClubStore,
-          useValue: { club: () => ({ classes: clubClasses }) },
-        },
-        {
-          provide: CurrentRaces,
-          useValue: { todaysRaces: () => [] },
-        },
-        {
-          provide: EntryService,
-          useValue: {
-            findEntryConflicts: vi.fn(() => []),
-            enterRaces: vi.fn(),
-            swapAndEnter: vi.fn(),
-          },
-        },
-        {
-          provide: DialogsService,
-          useValue: { confirm: vi.fn(), promptEntryConflict: vi.fn() },
-        },
-        { provide: MatDialog, useValue: { open: vi.fn() } },
-        { provide: MatSnackBar, useValue: { open: vi.fn() } },
-      ],
+      providers: baseProviders(),
     });
   });
 
   it('starts on category step', () => {
-    const page = TestBed.createComponent(KioskEntryPage).componentInstance;
+    const page = createPage();
+    expect(page.view()).toBe('category');
+  });
+
+  it('opens entries view from category and back returns to category', () => {
+    const page = createPage();
+    page.showEntries();
+    expect(page.view()).toBe('entries');
+    expect(page.stepTitle()).toBe('Entries');
+    expect(page.showBack()).toBe(true);
+    page.goBack();
     expect(page.view()).toBe('category');
   });
 
   it('navigates member flow to helm step', () => {
-    const page = TestBed.createComponent(KioskEntryPage).componentInstance;
+    const page = createPage();
     page.startMember();
     expect(page.view()).toBe('memberHelm');
     expect(page.category()).toBe('member');
   });
 
   it('filters member helms by letter range', () => {
-    const page = TestBed.createComponent(KioskEntryPage).componentInstance;
+    const page = createPage();
     page.startMember();
     page.setLetterRange('S-T');
     expect(page.filteredMemberHelms()).toEqual(['Alice Smith']);
@@ -108,10 +158,10 @@ describe('KioskEntryPage', () => {
   });
 
   it('navigates club flow to class step', () => {
-    const page = TestBed.createComponent(KioskEntryPage).componentInstance;
+    const page = createPage();
     page.startClub();
     expect(page.view()).toBe('clubClass');
-    expect(page.clubClasses()).toEqual(['RS Aero 7']);
+    expect(page.clubClasses()).toEqual(['420']);
   });
 
   it('resets to category after start over', () => {
@@ -140,53 +190,22 @@ describe('KioskEntryPage', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [KioskEntryPage],
-      providers: [
-        {
-          provide: BoatsStore,
-          useValue: {
-            boats: () => [
-              {
-                id: 'b2',
-                boatClass: '420',
-                sailNumber: '5678',
-                helm: 'Carol White',
-                crew: 'Dan Green',
-                name: '',
-                isClub: false,
-                tags: [],
-              },
-            ],
-            add: vi.fn(),
-          },
+      providers: baseProviders({
+        boatsStore: {
+          boats: () => [
+            {
+              id: 'b2',
+              boatClass: '420',
+              sailNumber: '5678',
+              helm: 'Carol White',
+              crew: 'Dan Green',
+              name: '',
+              isClub: false,
+              tags: [],
+            },
+          ],
         },
-        {
-          provide: RaceCalendarStore,
-          useValue: { allRaces: () => [], allSeries: () => [] },
-        },
-        {
-          provide: ClubStore,
-          useValue: {
-            club: () => ({
-              classes: [{ id: '420', name: '420', handicaps: [], isSinglehander: false }],
-            }),
-          },
-        },
-        { provide: CurrentRaces, useValue: { todaysRaces: () => [] } },
-        {
-          provide: EntryService,
-          useValue: {
-            findEntryConflicts: vi.fn(() => []),
-            enterRaces: vi.fn(),
-            swapAndEnter: vi.fn(),
-          },
-        },
-        {
-          provide: DialogsService,
-          useValue: { confirm: vi.fn(), promptEntryConflict: vi.fn() },
-        },
-        { provide: MatDialog, useValue: { open: vi.fn() } },
-        { provide: MatSnackBar, useValue: { open: vi.fn() } },
-      ],
+      }),
     });
 
     const page = createPage();
@@ -199,6 +218,38 @@ describe('KioskEntryPage', () => {
 
     expect(page.isSinglehander()).toBe(false);
     expect(page.candidateBoat()?.crew).toBe('Dan Green');
+  });
+
+  it('shows race count for club double-hander with empty crew when helm is set', () => {
+    const page = createPage();
+    const clubBoat = TestBed.inject(BoatsStore).boats()[1];
+
+    page.startClub();
+    page.selectClubClass('420');
+    page.selectClubBoat(clubBoat);
+    page.clubHelmForm.controls.helm.setValue('Sam Helm');
+    page.clubHelmForm.controls.crew.setValue('');
+
+    expect(page.isSinglehander()).toBe(false);
+    expect(page.todaysEligibleRaces().length).toBe(1);
+    expect(page.raceCountLabel()).toBe('Enter 1 race today.');
+    expect(page.canEnter()).toBe(true);
+    expect(page.candidateBoat()?.crew).toBeUndefined();
+  });
+
+  it('does not claim no races when helm is missing but boat has races today', () => {
+    const page = createPage();
+    const clubBoat = TestBed.inject(BoatsStore).boats()[1];
+
+    page.startClub();
+    page.selectClubClass('420');
+    page.selectClubBoat(clubBoat);
+
+    expect(page.todaysEligibleRaces().length).toBe(1);
+    expect(page.raceCountLabel()).toContain('Enter 1 race today');
+    expect(page.raceCountLabel()).toContain('Enter helm to sign on');
+    expect(page.raceCountLabel()).not.toContain('No races today');
+    expect(page.canEnter()).toBe(false);
   });
 });
 

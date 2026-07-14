@@ -1,5 +1,4 @@
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -48,11 +47,13 @@ import {
   type HelmLetterRangeId,
   surnameOf,
 } from '../../utils/helm-surname';
+import { EntriesListPanel } from '../entries-list-panel';
 import { KioskNewHelmDialog } from '../kiosk-new-helm-dialog';
 import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
 
 type KioskView =
   | 'category'
+  | 'entries'
   | 'memberHelm'
   | 'memberBoat'
   | 'memberConfirm'
@@ -109,8 +110,8 @@ export function helmGridLayout(
     MatInputModule,
     MatAutocompleteModule,
     HelmNameAutocomplete,
+    EntriesListPanel,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class KioskEntryPage {
   private readonly entryService = inject(EntryService);
@@ -144,6 +145,13 @@ export class KioskEntryPage {
   private readonly clubHelmValue = toSignal(
     this.clubHelmForm.controls.helm.valueChanges.pipe(
       startWith(this.clubHelmForm.controls.helm.value),
+    ),
+    { initialValue: '' },
+  );
+
+  private readonly clubCrewValue = toSignal(
+    this.clubHelmForm.controls.crew.valueChanges.pipe(
+      startWith(this.clubHelmForm.controls.crew.value),
     ),
     { initialValue: '' },
   );
@@ -216,10 +224,10 @@ export class KioskEntryPage {
     return isSinglehanderClass(boat.boatClass, this.clubStore.club().classes);
   });
 
-  readonly candidateBoat = computed(() => {
+  /** Handicaps for the selected boat (independent of helm/crew). */
+  private readonly selectedBoatHandicaps = computed((): Handicap[] => {
     const boat = this.selectedBoat();
-    if (!boat) return undefined;
-
+    if (!boat) return [];
     const handicapByScheme = new Map<HandicapScheme, number>();
     for (const h of this.classHandicaps()) {
       if (h.value > 0) handicapByScheme.set(h.scheme, h.value);
@@ -227,6 +235,12 @@ export class KioskEntryPage {
     for (const h of boat.handicaps ?? []) {
       if (h.value > 0) handicapByScheme.set(h.scheme, h.value);
     }
+    return [...handicapByScheme.entries()].map(([scheme, value]) => ({ scheme, value }));
+  });
+
+  readonly candidateBoat = computed(() => {
+    const boat = this.selectedBoat();
+    if (!boat) return undefined;
 
     const helm = boat.isClub
       ? String(this.clubHelmValue() ?? '').trim()
@@ -236,7 +250,7 @@ export class KioskEntryPage {
     const crewTrim = this.isSinglehander()
       ? ''
       : boat.isClub
-        ? String(this.clubHelmForm.controls.crew.value ?? '').trim()
+        ? String(this.clubCrewValue() ?? '').trim()
         : String(this.memberCrewValue() ?? '').trim();
     const crew = crewTrim || undefined;
 
@@ -245,32 +259,34 @@ export class KioskEntryPage {
       sailNumber: boat.sailNumber,
       helm,
       crew,
-      handicaps: [...handicapByScheme.entries()].map(([scheme, value]) => ({ scheme, value })),
+      handicaps: this.selectedBoatHandicaps(),
       personalHandicapBand: boat.personalHandicapBand,
       personalHandicapUnknown: !boat.personalHandicapBand,
     };
   });
 
+  /** Races this boat's class/handicaps are eligible for — does not require helm or crew. */
   readonly eligibleRaces = computed(() => {
-    const candidate = this.candidateBoat();
-    if (!candidate) return [];
+    const boat = this.selectedBoat();
+    if (!boat) return [];
+    const handicaps = this.selectedBoatHandicaps();
     const seriesById = new Map(this.raceCalendar.allSeries().map(s => [s.id, s]));
     return this.raceCalendar.allRaces().filter(race => {
       const series = seriesById.get(race.seriesId);
       if (!series) return false;
-      const handicaps = resolveHandicapsForSeries(
+      const resolved = resolveHandicapsForSeries(
         series,
         {
-          boatClassName: candidate.boatClassName,
-          handicaps: candidate.handicaps,
-          personalHandicapBand: candidate.personalHandicapBand,
-          personalHandicapUnknown: candidate.personalHandicapUnknown,
+          boatClassName: boat.boatClass,
+          handicaps,
+          personalHandicapBand: boat.personalHandicapBand,
+          personalHandicapUnknown: !boat.personalHandicapBand,
         },
         this.clubStore.club().classes,
       );
       return meetsPrimaryFleetEligibility(series, {
-        boatClass: candidate.boatClassName,
-        handicaps,
+        boatClass: boat.boatClass,
+        handicaps: resolved,
       });
     });
   });
@@ -282,8 +298,10 @@ export class KioskEntryPage {
 
   readonly raceCountLabel = computed(() => {
     const count = this.todaysEligibleRaces().length;
-    if (count === 0) return 'No eligible races today.';
-    return count === 1 ? 'Enter 1 race today.' : `Enter ${count} races today.`;
+    if (count === 0) return 'No races today for this boat';
+    const raceText = count === 1 ? 'Enter 1 race today.' : `Enter ${count} races today.`;
+    if (!this.candidateBoat()) return `${raceText} Enter helm to sign on.`;
+    return raceText;
   });
 
   readonly showBack = computed(() => this.view() !== 'category' && this.view() !== 'success');
@@ -292,6 +310,8 @@ export class KioskEntryPage {
     switch (this.view()) {
       case 'category':
         return 'Race entry';
+      case 'entries':
+        return 'Entries';
       case 'memberHelm':
         return 'Select helm';
       case 'memberBoat':
@@ -310,6 +330,10 @@ export class KioskEntryPage {
   });
 
   readonly canEnter = computed(() => this.todaysEligibleRaces().length > 0 && !!this.candidateBoat());
+
+  showEntries(): void {
+    this.view.set('entries');
+  }
 
   constructor() {
     effect((onCleanup) => {
@@ -372,6 +396,9 @@ export class KioskEntryPage {
 
   goBack(): void {
     switch (this.view()) {
+      case 'entries':
+        this.view.set('category');
+        break;
       case 'memberHelm':
         this.resetToCategory();
         break;

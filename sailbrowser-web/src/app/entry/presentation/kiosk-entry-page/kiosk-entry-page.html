@@ -8,7 +8,7 @@
       <span class="header-spacer"></span>
     }
     <h1 class="kiosk-title">{{ stepTitle() }}</h1>
-    @if (view() !== 'category' && view() !== 'success') {
+    @if (view() !== 'category' && view() !== 'success' && view() !== 'entries') {
       <button matButton type="button" (click)="resetToCategory()">Return to start</button>
     } @else {
       <span class="header-spacer"></span>
@@ -25,6 +25,16 @@
           <button mat-stroked-button type="button" class="category-btn" (click)="startClub()">
             Club Boats
           </button>
+        </div>
+        <button mat-fab extended type="button" class="add-new-fab" (click)="showEntries()">
+          <mat-icon>list</mat-icon>
+          Entries
+        </button>
+      }
+
+      @case ('entries') {
+        <div class="entries-panel">
+          <app-entries-list-panel />
         </div>
       }
 
@@ -168,7 +178,7 @@
             }
           </mat-form-field>
           @if (!isSinglehander()) {
-          <mat-form-field>
+          <mat-form-field class="crew">
             <mat-label>Crew (optional)</mat-label>
             <input matInput formControlName="crew" autocomplete="off" />
           </mat-form-field>
