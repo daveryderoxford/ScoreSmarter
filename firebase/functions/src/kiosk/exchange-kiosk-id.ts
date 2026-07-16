@@ -16,7 +16,7 @@ import { ensureKioskAuthUser } from "./ensure-kiosk-user.js";
  * Unauthenticated: exchange a Fully Kiosk hardware ID for a Firebase custom token.
  * Device must be listed as active under clubs/{clubId}/authorized_kiosks/{deviceId}.
  */
-export const exchangeKioskId = onCall(async (request) => {
+export const exchangeKioskId = onCall({ enforceAppCheck: true }, async (request) => {
   let clubId: string;
   let deviceId: string;
   try {

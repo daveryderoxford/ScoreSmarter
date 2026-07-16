@@ -40,9 +40,16 @@ export class KioskAuthService {
    * If running on Fully (or emulator dev override) and not already signed in,
    * exchange the hardware ID for a Firebase custom token and sign in.
    * Failures are recorded on {@link lastFailure}; they do not throw.
+   *
+   * Waits for Auth persistence restore before deciding, so a human session
+   * that is about to load from IndexedDB is not replaced by kiosk sign-in.
    */
   async ensureSignedIn(clubId: string): Promise<void> {
     this.lastFailure.set(undefined);
+
+    // authStateReady resolves after IndexedDB/local persistence has restored
+    // (or confirmed there is no session). currentUser alone is racy at bootstrap.
+    await this.auth.authStateReady();
 
     if (this.auth.currentUser) {
       return;
@@ -72,6 +79,12 @@ export class KioskAuthService {
         { timeout: 30_000 },
       );
       const result = await exchange({ clubId, deviceId });
+
+      // Re-check after the network round-trip in case a session appeared.
+      if (this.auth.currentUser) {
+        return;
+      }
+
       const token = result.data?.token;
       if (!token) {
         this.lastFailure.set({ deviceId, reason: 'No token returned from server.' });

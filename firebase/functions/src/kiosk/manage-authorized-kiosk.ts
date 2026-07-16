@@ -22,7 +22,7 @@ type ManageAction = "register" | "revoke" | "activate";
 /**
  * Club-admin: register, revoke, or re-activate a Fully Kiosk tablet for a club.
  */
-export const manageAuthorizedKiosk = onCall(async (request) => {
+export const manageAuthorizedKiosk = onCall({ enforceAppCheck: true }, async (request) => {
   assertAuthenticated(request.auth);
 
   let clubId: string;

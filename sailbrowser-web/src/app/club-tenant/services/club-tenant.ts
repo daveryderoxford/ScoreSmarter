@@ -72,7 +72,8 @@ export class ClubTenant {
       }
 
       // Fully Kiosk: exchange hardware ID for a custom token (no-op elsewhere).
-      // Runs after OAuth redirect so a human Google session is not replaced.
+      // Runs after OAuth redirect and after Auth persistence restore (inside
+      // ensureSignedIn) so a human session is not replaced.
       await this.kioskAuth.ensureSignedIn(this._clubId);
 
     } catch (e: unknown) { 
