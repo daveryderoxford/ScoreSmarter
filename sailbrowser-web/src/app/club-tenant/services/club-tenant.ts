@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Auth, getRedirectResult } from '@angular/fire/auth';
 import { Router } from '@angular/router';
+import { KioskAuthService } from 'app/auth/services/kiosk-auth.service';
 import { ClubStore } from './club-store';
 
 @Injectable({ 
@@ -14,6 +15,7 @@ export class ClubTenant {
   private clubStore = inject(ClubStore);
   private auth = inject(Auth);
   private router = inject(Router);
+  private kioskAuth = inject(KioskAuthService);
 
   /** Called when the application initialises to
    * handle the extracting the clubId from the subdomain and
@@ -68,6 +70,10 @@ export class ClubTenant {
       if (!club || club.id !== this._clubId) {
         throw new Error(`Club mismatch or not found: Expected ${this._clubId}`);
       }
+
+      // Fully Kiosk: exchange hardware ID for a custom token (no-op elsewhere).
+      // Runs after OAuth redirect so a human Google session is not replaced.
+      await this.kioskAuth.ensureSignedIn(this._clubId);
 
     } catch (e: unknown) { 
 

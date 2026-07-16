@@ -108,6 +108,68 @@ test('race result update rejects raceId mutation', async () => {
   );
 });
 
+test('club-admin can read authorized_kiosks', async () => {
+  const path = `clubs/${CLUB_ID}/authorized_kiosks/device-1`;
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc(path).set({
+      deviceId: 'device-1',
+      status: 'active',
+      authUid: 'kiosk_device_1',
+      createdAt: new Date().toISOString(),
+      createdBy: 'admin',
+    });
+  });
+
+  const adminDb = authedDb('club-admin-user', clubUserClaims('club-admin'));
+  await assertSucceeds(adminDb.doc(path).get());
+});
+
+test('regular user cannot read authorized_kiosks', async () => {
+  const path = `clubs/${CLUB_ID}/authorized_kiosks/device-2`;
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc(path).set({
+      deviceId: 'device-2',
+      status: 'active',
+      authUid: 'kiosk_device_2',
+      createdAt: new Date().toISOString(),
+      createdBy: 'admin',
+    });
+  });
+
+  const db = authedDb(USER_UID, clubUserClaims('user'));
+  await assertFails(db.doc(path).get());
+});
+
+test('client cannot write authorized_kiosks even as club-admin', async () => {
+  const path = `clubs/${CLUB_ID}/authorized_kiosks/device-3`;
+  const adminDb = authedDb('club-admin-user', clubUserClaims('club-admin'));
+  await assertFails(
+    adminDb.doc(path).set({
+      deviceId: 'device-3',
+      status: 'active',
+      authUid: 'kiosk_device_3',
+      createdAt: new Date().toISOString(),
+      createdBy: 'admin',
+    }),
+  );
+});
+
+test('unauthenticated cannot read authorized_kiosks', async () => {
+  const path = `clubs/${CLUB_ID}/authorized_kiosks/device-4`;
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc(path).set({
+      deviceId: 'device-4',
+      status: 'active',
+      authUid: 'kiosk_device_4',
+      createdAt: new Date().toISOString(),
+      createdBy: 'admin',
+    });
+  });
+
+  const db = testEnv.unauthenticatedContext().firestore();
+  await assertFails(db.doc(path).get());
+});
+
 test('club user owner can update profile but not role', async () => {
   const path = `clubs/${CLUB_ID}/users/${USER_UID}`;
   await testEnv.withSecurityRulesDisabled(async (context) => {

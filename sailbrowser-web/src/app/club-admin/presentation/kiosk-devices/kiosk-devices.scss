@@ -1,0 +1,53 @@
+.content {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.lede,
+.help {
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
+.help {
+  font-size: 0.95rem;
+}
+
+.add-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 24px 0;
+}
+
+.add-form mat-form-field {
+  flex: 1 1 200px;
+  min-width: 180px;
+}
+
+.empty {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.kiosk-table {
+  width: 100%;
+}
+
+code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  word-break: break-all;
+}
+
+.status-active {
+  color: var(--mat-sys-primary);
+  text-transform: capitalize;
+}
+
+.status-revoked {
+  color: var(--mat-sys-on-surface-variant);
+  text-transform: capitalize;
+}

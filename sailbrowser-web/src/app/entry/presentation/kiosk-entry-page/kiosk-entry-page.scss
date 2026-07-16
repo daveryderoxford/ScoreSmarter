@@ -54,6 +54,24 @@
   margin: 0 auto;
 }
 
+.kiosk-auth-banner {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: var(--mat-sys-body-large-size);
+  line-height: 1.4;
+  text-align: center;
+
+  .device-id {
+    display: inline-block;
+    word-break: break-all;
+    font-family: ui-monospace, monospace;
+    font-size: 0.9em;
+  }
+}
+
 .kiosk-header {
   display: flex;
   align-items: center;

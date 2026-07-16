@@ -26,4 +26,10 @@ export const CLUB_ADMIN_ROUTES: Routes = [
     path: 'tags',
     loadComponent: () => import('./presentation/tags-admin/tags-admin').then(m => m.TagsAdmin),
   },
+  {
+    path: 'kiosk-devices',
+    title: 'Kiosk tablets',
+    loadComponent: () =>
+      import('./presentation/kiosk-devices/kiosk-devices').then(m => m.KioskDevicesPage),
+  },
 ];

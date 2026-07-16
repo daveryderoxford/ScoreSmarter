@@ -192,6 +192,12 @@ service cloud.firestore {
           || isOwner(userId) && clubUserOwnerUpdateValid(userId, clubId);
         allow delete: if isSysAdmin();
       }
+
+      // Kiosk whitelist: club-admin can list; mutations only via Admin SDK callables.
+      match /authorized_kiosks/{deviceId} {
+        allow read: if isClubAdmin(clubId);
+        allow write: if false;
+      }
     }
 
     match /system/public/{id} {

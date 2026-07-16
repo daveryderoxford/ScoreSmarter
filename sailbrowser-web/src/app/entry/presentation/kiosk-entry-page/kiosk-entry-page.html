@@ -1,4 +1,12 @@
 <div class="kiosk">
+  @if (kioskAuthFailure(); as fail) {
+    <div class="kiosk-auth-banner" role="alert">
+      This tablet is not registered for automatic sign-in.
+      Ask a club admin to add device ID
+      <code class="device-id">{{ fail.deviceId }}</code>
+      under Club admin → Kiosk tablets.
+    </div>
+  }
   <header class="kiosk-header">
     @if (showBack()) {
       <button matIconButton type="button" aria-label="Back" (click)="goBack()">

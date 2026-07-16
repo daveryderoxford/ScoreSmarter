@@ -120,6 +120,7 @@ export class ClubAdminSwitchboard {
       resources: [
         { label: 'Club profile', route: '/club-admin/club-settings' },
         { label: 'Users', route: '/sys-admin/users' },
+        { label: 'Kiosk tablets', route: '/club-admin/kiosk-devices' },
       ]
     },
     {
