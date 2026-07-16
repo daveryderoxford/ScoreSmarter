@@ -52,6 +52,24 @@
   box-sizing: border-box;
   max-width: 960px;
   margin: 0 auto;
+  position: relative;
+}
+
+.kiosk-device-id {
+  position: fixed;
+  left: max(8px, env(safe-area-inset-left));
+  bottom: max(6px, env(safe-area-inset-bottom));
+  margin: 0;
+  max-width: min(50vw, 280px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--mat-sys-outline);
+  font-family: ui-monospace, monospace;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .kiosk-auth-banner {

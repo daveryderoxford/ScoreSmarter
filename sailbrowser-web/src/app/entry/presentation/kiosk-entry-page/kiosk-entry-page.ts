@@ -127,6 +127,9 @@ export class KioskEntryPage {
   private readonly kioskAuth = inject(KioskAuthService);
   private readonly authService = inject(AuthService);
 
+  /** Hardware ID when running on Fully Kiosk (or emulator override); for admin registration. */
+  readonly deviceId = this.kioskAuth.getDeviceId();
+
   /** Hardware auth failed and user is still unsigned-in (e.g. unregistered tablet). */
   readonly kioskAuthFailure = computed(() => {
     const fail = this.kioskAuth.lastFailure();
