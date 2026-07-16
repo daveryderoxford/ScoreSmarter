@@ -50,7 +50,8 @@ import {
 import { EntriesListPanel } from '../entries-list-panel';
 import { KioskNewHelmDialog } from '../kiosk-new-helm-dialog';
 import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
-
+import { AuthService } from 'app/auth/auth.service';
+import { KioskAuthService } from 'app/auth/services/kiosk-auth.service';
 type KioskView =
   | 'category'
   | 'entries'
@@ -123,6 +124,15 @@ export class KioskEntryPage {
   private readonly dialogs = inject(DialogsService);
   private readonly snackbar = inject(MatSnackBar);
   private readonly fb = inject(FormBuilder);
+  private readonly kioskAuth = inject(KioskAuthService);
+  private readonly authService = inject(AuthService);
+
+  /** Hardware auth failed and user is still unsigned-in (e.g. unregistered tablet). */
+  readonly kioskAuthFailure = computed(() => {
+    const fail = this.kioskAuth.lastFailure();
+    if (!fail || this.authService.loggedIn()) return undefined;
+    return fail;
+  });
 
   readonly letterRanges = HELM_LETTER_RANGES;
 

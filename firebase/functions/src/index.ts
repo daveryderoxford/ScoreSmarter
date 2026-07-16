@@ -25,3 +25,5 @@ export { getDutyTeamForDay, setDutyAttendance } from "./duties/duty-register.js"
 export {
   cancelStaleFutureRacesWeekly,
 } from "./maintenance/weekly-maintenance.js";
+export { exchangeKioskId } from "./kiosk/exchange-kiosk-id.js";
+export { manageAuthorizedKiosk } from "./kiosk/manage-authorized-kiosk.js";

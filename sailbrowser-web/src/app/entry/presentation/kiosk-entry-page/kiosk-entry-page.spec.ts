@@ -12,6 +12,8 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { RaceCompetitorReader } from 'app/results-input/services/race-competitor-reader';
 import { RaceCompetitorMutator } from 'app/results-input/services/race-competitor-mutator';
 import { EntryService } from '../../services/entry.service';
+import { AuthService } from 'app/auth/auth.service';
+import { KioskAuthService } from 'app/auth/services/kiosk-auth.service';
 import { KioskEntryPage, helmGridLayout } from './kiosk-entry-page';
 
 const clubClasses: BoatClass[] = [
@@ -111,6 +113,19 @@ function baseProviders(overrides: Record<string, unknown> = {}) {
       },
     },
     { provide: RaceCompetitorMutator, useValue: { deleteRaceCompetitor: vi.fn() } },
+    {
+      provide: KioskAuthService,
+      useValue: {
+        lastFailure: signal(undefined),
+        isFullyKiosk: () => false,
+        getDeviceId: () => undefined,
+        ensureSignedIn: vi.fn(),
+      },
+    },
+    {
+      provide: AuthService,
+      useValue: { loggedIn: signal(true) },
+    },
   ];
 }
 
