@@ -15,8 +15,12 @@ import { ensureKioskAuthUser } from "./ensure-kiosk-user.js";
 /**
  * Unauthenticated: exchange a Fully Kiosk hardware ID for a Firebase custom token.
  * Device must be listed as active under clubs/{clubId}/authorized_kiosks/{deviceId}.
+ *
+ * App Check is intentionally not enforced: Fully Kiosk WebView often fails
+ * reCAPTCHA Enterprise (requestStorageAccess), which would block all kiosk sign-in.
+ * Authorization is the active device whitelist lookup instead.
  */
-export const exchangeKioskId = onCall({ enforceAppCheck: true }, async (request) => {
+export const exchangeKioskId = onCall(async (request) => {
   let clubId: string;
   let deviceId: string;
   try {
