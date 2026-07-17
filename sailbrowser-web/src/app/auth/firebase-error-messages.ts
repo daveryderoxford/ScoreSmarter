@@ -23,6 +23,10 @@ export function getFirebaseErrorMessage(error: FirebaseError): string {
       return 'Invalid email or password.';
     case 'auth/requires-recent-login':
       return 'This operation requires recent authentication. Please log in again.';
+    case 'auth/popup-blocked':
+      return 'Sign-in popup was blocked. Allow popups for this site and try again.';
+    case 'auth/popup-closed-by-user':
+      return 'Sign-in was cancelled. Please try again.';
     default:
       console.error('Unhandled Firebase error code:', error.code, error.message);
       return 'An unexpected error occurred. Please try again.';

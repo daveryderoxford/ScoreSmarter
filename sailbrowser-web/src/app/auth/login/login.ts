@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angu
 import { FirebaseError } from '@angular/fire/app';
 import {
   Auth,
-  FacebookAuthProvider, GoogleAuthProvider, UserCredential,
-  signInWithEmailAndPassword, signInWithPopup, signInWithRedirect
+  FacebookAuthProvider, GoogleAuthProvider,
+  signInWithEmailAndPassword, signInWithPopup
 } from '@angular/fire/auth';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -22,11 +22,6 @@ export type AuthType = "EmailAndPassword" | "Google" | "Facebook";
 
 const facebookAuthProvider = new FacebookAuthProvider();
 const googleAuthProvider = new GoogleAuthProvider();
-
-const isInStandaloneMode = () =>
-  (window.matchMedia('(display-mode: standalone)').matches) ||
-  ((window.navigator as any).standalone) ||
-  document.referrer.includes('android-app://');
 
 @Component({
   selector: 'app-login',
@@ -61,57 +56,46 @@ export class LoginComponent {
     }
   }
 
-  async signInWith(provider: AuthType, credentials?: { email: string, password: string; }) {
+  /**
+   * Email/password or OAuth. For Google/Facebook, {@link signInWithPopup} must run in the
+   * same synchronous turn as the button click (no prior await) so mobile browsers keep the
+   * user-gesture and allow the popup.
+   */
+  signInWith(provider: AuthType, credentials?: { email: string, password: string; }): void {
     this.errorMessage.set('');
+    this.loading.set(true);
 
+    if (provider === 'EmailAndPassword') {
+      void this._signInWithEmail(credentials!);
+      return;
+    }
+
+    const oauthProvider = provider === 'Google' ? googleAuthProvider : facebookAuthProvider;
+    // Invoke popup immediately — do not await anything before this call.
+    void signInWithPopup(this.afAuth, oauthProvider)
+      .then((userDetails) => {
+        if (userDetails) {
+          this._handleSignInSuccess();
+        }
+      })
+      .catch((err: unknown) => this._handleSigninError(err))
+      .finally(() => this.loading.set(false));
+  }
+
+  private async _signInWithEmail(credentials: { email: string; password: string }): Promise<void> {
     try {
-      this.loading.set(true);
-
-      let userDetails: UserCredential | null = null;
-
-      switch (provider) {
-
-        case "EmailAndPassword":
-          userDetails = await signInWithEmailAndPassword(this.afAuth, credentials!.email, credentials!.password);
-          // Note in the case of sign with redirect the user detils 
-          if (userDetails) {
-            this._handleSignInSuccess();
-          }
-          break;
-
-        case "Google":
-          userDetails = await this._thirdPartySignIn(googleAuthProvider);
-          if (userDetails) {
-            this._handleSignInSuccess();
-          }
-          break;
-
-        case "Facebook":
-          userDetails = await this._thirdPartySignIn(facebookAuthProvider);
-          if (userDetails) {
-            this._handleSignInSuccess();
-          }
-          break;
+      const userDetails = await signInWithEmailAndPassword(
+        this.afAuth,
+        credentials.email,
+        credentials.password,
+      );
+      if (userDetails) {
+        this._handleSignInSuccess();
       }
-
     } catch (err) {
       this._handleSigninError(err);
     } finally {
       this.loading.set(false);
-    }
-  }
-
-   /** Sign in with redirect for PWA and popup for browser.
-    * Sign in with popup avoids re-loading the application on the browser.
-  */
-   private async _thirdPartySignIn(provider: GoogleAuthProvider | FacebookAuthProvider): Promise<UserCredential | null> {
-      // Use redirect for mobile devices and PWA standalone mode to avoid popup blockers
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      if (isInStandaloneMode() || isMobile) {
-         await signInWithRedirect(this.afAuth, provider);
-         return null;
-      } else {
-         return await signInWithPopup(this.afAuth, provider);
     }
   }
 
