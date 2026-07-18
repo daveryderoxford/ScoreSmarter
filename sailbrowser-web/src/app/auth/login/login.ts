@@ -48,8 +48,6 @@ export class LoginComponent {
 
    returnUrl = input('/'); //Route parameter
 
-   /** OAuth redirect completion runs in `ClubTenant.initialize()` (before this component exists). */
-
   async loginFormSubmit() {
     if (this.loginForm.valid) {
       await this.signInWith("EmailAndPassword", this.loginForm.getRawValue());
@@ -59,20 +57,20 @@ export class LoginComponent {
   /**
    * Email/password or OAuth. For Google/Facebook, {@link signInWithPopup} must run in the
    * same synchronous turn as the button click (no prior await) so mobile browsers keep the
-   * user-gesture and allow the popup.
+   * user-gesture and allow the popup. Returns a promise that settles after success or
+   * in-page error handling (errors are not rethrown).
    */
-  signInWith(provider: AuthType, credentials?: { email: string, password: string; }): void {
+  signInWith(provider: AuthType, credentials?: { email: string, password: string; }): Promise<void> {
     this.errorMessage.set('');
     this.loading.set(true);
 
     if (provider === 'EmailAndPassword') {
-      void this._signInWithEmail(credentials!);
-      return;
+      return this._signInWithEmail(credentials);
     }
 
     const oauthProvider = provider === 'Google' ? googleAuthProvider : facebookAuthProvider;
     // Invoke popup immediately — do not await anything before this call.
-    void signInWithPopup(this.afAuth, oauthProvider)
+    return signInWithPopup(this.afAuth, oauthProvider)
       .then((userDetails) => {
         if (userDetails) {
           this._handleSignInSuccess();
@@ -82,7 +80,10 @@ export class LoginComponent {
       .finally(() => this.loading.set(false));
   }
 
-  private async _signInWithEmail(credentials: { email: string; password: string }): Promise<void> {
+  private async _signInWithEmail(credentials: { email: string; password: string } | undefined): Promise<void> {
+    
+    if (!credentials) throw Error('Credentials not specified');
+
     try {
       const userDetails = await signInWithEmailAndPassword(
         this.afAuth,
@@ -99,7 +100,7 @@ export class LoginComponent {
     }
   }
 
-  private _handleSigninError(err: any) {
+  private _handleSigninError(err: unknown) {
     let errorMessage = 'An unexpected error occurred. Please try again.';
 
     if (err instanceof FirebaseError) {

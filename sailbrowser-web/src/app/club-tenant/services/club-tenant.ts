@@ -1,6 +1,4 @@
 import { Injectable, inject } from '@angular/core';
-import { Auth, getRedirectResult } from '@angular/fire/auth';
-import { Router } from '@angular/router';
 import { KioskAuthService } from 'app/auth/services/kiosk-auth.service';
 import { ClubStore } from './club-store';
 
@@ -13,16 +11,9 @@ export class ClubTenant {
   get clubId() { return this._clubId; }
 
   private clubStore = inject(ClubStore);
-  private auth = inject(Auth);
-  private router = inject(Router);
   private kioskAuth = inject(KioskAuthService);
 
-  /** Called when the application initialises to
-   * handle the extracting the clubId from the subdomain and
-   * valifdating it. 
-   * 
-   * Runs during bootstrap before routed components exist, so OAuth redirect must be finished here (not in LoginComponent).
-   */
+  /** Called when the application initialises to extract and validate the clubId from the subdomain. */
   async initialize(): Promise<void> {
     console.log('ClubContextService: Initializing...');
 
@@ -47,20 +38,6 @@ export class ClubTenant {
       console.log('ClubContextService: Resolved club ID from subdomain:', this._clubId);
     }
 
-    // OAuth redirect: complete handoff before anything else. LoginComponent is not created yet,
-    // and a later full-page redirect (e.g. club init failure → /clubs) would skip the handoff on localhost.
-    try {
-      const cred = await getRedirectResult(this.auth);
-      if (cred) {
-        const returnUrl =
-          new URLSearchParams(window.location.search).get('returnUrl') ??
-          '/';
-        await this.router.navigateByUrl(returnUrl);
-      }
-    } catch (e: unknown) {
-      console.error('ClubTenant: getRedirectResult failed', e);
-    }
-
     // Read club data and verify that the clubid corresponds
     // If read fails redirect to home site
     try {
@@ -72,8 +49,8 @@ export class ClubTenant {
       }
 
       // Fully Kiosk: exchange hardware ID for a custom token (no-op elsewhere).
-      // Runs after OAuth redirect and after Auth persistence restore (inside
-      // ensureSignedIn) so a human session is not replaced.
+      // Runs after Auth persistence restore (inside ensureSignedIn) so a human
+      // popup/password session is not replaced.
       await this.kioskAuth.ensureSignedIn(this._clubId);
 
     } catch (e: unknown) { 
