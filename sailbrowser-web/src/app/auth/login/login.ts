@@ -82,9 +82,9 @@ export class LoginComponent {
 
   private async _signInWithEmail(credentials: { email: string; password: string } | undefined): Promise<void> {
     
-    if (!credentials) throw Error('Credentials not specified');
-
     try {
+      if (!credentials) throw Error('Credentials not specified');
+
       const userDetails = await signInWithEmailAndPassword(
         this.afAuth,
         credentials.email,
