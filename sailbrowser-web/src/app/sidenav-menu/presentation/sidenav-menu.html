@@ -44,9 +44,8 @@
     <a
       mat-list-item
       class="sidenav-nav-item"
-      routerLink="/results/viewer"
-      routerLinkActive="mdc-list-item--activated"
-      [routerLinkActiveOptions]="prefixNavMatch"
+      [routerLink]="seriesResultsLink()"
+      [class.mdc-list-item--activated]="isSeriesResultsActive()"
       (click)="onNavClick()">
       <mat-icon matListItemIcon>emoji_events</mat-icon>
       <span matListItemTitle>Series Results</span>

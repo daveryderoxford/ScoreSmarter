@@ -9,6 +9,7 @@ import { ClubStore, ClubTenant } from 'app/club-tenant';
 import { DUTY_REGISTER_CLUB_ID } from 'app/duties';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { Title } from '@angular/platform-browser';
+import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { HomeRacesSection } from './home-races-section';
 import { HomeDutiesSection } from './home-duties-section';
 
@@ -33,8 +34,13 @@ export class HomePage {
   protected readonly clubStore = inject(ClubStore);
   private readonly clubTenant = inject(ClubTenant);
   private readonly pageTitle = inject(Title);
+  private readonly breakpoints = inject(AppBreakpoints);
 
   protected readonly showDuties = computed(() => this.clubTenant.clubId === DUTY_REGISTER_CLUB_ID);
+
+  protected readonly seriesResultsLink = computed(() =>
+    this.breakpoints.isMobile() ? '/results/mobile-results-list' : '/results/viewer',
+  );
 
   title = computed(() => {
     const club = this.clubStore.club();

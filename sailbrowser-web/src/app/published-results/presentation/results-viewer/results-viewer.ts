@@ -137,6 +137,12 @@ export class ResultsViewer {
   }
 
   raceClicked(raceId: string) {
+    const seriesId = this.id();
+    if (seriesId) {
+      void this.router.navigate(['/results/viewer', seriesId], {
+        queryParams: { raceId },
+      });
+    }
     this.scrollToRaceElement(raceId);
   }
 
@@ -159,10 +165,38 @@ export class ResultsViewer {
   }
 
   private scrollToRaceElement(raceId: string): boolean {
-    const element = this.elementRef.nativeElement.querySelector(`[data-race-id="${raceId}"]`);
+    const host = this.elementRef.nativeElement as HTMLElement;
+    const element = host.querySelector(`[data-race-id="${raceId}"]`) as HTMLElement | null;
     if (!element) return false;
-    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const container = host.querySelector('.tables-scroll') as HTMLElement | null;
+    if (!container) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return true;
+    }
+
+    const targetTop = element.getBoundingClientRect().top
+      - container.getBoundingClientRect().top
+      + container.scrollTop;
+    this.smoothScrollTo(container, targetTop, 220);
     return true;
+  }
+
+  private smoothScrollTo(container: HTMLElement, targetTop: number, durationMs: number): void {
+    const startTop = container.scrollTop;
+    const distance = targetTop - startTop;
+    if (distance === 0) return;
+
+    const startTime = performance.now();
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / durationMs, 1);
+      // ease-out quad — quicker than browser default smooth scroll
+      const eased = 1 - (1 - t) * (1 - t);
+      container.scrollTop = startTop + distance * eased;
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
   }
 
 }

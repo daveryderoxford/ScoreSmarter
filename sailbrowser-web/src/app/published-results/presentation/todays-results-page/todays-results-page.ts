@@ -95,6 +95,10 @@ export class TodaysResultsPage {
   protected readonly isMobile = this.breakpoints.isMobile;
   protected readonly isTodayMode = computed(() => this.mode() === 'today');
 
+  protected readonly seriesResultsLink = computed(() =>
+    this.isMobile() ? '/results/mobile-results-list' : '/results/viewer',
+  );
+
   protected readonly loading = this.publishedRaces.loading;
   protected readonly blocks = this.publishedRaces.blocks;
   protected readonly loadError = this.publishedRaces.loadError;
