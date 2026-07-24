@@ -1,11 +1,11 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { collectionData, docData, query, orderBy, getDoc } from '@angular/fire/firestore';
-import { rxResource } from '@angular/core/rxjs-interop';
 import { of, combineLatest, map } from 'rxjs';
 import { PublishedSeason } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
 import { PublishedRace } from '../model/published-race';
 import { FirestoreTenantService } from 'app/club-tenant/services/firestore-tenant';
+import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 
 /** Defaults the mandatory tags / tagDefinitions arrays for older docs read off the wire. */
 function coercePublishedSeries(series: PublishedSeries | undefined): PublishedSeries | undefined {
@@ -37,19 +37,23 @@ export class PublishedResultsReader {
    private readonly tenant = inject(FirestoreTenantService);
 
    // 1. Seasons Index
-   private readonly _seasonsResource = rxResource<PublishedSeason[], void>({
-      stream: () => collectionData(this.tenant.collectionRef<PublishedSeason>(PUBLISHED_SEASONS_PATH))
+   private readonly _seasonsResource = firestoreListenerResource({
+      name: 'published-seasons',
+      stream: () => collectionData(this.tenant.collectionRef<PublishedSeason>(PUBLISHED_SEASONS_PATH)),
+      defaultValue: [] as PublishedSeason[],
    });
    readonly seasons = computed(() => this._seasonsResource.value() || []);
    readonly seasonsLoading = this._seasonsResource.isLoading;
+   readonly seasonsError = this._seasonsResource.error;
 
    // 2. Selected Series and its Races
    selectedSeriesId = signal<string | undefined>(undefined);
    
-   private readonly _seriesDataResource = rxResource({
+   private readonly _seriesDataResource = firestoreListenerResource({
+      name: 'published-series-detail',
       params: () => this.selectedSeriesId(),
       stream: ({ params: id }) => {
-         if (!id) return of({ series: undefined, races: [] });
+         if (!id) return of({ series: undefined as PublishedSeries | undefined, races: [] as PublishedRace[] });
          
          const seriesDocRef = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, id);
          const racesCol = this.tenant.collectionRef<PublishedRace>(PUBLISHED_SERIES_PATH, id, 'races');

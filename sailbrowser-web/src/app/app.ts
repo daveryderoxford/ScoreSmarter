@@ -9,6 +9,7 @@ import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
 import { SidenavMenu } from './sidenav-menu/presentation/sidenav-menu';
+import { FirestoreListenerErrorReporter } from './shared/firebase/firestore-listener-error-reporter';
 
 @Component({
   selector: 'app-root',
@@ -20,6 +21,7 @@ import { SidenavMenu } from './sidenav-menu/presentation/sidenav-menu';
 export class App implements OnInit {
   protected readonly sidenavService = inject(SidenavService);
   private readonly appUpdate = inject(AppUpdateService);
+  private readonly listenerErrors = inject(FirestoreListenerErrorReporter);
   private readonly snackBar = inject(MatSnackBar);
   private readonly lazyInject = inject(LazyInject);
   private readonly router = inject(Router);
@@ -27,6 +29,7 @@ export class App implements OnInit {
   sidenav = viewChild.required(MatSidenav);
 
   private updateSnackbarOpen = false;
+  private listenerErrorSnackbarOpen = false;
 
   protected isLazyLoading = toSignal(
     this.router.events.pipe(
@@ -53,6 +56,32 @@ export class App implements OnInit {
       ref.afterDismissed().subscribe(() => {
         this.updateSnackbarOpen = false;
         this.appUpdate.dismissPrompt();
+      });
+    });
+
+    effect(() => {
+      if (!this.listenerErrors.reloadPrompt() || this.listenerErrorSnackbarOpen) {
+        return;
+      }
+
+      this.listenerErrorSnackbarOpen = true;
+      const detail = this.listenerErrors.lastError();
+      const ref = this.snackBar.open(
+        'Unexpected error. Reload to continue.',
+        'Reload',
+        { politeness: 'assertive' },
+      );
+
+      ref.onAction().subscribe(() => location.reload());
+
+      ref.afterDismissed().subscribe(() => {
+        this.listenerErrorSnackbarOpen = false;
+        this.listenerErrors.dismissPrompt();
+        if (detail) {
+          console.info(
+            `[FirestoreListener] User dismissed error prompt for ${detail.name} (${detail.code})`,
+          );
+        }
       });
     });
   }
