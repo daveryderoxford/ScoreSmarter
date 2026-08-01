@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { IsActiveMatchOptions, Router, RouterModule } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { IsActiveMatchOptions, NavigationEnd, Router, RouterModule } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
@@ -8,8 +9,10 @@ import { MatMenuModule } from '@angular/material/menu';
 import { AuthService } from 'app/auth';
 import { ClubStore } from 'app/club-tenant';
 import { ClubLogo } from 'app/shared/components/club-logo/club-logo';
+import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { SidenavService } from 'app/shared/services/sidenav.service';
 import { UserDataService } from 'app/user/services/user-data.service';
+import { filter, map, startWith } from 'rxjs';
 
 const ignoredNavMatch: Pick<IsActiveMatchOptions, 'queryParams' | 'fragment' | 'matrixParams'> = {
   queryParams: 'ignored',
@@ -98,6 +101,7 @@ const ignoredNavMatch: Pick<IsActiveMatchOptions, 'queryParams' | 'fragment' | '
 export class SidenavMenu {
   private readonly router = inject(Router);
   private readonly sidenavService = inject(SidenavService);
+  private readonly breakpoints = inject(AppBreakpoints);
   protected readonly auth = inject(AuthService);
 
   protected readonly exactNavMatch: IsActiveMatchOptions = {
@@ -111,6 +115,24 @@ export class SidenavMenu {
   };
   private readonly userData = inject(UserDataService);
   protected readonly clubStore = inject(ClubStore);
+
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map(() => this.router.url),
+      startWith(this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
+
+  protected readonly seriesResultsLink = computed(() =>
+    this.breakpoints.isMobile() ? '/results/mobile-results-list' : '/results/viewer',
+  );
+
+  protected readonly isSeriesResultsActive = computed(() => {
+    const path = this.currentUrl().split('?')[0];
+    return path === '/results/mobile-results-list' || path.startsWith('/results/viewer');
+  });
 
   protected readonly club = computed(() => this.clubStore.club());
 

@@ -17,7 +17,7 @@
       <mat-button-toggle value="today">Today</mat-button-toggle>
     </mat-button-toggle-group>
   }
-  <button matButton routerLink="/results/viewer">Series results</button>
+  <button matButton [routerLink]="seriesResultsLink()">Series results</button>
 </app-toolbar>
 
 <main #scrollHost class="scroll-main" tabindex="-1">

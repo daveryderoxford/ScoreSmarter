@@ -1,9 +1,9 @@
 import { computed, Injectable, Signal } from '@angular/core';
-import { rxResource } from '@angular/core/rxjs-interop';
 import { collectionData, getDoc, getDocs, query, where, writeBatch } from '@angular/fire/firestore';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
+import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 import { isSameDay } from 'date-fns';
-import { map, Observable, tap } from 'rxjs';
+import { map, tap } from 'rxjs';
 import { Race } from '../model/race';
 import { Series } from '../model/series';
 import { RaceCalendarStoreBase, RaceSeriesDetails, seriesSort, sortRaces } from './race-calendar-store-base';
@@ -17,8 +17,9 @@ import { RaceCalendarStoreBase, RaceSeriesDetails, seriesSort, sortRaces } from 
 export class RaceCalendarStore extends RaceCalendarStoreBase {
 
    // Fetch only active series (not archived)
-   private readonly seriesResource = rxResource<Series[], unknown>({
-      stream: (): Observable<Series[]> =>
+   private readonly seriesResource = firestoreListenerResource({
+      name: 'race-calendar-series',
+      stream: () =>
          collectionData(
             query(this.seriesCollection, where('archived', '==', false)),
             { idField: 'id' }
@@ -33,8 +34,9 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
       defaultValue: [],
    });
 
-   private readonly racesResource = rxResource<Race[], unknown>({
-      stream: (): Observable<Race[]> =>
+   private readonly racesResource = firestoreListenerResource({
+      name: 'race-calendar-races',
+      stream: () =>
          collectionData(
             query(this.racesCollection, where('status', '!=', 'Archived')),
             { idField: 'id' }

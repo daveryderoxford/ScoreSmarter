@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Auth, signInWithCustomToken } from '@angular/fire/auth';
 import { FirebaseApp } from '@angular/fire/app';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
+import { AppCheckFailureReporter } from 'app/shared/firebase/app-check-failure-reporter';
 import { environment } from '../../../environments/environment';
 
 export interface KioskAuthFailure {
@@ -17,6 +18,7 @@ export interface KioskAuthFailure {
 export class KioskAuthService {
   private readonly auth = inject(Auth);
   private readonly app = inject(FirebaseApp);
+  private readonly appCheckFailures = inject(AppCheckFailureReporter);
 
   readonly lastFailure = signal<KioskAuthFailure | undefined>(undefined);
 
@@ -99,6 +101,7 @@ export class KioskAuthService {
           : 'Hardware authentication failed.';
       console.error('KioskAuthService: exchange failed', error);
       this.lastFailure.set({ deviceId, reason });
+      this.appCheckFailures.reportFromAuthOrKiosk(error, 'kiosk-exchange');
     }
   }
 

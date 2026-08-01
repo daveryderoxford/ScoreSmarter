@@ -1,9 +1,9 @@
 import { computed, inject, Injectable } from '@angular/core';
-import { rxResource } from '@angular/core/rxjs-interop';
 import { collectionData, deleteDoc, setDoc } from '@angular/fire/firestore';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
+import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 import { normaliseString } from 'app/shared/utils/string-utils';
-import { map, Observable } from 'rxjs';
+import { map } from 'rxjs';
 import { compareSailNumbers, normalizeSailNumber, sailNumberMatchesSearch } from '../model/sail-number';
 import { Boat } from '../model/boat';
 import { FirestoreTenantService } from 'app/club-tenant';
@@ -17,11 +17,12 @@ export class BoatsStore {
   private ref = (id:string) => this.tenant.docRef<Boat>( 'boats', id);
   private boatsCollection = this.tenant.collectionRef<Boat>('boats');
 
-  private readonly boatsResource = rxResource<Boat[], null>({
-    stream: (): Observable<Boat[]> =>
+  private readonly boatsResource = firestoreListenerResource({
+    name: 'boats',
+    stream: () =>
       collectionData(this.boatsCollection, { idField: 'id' }).pipe(
         map(boats => boats.map(ensureBoatTags).sort(boatsSort)),
-    ),
+      ),
     defaultValue: [],
   });
 

@@ -1,6 +1,5 @@
 
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
-import { rxResource } from '@angular/core/rxjs-interop';
 import {
   arrayRemove,
   arrayUnion,
@@ -20,6 +19,7 @@ function normalizeSeasonStatus(value: SeasonStatus | string | undefined): Season
   return value === 'archived' ? 'archived' : 'current';
 }
 import { dataObjectConverter } from 'app/shared/firebase/firestore-helper';
+import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 import { DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES } from 'app/results-input/services/suspect-time-rules';
 
 
@@ -41,6 +41,24 @@ const DEFAULT_SHORT_SERIES_DEFAULTS: ScoringDefaults = {
   },
 };
 
+const EMPTY_CLUB: Club = {
+  id: '',
+  name: '',
+  shortName: '',
+  contactEmail: '',
+  contactName: '',
+  fleets: [],
+  classes: [],
+  seasons: [],
+  supportedHandicapSchemes: [],
+  laps: false,
+  oodScoring: { calculationCode: 'AvgAll', maxDuties: 1 },
+  suspectTimeThresholds: DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES,
+  longSeriesDefaults: DEFAULT_LONG_SERIES_DEFAULTS,
+  shortSeriesDefaults: DEFAULT_SHORT_SERIES_DEFAULTS,
+  tagDefinitions: [],
+};
+
 @Injectable({
   providedIn: 'root',
 })
@@ -57,30 +75,15 @@ export class ClubStore {
       return undefined;
   });
 
-  private _clubResource = rxResource<Club, DocumentReference<Club> | undefined>({
+  private _clubResource = firestoreListenerResource({
+    name: 'club',
     params: () => this.clubDoc(),
-    stream: () => {
-      return docData(this.clubDoc()!).pipe(
+    stream: ({ params: clubDoc }) => {
+      return docData(clubDoc!).pipe(
         filter(data => !!data) // Ensure nulls are not emitted
       );
     },
-    defaultValue: { 
-      id: '', 
-      name: '', 
-      shortName: '', 
-      contactEmail: '', 
-      contactName: '', 
-      fleets: [], 
-      classes: [], 
-      seasons: [],
-      supportedHandicapSchemes: [],
-      laps: false,
-      oodScoring: { calculationCode: 'AvgAll', maxDuties: 1 },
-      suspectTimeThresholds: DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES,
-      longSeriesDefaults: DEFAULT_LONG_SERIES_DEFAULTS,
-      shortSeriesDefaults: DEFAULT_SHORT_SERIES_DEFAULTS,
-      tagDefinitions: [],
-    }
+    defaultValue: EMPTY_CLUB,
   });
 
   public club = computed(() => {
