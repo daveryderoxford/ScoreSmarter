@@ -17,6 +17,7 @@ import {
 } from '@angular/fire/firestore';
 import { FirestoreTenantService } from 'app/club-tenant';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
+import { firestoreWrite } from 'app/shared/utils/with-timeout';
 import { of, tap } from 'rxjs';
 import { RaceCompetitor } from '../model/race-competitor';
 import { CurrentRaces } from './current-races-store';
@@ -37,7 +38,7 @@ export class RaceCompetitorStore {
    */
   async getSeriesCompetitors(seriesId: string): Promise<RaceCompetitor[]> {
     const q = query(this.collection, where('seriesId', '==', seriesId));
-    const snapshot = await getDocs(q);
+    const snapshot = await firestoreWrite(getDocs(q), 'Loading race competitors');
     return snapshot.docs.map(doc => doc.data());
   }
 
@@ -47,7 +48,7 @@ export class RaceCompetitorStore {
    */
   async getCompetitorsForSeriesEntry(seriesEntryId: string): Promise<RaceCompetitor[]> {
     const q = query(this.collection, where('seriesEntryId', '==', seriesEntryId));
-    const snapshot = await getDocs(q);
+    const snapshot = await firestoreWrite(getDocs(q), 'Loading series-entry competitors');
     return snapshot.docs.map(d => d.data());
   }
 
@@ -92,7 +93,7 @@ export class RaceCompetitorStore {
   async addResult(result: Partial<RaceCompetitor>): Promise<string> {
     const update = this.tidyStrings(result);
     const id = generateSecureID(10000, `RC-${update.seriesEntryId ?? 'unknown'}`);
-    await setDoc(this.ref(id), update);
+    await firestoreWrite(setDoc(this.ref(id), update), 'Saving race result');
     return id;
   }
 
@@ -106,10 +107,10 @@ export class RaceCompetitorStore {
    */
   async updateResult(id: string, changes: Partial<RaceCompetitor>) {
     const update = this.tidyStrings(changes);
-    await setDoc(this.ref(id), update, { merge: true });
+    await firestoreWrite(setDoc(this.ref(id), update, { merge: true }), 'Updating race result');
   }
 
   async deleteResult(id: string) {
-    await deleteDoc(this.ref(id));
+    await firestoreWrite(deleteDoc(this.ref(id)), 'Deleting race result');
   }
 }

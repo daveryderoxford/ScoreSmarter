@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { getDoc, setDoc } from '@angular/fire/firestore';
 import { FirestoreTenantService } from 'app/club-tenant';
+import { firestoreWrite } from 'app/shared/utils/with-timeout';
 import { applyAutoAccept, ScanResponse } from '../model/scan-model';
 
 interface ScanResultDoc {
@@ -18,7 +19,10 @@ export class ScanPersistenceService {
   private readonly tenant = inject(FirestoreTenantService);
 
   async getScanResponse(raceId: string): Promise<ScanResponse | null> {
-    const snap = await getDoc(this.tenant.docRef<ScanResultDoc>('scan-results', raceId));
+    const snap = await firestoreWrite(
+      getDoc(this.tenant.docRef<ScanResultDoc>('scan-results', raceId)),
+      'Loading scan',
+    );
     if (!snap.exists()) return null;
     const stored = snap.data()?.scanResponse;
     if (!stored || typeof stored !== 'object') return null;
@@ -26,10 +30,13 @@ export class ScanPersistenceService {
   }
 
   async clearScanResponse(raceId: string): Promise<void> {
-    await setDoc(
-      this.tenant.docRef<ScanResultDoc>('scan-results', raceId),
-      { scanResponse: null },
-      { merge: true },
+    await firestoreWrite(
+      setDoc(
+        this.tenant.docRef<ScanResultDoc>('scan-results', raceId),
+        { scanResponse: null },
+        { merge: true },
+      ),
+      'Clearing scan',
     );
   }
 

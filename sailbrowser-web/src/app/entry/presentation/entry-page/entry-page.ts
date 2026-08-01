@@ -40,6 +40,7 @@ import { meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
 import { EntryConflict, EntryService } from '../../services/entry.service';
 import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
+import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, FIRESTORE_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 
 interface BoatAutocompleteGroup {
   readonly key: string;
@@ -538,9 +539,13 @@ export class EntryPage {
     if (created.saveToRepository) {
       try {
         this.busy.set(true);
-        await this.bs.add(created.boat);
+        await withTimeout(this.bs.add(created.boat), FIRESTORE_WRITE_TIMEOUT_MS, 'Saving boat');
       } catch (error: unknown) {
-        this.snackbar.open('Error encountered adding new boat', 'Dismiss', { duration: 3000 });
+        const message =
+          error instanceof Error && error.message
+            ? error.message
+            : 'Error encountered adding new boat';
+        this.snackbar.open(message, 'Dismiss', { duration: 5000 });
         console.log('EntryPage. Error adding new boat: ' + String(error));
         return;
       } finally {
@@ -606,14 +611,19 @@ export class EntryPage {
 
     try {
       this.busy.set(true);
-      if (conflicts.length > 0) {
-        await this._entryService.swapAndEnter(entryData, conflicts);
-      } else {
-        await this._entryService.enterRaces(entryData);
-      }
+      const write =
+        conflicts.length > 0
+          ? this._entryService.swapAndEnter(entryData, conflicts)
+          : this._entryService.enterRaces(entryData);
+      await withTimeout(write, FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Saving entry');
     } catch (error: unknown) {
-      this.snackbar.open('Error encountered adding entries', 'Dismiss', { duration: 3000 });
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'Error encountered adding entries';
+      this.snackbar.open(message, 'Dismiss', { duration: 5000 });
       console.log('EntryPage: Error adding entries: ' + String(error));
+      return;
     } finally {
       this.busy.set(false);
     }

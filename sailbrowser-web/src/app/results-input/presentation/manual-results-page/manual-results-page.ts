@@ -18,6 +18,7 @@ import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { BusyButton } from 'app/shared/components/busy-button';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 import { firstValueFrom, map } from 'rxjs';
 import { RaceTitlePipe } from '../../../shared/pipes/race-title-pipe';
 import { manualRaceTableSort, ManualResultsService } from '../../services/manual-results.service';
@@ -297,7 +298,14 @@ export class ManualResultsPage {
     const result = await firstValueFrom(dialog.afterClosed());
 
     if (result) {
-      await this.manualResultsService.setStartTime(race.id, result.starts, result.mode);
+      try {
+        await this.manualResultsService.setStartTime(race.id, result.starts, result.mode);
+      } catch (e: unknown) {
+        console.error('ManualResultsPage: setStartTime failed', e);
+        const message = e instanceof Error ? e.message : 'Could not save start time.';
+        this.message.message('Error saving start time', message);
+        return undefined;
+      }
     }
 
     return result;
@@ -307,12 +315,16 @@ export class ManualResultsPage {
       const race = this.selectedRace()!;
       this.publishing.set(true);
       try {
-        await this.publishService.publishRace(race);
+        await withTimeout(
+          this.publishService.publishRace(race),
+          FIRESTORE_BULK_WRITE_TIMEOUT_MS,
+          'Publishing results',
+        );
       } catch (e: unknown) {
-        const msg = 'Manual results: Publishing results' +
-          `Race: ${race.id} SeriesId ${race.seriesId}. ${e}`;
-        console.log(msg);
-        this.message.message("Error publihing results", msg);
+        const detail = e instanceof Error ? e.message : String(e);
+        const msg = `Race: ${race.id} SeriesId ${race.seriesId}. ${detail}`;
+        console.log('Manual results: Publishing results ' + msg);
+        this.message.message('Error publishing results', msg);
       } finally {
         this.publishing.set(false);
       }

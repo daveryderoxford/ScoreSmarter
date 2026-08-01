@@ -20,6 +20,7 @@ function normalizeSeasonStatus(value: SeasonStatus | string | undefined): Season
 }
 import { dataObjectConverter } from 'app/shared/firebase/firestore-helper';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
+import { firestoreWrite } from 'app/shared/utils/with-timeout';
 import { DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES } from 'app/results-input/services/suspect-time-rules';
 
 
@@ -152,7 +153,7 @@ export class ClubStore {
   }
 
   async update(update: Partial<Club>) {
-    return await setDoc(this.clubDoc()!, update, { merge: true });
+    return await firestoreWrite(setDoc(this.clubDoc()!, update, { merge: true }), 'Updating club');
   }
 
   // All club-doc mutators route through `setDoc({ merge: true })` rather than
@@ -162,47 +163,74 @@ export class ClubStore {
   // `arrayRemove` sentinels pass through untouched.
 
   async addFleet(fleet: Fleet) {
-    await setDoc(this.clubDoc()!, { fleets: arrayUnion(fleet) }, { merge: true });
+    await firestoreWrite(
+      setDoc(this.clubDoc()!, { fleets: arrayUnion(fleet) }, { merge: true }),
+      'Adding fleet',
+    );
   }
 
   async updateFleet(newFleet: Fleet) {
     const currentFleets = this._clubResource.value().fleets;
     const updatedFleets = currentFleets.map(f => f.id === newFleet.id ? newFleet : f);
-    await setDoc(this.clubDoc()!, { fleets: updatedFleets }, { merge: true });
+    await firestoreWrite(
+      setDoc(this.clubDoc()!, { fleets: updatedFleets }, { merge: true }),
+      'Updating fleet',
+    );
   }
 
   async removeFleet(fleet: Fleet) {
     const currentFleets = this._clubResource.value()!.fleets;
     const updatedFleets = currentFleets.filter(f => f.id !== fleet.id);
-    await setDoc(this.clubDoc()!, { fleets: updatedFleets }, { merge: true });
+    await firestoreWrite(
+      setDoc(this.clubDoc()!, { fleets: updatedFleets }, { merge: true }),
+      'Removing fleet',
+    );
   }
 
   async addClass(boatClass: BoatClass) {
-    await setDoc(this.clubDoc()!, { classes: arrayUnion(boatClass) }, { merge: true });
+    await firestoreWrite(
+      setDoc(this.clubDoc()!, { classes: arrayUnion(boatClass) }, { merge: true }),
+      'Adding class',
+    );
   }
 
   async updateClass(oldClass: BoatClass, newClass: BoatClass) {
     const currentClasses = this.club().classes;
     const updatedClasses = currentClasses.map(c => c.id === oldClass.id ? newClass : c);
-    await setDoc(this.clubDoc()!, { classes: updatedClasses }, { merge: true });
+    await firestoreWrite(
+      setDoc(this.clubDoc()!, { classes: updatedClasses }, { merge: true }),
+      'Updating class',
+    );
   }
 
   async removeClass(boatClass: BoatClass) {
-    await setDoc(this.clubDoc()!, { classes: arrayRemove(boatClass) }, { merge: true });
+    await firestoreWrite(
+      setDoc(this.clubDoc()!, { classes: arrayRemove(boatClass) }, { merge: true }),
+      'Removing class',
+    );
   }
 
   async addSeason(season: Season) {
-    await setDoc(this.clubDoc()!, { seasons: arrayUnion(season) }, { merge: true });
+    await firestoreWrite(
+      setDoc(this.clubDoc()!, { seasons: arrayUnion(season) }, { merge: true }),
+      'Adding season',
+    );
   }
 
   async updateSeason(oldSeason: Season, newSeason: Season) {
     const currentSeasons = this.club().seasons;
     const updatedSeasons = currentSeasons.map(s => s.id === oldSeason.id ? newSeason : s);
-    await setDoc(this.clubDoc()!, { seasons: updatedSeasons }, { merge: true });
+    await firestoreWrite(
+      setDoc(this.clubDoc()!, { seasons: updatedSeasons }, { merge: true }),
+      'Updating season',
+    );
   }
 
   async removeSeason(season: Season) {
-    await setDoc(this.clubDoc()!, { seasons: arrayRemove(season) }, { merge: true });
+    await firestoreWrite(
+      setDoc(this.clubDoc()!, { seasons: arrayRemove(season) }, { merge: true }),
+      'Removing season',
+    );
   }
 
   /** Find fleet  by id */

@@ -23,6 +23,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Race } from 'app/race-calender';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { sailNumberMatchesSearch, sailNumbersEqual } from 'app/boats/model/sail-number';
@@ -122,6 +123,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
   private readonly manualResults = inject(ManualResultsService);
   private readonly breakpoint = inject(BreakpointObserver);
   private readonly dialog = inject(MatDialog);
+  private readonly snackbar = inject(MatSnackBar);
 
   race = input.required<Race>();
   competitors = input.required<ResolvedRaceCompetitor[]>();
@@ -792,6 +794,10 @@ export class PositionBasedInputPanel implements AfterViewInit {
         processedIds: this.orderQueue().processedIds,
         rowState: this.orderQueue().rowState,
       });
+    } catch (err: unknown) {
+      console.error('PositionBasedInputPanel: persist failed', err);
+      const message = err instanceof Error ? err.message : 'Could not save finishing order.';
+      this.snackbar.open(message, 'Dismiss', { duration: 5000 });
     } finally {
       this.pendingPersist.set(false);
     }
