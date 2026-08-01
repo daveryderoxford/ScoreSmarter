@@ -1,4 +1,5 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { AppCheckFailureReporter } from './app-check-failure-reporter';
 import {
   formatFirestoreListenerError,
   type FirestoreListenerErrorEvent,
@@ -12,6 +13,8 @@ const MAX_EVENTS = 50;
  */
 @Injectable({ providedIn: 'root' })
 export class FirestoreListenerErrorReporter {
+  private readonly appCheckFailures = inject(AppCheckFailureReporter);
+
   private readonly _events = signal<readonly FirestoreListenerErrorEvent[]>([]);
   /** When set, the app shell should prompt the user to reload. */
   private readonly _reloadPrompt = signal(false);
@@ -29,6 +32,17 @@ export class FirestoreListenerErrorReporter {
       at: event.at ?? Date.now(),
     };
     this._events.update(list => [...list.slice(-(MAX_EVENTS - 1)), full]);
+
+    // Prefer App Check as the support-facing root cause when attestation is unhealthy.
+    if (full.code === 'permission-denied' && this.appCheckFailures.failedRecently()) {
+      this.appCheckFailures.reportDownstreamPermission(full.name, {
+        code: String(full.code),
+        message: full.message,
+      });
+      console.error(formatFirestoreListenerError(full), full.raw);
+      return;
+    }
+
     this._reloadPrompt.set(true);
     console.error(formatFirestoreListenerError(full), full.raw);
   }

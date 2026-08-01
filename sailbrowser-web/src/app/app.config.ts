@@ -26,6 +26,7 @@ import { firebaseConfig } from './firebase-config';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 import { provideServiceWorker } from '@angular/service-worker';
 import { initializeAppCheck, provideAppCheck, ReCaptchaEnterpriseProvider } from '@angular/fire/app-check';
+import { AppCheckFailureReporter } from './shared/firebase/app-check-failure-reporter';
 
 function browserLocaleId(): string {
   return typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en-GB';
@@ -40,10 +41,12 @@ export const appConfig: ApplicationConfig = {
       if (isDevMode() || window.location.hostname === 'localhost') {
         (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
       }
-      return initializeAppCheck(undefined, {
+      const appCheck = initializeAppCheck(undefined, {
         provider: new ReCaptchaEnterpriseProvider('6LerxgwtAAAAALtfXU4-NFl3-tXR20bGobMsKaSA'),
         isTokenAutoRefreshEnabled: true
       });
+      inject(AppCheckFailureReporter).watch(appCheck);
+      return appCheck;
     }),
     provideAppInitializer(() => inject(ClubTenant).initialize()),
     provideZonelessChangeDetection(),
