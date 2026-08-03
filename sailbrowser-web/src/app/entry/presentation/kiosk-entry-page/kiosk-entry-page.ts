@@ -52,6 +52,7 @@ import { KioskNewHelmDialog } from '../kiosk-new-helm-dialog';
 import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
 import { AuthService } from 'app/auth/auth.service';
 import { KioskAuthService } from 'app/auth/services/kiosk-auth.service';
+import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 type KioskView =
   | 'category'
   | 'entries'
@@ -475,7 +476,8 @@ export class KioskEntryPage {
         this.busy.set(true);
         await this.boatsStore.add(created.boat);
       } catch (err: unknown) {
-        this.snackbar.open('Error adding boat to register', 'Dismiss', { duration: 3000 });
+        const message = err instanceof Error ? err.message : 'Error adding boat to register';
+        this.snackbar.open(message, 'Dismiss', { duration: 5000 });
         console.error('KioskEntryPage: add boat failed', err);
         return;
       } finally {
@@ -548,7 +550,8 @@ export class KioskEntryPage {
             this.selectedBoat.set(persisted);
           }
         } catch (err: unknown) {
-          this.snackbar.open('Could not save boat to register', 'Dismiss', { duration: 3000 });
+          const message = err instanceof Error ? err.message : 'Could not save boat to register';
+          this.snackbar.open(message, 'Dismiss', { duration: 5000 });
           console.error('KioskEntryPage: register save failed', err);
           return;
         } finally {
@@ -584,13 +587,14 @@ export class KioskEntryPage {
 
     try {
       this.busy.set(true);
-      if (conflicts.length > 0) {
-        await this.entryService.swapAndEnter(entryData, conflicts);
-      } else {
-        await this.entryService.enterRaces(entryData);
-      }
+      const write =
+        conflicts.length > 0
+          ? this.entryService.swapAndEnter(entryData, conflicts)
+          : this.entryService.enterRaces(entryData);
+      await withTimeout(write, FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Saving entry');
     } catch (err: unknown) {
-      this.snackbar.open('Error adding entries', 'Dismiss', { duration: 3000 });
+      const message = err instanceof Error ? err.message : 'Error adding entries';
+      this.snackbar.open(message, 'Dismiss', { duration: 5000 });
       console.error('KioskEntryPage: enter failed', err);
       return;
     } finally {

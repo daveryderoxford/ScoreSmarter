@@ -6,6 +6,7 @@ import { isRankedRaceResult, RaceResult } from 'app/published-results/model/publ
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { competitorColumns, nameColumnWidth as computeNameColumnWidth } from '../results-table-shared';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
+import { HorizontalScrollIndicator } from 'app/shared/components/horizontal-scroll-indicator/horizontal-scroll-indicator';
 import { TagLegend } from '../tag-legend';
 import { TagsCell } from '../tags-cell';
 
@@ -15,7 +16,7 @@ export type RaceColumn = (typeof raceColumns)[number];
 @Component({
   selector: 'app-race-results-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CdkTableModule, DurationPipe, TagsCell, TagLegend],
+  imports: [CdkTableModule, DurationPipe, TagsCell, TagLegend, HorizontalScrollIndicator],
   templateUrl: './race-results-table.html',
   styleUrls: ['../results-table-shared.scss', './race-results-table.scss'],
 })

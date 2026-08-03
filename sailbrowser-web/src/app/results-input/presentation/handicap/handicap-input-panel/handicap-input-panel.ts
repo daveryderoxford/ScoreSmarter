@@ -25,6 +25,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Race } from 'app/race-calender';
 import { ResolvedRaceCompetitor } from 'app/results-input';
 import { ResultCode } from 'app/scoring/model/result-code';
@@ -70,6 +71,7 @@ export class HandicapInputPanel {
   private readonly manualResultsService = inject(ManualResultsService);
   private readonly dialog = inject(MatDialog);
   private readonly dialogs = inject(DialogsService);
+  private readonly snackbar = inject(MatSnackBar);
   private readonly fb = inject(FormBuilder);
   private readonly clubStore = inject(ClubStore);
 
@@ -303,7 +305,14 @@ export class HandicapInputPanel {
     });
     const result = await firstValueFrom(dialog.afterClosed());
     if (result) {
-      await this.manualResultsService.setStartTime(race.id, result.starts, result.mode);
+      try {
+        await this.manualResultsService.setStartTime(race.id, result.starts, result.mode);
+      } catch (err: unknown) {
+        console.error('HandicapInputPanel: setStartTime failed', err);
+        const message = err instanceof Error ? err.message : 'Could not save start time.';
+        this.snackbar.open(message, 'Dismiss', { duration: 5000 });
+        return undefined;
+      }
     }
     return result;
   }
@@ -333,11 +342,18 @@ export class HandicapInputPanel {
       return false;
     }
 
-    await this.manualResultsService.recordResult(competitor, race, {
-      finishTime,
-      laps: laps ?? 1,
-      resultCode,
-    });
+    try {
+      await this.manualResultsService.recordResult(competitor, race, {
+        finishTime,
+        laps: laps ?? 1,
+        resultCode,
+      });
+    } catch (err: unknown) {
+      console.error('HandicapInputPanel: recordResult failed', err);
+      const message = err instanceof Error ? err.message : 'Could not save result.';
+      this.snackbar.open(message, 'Dismiss', { duration: 5000 });
+      return false;
+    }
 
     if (laps) this.lastEnteredLaps.set(laps);
     if (clearAfterSave) {

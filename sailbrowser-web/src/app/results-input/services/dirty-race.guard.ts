@@ -5,6 +5,7 @@ import { ScoringEngine } from 'app/published-results';
 import { ManualResultsPage } from '../presentation/manual-results-page/manual-results-page';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 
 /**
  * A route guard that checks for "dirty" races before deactivating the route.
@@ -29,9 +30,15 @@ export const dirtyRaceGuard: CanDeactivateFn<ManualResultsPage> = async (compone
   snackbar.open('Scoring results', 'Cancel');
 
   try {
-    for (const race of dirtyRaces) {
-      await scoringEngine.publishRace(race);
-    }
+    await withTimeout(
+      (async () => {
+        for (const race of dirtyRaces) {
+          await scoringEngine.publishRace(race);
+        }
+      })(),
+      FIRESTORE_BULK_WRITE_TIMEOUT_MS,
+      'Publishing results',
+    );
   } catch (e: unknown) {
     console.error(`DirtyRaceGuard:  Error encountered publishing race results
       ${dirtyRaces.map(race => race.id + '  ')}

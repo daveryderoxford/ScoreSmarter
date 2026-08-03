@@ -20,6 +20,7 @@ import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
+import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, firestoreWrite, withTimeout } from 'app/shared/utils/with-timeout';
 import { RaceCompetitor } from '../model/race-competitor';
 import { SeriesEntry } from '../model/series-entry';
 import { RaceCompetitorStore } from './race-competitor-store';
@@ -138,7 +139,7 @@ export class RaceCompetitorMutator {
   private async runInBatch(work: (batch: ReturnType<typeof writeBatch>) => void | Promise<void>): Promise<void> {
     const batch = writeBatch(this.firestore);
     await Promise.resolve(work(batch));
-    await batch.commit();
+    await withTimeout(batch.commit(), FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Saving race changes');
   }
 
   // --- Race-scoped writes ----------------------------------------------------
@@ -151,10 +152,13 @@ export class RaceCompetitorMutator {
     const mergePayload = mergePayloadFromRacePatch(patch);
     if (Object.keys(mergePayload).length === 0) return;
 
-    await setDoc(
-      this.raceCompetitors.raceResultDocRef(competitorId),
-      mergePayload as RaceCompetitor,
-      { merge: true },
+    await firestoreWrite(
+      setDoc(
+        this.raceCompetitors.raceResultDocRef(competitorId),
+        mergePayload as RaceCompetitor,
+        { merge: true },
+      ),
+      'Updating race competitor',
     );
 
     const comp = this.raceCompetitors.selectedCompetitors().find(c => c.id === competitorId);

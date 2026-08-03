@@ -6,6 +6,7 @@ import { BoatsStore } from 'app/boats';
 import { normalizeSailNumber, sailNumbersEqual } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
 import { firstValueFrom } from 'rxjs';
+import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 import { ManualResultsService } from '../../services/manual-results.service';
 import { RaceCompetitorReader } from '../../services/race-competitor-reader';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
@@ -233,20 +234,26 @@ export class ScanReviewStore {
 
       const timeFormat = this.scanRun.contextForm.controls.timeFormat.value;
       const defaultHour = this.scanRun.defaultHourForParsing();
-      for (const vm of acceptedMatchedItems) {
-        const competitor = this.resolvedByCompetitorId().get(vm.row.matchedCompetitorId!);
-        if (!competitor) continue;
-        const finishTime = vm.row.time?.value
-          ? this.rowMatching.parseScannedTime(vm.row.time.value, race, { timeFormat, defaultHour })
-          : null;
-        await this.manualResults.recordResult(competitor, race, {
-          finishTime,
-          laps: vm.row.laps?.value || 1,
-          resultCode: this.rowMatching.normalizeResultCode(vm.row.status),
-          scoringSheetRow: vm.row.rowIndex,
-        });
-      }
-      await this.scanPersistence.clearScanResponse(raceId);
+      await withTimeout(
+        (async () => {
+          for (const vm of acceptedMatchedItems) {
+            const competitor = this.resolvedByCompetitorId().get(vm.row.matchedCompetitorId!);
+            if (!competitor) continue;
+            const finishTime = vm.row.time?.value
+              ? this.rowMatching.parseScannedTime(vm.row.time.value, race, { timeFormat, defaultHour })
+              : null;
+            await this.manualResults.recordResult(competitor, race, {
+              finishTime,
+              laps: vm.row.laps?.value || 1,
+              resultCode: this.rowMatching.normalizeResultCode(vm.row.status),
+              scoringSheetRow: vm.row.rowIndex,
+            });
+          }
+          await this.scanPersistence.clearScanResponse(raceId);
+        })(),
+        FIRESTORE_BULK_WRITE_TIMEOUT_MS,
+        'Saving scan results',
+      );
       await this.router.navigate(['/results-input/manual'], { queryParams: { raceId } });
     } catch (err: unknown) {
       console.error('ScanReviewStore.save: save failed', err);

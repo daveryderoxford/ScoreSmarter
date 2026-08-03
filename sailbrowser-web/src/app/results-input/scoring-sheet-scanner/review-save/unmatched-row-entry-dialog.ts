@@ -21,6 +21,7 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dialog';
 import { ClubStore } from 'app/club-tenant';
 import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
+import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 
 export interface UnmatchedRowEntryDialogData {
   raceId: string;
@@ -161,11 +162,11 @@ export class UnmatchedRowEntryDialog {
     this.saving.set(true);
     try {
       this.currentRaces.addRaceId(this.data.raceId);
-      if (conflicts.length > 0) {
-        await this.entryService.swapAndEnter(entryData, conflicts);
-      } else {
-        await this.entryService.enterRaces(entryData);
-      }
+      const write =
+        conflicts.length > 0
+          ? this.entryService.swapAndEnter(entryData, conflicts)
+          : this.entryService.enterRaces(entryData);
+      await withTimeout(write, FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Creating entry');
       this.dialogRef.close({ created: true, helm } satisfies UnmatchedRowEntryDialogResult);
     } catch (err: unknown) {
       console.error('UnmatchedRowEntryDialog: create entry failed', err);

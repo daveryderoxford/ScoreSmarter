@@ -3,9 +3,11 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Boat } from 'app/boats';
 import { EntryService } from 'app/entry/services/entry.service';
 import { RaceCalendarStore } from 'app/race-calender';
+import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 
 export interface KnownBoatEntryDialogData {
   raceId: string;
@@ -47,6 +49,7 @@ export class KnownBoatEntryDialog {
   protected readonly dialogRef = inject(MatDialogRef<KnownBoatEntryDialog>);
   private readonly entryService = inject(EntryService);
   private readonly raceCalendarStore = inject(RaceCalendarStore);
+  private readonly snackbar = inject(MatSnackBar);
 
   protected readonly selectedBoatId = signal<string | null>(this.data.boats[0]?.id ?? null);
   protected readonly saving = signal(false);
@@ -59,17 +62,25 @@ export class KnownBoatEntryDialog {
 
     this.saving.set(true);
     try {
-      await this.entryService.enterRaces({
-        races: [race],
-        boatClass: boat.boatClass,
-        sailNumber: boat.sailNumber,
-        helm: boat.helm,
-        crew: boat.crew,
-        handicaps: boat.handicaps,
-        personalHandicapBand: boat.personalHandicapBand,
-        tags: boat.tags,
-      });
+      await withTimeout(
+        this.entryService.enterRaces({
+          races: [race],
+          boatClass: boat.boatClass,
+          sailNumber: boat.sailNumber,
+          helm: boat.helm,
+          crew: boat.crew,
+          handicaps: boat.handicaps,
+          personalHandicapBand: boat.personalHandicapBand,
+          tags: boat.tags,
+        }),
+        FIRESTORE_BULK_WRITE_TIMEOUT_MS,
+        'Creating entry',
+      );
       this.dialogRef.close({ created: true, selectedBoatId: boat.id } satisfies KnownBoatEntryDialogResult);
+    } catch (err: unknown) {
+      console.error('KnownBoatEntryDialog: create entry failed', err);
+      const message = err instanceof Error ? err.message : 'Could not create entry.';
+      this.snackbar.open(message, 'Dismiss', { duration: 5000 });
     } finally {
       this.saving.set(false);
     }

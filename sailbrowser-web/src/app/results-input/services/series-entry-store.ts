@@ -20,6 +20,7 @@ import { compareSailNumbers, normalizeSailNumber } from 'app/boats/model/sail-nu
 import { FirestoreTenantService } from 'app/club-tenant';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
+import { firestoreWrite } from 'app/shared/utils/with-timeout';
 import { map, of, tap } from 'rxjs';
 import { SeriesEntry } from '../model/series-entry';
 import { CurrentRaces } from './current-races-store';
@@ -54,7 +55,7 @@ export class SeriesEntryStore {
    */
   async getSeriesEntries(seriesId: string): Promise<SeriesEntry[]> {
     const q = query(this.collection, where('seriesId', '==', seriesId));
-    const snapshot = await getDocs(q);
+    const snapshot = await firestoreWrite(getDocs(q), 'Loading series entries');
     return snapshot.docs.map(doc => ensureEntryTags({ ...doc.data(), id: doc.id }));
   }
 
@@ -63,7 +64,7 @@ export class SeriesEntryStore {
    * Used by mutation paths that need authoritative state before writing.
    */
   async getSeriesEntry(id: string): Promise<SeriesEntry | null> {
-    const snapshot = await getDoc(this.ref(id));
+    const snapshot = await firestoreWrite(getDoc(this.ref(id)), 'Loading series entry');
     if (!snapshot.exists()) return null;
     return ensureEntryTags({ ...snapshot.data(), id: snapshot.id });
   }
@@ -113,7 +114,7 @@ export class SeriesEntryStore {
   async addEntry(entry: Partial<SeriesEntry>): Promise<string> {
     const update = this.tidyStrings(entry);
     const id = generateSecureID(10000, `SE-${update.boatClass}-${update.sailNumber}`);
-    await setDoc(this.ref(id), update);
+    await firestoreWrite(setDoc(this.ref(id), update), 'Saving series entry');
     return id;
   }
 
@@ -131,11 +132,14 @@ export class SeriesEntryStore {
    */
   async updateEntry(id: string, changes: SeriesEntryPartialUpdate) {
     const update = this.tidyStrings(changes);
-    await setDoc(this.ref(id), update as SeriesEntry, { merge: true });
+    await firestoreWrite(
+      setDoc(this.ref(id), update as SeriesEntry, { merge: true }),
+      'Updating series entry',
+    );
   }
 
   async deleteEntry(id: string) {
-    await deleteDoc(this.ref(id));
+    await firestoreWrite(deleteDoc(this.ref(id)), 'Deleting series entry');
   }
 
   /** Document ref for batch updates/deletes */

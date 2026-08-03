@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
-import { deleteDoc, getDocs, getFirestore, query, setDoc, where, writeBatch, Firestore } from '@angular/fire/firestore';
+import { deleteDoc, getDocs, query, setDoc, where, writeBatch, Firestore } from '@angular/fire/firestore';
+import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, firestoreWrite, withTimeout } from 'app/shared/utils/with-timeout';
 import { Race } from '../model/race';
 import { Series } from '../model/series';
 import { FirestoreTenantService } from 'app/club-tenant';
@@ -28,7 +29,7 @@ export class RaceCalendarStoreBase {
   async addSeries(series: Partial<Series>): Promise<string> {
     series.archived = false;
     const id = generateSecureID(1000, `S-${series.name}`);
-    await setDoc(this.ref(id), series);
+    await firestoreWrite(setDoc(this.ref(id), series), 'Saving series');
     return id;
   }
 
@@ -46,19 +47,22 @@ export class RaceCalendarStoreBase {
       data.dirty = true;
     }
 
-    await setDoc(this.ref(id), data, { merge: true });
+    await firestoreWrite(setDoc(this.ref(id), data, { merge: true }), 'Updating series');
   }
 
   async deleteSeries(id: string) {
     // Delete races for the series. 
-    const racesSnapshot = await getDocs(query(this.racesCollection, where('seriesId', '==', id)));
+    const racesSnapshot = await firestoreWrite(
+      getDocs(query(this.racesCollection, where('seriesId', '==', id))),
+      'Loading series races',
+    );
 
     const batch = writeBatch(this.firestore);
     racesSnapshot.forEach(doc => batch.delete(doc.ref));
     
     // Delete the series in the batch
     batch.delete(this.ref(id));
-    await batch.commit();
+    await withTimeout(batch.commit(), FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Deleting series');
   }
 
   async addRace(seriesDetails: RaceSeriesDetails, race: Partial<Race>): Promise<void> {
@@ -67,15 +71,15 @@ export class RaceCalendarStoreBase {
     race.fleetId = seriesDetails.fleetId;
     race.status = 'Future';
     const id = generateSecureID(10000, `R-${seriesDetails.name}`);
-    await setDoc(this.raceRef(id), race);
+    await firestoreWrite(setDoc(this.raceRef(id), race), 'Saving race');
   }
 
   async updateRace(raceId: string, data: Partial<Race>): Promise<void> {
-    await setDoc(this.raceRef(raceId), data, { merge: true });
+    await firestoreWrite(setDoc(this.raceRef(raceId), data, { merge: true }), 'Updating race');
   }
 
   async deleteRace(race: Race): Promise<void> {
-    await deleteDoc(this.raceRef(race.id));
+    await firestoreWrite(deleteDoc(this.raceRef(race.id)), 'Deleting race');
   }
 }
 

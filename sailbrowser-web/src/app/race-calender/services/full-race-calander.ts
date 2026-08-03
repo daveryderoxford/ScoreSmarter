@@ -2,6 +2,7 @@ import { computed, Injectable, Signal } from '@angular/core';
 import { collectionData, getDoc, getDocs, query, where, writeBatch } from '@angular/fire/firestore';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
+import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, firestoreWrite, withTimeout } from 'app/shared/utils/with-timeout';
 import { isSameDay } from 'date-fns';
 import { map, tap } from 'rxjs';
 import { Race } from '../model/race';
@@ -109,7 +110,7 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
     */
    async getSeriesRacesById(seriesId: string): Promise<Race[]> {
       const q = query(this.racesCollection, where('seriesId', '==', seriesId), where('status', '!=', 'Archived'));
-      const snapshot = await getDocs(q);
+      const snapshot = await firestoreWrite(getDocs(q), 'Loading series races');
       return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })).sort(sortRaces);
    }
 
@@ -171,7 +172,7 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
          batch.update(this.ref(seriesDetails.id), { startDate, endDate });
       }
 
-      await batch.commit();
+      await withTimeout(batch.commit(), FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Saving races');
    }
 
    /** Delete a race from a series, renumnbering the races are requied */
@@ -205,7 +206,7 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
          batch.update(this.ref(raceToDelete.seriesId), { startDate: null, endDate: null });
       }
 
-      await batch.commit();
+      await withTimeout(batch.commit(), FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Deleting race');
    }
 
    /** Update a race and recalculate series dates if scheduledStart changed */
@@ -228,6 +229,6 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
          }
       }
 
-      await batch.commit();
+      await withTimeout(batch.commit(), FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Updating race');
    }
 }

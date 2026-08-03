@@ -2,6 +2,7 @@ import { computed, inject, Injectable } from '@angular/core';
 import { collectionData, deleteDoc, setDoc } from '@angular/fire/firestore';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
+import { firestoreWrite } from 'app/shared/utils/with-timeout';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { map } from 'rxjs';
 import { compareSailNumbers, normalizeSailNumber, sailNumberMatchesSearch } from '../model/sail-number';
@@ -57,7 +58,7 @@ export class BoatsStore {
   async add(boat: Partial<Boat>): Promise<void> {
     const update = this.trimStrings(boat);
     const id = generateSecureID(1000, `B-${update.boatClass}-${update.sailNumber}`);
-    await setDoc(this.ref(id), update);
+    await firestoreWrite(setDoc(this.ref(id), update), 'Saving boat');
   }
 
   /**
@@ -69,12 +70,12 @@ export class BoatsStore {
   async update(id: string, data: Partial<Boat>): Promise<void> {
     const docRef = this.ref(id);
     const update = this.trimStrings(data);
-    await setDoc(docRef, update, { merge: true });
+    await firestoreWrite(setDoc(docRef, update, { merge: true }), 'Updating boat');
   }
 
   async delete(id: string): Promise<void> {
     const docRef = this.ref(id);
-    await deleteDoc(docRef);
+    await firestoreWrite(deleteDoc(docRef), 'Deleting boat');
   }
 }
 
