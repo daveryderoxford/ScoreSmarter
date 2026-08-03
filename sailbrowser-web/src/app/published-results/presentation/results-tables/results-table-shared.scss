@@ -1,6 +1,28 @@
 /** Wraps scrollable results table (race & series). */
 .published-results-table-frame {
+   display: grid;
+   grid-template-columns: minmax(0, 1fr);
    width: 100%;
+
+   /* Stack scrollport + overlay in the same cell so the indicator gets real height. */
+   > .container,
+   > app-horizontal-scroll-indicator {
+      grid-column: 1;
+      grid-row: 1;
+   }
+
+   > .container {
+      z-index: 0;
+      min-width: 0;
+   }
+
+   > app-horizontal-scroll-indicator {
+      z-index: 2;
+      align-self: stretch;
+      justify-self: stretch;
+      min-width: 0;
+      pointer-events: none;
+   }
 }
 
 .container {

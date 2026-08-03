@@ -4,6 +4,7 @@ import { PublishedSeries, PublishedSeriesResult } from 'app/published-results';
 import { format } from 'date-fns';
 import { competitorColumns, nameColumnWidth as computeNameColumnWidth } from '../results-table-shared';
 import { HighlightPosition } from "../highlighted-position";
+import { HorizontalScrollIndicator } from 'app/shared/components/horizontal-scroll-indicator/horizontal-scroll-indicator';
 import { TagLegend } from '../tag-legend';
 import { TagsCell } from '../tags-cell';
 import { MERGED_BOAT_CLASS_SEPARATOR } from 'app/scoring/services/series-scorer';
@@ -16,7 +17,7 @@ export type SeriesColumn = typeof seriesColumns[number];
   templateUrl: './series-results-table.html',
   styleUrls: ['../results-table-shared.scss', './series-results-table.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CdkTableModule, HighlightPosition, TagsCell, TagLegend]
+  imports: [CdkTableModule, HighlightPosition, TagsCell, TagLegend, HorizontalScrollIndicator]
 })
 export class SeriesResultsTable {
 

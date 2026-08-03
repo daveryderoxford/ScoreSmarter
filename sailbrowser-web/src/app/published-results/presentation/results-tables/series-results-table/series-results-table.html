@@ -1,5 +1,5 @@
 <div class="published-results-table-frame">
-  <div class="container">
+  <div #scrollContainer class="container">
     <div class="table-with-legend">
       <app-tag-legend [definitions]="tagDefinitions()" />
       <table cdk-table class="table" [dataSource]="tableData()" [trackBy]="trackByKey" [style.font-size]="fontSize()">
@@ -99,4 +99,5 @@
   </table>
     </div>
   </div>
+  <app-horizontal-scroll-indicator [targetElement]="scrollContainer" [scrollDistance]="280" />
 </div>
