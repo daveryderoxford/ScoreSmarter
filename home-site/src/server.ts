@@ -6,23 +6,55 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import {join} from 'node:path';
+import {loadPublishedSeasonsCatalog} from './server/published-seasons-catalog';
+import {isValidClubId} from './server/published-seasons-catalog-map';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
+function applyCatalogCors(res: express.Response): void {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Max-Age', '3600');
+}
+
 /**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
+ * Public published-seasons catalog for club websites.
  *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
+ * GET https://scoresmarter.app/api/published-seasons?clubId=ibrsc
  */
+app.options('/api/published-seasons', (_req, res) => {
+  applyCatalogCors(res);
+  res.status(204).send();
+});
+
+app.get('/api/published-seasons', async (req, res) => {
+  applyCatalogCors(res);
+
+  const clubIdRaw = req.query['clubId'];
+  if (!isValidClubId(clubIdRaw)) {
+    res.status(400).json({error: 'invalid_club_id'});
+    return;
+  }
+  const clubId = clubIdRaw.trim();
+
+  try {
+    const body = await loadPublishedSeasonsCatalog(clubId);
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.status(200).json(body);
+  } catch (err) {
+    const code = err instanceof Error ? (err as Error & {code?: string}).code : undefined;
+    if (code === 'club_not_found' || (err instanceof Error && err.message === 'club_not_found')) {
+      res.status(404).json({error: 'club_not_found'});
+      return;
+    }
+    console.error('published-seasons catalog failed', err);
+    res.status(500).json({error: 'catalog_unavailable'});
+  }
+});
 
 /**
  * Serve static files from /browser
