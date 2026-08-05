@@ -32,8 +32,18 @@
               "src/styles.css"
             ],
             "server": "src/main.server.ts",
-            "outputMode": "static",
-            "ssr": false
+            "ssr": {
+              "entry": "src/server.ts"
+            },
+            "outputMode": "server",
+            "externalDependencies": [
+              "firebase-admin",
+              "@google-cloud/firestore",
+              "@google-cloud/storage",
+              "google-gax",
+              "@grpc/grpc-js",
+              "@grpc/proto-loader"
+            ]
           },
           "configurations": {
             "production": {

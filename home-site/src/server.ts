@@ -6,7 +6,6 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import {join} from 'node:path';
-import {loadPublishedSeasonsCatalog} from './server/published-seasons-catalog';
 import {isValidClubId} from './server/published-seasons-catalog-map';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
@@ -25,6 +24,9 @@ function applyCatalogCors(res: express.Response): void {
  * Public published-seasons catalog for club websites.
  *
  * GET https://scoresmarter.app/api/published-seasons?clubId=ibrsc
+ *
+ * firebase-admin is loaded lazily so build-time route extraction does not
+ * evaluate Admin SDK modules.
  */
 app.options('/api/published-seasons', (_req, res) => {
   applyCatalogCors(res);
@@ -42,6 +44,7 @@ app.get('/api/published-seasons', async (req, res) => {
   const clubId = clubIdRaw.trim();
 
   try {
+    const {loadPublishedSeasonsCatalog} = await import('./server/published-seasons-catalog');
     const body = await loadPublishedSeasonsCatalog(clubId);
     res.setHeader('Cache-Control', 'public, max-age=60');
     res.status(200).json(body);
