@@ -47,6 +47,8 @@
     "vitest": "^4.0.0"
   },
   "overrides": {
+    "chokidar": "^5.0.0",
+    "readdirp": "^5.0.0",
     "@angular/fire": {
       "@angular/common": "$@angular/common",
       "@angular/core": "$@angular/core",
