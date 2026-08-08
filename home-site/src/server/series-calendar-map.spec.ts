@@ -6,7 +6,7 @@ import {
   mapCalendarRace,
   mapCalendarSeries,
   mapClubSeasons,
-  mapSeriesLength,
+  mapScoringAlgorithm,
 } from './series-calendar-map';
 import {parseBooleanQuery} from './published-seasons-catalog-map';
 
@@ -32,11 +32,27 @@ describe('series-calendar-map', () => {
     expect(parseBooleanQuery(undefined)).toBe(false);
   });
 
-  it('mapSeriesLength maps scoringAlgorithm long/short', () => {
-    expect(mapSeriesLength('long')).toBe('long');
-    expect(mapSeriesLength('short')).toBe('short');
-    expect(mapSeriesLength('other')).toBeUndefined();
-    expect(mapSeriesLength(undefined)).toBeUndefined();
+  it('accepts includeRaces and include-races query aliases (default false)', () => {
+    // Same coalesce as /api/series-calendar (and seasonId/season on published-seasons).
+    const parseIncludeRaces = (query: Record<string, unknown>) =>
+      parseBooleanQuery(query['includeRaces'] ?? query['include-races']);
+
+    expect(parseIncludeRaces({})).toBe(false);
+    expect(parseIncludeRaces({includeRaces: 'true'})).toBe(true);
+    expect(parseIncludeRaces({'include-races': '1'})).toBe(true);
+    expect(parseIncludeRaces({'include-races': 'yes'})).toBe(true);
+    expect(parseIncludeRaces({includeRaces: 'false'})).toBe(false);
+    // CamelCase wins when both are present (same ?? order as the route).
+    expect(parseIncludeRaces({includeRaces: 'false', 'include-races': 'true'})).toBe(
+      false,
+    );
+  });
+
+  it('mapScoringAlgorithm maps scoringAlgorithm long/short', () => {
+    expect(mapScoringAlgorithm('long')).toBe('long');
+    expect(mapScoringAlgorithm('short')).toBe('short');
+    expect(mapScoringAlgorithm('other')).toBeUndefined();
+    expect(mapScoringAlgorithm(undefined)).toBeUndefined();
   });
 
   it('extractFleetId reads primary scoring configuration fleet id', () => {
@@ -45,7 +61,7 @@ describe('series-calendar-map', () => {
     expect(extractFleetId({primaryScoringConfiguration: {fleet: {}}})).toBeUndefined();
   });
 
-  it('mapCalendarSeries maps fields and seriesLength from scoringAlgorithm', () => {
+  it('mapCalendarSeries maps fields, seriesId, scoringAlgorithm, and resultsUrl', () => {
     expect(
       mapCalendarSeries(
         's1',
@@ -56,15 +72,17 @@ describe('series-calendar-map', () => {
           scoringAlgorithm: 'long',
           ...primaryConfig('f1'),
         },
+        'ibrsc',
         {includeRaces: false},
       ),
     ).toEqual({
-      id: 's1',
+      seriesId: 's1',
       name: 'Spring',
       fleetId: 'f1',
       startDate: '2026-03-01T10:00:00.000Z',
       endDate: '2026-06-01T10:00:00.000Z',
-      seriesLength: 'long',
+      scoringAlgorithm: 'long',
+      resultsUrl: 'https://ibrsc.ro.scoresmarter.app/results/viewer/s1',
     });
   });
 
@@ -76,11 +94,11 @@ describe('series-calendar-map', () => {
       scoringAlgorithm: 'short',
       ...primaryConfig('f1'),
     };
-    const without = mapCalendarSeries('s1', raw, {includeRaces: false});
+    const without = mapCalendarSeries('s1', raw, 'ibrsc', {includeRaces: false});
     expect(without).not.toBeNull();
     expect(without).not.toHaveProperty('races');
 
-    const withRaces = mapCalendarSeries('s1', raw, {
+    const withRaces = mapCalendarSeries('s1', raw, 'ibrsc', {
       includeRaces: true,
       races: [{index: 1, scheduledStart: '2026-03-01T10:00:00.000Z', raceOfDay: 1}],
     });
@@ -89,7 +107,12 @@ describe('series-calendar-map', () => {
 
   it('mapCalendarSeries returns null when required fields missing', () => {
     expect(
-      mapCalendarSeries('s1', {name: 'X', scoringAlgorithm: 'short'}, {includeRaces: false}),
+      mapCalendarSeries(
+        's1',
+        {name: 'X', scoringAlgorithm: 'short'},
+        'ibrsc',
+        {includeRaces: false},
+      ),
     ).toBeNull();
   });
 
@@ -181,8 +204,8 @@ describe('series-calendar-map', () => {
       return;
     }
     expect(all.seasons).toHaveLength(2);
-    expect(all.seasons[0].series.map((s) => s.id)).toEqual(['winter']);
-    expect(all.seasons[1].series.map((s) => s.id)).toEqual(['spring']);
+    expect(all.seasons[0].series.map((s) => s.seriesId)).toEqual(['winter']);
+    expect(all.seasons[1].series.map((s) => s.seriesId)).toEqual(['spring']);
     expect(all.seasons[1].series[0]).not.toHaveProperty('races');
 
     const filtered = buildSeriesCalendar('ibrsc', seasons, seriesDocs, [], {
@@ -197,12 +220,13 @@ describe('series-calendar-map', () => {
           name: '2026',
           series: [
             {
-              id: 'spring',
+              seriesId: 'spring',
               name: 'Spring',
               fleetId: 'f1',
               startDate: '2026-03-01T10:00:00.000Z',
               endDate: '2026-06-01T10:00:00.000Z',
-              seriesLength: 'short',
+              scoringAlgorithm: 'short',
+              resultsUrl: 'https://ibrsc.ro.scoresmarter.app/results/viewer/spring',
             },
           ],
         },
@@ -329,12 +353,13 @@ describe('series-calendar-map', () => {
     }
     expect(result.seasons[0].series).toEqual([
       {
-        id: 'spring',
+        seriesId: 'spring',
         name: 'Spring',
         fleetId: 'f1',
         startDate: '2025-01-01T00:00:00.000Z',
         endDate: '2025-12-31T00:00:00.000Z',
-        seriesLength: 'short',
+        scoringAlgorithm: 'short',
+        resultsUrl: 'https://ibrsc.ro.scoresmarter.app/results/viewer/spring',
       },
     ]);
     expect(result.seasons[0].series[0]).not.toHaveProperty('races');

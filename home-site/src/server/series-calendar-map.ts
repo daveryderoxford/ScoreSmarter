@@ -1,4 +1,7 @@
-import {toIsoString} from './published-seasons-catalog-map';
+import {
+  buildSeriesResultsUrl,
+  toIsoString,
+} from './published-seasons-catalog-map';
 
 /**
  * Public live race-calendar API (not published results).
@@ -9,15 +12,15 @@ import {toIsoString} from './published-seasons-catalog-map';
  * GET /api/series-calendar?clubId=ibrsc&includeRaces=true
  * GET /api/series-calendar?clubId=ibrsc&include-races=1
  *
- * `seriesLength` is `"long"` | `"short"` from the series `scoringAlgorithm`
- * field (ISAF long vs short series scoring on the series itself — not from
- * `primaryScoringConfiguration`, which holds fleet / handicap scheme).
+ * `scoringAlgorithm` is `"long"` | `"short"` from the series document field
+ * (ISAF long vs short series scoring — not from `primaryScoringConfiguration`).
  *
- * `startDate` / `endDate` come from the series document fields.
- * Race docs are only needed when `includeRaces` is true.
+ * `startDate` / `endDate` come from the series document.
+ * Race docs are loaded only when `includeRaces` / `include-races` is true
+ * (default false).
  */
 
-export type SeriesLength = 'long' | 'short';
+export type ScoringAlgorithm = 'long' | 'short';
 
 export interface CalendarRace {
   index: number;
@@ -26,12 +29,13 @@ export interface CalendarRace {
 }
 
 export interface CalendarSeries {
-  id: string;
+  seriesId: string;
   name: string;
   fleetId: string;
   startDate: string;
   endDate: string;
-  seriesLength: SeriesLength;
+  scoringAlgorithm: ScoringAlgorithm;
+  resultsUrl: string;
   races?: CalendarRace[];
 }
 
@@ -67,10 +71,10 @@ export function extractFleetId(raw: Record<string, unknown>): string | undefined
 }
 
 /**
- * Map series `scoringAlgorithm` (`long` | `short`) to public `seriesLength`.
+ * Map series `scoringAlgorithm` (`long` | `short`) for the public calendar.
  * Returns undefined when missing or unrecognized.
  */
-export function mapSeriesLength(value: unknown): SeriesLength | undefined {
+export function mapScoringAlgorithm(value: unknown): ScoringAlgorithm | undefined {
   if (value === 'long' || value === 'short') {
     return value;
   }
@@ -83,8 +87,9 @@ export function mapSeriesLength(value: unknown): SeriesLength | undefined {
  * Omits `races` unless `includeRaces` is true (empty array when none match).
  */
 export function mapCalendarSeries(
-  id: string,
+  seriesId: string,
   raw: Record<string, unknown>,
+  clubId: string,
   options: {includeRaces: boolean; races?: CalendarRace[]},
 ): CalendarSeries | null {
   if (typeof raw['name'] !== 'string' || raw['name'].length === 0) {
@@ -99,18 +104,19 @@ export function mapCalendarSeries(
   if (!startDate || !endDate) {
     return null;
   }
-  const seriesLength = mapSeriesLength(raw['scoringAlgorithm']);
-  if (!seriesLength) {
+  const scoringAlgorithm = mapScoringAlgorithm(raw['scoringAlgorithm']);
+  if (!scoringAlgorithm) {
     return null;
   }
 
   const series: CalendarSeries = {
-    id,
+    seriesId,
     name: raw['name'],
     fleetId,
     startDate,
     endDate,
-    seriesLength,
+    scoringAlgorithm,
+    resultsUrl: buildSeriesResultsUrl(clubId, seriesId),
   };
 
   if (options.includeRaces) {
@@ -238,7 +244,7 @@ export function buildSeriesCalendar(
     if (typeof seasonId !== 'string' || seasonId.length === 0) {
       continue;
     }
-    const mapped = mapCalendarSeries(seriesDoc.id, seriesDoc.data, {
+    const mapped = mapCalendarSeries(seriesDoc.id, seriesDoc.data, clubId, {
       includeRaces: options.includeRaces,
       races: racesBySeriesId?.get(seriesDoc.id),
     });

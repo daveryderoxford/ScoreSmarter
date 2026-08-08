@@ -86,6 +86,9 @@ app.get('/api/published-seasons', async (req, res) => {
  * GET /api/series-calendar?clubId=ibrsc&includeRaces=true
  * GET /api/series-calendar?clubId=ibrsc&include-races=1
  *
+ * Each series includes `seriesId`, `scoringAlgorithm` (`long` | `short`), and
+ * `resultsUrl` (same club-subdomain viewer path as published-seasons).
+ *
  * firebase-admin is loaded lazily so build-time route extraction does not
  * evaluate Admin SDK modules.
  */
