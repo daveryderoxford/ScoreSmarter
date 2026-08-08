@@ -3,13 +3,13 @@ export const RESULTS_VIEWER_HOST_SUFFIX = '.ro.scoresmarter.app';
 
 export interface CatalogSeries {
   id: string;
+  /** Present only when this entry is a secondary series (differs from id). */
   baseSeriesId?: string;
   name: string;
   fleetId: string;
   startDate: string;
   endDate: string;
   raceCount: number;
-  recentRaceCount6d?: number;
   lastPublishedRaceStart?: string;
   resultsUrl: string;
 }
@@ -25,6 +25,12 @@ export interface CatalogResponse {
   seasons: CatalogSeason[];
 }
 
+export interface CatalogFilterOptions {
+  includeSecondarySeries: boolean;
+  /** When set, keep only this season id. */
+  seasonId?: string;
+}
+
 export function isValidClubId(clubId: unknown): clubId is string {
   return (
     typeof clubId === 'string' &&
@@ -32,6 +38,18 @@ export function isValidClubId(clubId: unknown): clubId is string {
     clubId.trim().length <= 64 &&
     /^[a-zA-Z0-9_-]+$/.test(clubId.trim())
   );
+}
+
+/**
+ * Parse a query-string boolean: `true` / `1` / `yes` (case-insensitive) → true;
+ * anything else or absent → false.
+ */
+export function parseBooleanQuery(value: unknown): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes';
 }
 
 /** Canonical deep link to a published series results page. */
@@ -64,6 +82,7 @@ export function toIsoString(value: unknown): string | undefined {
 /**
  * Map a raw Firestore series entry into the public catalog shape.
  * Returns null when required fields are missing.
+ * `baseSeriesId` is only emitted when present and different from `id`.
  */
 export function mapSeriesInfo(
   raw: Record<string, unknown>,
@@ -99,14 +118,13 @@ export function mapSeriesInfo(
     resultsUrl: buildSeriesResultsUrl(clubId, raw['id']),
   };
 
-  if (typeof raw['baseSeriesId'] === 'string' && raw['baseSeriesId'].length > 0) {
-    series.baseSeriesId = raw['baseSeriesId'];
-  }
+  const baseSeriesId = raw['baseSeriesId'];
   if (
-    typeof raw['recentRaceCount6d'] === 'number' &&
-    Number.isFinite(raw['recentRaceCount6d'])
+    typeof baseSeriesId === 'string' &&
+    baseSeriesId.length > 0 &&
+    baseSeriesId !== raw['id']
   ) {
-    series.recentRaceCount6d = raw['recentRaceCount6d'];
+    series.baseSeriesId = baseSeriesId;
   }
   const lastPublished = toIsoString(raw['lastPublishedRaceStart']);
   if (lastPublished) {
@@ -135,4 +153,40 @@ export function mapPublishedSeason(
     }
   }
   return {id, name, series};
+}
+
+/**
+ * Primary series: no `baseSeriesId` in the catalog shape (missing, or equal to id and omitted).
+ * Secondary series: `baseSeriesId` present and different from `id`.
+ */
+export function isPrimaryCatalogSeries(series: CatalogSeries): boolean {
+  return series.baseSeriesId == null || series.baseSeriesId === series.id;
+}
+
+/**
+ * Apply includeSecondarySeries / seasonId filters to a loaded catalog.
+ * Returns `{ error: 'season_not_found' }` when seasonId is set but missing.
+ */
+export function applyCatalogFilters(
+  catalog: CatalogResponse,
+  options: CatalogFilterOptions,
+): CatalogResponse | {error: 'season_not_found'} {
+  let seasons = catalog.seasons;
+
+  if (options.seasonId != null && options.seasonId.length > 0) {
+    const match = seasons.find((s) => s.id === options.seasonId);
+    if (!match) {
+      return {error: 'season_not_found'};
+    }
+    seasons = [match];
+  }
+
+  if (!options.includeSecondarySeries) {
+    seasons = seasons.map((season) => ({
+      ...season,
+      series: season.series.filter(isPrimaryCatalogSeries),
+    }));
+  }
+
+  return {clubId: catalog.clubId, seasons};
 }

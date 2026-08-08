@@ -6,7 +6,11 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import {join} from 'node:path';
-import {isValidClubId} from './server/published-seasons-catalog-map';
+import {
+  applyCatalogFilters,
+  isValidClubId,
+  parseBooleanQuery,
+} from './server/published-seasons-catalog-map';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -23,7 +27,10 @@ function applyCatalogCors(res: express.Response): void {
 /**
  * Public published-seasons catalog for club websites.
  *
- * GET https://scoresmarter.app/api/published-seasons?clubId=ibrsc
+ * GET /api/published-seasons?clubId=ibrsc
+ * GET /api/published-seasons?clubId=ibrsc&includeSecondarySeries=true
+ * GET /api/published-seasons?clubId=ibrsc&seasonId=2026
+ * GET /api/published-seasons?clubId=ibrsc&season=2026
  *
  * firebase-admin is loaded lazily so build-time route extraction does not
  * evaluate Admin SDK modules.
@@ -42,10 +49,21 @@ app.get('/api/published-seasons', async (req, res) => {
     return;
   }
   const clubId = clubIdRaw.trim();
+  const includeSecondarySeries = parseBooleanQuery(req.query['includeSecondarySeries']);
+  const seasonRaw = req.query['seasonId'] ?? req.query['season'];
+  const seasonId =
+    typeof seasonRaw === 'string' && seasonRaw.trim().length > 0
+      ? seasonRaw.trim()
+      : undefined;
 
   try {
     const {loadPublishedSeasonsCatalog} = await import('./server/published-seasons-catalog');
-    const body = await loadPublishedSeasonsCatalog(clubId);
+    const catalog = await loadPublishedSeasonsCatalog(clubId);
+    const body = applyCatalogFilters(catalog, {includeSecondarySeries, seasonId});
+    if ('error' in body) {
+      res.status(404).json({error: 'season_not_found'});
+      return;
+    }
     res.setHeader('Cache-Control', 'public, max-age=60');
     res.status(200).json(body);
   } catch (err) {
