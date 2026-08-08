@@ -78,6 +78,64 @@ app.get('/api/published-seasons', async (req, res) => {
 });
 
 /**
+ * Public live series calendar for club websites (race calendar, not published results).
+ *
+ * GET /api/series-calendar?clubId=ibrsc
+ * GET /api/series-calendar?clubId=ibrsc&seasonId=2026
+ * GET /api/series-calendar?clubId=ibrsc&season=2026
+ * GET /api/series-calendar?clubId=ibrsc&includeRaces=true
+ * GET /api/series-calendar?clubId=ibrsc&include-races=1
+ *
+ * Each series includes `seriesId`, `scoringAlgorithm` (`long` | `short`), and
+ * `resultsUrl` (same club-subdomain viewer path as published-seasons).
+ *
+ * firebase-admin is loaded lazily so build-time route extraction does not
+ * evaluate Admin SDK modules.
+ */
+app.options('/api/series-calendar', (_req, res) => {
+  applyCatalogCors(res);
+  res.status(204).send();
+});
+
+app.get('/api/series-calendar', async (req, res) => {
+  applyCatalogCors(res);
+
+  const clubIdRaw = req.query['clubId'];
+  if (!isValidClubId(clubIdRaw)) {
+    res.status(400).json({error: 'invalid_club_id'});
+    return;
+  }
+  const clubId = clubIdRaw.trim();
+  const includeRaces = parseBooleanQuery(
+    req.query['includeRaces'] ?? req.query['include-races'],
+  );
+  const seasonRaw = req.query['seasonId'] ?? req.query['season'];
+  const seasonId =
+    typeof seasonRaw === 'string' && seasonRaw.trim().length > 0
+      ? seasonRaw.trim()
+      : undefined;
+
+  try {
+    const {loadSeriesCalendar} = await import('./server/series-calendar');
+    const body = await loadSeriesCalendar(clubId, {includeRaces, seasonId});
+    if ('error' in body) {
+      res.status(404).json({error: 'season_not_found'});
+      return;
+    }
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    res.status(200).json(body);
+  } catch (err) {
+    const code = err instanceof Error ? (err as Error & {code?: string}).code : undefined;
+    if (code === 'club_not_found' || (err instanceof Error && err.message === 'club_not_found')) {
+      res.status(404).json({error: 'club_not_found'});
+      return;
+    }
+    console.error('series-calendar failed', err);
+    res.status(500).json({error: 'calendar_unavailable'});
+  }
+});
+
+/**
  * Serve static files from /browser
  */
 app.use(
