@@ -63,16 +63,11 @@ async function getRaceCompetitors(
     .get();
 
   if (compSnap.empty) {
-    logScanError(requestId, "build_roster", "No race-results documents for raceId", {
+    logScan(requestId, "build_roster", "No race-results documents for raceId; continuing with empty roster", {
       clubId,
       raceId,
-      cause: "empty_race_results",
     });
-    throw detailedHttpsError(
-      "not-found",
-      "No race competitors found for this race. Add entries or select a different race.",
-      { requestId, stage: "build_roster", cause: "empty_race_results", clubId, raceId },
-    );
+    return [];
   }
 
   const entryIds = [...new Set(
@@ -115,16 +110,11 @@ async function getRaceCompetitors(
   }
 
   if (competitors.length === 0) {
-    logScanError(requestId, "build_roster", "No roster entries after resolving series entries", {
+    logScan(requestId, "build_roster", "No roster entries after resolving series entries; continuing with empty roster", {
       clubId,
       raceId,
-      cause: "roster_empty_after_resolve",
     });
-    throw detailedHttpsError(
-      "failed-precondition",
-      "Race has competitor rows but none could be resolved to class / sail / helm from series entries.",
-      { requestId, stage: "build_roster", cause: "roster_empty_after_resolve", clubId, raceId },
-    );
+    return [];
   }
 
   competitors.sort((a, b) => {

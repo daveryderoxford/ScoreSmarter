@@ -109,3 +109,21 @@ test("buildPrompt omits lap column when laps are absent", () => {
   assert.match(prompt, /Laps column: ABSENT/);
   assert.match(prompt, /Set laps to 1 for every row/i);
 });
+
+test("buildPrompt appends SPECIAL INSTRUCTIONS when specialInstructions is set", () => {
+  const prompt = buildPrompt(
+    { ...baseContext, specialInstructions: "Treat all empty hour fields as 20" },
+    "race-1",
+  );
+  assert.match(prompt, /# 4\. SPECIAL INSTRUCTIONS/);
+  assert.match(prompt, /Treat all empty hour fields as 20/);
+  assert.match(prompt, /prefer these instructions for this scan/i);
+});
+
+test("buildPrompt omits SPECIAL INSTRUCTIONS when specialInstructions is empty or whitespace", () => {
+  assert.doesNotMatch(buildPrompt(baseContext, "race-1"), /# 4\. SPECIAL INSTRUCTIONS/);
+  assert.doesNotMatch(
+    buildPrompt({ ...baseContext, specialInstructions: "   " }, "race-1"),
+    /# 4\. SPECIAL INSTRUCTIONS/,
+  );
+});

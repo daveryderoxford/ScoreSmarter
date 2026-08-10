@@ -27,6 +27,20 @@
         </mat-form-field>
       </div>
 
+      <mat-form-field subscriptSizing="dynamic">
+        <mat-label>Special instructions</mat-label>
+        <textarea
+          matInput
+          formControlName="specialInstructions"
+          rows="3"
+          maxlength="500"
+          placeholder="e.g. Treat all empty hour fields as 20"
+        ></textarea>
+        <mat-hint>
+          Optional notes for this sheet (e.g. empty hours, lap adjustments). Max 500 characters.
+        </mat-hint>
+      </mat-form-field>
+
       <div [hidden]="!auth.isSysAdmin()">
         <mat-form-field subscriptSizing="dynamic">
           <mat-label>Scan strategy</mat-label>

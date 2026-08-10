@@ -35,6 +35,7 @@ export class ScanRunStore {
     timeFormat: this.fb.nonNullable.control<ScannerTimeFormat>('clock_hms', Validators.required),
     defaultLaps: [1, [Validators.min(1), Validators.max(20)]],
     scanStrategy: this.fb.nonNullable.control<ScanStrategy>('FullAIScan', Validators.required),
+    specialInstructions: ['', [Validators.maxLength(500)]],
   });
 
   // --- Stored scan (read-only) — resource keyed on the selected race ---
@@ -173,6 +174,7 @@ export class ScanRunStore {
   private buildScannerContext(): ScannerContext {
     const formData = this.contextForm.getRawValue();
     const isMultilap = this.raceSelection.selectedRace()?.isAverageLap ?? false;
+    const specialInstructions = formData.specialInstructions.trim();
     return {
       targetRaces: [] as string[],
       defaultHour: this.defaultHourForParsing(),
@@ -182,6 +184,7 @@ export class ScanRunStore {
       lapsPresentOnSheet: isMultilap,
       timeFormat: formData.timeFormat,
       scanStrategy: formData.scanStrategy,
+      ...(specialInstructions ? { specialInstructions } : {}),
     };
   }
 }

@@ -95,5 +95,17 @@ ${lapColumnRules}
 - MANUAL_CHECK: unclear handwriting, ENTRY LIST correction, out-of-sequence time, or blank time.
 - FAILED / AMBIGUOUS: not readable or decipherable. Only add alternatives if you have a guess. Use FAILED for completely unreadable scribbles.
 - Large multi-row notes (e.g. "RACE ABANDONED") go in pageNotes, not competitor rows.
+${specialInstructionsSection(ctx)}`;
+}
+
+function specialInstructionsSection(ctx: ScannerContext): string {
+  const instructions = ctx.specialInstructions?.trim();
+  if (!instructions) {
+    return "";
+  }
+  return `
+# 4. SPECIAL INSTRUCTIONS
+Apply these sheet-specific instructions in addition to the rules above. If they conflict with a rule, prefer these instructions for this scan:
+${instructions}
 `;
 }

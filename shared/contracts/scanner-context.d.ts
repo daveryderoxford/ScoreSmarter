@@ -24,4 +24,6 @@ export interface ScannerContext {
   timeFormat?: ScannerTimeFormat;
   /** Parser pipeline; defaults to OCR-Typescript when omitted. */
   scanStrategy?: ScanStrategy;
+  /** Free-text sheet-specific instructions appended to the AI prompt when non-empty. */
+  specialInstructions?: string;
 }
