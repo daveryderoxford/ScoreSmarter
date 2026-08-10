@@ -129,4 +129,5 @@ export interface ScannerContextForm {
   timeFormat: FormControl<ScannerTimeFormat>;
   defaultLaps: FormControl<number>;
   scanStrategy: FormControl<ScanStrategy>;
+  specialInstructions: FormControl<string>;
 }

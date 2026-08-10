@@ -92,6 +92,7 @@ class FakeScanRunStore {
     timeFormat: this.fb.nonNullable.control<ScannerTimeFormat>('clock_hms', Validators.required),
     defaultLaps: [1, [Validators.min(1), Validators.max(20)]],
     scanStrategy: this.fb.nonNullable.control('FullAIScan' as const, Validators.required),
+    specialInstructions: [''],
   });
   private readonly _scanResult = signal<ScanResponse | null>(structuredClone(scanResponse));
   readonly scanResult = this._scanResult.asReadonly();
