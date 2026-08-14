@@ -73,7 +73,10 @@ export class ManualResultsPage {
 
   readonly raceId = input<string>();
 
-  /** Scoring sheet race selection (MVP: at most one id). */
+  /**
+   * Scoring sheet race selection (MVP: at most one id).
+   * TODO(stage-2): allow multi-select for Level Rating races and adapt the position panel.
+   */
   private readonly raceIds = signal<string[]>([]);
 
   readonly selectedRace = computed((): Race | undefined => {

@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BoatsStore } from 'app/boats';
 import { ClubStore } from 'app/club-tenant';
+import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
 import { RaceCompetitor } from '../../model/race-competitor';
 import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
@@ -93,6 +94,7 @@ class FakeScanRunStore {
     defaultLaps: [1, [Validators.min(1), Validators.max(20)]],
     scanStrategy: this.fb.nonNullable.control('FullAIScan' as const, Validators.required),
     specialInstructions: [''],
+    debug: [false],
   });
   private readonly _scanResult = signal<ScanResponse | null>(structuredClone(scanResponse));
   readonly scanResult = this._scanResult.asReadonly();
@@ -114,9 +116,12 @@ class FakeScanRunStore {
 
 @Injectable()
 class FakeRaceSelectionStore {
+  readonly selectedRaceIds = signal([RACE_ID]).asReadonly();
   readonly selectedRaceId = signal(RACE_ID).asReadonly();
   readonly selectedRace = computed(() => race);
+  readonly isLevelRatingSelection = signal(false).asReadonly();
   select = vi.fn();
+  selectMany = vi.fn();
 }
 
 @Injectable()
@@ -170,6 +175,7 @@ describe('ScanReviewStore.save', () => {
         { provide: ScanPersistenceService, useValue: { clearScanResponse } },
         { provide: BoatsStore, useValue: { boats: signal([]).asReadonly() } },
         { provide: ClubStore, useValue: { club: signal({ classes: [] }).asReadonly() } },
+        { provide: RaceCalendarStore, useValue: { allRaces: () => [race] } },
         { provide: MatDialog, useValue: { open: dialogOpen } },
         { provide: MatSnackBar, useValue: { open: vi.fn() } },
         { provide: Router, useValue: { navigate } },

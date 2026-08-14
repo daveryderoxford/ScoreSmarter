@@ -10,4 +10,6 @@ export interface ScanExecutionMetrics {
   inputTokens: number | null;
   outputTokens: number | null;
   estimatedApiCostUsd: number | null;
+  /** Correlates with `system/private/scans/{requestId}` (includes `aiPrompt` when debug is on). */
+  requestId?: string;
 }

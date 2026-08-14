@@ -15,6 +15,10 @@ export function formatScanMetricsSummary(metrics: ScanExecutionMetrics): string 
     parts.push(`est. £${metrics.estimatedApiCostUsd.toFixed(5)}`);
   }
 
+  if (metrics.requestId) {
+    parts.push(`requestId ${metrics.requestId}`);
+  }
+
   return parts.join(' · ');
 }
 

@@ -58,7 +58,7 @@ export class ScoringSheetScanner {
 
   constructor() {
     effect(() => {
-      this.raceSelection.selectedRaceId();
+      this.raceSelection.selectedRaceIds();
       untracked(() => {
         this.sheetCapture.resetToRaceStoredSheet();
         this.scanRun.reset();

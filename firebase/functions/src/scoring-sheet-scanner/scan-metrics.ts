@@ -57,6 +57,8 @@ export interface ScanMetricsDocument {
   inputTokens: number | null;
   outputTokens: number | null;
   estimatedApiCostUsd: number | null;
+  /** Full AI prompt text when scan was run with sys-admin debug enabled. */
+  aiPrompt?: string;
 }
 
 export function estimateApiCost(
@@ -170,6 +172,7 @@ export function buildExecutionMetrics(params: {
   model: string;
   location: string;
   tokenCapture: ScanTokenCapture;
+  requestId?: string;
 }): ScanExecutionMetrics {
   return {
     success: params.success,
@@ -182,6 +185,7 @@ export function buildExecutionMetrics(params: {
     inputTokens: params.tokenCapture.inputTokens,
     outputTokens: params.tokenCapture.outputTokens,
     estimatedApiCostUsd: params.tokenCapture.estimatedApiCostUsd,
+    ...(params.requestId ? { requestId: params.requestId } : {}),
   };
 }
 
@@ -192,6 +196,8 @@ export function buildScanMetricsDocument(params: {
   uid?: string;
   execution: ScanExecutionMetrics;
   quality: ScanQualityMetrics;
+  /** When set (sys-admin debug scans), stored as `aiPrompt` on the metrics doc. */
+  aiPrompt?: string;
 }): ScanMetricsDocument {
   return {
     clubId: params.clubId,
@@ -215,5 +221,6 @@ export function buildScanMetricsDocument(params: {
     inputTokens: params.execution.inputTokens,
     outputTokens: params.execution.outputTokens,
     estimatedApiCostUsd: params.execution.estimatedApiCostUsd,
+    ...(params.aiPrompt ? { aiPrompt: params.aiPrompt } : {}),
   };
 }

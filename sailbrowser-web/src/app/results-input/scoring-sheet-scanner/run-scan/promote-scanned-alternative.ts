@@ -1,6 +1,12 @@
 import type { ScannedResultRow, ScannedValue } from '../model/scan-model';
 
-export type ScannedValueField = 'sailNumber' | 'boatClass' | 'competitorName' | 'time' | 'laps';
+export type ScannedValueField =
+  | 'sailNumber'
+  | 'boatClass'
+  | 'competitorName'
+  | 'time'
+  | 'laps'
+  | 'position';
 
 /** Promote `chosen` to primary value; previous primary joins the remaining alternatives. */
 export function promoteScannedAlternative<T>(
@@ -26,9 +32,9 @@ export function promoteRowAlternative(
   const current = row[field];
   if (!current) return row;
 
-  if (field === 'laps') {
+  if (field === 'laps' || field === 'position') {
     const next = promoteScannedAlternative(current as ScannedValue<number>, Number(chosen));
-    return next === current ? row : { ...row, laps: next };
+    return next === current ? row : { ...row, [field]: next };
   }
 
   const next = promoteScannedAlternative(current as ScannedValue<string>, String(chosen));

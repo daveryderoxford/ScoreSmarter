@@ -14,7 +14,13 @@ import { mergeClassAliases } from "./class-aliases.js";
 import { normalizeScanStrategy, resolveStrategyExecution } from "./scan-strategy.js";
 import { resultsSheetStoragePath } from "../image-upload/image-storage.js";
 import { detailedHttpsError } from "../../shared/https-error.js";
-import { assertAuthenticated, assertCallerRole } from "../../shared/authorisation.js";
+import {
+  assertAuthenticated,
+  assertCallerRole,
+  callerClaims,
+  isSysAdmin,
+} from "../../shared/authorisation.js";
+import type { ScanPromptCapture } from "./single-pass-ai-parser.js";
 import {
   buildExecutionMetrics,
   buildScanMetricsDocument,
@@ -272,6 +278,8 @@ async function parseFromStoredImage(
   raceId: string,
   scannerContext: ScannerContext,
   uid?: string,
+  /** Persist full AI prompt on metrics doc (sys-admin debug only). */
+  debugPrompt = false,
 ) {
   const parseStartMs = Date.now();
   const storagePath = resultsSheetStoragePath(clubId, raceId);
@@ -279,12 +287,36 @@ async function parseFromStoredImage(
   const execution = resolveStrategyExecution(scanStrategy);
   const raceSummary = await loadRaceSummary(clubId, raceId);
   const tokenCapture = emptyTokenCapture();
+  const promptCapture: ScanPromptCapture | undefined = debugPrompt
+    ? { prompt: null }
+    : undefined;
   let parsed: unknown = null;
   let executionMetrics: ScanExecutionMetrics | undefined;
   let caughtError: unknown;
 
   try {
-    const roster = await getRaceCompetitors(clubId, raceId, requestId);
+    const clientRaceIds = (scannerContext.races ?? []).map((r) => r.id);
+    const targetRaceIds = [raceId, ...clientRaceIds].filter(
+      (id, i, arr) => arr.indexOf(id) === i,
+    );
+    const scanMode = scannerContext.scanMode === "levelRating" ? "levelRating" : "handicap";
+
+    const races = await Promise.all(
+      targetRaceIds.map(async (id) => {
+        const [comps, summary] = await Promise.all([
+          getRaceCompetitors(clubId, id, requestId),
+          loadRaceSummary(clubId, id),
+        ]);
+        return {
+          id: summary.raceId,
+          seriesName: summary.seriesName,
+          raceNumber: summary.raceNumber,
+          scheduledStartIso: summary.scheduledStart?.toDate?.()?.toISOString(),
+          entries: comps,
+        };
+      }),
+    );
+
     const bucket = getStorage().bucket();
     const file = bucket.file(storagePath);
     const [exists] = await file.exists();
@@ -308,15 +340,15 @@ async function parseFromStoredImage(
 
     const mergedContext: ScannerContext = {
       ...scannerContext,
+      scanMode,
       timeFormat: normalizeScannerTimeFormat(scannerContext.timeFormat),
       classAliases: mergeClassAliases(scannerContext.classAliases),
-      roster,
-      targetRaces: [raceId, ...(scannerContext.targetRaces ?? [])].filter(
-        (id, i, arr) => arr.indexOf(id) === i,
-      ),
+      races,
     };
-    logScan(requestId, "merge_scanner_context", "Merged Firestore roster into scanner context", {
-      targetRaces: mergedContext.targetRaces,
+    logScan(requestId, "merge_scanner_context", "Merged Firestore races into scanner context", {
+      raceIds: races.map((r) => r.id),
+      entryCounts: Object.fromEntries(races.map((r) => [r.id, r.entries.length])),
+      scanMode,
       listOrder: mergedContext.listOrder,
       defaultHour: mergedContext.defaultHour,
       defaultLaps: mergedContext.defaultLaps,
@@ -339,6 +371,7 @@ async function parseFromStoredImage(
       mergedContext,
       raceId,
       tokenCapture,
+      promptCapture,
     );
 
     if (parsed !== null) {
@@ -350,6 +383,7 @@ async function parseFromStoredImage(
       strategy: execution.strategy,
       model: execution.model,
       location: execution.location,
+      requestId,
       tokenCapture: tokenCapture.executionTimeSec > 0
         ? tokenCapture
         : {
@@ -366,6 +400,7 @@ async function parseFromStoredImage(
       strategy: execution.strategy,
       model: execution.model,
       location: execution.location,
+      requestId,
       tokenCapture: tokenCapture.executionTimeSec > 0
         ? tokenCapture
         : {
@@ -379,6 +414,9 @@ async function parseFromStoredImage(
     const quality = parsed != null
       ? extractScanQualityMetrics(parsed)
       : extractScanQualityMetrics({ scannedResults: [] });
+    const aiPrompt = promptCapture?.prompt?.trim()
+      ? promptCapture.prompt
+      : undefined;
     await persistScanMetrics(
       requestId,
       buildScanMetricsDocument({
@@ -388,6 +426,7 @@ async function parseFromStoredImage(
         uid,
         execution: executionMetrics,
         quality,
+        ...(aiPrompt ? { aiPrompt } : {}),
       }),
     );
   }
@@ -410,11 +449,28 @@ export const parseStoredResultsSheet = onCall({
   const { scannerContext, clubId, raceId } = validateStoredRequest(request.data, requestId);
   assertCallerRole("race-officer", request.auth, clubId);
 
+  const debugPrompt =
+    !!scannerContext.debug && isSysAdmin(callerClaims(request.auth));
+  if (scannerContext.debug && !debugPrompt) {
+    logScan(requestId, "validate_input", "Ignoring debug flag — caller is not sys-admin", {
+      uid: request.auth.uid,
+      clubId,
+    });
+  }
+
   logScan(requestId, "validate_input", "parseStoredResultsSheet invoked", {
     uid: request.auth.uid,
     clubId,
     raceId,
+    debugPrompt,
     storagePath: resultsSheetStoragePath(clubId, raceId),
   });
-  return parseFromStoredImage(requestId, clubId, raceId, scannerContext, request.auth.uid);
+  return parseFromStoredImage(
+    requestId,
+    clubId,
+    raceId,
+    scannerContext,
+    request.auth.uid,
+    debugPrompt,
+  );
 });

@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { BoatsStore } from 'app/boats';
 import { normalizeSailNumber, sailNumbersEqual } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
+import { RaceCalendarStore } from 'app/race-calender';
+import { Race } from 'app/race-calender/model/race';
 import { firstValueFrom } from 'rxjs';
 import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 import { ManualResultsService } from '../../services/manual-results.service';
@@ -29,6 +31,7 @@ import {
   UnmatchedRowVm,
 } from './review-step';
 import { ScannedResultRow } from '../model/scan-model';
+import type { ScannedValueField } from '../run-scan/promote-scanned-alternative';
 
 const REMATCH_ATTEMPTS = 8;
 const REMATCH_DELAY_MS = 75;
@@ -49,16 +52,23 @@ export class ScanReviewStore {
   private readonly scanPersistence = inject(ScanPersistenceService);
   private readonly boatsStore = inject(BoatsStore);
   private readonly clubStore = inject(ClubStore);
+  private readonly raceCalendar = inject(RaceCalendarStore);
   private readonly dialog = inject(MatDialog);
   private readonly snackbar = inject(MatSnackBar);
   private readonly router = inject(Router);
 
-  readonly displayedColumns: readonly string[] = [
-    'accept', 'rowIndex', 'sailNumber', 'boatClass', 'helm', 'time', 'status', 'laps', 'overall',
-  ];
-  readonly unmatchedColumns: readonly string[] = [
-    'rowIndex', 'sailNumber', 'boatClass', 'time', 'status', 'laps', 'helms', 'enter',
-  ];
+  readonly isLevelRatingScan = computed(() => this.raceSelection.isLevelRatingSelection());
+
+  readonly displayedColumns = computed<readonly string[]>(() =>
+    this.isLevelRatingScan()
+      ? ['accept', 'rowIndex', 'sailNumber', 'boatClass', 'helm', 'race', 'position', 'status', 'overall']
+      : ['accept', 'rowIndex', 'sailNumber', 'boatClass', 'helm', 'time', 'status', 'laps', 'overall'],
+  );
+  readonly unmatchedColumns = computed<readonly string[]>(() =>
+    this.isLevelRatingScan()
+      ? ['rowIndex', 'sailNumber', 'boatClass', 'race', 'position', 'status', 'helms', 'enter']
+      : ['rowIndex', 'sailNumber', 'boatClass', 'time', 'status', 'laps', 'helms', 'enter'],
+  );
 
   private readonly _saving = signal(false);
   readonly saving = this._saving.asReadonly();
@@ -85,15 +95,27 @@ export class ScanReviewStore {
 
   /** Race competitors not already linked to a scan row — candidates for Link. */
   readonly linkableCompetitors = computed(() => {
-    const raceId = this.raceSelection.selectedRaceId();
-    if (!raceId) return [];
-    return this.rowMatching.unmatchedRaceCompetitors(
-      this.competitorReader.resolvedForRace(raceId),
-      this.scanRun.scanResult()?.scannedResults ?? [],
+    const raceIds = this.raceSelection.selectedRaceIds();
+    if (raceIds.length === 0) return [];
+    const rows = this.scanRun.scanResult()?.scannedResults ?? [];
+    return raceIds.flatMap((raceId) =>
+      this.rowMatching.unmatchedRaceCompetitors(
+        this.competitorReader.resolvedForRace(raceId),
+        rows,
+      ),
     );
   });
 
   readonly canLink = computed(() => this.linkableCompetitors().length > 0);
+
+  raceLabel(raceId: string | undefined): string {
+    if (!raceId) return '-';
+    const race = this.raceCalendar.allRaces().find((r) => r.id === raceId);
+    if (!race) return raceId;
+    const series = race.seriesName?.trim();
+    const num = race.index != null ? `R${race.index}` : '';
+    return [series, num].filter(Boolean).join(' ') || raceId;
+  }
 
   readonly acceptedMatchedCount = computed(
     () => this.matchedRows().filter(vm => !!vm.row.accepted).length,
@@ -105,14 +127,18 @@ export class ScanReviewStore {
 
   promoteAlternative(
     rowIndex: number,
-    field: 'sailNumber' | 'boatClass' | 'competitorName' | 'time' | 'laps',
+    field: ScannedValueField,
     chosen: string | number,
   ): void {
     this.scanRun.promoteAlternative(rowIndex, field, chosen);
   }
 
+  private raceIdForRow(row: ScannedResultRow): string | null {
+    return row.raceId?.trim() || this.raceSelection.selectedRaceId();
+  }
+
   async enterKnownBoat(row: ScannedResultRow): Promise<void> {
-    const raceId = this.raceSelection.selectedRaceId();
+    const raceId = this.raceIdForRow(row);
     const boatClass = row.boatClass?.value?.trim();
     const sailNumber = normalizeSailNumber(row.sailNumber?.value);
     if (!raceId || !boatClass || !sailNumber) {
@@ -141,7 +167,7 @@ export class ScanReviewStore {
   }
 
   async enterUnmatched(row: ScannedResultRow): Promise<void> {
-    const raceId = this.raceSelection.selectedRaceId();
+    const raceId = this.raceIdForRow(row);
     const boatClass = row.boatClass?.value?.trim();
     const sailNumber = normalizeSailNumber(row.sailNumber?.value);
     if (!raceId || !boatClass || !sailNumber) {
@@ -163,7 +189,13 @@ export class ScanReviewStore {
   }
 
   async linkScanRow(row: ScannedResultRow): Promise<void> {
-    const competitors = this.linkableCompetitors();
+    const raceId = this.raceIdForRow(row);
+    const competitors = raceId
+      ? this.rowMatching.unmatchedRaceCompetitors(
+          this.competitorReader.resolvedForRace(raceId),
+          this.scanRun.scanResult()?.scannedResults ?? [],
+        )
+      : this.linkableCompetitors();
     if (competitors.length === 0) {
       this.snackbar.open('No unlinked race entries available to link.', 'Dismiss', {
         duration: 4000,
@@ -188,13 +220,14 @@ export class ScanReviewStore {
   }
 
   async save(): Promise<void> {
-    const raceId = this.raceSelection.selectedRaceId();
-    if (!raceId) return;
-    const race = this.raceSelection.selectedRace();
-    if (!race) {
+    const sessionRaceId = this.raceSelection.selectedRaceId();
+    if (!sessionRaceId) return;
+    const sessionRace = this.raceSelection.selectedRace();
+    if (!sessionRace) {
       this._error.set('Select a race first.');
       return;
     }
+    const isLevelRating = this.isLevelRatingScan();
     const preSaveCompetitorsById = new Map(
       this.competitorStore.selectedCompetitors().map(c => [c.id, c] as const),
     );
@@ -205,7 +238,6 @@ export class ScanReviewStore {
       this._error.set('No accepted matched rows to save.');
       return;
     }
-    this.raceSelection.select(raceId);
     this._error.set(null);
     this._saving.set(true);
     try {
@@ -220,7 +252,7 @@ export class ScanReviewStore {
         .map(vm => vm.row.matchedCompetitorId!);
       if (missingMatchedIds.length > 0) {
         const diagnostic = {
-          raceIdFromForm: raceId,
+          raceIdFromForm: sessionRaceId,
           acceptedMatchedIds,
           missingMatchedIds,
           availableCompetitorIds: Array.from(preSaveCompetitorsById.keys()),
@@ -234,27 +266,46 @@ export class ScanReviewStore {
 
       const timeFormat = this.scanRun.contextForm.controls.timeFormat.value;
       const defaultHour = this.scanRun.defaultHourForParsing();
+      const racesById = new Map(this.raceCalendar.allRaces().map((r) => [r.id, r] as const));
       await withTimeout(
         (async () => {
           for (const vm of acceptedMatchedItems) {
             const competitor = this.resolvedByCompetitorId().get(vm.row.matchedCompetitorId!);
             if (!competitor) continue;
-            const finishTime = vm.row.time?.value
-              ? this.rowMatching.parseScannedTime(vm.row.time.value, race, { timeFormat, defaultHour })
-              : null;
-            await this.manualResults.recordResult(competitor, race, {
-              finishTime,
-              laps: vm.row.laps?.value || 1,
-              resultCode: this.rowMatching.normalizeResultCode(vm.row.status),
-              scoringSheetRow: vm.row.rowIndex,
-            });
+            const rowRaceId = this.raceIdForRow(vm.row) ?? sessionRaceId;
+            const race: Race | undefined = racesById.get(rowRaceId) ?? sessionRace;
+            if (!race) continue;
+
+            if (isLevelRating) {
+              const position = vm.row.position?.value;
+              if (position == null || !Number.isFinite(position)) {
+                continue;
+              }
+              await this.manualResults.recordResult(competitor, race, {
+                finishTime: null,
+                laps: 1,
+                position,
+                resultCode: this.rowMatching.normalizeResultCode(vm.row.status),
+                scoringSheetRow: vm.row.rowIndex,
+              });
+            } else {
+              const finishTime = vm.row.time?.value
+                ? this.rowMatching.parseScannedTime(vm.row.time.value, race, { timeFormat, defaultHour })
+                : null;
+              await this.manualResults.recordResult(competitor, race, {
+                finishTime,
+                laps: vm.row.laps?.value || 1,
+                resultCode: this.rowMatching.normalizeResultCode(vm.row.status),
+                scoringSheetRow: vm.row.rowIndex,
+              });
+            }
           }
-          await this.scanPersistence.clearScanResponse(raceId);
+          await this.scanPersistence.clearScanResponse(sessionRaceId);
         })(),
         FIRESTORE_BULK_WRITE_TIMEOUT_MS,
         'Saving scan results',
       );
-      await this.router.navigate(['/results-input/manual'], { queryParams: { raceId } });
+      await this.router.navigate(['/results-input/manual'], { queryParams: { raceId: sessionRaceId } });
     } catch (err: unknown) {
       console.error('ScanReviewStore.save: save failed', err);
       this._error.set(this.saveErrorMessage(err));

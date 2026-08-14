@@ -4,11 +4,13 @@ import { buildPrompt } from "./prompt-builder.js";
 import type { ScannerContext, ScannerTimeFormat } from "../ai-scan-model.js";
 
 const baseContext: ScannerContext = {
-  targetRaces: ["race-1"],
+  races: [{
+    id: "race-1",
+    entries: [{ id: "comp-1", class: "ILCA 7", sailNumber: "12345", name: "Sam" }],
+  }],
   defaultLaps: 3,
   defaultHour: 14,
   listOrder: "chronological",
-  roster: [{ id: "comp-1", class: "ILCA 7", sailNumber: "12345", name: "Sam" }],
 };
 
 const modes: ScannerTimeFormat[] = ["clock_hms", "stopwatch_hms_elapsed", "stopwatch_ms_elapsed"];
