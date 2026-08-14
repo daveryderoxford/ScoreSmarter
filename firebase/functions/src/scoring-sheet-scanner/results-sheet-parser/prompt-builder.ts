@@ -87,13 +87,15 @@ Target race id: ${raceId}. Target races in this scan: ${targetRacesStr}.
 - First column is a typewritten integer row index.
 - Copy that number into rowIndex for each emitted row.
 
-## Class / sail number
+## Class / sail number 
 - Read class and sail number from the same row.
 - CLASS_ALIASES maps sheet text → CLUB_CLASS_NAME: ${aliasesStr}
 - When sheet text for a CLASS_ALIASE matches, always set boatClass.value to the CLUB_CLASS_NAME (the right-hand side of CLASS ALIASES).
 -- Examples: Radial / Laser R / LR → ILCA 6; Laser / L → ILCA 7.
 -- NEVER put sheet text (Radial, Laser R, LR, L, …) in boatClass.value when a CLASS_ALIASES matches.
-- Use the ENTRY_LIST to determine matchedCompetitorId and to correct messy handwriting (e.g. '1234S' → '12345'); when corrected from ENTRY LIST, use HIGH confidence and set matchedCompetitorId to that entry's id.
+- Use the ENTRY_LIST to 
+-- determine matchedCompetitorId from class/sail number and 
+-- to correct messy handwriting (e.g. '1234S' → '12345'); when corrected from ENTRY LIST, use HIGH confidence and set matchedCompetitorId to that entry's id. 
 -- ENTRY_LIST: ${entryList}
 
 ## Time
@@ -109,7 +111,7 @@ ${lapColumnRules}
 - Read competitor name when present; omit if absent.
 
 # 3. CONFIDENCE + PAGE NOTES
-- If you are unsure of a value report any alternatives that the vakue could be. 
+- If you are unsure of a value report any alternatives that the value could be. 
 - Per-field and overallRowConfidence: HIGH | MANUAL_CHECK | FAILED | AMBIGUOUS.
 - HIGH: certain read, especially exact ENTRY LIST match.
 - MANUAL_CHECK: unclear handwriting, ENTRY LIST correction, out-of-sequence time, or blank time.

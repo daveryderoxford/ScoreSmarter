@@ -33,6 +33,8 @@ export interface ScanHistoryRecord {
   inputTokens: number | null;
   outputTokens: number | null;
   estimatedApiCostUsd: number | null;
+  /** Full AI prompt when the scan was run with sys-admin debug enabled. */
+  aiPrompt?: string;
 }
 
 @Injectable({
@@ -117,6 +119,9 @@ export class ScanHistoryService {
       inputTokens: typeof data['inputTokens'] === 'number' ? data['inputTokens'] : null,
       outputTokens: typeof data['outputTokens'] === 'number' ? data['outputTokens'] : null,
       estimatedApiCostUsd: typeof data['estimatedApiCostUsd'] === 'number' ? data['estimatedApiCostUsd'] : null,
+      aiPrompt: typeof data['aiPrompt'] === 'string' && data['aiPrompt'].trim()
+        ? data['aiPrompt']
+        : undefined,
     };
   }
 }
