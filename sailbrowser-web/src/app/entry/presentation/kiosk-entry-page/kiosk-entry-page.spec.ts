@@ -82,7 +82,7 @@ function baseProviders(overrides: Record<string, unknown> = {}) {
     },
     {
       provide: ClubStore,
-      useValue: { club: () => ({ classes: clubClasses }) },
+      useValue: { club: () => ({ classes: clubClasses, supportedHandicapSchemes: [], tagDefinitions: [] }) },
     },
     {
       provide: CurrentRaces,
@@ -177,6 +177,30 @@ describe('KioskEntryPage', () => {
     page.startClub();
     expect(page.view()).toBe('clubClass');
     expect(page.clubClasses()).toEqual(['420']);
+  });
+
+  it('navigates visitor flow to boat details then confirm, without register save', () => {
+    const page = createPage();
+    page.startVisitor();
+    expect(page.view()).toBe('visitorBoat');
+    expect(page.category()).toBe('visitor');
+    expect(page.stepTitle()).toBe('Visitor boat');
+
+    page.visitorForm.patchValue({
+      boatClass: 'ILCA 7',
+      sailNumber: '9999',
+      helm: 'Pat Visitor',
+    });
+    page.confirmVisitorBoat();
+
+    expect(page.view()).toBe('memberConfirm');
+    expect(page.selectedBoat()?.helm).toBe('Pat Visitor');
+    expect(page.selectedBoat()?.sailNumber).toBe('9999');
+    expect(page.selectedBoat()?.id.startsWith('new-')).toBe(true);
+    expect(page.selectedBoat()?.isClub).toBe(false);
+
+    page.goBack();
+    expect(page.view()).toBe('visitorBoat');
   });
 
   it('resets to category after start over', () => {

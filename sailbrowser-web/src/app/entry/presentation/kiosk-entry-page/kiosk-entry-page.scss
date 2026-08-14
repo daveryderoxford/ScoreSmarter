@@ -139,6 +139,9 @@
 .category-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    'member member'
+    'club visitor';
   gap: 16px;
   align-content: center;
   flex: 1;
@@ -146,6 +149,20 @@
 
 .category-btn {
   min-height: 120px;
+}
+
+.category-btn-member {
+  grid-area: member;
+  justify-self: center;
+  width: calc((100% - 16px) / 2);
+}
+
+.category-btn-club {
+  grid-area: club;
+}
+
+.category-btn-visitor {
+  grid-area: visitor;
 }
 
 .header-spacer {
@@ -335,4 +352,10 @@
 
 .helm-form mat-form-field {
   width: 100%;
+}
+
+.visitor-form {
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
 }

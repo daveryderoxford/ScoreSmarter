@@ -8,7 +8,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
@@ -22,8 +22,10 @@ import {
   BoatsStore,
   compareSailNumbers,
   normalizeSailNumber,
+  sailNumberValidator,
   sailNumbersEqual,
 } from 'app/boats';
+import { BoatCoreFields } from 'app/boats/presentation/boat-form/boat-core-fields';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
 import { ClubStore } from 'app/club-tenant';
 import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
@@ -32,6 +34,8 @@ import { CurrentRaces } from 'app/results-input';
 import { type Handicap } from 'app/scoring/model/handicap';
 import { handicapSchemesRequiredForRaces } from 'app/scoring/model/handicap-race-requirements';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { getHandicapSchemeMetadata, getSchemesForTarget, handicapControlName } from 'app/scoring/model/handicap-scheme-metadata';
+import { type PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dialog';
 import { firstValueFrom, startWith } from 'rxjs';
@@ -59,6 +63,7 @@ type KioskView =
   | 'memberHelm'
   | 'memberBoat'
   | 'memberConfirm'
+  | 'visitorBoat'
   | 'clubClass'
   | 'clubSail'
   | 'clubHelm'
@@ -113,6 +118,7 @@ export function helmGridLayout(
     MatAutocompleteModule,
     HelmNameAutocomplete,
     EntriesListPanel,
+    BoatCoreFields,
   ],
 })
 export class KioskEntryPage {
@@ -141,7 +147,7 @@ export class KioskEntryPage {
   readonly letterRanges = HELM_LETTER_RANGES;
 
   readonly view = signal<KioskView>('category');
-  readonly category = signal<'member' | 'club' | null>(null);
+  readonly category = signal<'member' | 'club' | 'visitor' | null>(null);
   readonly letterRange = signal<HelmLetterRangeId | null>(null);
   readonly selectedHelm = signal<string | null>(null);
   readonly selectedBoat = signal<Boat | null>(null);
@@ -155,6 +161,31 @@ export class KioskEntryPage {
   });
 
   readonly memberCrewControl = this.fb.nonNullable.control('');
+
+  readonly visitorBoatSchemes = computed<HandicapScheme[]>(() =>
+    getSchemesForTarget(this.clubStore.club().supportedHandicapSchemes ?? [], 'boat'),
+  );
+
+  readonly visitorForm: FormGroup = this.fb.group({
+    boatClass: ['', Validators.required],
+    sailNumber: ['', [Validators.required, sailNumberValidator]],
+    name: [''],
+    helm: ['', Validators.required],
+    crew: [''],
+    personalHandicapBand: ['unknown' as PersonalHandicapBand | 'unknown'],
+    tags: this.fb.nonNullable.control<string[]>([]),
+  });
+
+  private readonly visitorBoatClassValue = toSignal(
+    this.visitorForm.controls['boatClass'].valueChanges.pipe(
+      startWith(this.visitorForm.controls['boatClass'].value),
+    ),
+    { initialValue: this.visitorForm.controls['boatClass'].value },
+  );
+
+  readonly visitorIsSinglehander = computed(() =>
+    isSinglehanderClass(String(this.visitorBoatClassValue() ?? '').trim(), this.clubStore.club().classes),
+  );
 
   private readonly clubHelmValue = toSignal(
     this.clubHelmForm.controls.helm.valueChanges.pipe(
@@ -332,6 +363,8 @@ export class KioskEntryPage {
         return this.selectedHelm() ?? 'Select boat';
       case 'memberConfirm':
         return 'Confirm entry';
+      case 'visitorBoat':
+        return 'Visitor boat';
       case 'clubClass':
         return 'Select class';
       case 'clubSail':
@@ -350,6 +383,25 @@ export class KioskEntryPage {
   }
 
   constructor() {
+    for (const scheme of this.visitorBoatSchemes()) {
+      if (scheme === 'Personal') continue;
+      const meta = getHandicapSchemeMetadata(scheme);
+      this.visitorForm.addControl(
+        handicapControlName(scheme),
+        this.fb.control<number | null>(meta.defaultValue, [
+          Validators.required,
+          Validators.min(meta.min),
+          Validators.max(meta.max),
+        ]),
+      );
+    }
+
+    effect(() => {
+      if (this.visitorIsSinglehander()) {
+        this.visitorForm.controls['crew'].setValue('', { emitEvent: false });
+      }
+    });
+
     effect((onCleanup) => {
       const el = this.helmScrollArea()?.nativeElement;
       if (!el) {
@@ -378,6 +430,66 @@ export class KioskEntryPage {
   startClub(): void {
     this.category.set('club');
     this.view.set('clubClass');
+  }
+
+  startVisitor(): void {
+    this.category.set('visitor');
+    this.resetVisitorForm();
+    this.view.set('visitorBoat');
+  }
+
+  confirmVisitorBoat(): void {
+    if (this.visitorForm.invalid) return;
+    const raw = this.visitorForm.getRawValue() as Record<string, unknown>;
+    const boatClass = String(raw['boatClass'] ?? '').trim();
+    const classes = this.clubStore.club().classes;
+    const singlehander = isSinglehanderClass(boatClass, classes);
+    const handicaps: Handicap[] = this.visitorBoatSchemes()
+      .filter(s => s !== 'Personal')
+      .map(scheme => {
+        const meta = getHandicapSchemeMetadata(scheme);
+        const value = Number(raw[handicapControlName(scheme)] ?? meta.defaultValue);
+        return { scheme, value: Number.isFinite(value) && value > 0 ? value : meta.defaultValue };
+      });
+
+    const boat: Boat = {
+      id: `new-${Date.now()}`,
+      boatClass,
+      sailNumber: normalizeSailNumber(raw['sailNumber']),
+      helm: String(raw['helm'] ?? '').trim(),
+      crew: singlehander ? '' : String(raw['crew'] ?? '').trim(),
+      name: String(raw['name'] ?? '').trim(),
+      isClub: false,
+      handicaps: handicaps.length > 0 ? handicaps : undefined,
+      personalHandicapBand: raw['personalHandicapBand'] === 'unknown'
+        ? undefined
+        : (raw['personalHandicapBand'] as PersonalHandicapBand | undefined),
+      tags: Array.isArray(raw['tags']) ? (raw['tags'] as string[]) : [],
+    };
+
+    this.selectedHelm.set(boat.helm);
+    this.selectedBoat.set(boat);
+    this.memberCrewControl.setValue(boat.crew);
+    this.view.set('memberConfirm');
+  }
+
+  private resetVisitorForm(): void {
+    this.visitorForm.reset({
+      boatClass: '',
+      sailNumber: '',
+      name: '',
+      helm: '',
+      crew: '',
+      personalHandicapBand: 'unknown',
+      tags: [],
+    });
+    for (const scheme of this.visitorBoatSchemes()) {
+      if (scheme === 'Personal') continue;
+      const control = this.visitorForm.get(handicapControlName(scheme));
+      if (control) {
+        control.setValue(getHandicapSchemeMetadata(scheme).defaultValue);
+      }
+    }
   }
 
   setLetterRange(rangeId: HelmLetterRangeId): void {
@@ -420,7 +532,10 @@ export class KioskEntryPage {
         this.view.set('memberHelm');
         break;
       case 'memberConfirm':
-        this.view.set('memberBoat');
+        this.view.set(this.category() === 'visitor' ? 'visitorBoat' : 'memberBoat');
+        break;
+      case 'visitorBoat':
+        this.resetToCategory();
         break;
       case 'clubClass':
         this.resetToCategory();
@@ -445,6 +560,7 @@ export class KioskEntryPage {
     this.selectedClubClass.set(null);
     this.clubHelmForm.reset({ helm: '', crew: '' });
     this.memberCrewControl.reset('');
+    this.resetVisitorForm();
     this.successMessage.set('');
   }
 

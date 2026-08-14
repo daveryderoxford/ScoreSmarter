@@ -27,11 +27,14 @@
     @switch (view()) {
       @case ('category') {
         <div class="category-grid">
-          <button mat-flat-button type="button" class="category-btn" (click)="startMember()">
+          <button mat-flat-button type="button" class="category-btn category-btn-member" (click)="startMember()">
             Member's Boats
           </button>
-          <button mat-stroked-button type="button" class="category-btn" (click)="startClub()">
+          <button mat-stroked-button type="button" class="category-btn category-btn-club" (click)="startClub()">
             Club Boats
+          </button>
+          <button mat-stroked-button type="button" class="category-btn category-btn-visitor" (click)="startVisitor()">
+            Visitor boats
           </button>
         </div>
         <button mat-fab extended type="button" class="add-new-fab" (click)="showEntries()">
@@ -116,6 +119,27 @@
           <mat-icon>add</mat-icon>
           Add new boat
         </button>
+      }
+
+      @case ('visitorBoat') {
+        <p class="instruction">Enter visitor boat details</p>
+        <form [formGroup]="visitorForm" class="visitor-form kiosk-scroll">
+          <app-boat-core-fields
+            [form]="visitorForm"
+            [boatLevelSchemes]="visitorBoatSchemes()"
+            [showCrew]="!visitorIsSinglehander()" />
+        </form>
+        <div class="actions">
+          <button
+            mat-flat-button
+            color="primary"
+            type="button"
+            class="enter-btn"
+            [disabled]="visitorForm.invalid"
+            (click)="confirmVisitorBoat()">
+            Next
+          </button>
+        </div>
       }
 
       @case ('memberConfirm') {
