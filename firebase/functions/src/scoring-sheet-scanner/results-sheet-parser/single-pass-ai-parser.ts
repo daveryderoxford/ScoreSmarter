@@ -1,6 +1,6 @@
 import { ApiError, GoogleGenAI, Type, type GenerateContentResponse } from "@google/genai";
 import { ScannerContext, ScannerTimeFormat, logScan, logScanError } from "../ai-scan-model.js";
-import { buildPrompt } from "./prompt-builder.js";
+import { buildLevelRatingPrompt, buildPrompt } from "./prompt-builder.js";
 import { detailedHttpsError } from '../../shared/https-error.js';
 import { StratageyParemeters } from './scan-strategy.js';
 import { type ScanTokenCapture, captureTokenUsage } from '../scan-metrics.js';
@@ -11,6 +11,11 @@ const GCP_PROJECT = process.env.GCLOUD_PROJECT || "sailbrowser-efef0";
 const HMS_REGEX = /^(\d{1,2}):(\d{2}):(\d{2})$/;
 const MS_REGEX = /^(\d{1,2}):(\d{2})$/;
 
+/** Optional out-param so callers can persist the full prompt (sys-admin debug). */
+export interface ScanPromptCapture {
+  prompt: string | null;
+}
+
 export async function singlePassAIParser(
   stratagy: StratageyParemeters,
   requestId: string,
@@ -19,10 +24,14 @@ export async function singlePassAIParser(
   mergedContext: ScannerContext,
   raceId: string,
   tokenCapture?: ScanTokenCapture,
+  promptCapture?: ScanPromptCapture,
 ): Promise<unknown> {
+  const isLevelRating = mergedContext.scanMode === "levelRating";
   let prompt: string;
   try {
-    prompt = buildPrompt(mergedContext, raceId);
+    prompt = isLevelRating
+      ? buildLevelRatingPrompt(mergedContext)
+      : buildPrompt(mergedContext, raceId);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     logScanError(requestId, "build_prompt", msg, { cause: "build_prompt_failed" });
@@ -34,14 +43,20 @@ export async function singlePassAIParser(
     });
   }
 
+  if (promptCapture) {
+    promptCapture.prompt = prompt;
+  }
+
   const promptPreviewMax = 800;
   logScan(requestId, "build_prompt", "Built text prompt for Gemini via Vertex (image sent separately)", {
     model: stratagy.model,
     project: GCP_PROJECT,
     location: stratagy.location,
+    scanMode: isLevelRating ? "levelRating" : "handicap",
     promptCharLength: prompt.length,
     promptPreview: prompt.slice(0, promptPreviewMax),
     promptTruncated: prompt.length > promptPreviewMax,
+    debugPromptCapture: !!promptCapture,
   });
 
   const genai = new GoogleGenAI({
@@ -71,7 +86,9 @@ export async function singlePassAIParser(
       ],
       config: {
         responseMimeType: "application/json",
-        responseSchema: scanResultResponseSchemaForMode(mergedContext.timeFormat ?? "clock_hms"),
+        responseSchema: isLevelRating
+          ? levelRatingScanResultResponseSchema()
+          : scanResultResponseSchemaForMode(mergedContext.timeFormat ?? "clock_hms"),
       },
     });
   } catch (e: unknown) {
@@ -148,15 +165,18 @@ export async function singlePassAIParser(
 
   try {
     const parsed = JSON.parse(resultJson) as unknown;
-    validateAndNormalizeTimes(
-      parsed,
-      requestId,
-      mergedContext.timeFormat ?? "clock_hms",
-      mergedContext.defaultHour,
-    );
+    if (!isLevelRating) {
+      validateAndNormalizeTimes(
+        parsed,
+        requestId,
+        mergedContext.timeFormat ?? "clock_hms",
+        mergedContext.defaultHour,
+      );
+    }
     normalizeBoatClasses(parsed, mergeClassAliases(mergedContext.classAliases));
     logScan(requestId, "parse_model_json", "Successfully parsed model JSON", {
       hasScannedResults: typeof parsed === "object" && parsed !== null && "scannedResults" in parsed,
+      scanMode: isLevelRating ? "levelRating" : "handicap",
     });
     return parsed;
   } catch (e: unknown) {
@@ -387,6 +407,15 @@ function timeValueSchemaForMode(timeFormat: ScannerTimeFormat) {
   };
 }
 
+const scannedFieldString = {
+  type: Type.OBJECT,
+  properties: {
+    value: { type: Type.STRING },
+    confidence: { type: Type.STRING },
+    alternatives: { type: Type.ARRAY, items: { type: Type.STRING } },
+  },
+};
+
 /** Structured output schema for @google/genai */
 function scanResultResponseSchemaForMode(timeFormat: ScannerTimeFormat) {
   return {
@@ -398,30 +427,9 @@ function scanResultResponseSchemaForMode(timeFormat: ScannerTimeFormat) {
         type: Type.OBJECT,
         properties: {
           rowIndex: { type: Type.INTEGER },
-          boatClass: {
-            type: Type.OBJECT,
-            properties: {
-              value: { type: Type.STRING },
-              confidence: { type: Type.STRING },
-              alternatives: { type: Type.ARRAY, items: { type: Type.STRING } },
-            },
-          },
-          sailNumber: {
-            type: Type.OBJECT,
-            properties: {
-              value: { type: Type.STRING },
-              confidence: { type: Type.STRING },
-              alternatives: { type: Type.ARRAY, items: { type: Type.STRING } },
-            },
-          },
-          competitorName: {
-            type: Type.OBJECT,
-            properties: {
-              value: { type: Type.STRING },
-              confidence: { type: Type.STRING },
-              alternatives: { type: Type.ARRAY, items: { type: Type.STRING } },
-            },
-          },
+          boatClass: scannedFieldString,
+          sailNumber: scannedFieldString,
+          competitorName: scannedFieldString,
           time: {
             type: Type.OBJECT,
             properties: {
@@ -455,5 +463,55 @@ function scanResultResponseSchemaForMode(timeFormat: ScannerTimeFormat) {
     unreadableRowsCount: { type: Type.INTEGER },
   },
   required: ["scannedResults", "unreadableRowsCount"],
+  };
+}
+
+function levelRatingScanResultResponseSchema() {
+  return {
+    type: Type.OBJECT,
+    properties: {
+      scannedResults: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            rowIndex: { type: Type.INTEGER },
+            boatClass: scannedFieldString,
+            sailNumber: scannedFieldString,
+            competitorName: scannedFieldString,
+            raceId: { type: Type.STRING },
+            position: {
+              type: Type.OBJECT,
+              properties: {
+                value: { type: Type.NUMBER },
+                confidence: { type: Type.STRING },
+                alternatives: { type: Type.ARRAY, items: { type: Type.NUMBER } },
+              },
+            },
+            status: {
+              type: Type.STRING,
+              description: "Standard sailing status codes, e.g. OK, RET, DNS, DNF, DSQ",
+            },
+            overallRowConfidence: {
+              type: Type.STRING,
+              description: "HIGH, MANUAL_CHECK, FAILED, or AMBIGUOUS",
+            },
+            matchedCompetitorId: { type: Type.STRING },
+          },
+          required: [
+            "rowIndex",
+            "boatClass",
+            "sailNumber",
+            "raceId",
+            "position",
+            "status",
+            "overallRowConfidence",
+          ],
+        },
+      },
+      pageNotes: { type: Type.STRING },
+      unreadableRowsCount: { type: Type.INTEGER },
+    },
+    required: ["scannedResults", "unreadableRowsCount"],
   };
 }

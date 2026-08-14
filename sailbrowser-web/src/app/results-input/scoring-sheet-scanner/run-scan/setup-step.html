@@ -3,29 +3,36 @@
     <form [formGroup]="scanRun.contextForm">
       <h3>Race sheet format</h3>
 
-      <div class="option-group">
-        <div class="option-group-label">Results ordering</div>
-        <mat-radio-group formControlName="listOrder" class="radio-group">
-          <mat-radio-button value="chronological">Time ordered (approximate)</mat-radio-button>
-          <mat-radio-button value="unsorted">Random order</mat-radio-button>
-        </mat-radio-group>
-      </div>
+      @if (!isLevelRating()) {
+        <div class="option-group">
+          <div class="option-group-label">Results ordering</div>
+          <mat-radio-group formControlName="listOrder" class="radio-group">
+            <mat-radio-button value="chronological">Time ordered (approximate)</mat-radio-button>
+            <mat-radio-button value="unsorted">Random order</mat-radio-button>
+          </mat-radio-group>
+        </div>
 
-      <div class="option-group">
-        <div class="option-group-label">Time format</div>
-        <mat-radio-group formControlName="timeFormat" class="radio-group">
-          <mat-radio-button value="clock_hms">Real (clock) time</mat-radio-button>
-          <mat-radio-button value="stopwatch_ms_elapsed">Stopwatch (mm:ss)</mat-radio-button>
-        </mat-radio-group>
-      </div>
+        <div class="option-group">
+          <div class="option-group-label">Time format</div>
+          <mat-radio-group formControlName="timeFormat" class="radio-group">
+            <mat-radio-button value="clock_hms">Real (clock) time</mat-radio-button>
+            <mat-radio-button value="stopwatch_ms_elapsed">Stopwatch (mm:ss)</mat-radio-button>
+          </mat-radio-group>
+        </div>
 
-      <div [hidden]="!isMultilapRace()">
-        <mat-form-field>
-          <mat-label>Default laps (if not specified)</mat-label>
-          <input matInput type="number" formControlName="defaultLaps" min="1">
-          <mat-error>Must be between 1 and 20</mat-error>
-        </mat-form-field>
-      </div>
+        <div [hidden]="!isMultilapRace()">
+          <mat-form-field>
+            <mat-label>Default laps (if not specified)</mat-label>
+            <input matInput type="number" formControlName="defaultLaps" min="1">
+            <mat-error>Must be between 1 and 20</mat-error>
+          </mat-form-field>
+        </div>
+      } @else {
+        <p class="lr-hint">
+          Level Rating sheets are read in finish order. Sail numbers may be full or trailing digits —
+          the scanner will infer which. Linked arrows on the sheet can swap finish order.
+        </p>
+      }
 
       <mat-form-field subscriptSizing="dynamic">
         <mat-label>Special instructions</mat-label>
@@ -34,10 +41,12 @@
           formControlName="specialInstructions"
           rows="3"
           maxlength="500"
-          placeholder="e.g. Treat all empty hour fields as 20"
+          [placeholder]="isLevelRating()
+            ? 'e.g. Ignore practice race in the margin'
+            : 'e.g. Treat all empty hour fields as 20'"
         ></textarea>
         <mat-hint>
-          Optional notes for this sheet (e.g. empty hours, lap adjustments). Max 500 characters.
+          Optional notes for this sheet. Max 500 characters.
         </mat-hint>
       </mat-form-field>
 
@@ -50,6 +59,14 @@
           </mat-select>
           <mat-hint>Compare strategies on the same sheet by re-scanning with the other option.</mat-hint>
         </mat-form-field>
+
+        <mat-checkbox formControlName="debug">
+          Debug — save AI prompt to scan metrics
+        </mat-checkbox>
+        <p class="debug-hint">
+          Writes the full prompt to <code>system/private/scans/&#123;requestId&#125;</code>
+          (<code>aiPrompt</code> field.
+        </p>
       </div>
     </form>
   </mat-card>

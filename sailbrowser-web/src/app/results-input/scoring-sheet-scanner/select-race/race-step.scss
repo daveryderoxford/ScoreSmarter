@@ -19,3 +19,15 @@
    --races-panel-list-max-height: 336px;
    display: block;
 }
+
+.selection-error {
+   color: var(--mat-sys-error);
+   font-size: 0.875rem;
+   margin: 0;
+}
+
+.selection-hint {
+   color: var(--mat-sys-on-surface-variant);
+   font-size: 0.8125rem;
+   margin: 0;
+}

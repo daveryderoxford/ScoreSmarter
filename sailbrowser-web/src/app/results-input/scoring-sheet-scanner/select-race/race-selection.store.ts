@@ -4,33 +4,57 @@ import { Race } from 'app/race-calender/model/race';
 import { CurrentRaces } from '../../services/current-races-store';
 
 /**
- * Area 1 — owns the selected race for the scanner flow.
+ * Area 1 — owns selected race(s) for the scanner flow.
  * Container-scoped; provided by the scanner container so all steps share one
  * instance and state resets when the scanner is left.
+ *
+ * Any number of races may be selected for both Level Rating and handicap scans
+ * (`races` is always populated). Handicap multi-race parsing may come later.
  */
 @Injectable()
 export class ScanSelectedRace {
   private readonly raceCalendarStore = inject(RaceCalendarStore);
   private readonly currentRaces = inject(CurrentRaces);
 
-  private readonly _selectedRaceId = signal<string | null>(null);
-  readonly selectedRaceId = this._selectedRaceId.asReadonly();
+  private readonly _selectedRaceIds = signal<string[]>([]);
+  readonly selectedRaceIds = this._selectedRaceIds.asReadonly();
   readonly error = signal<string | null>(null);
 
   readonly raceOptions = computed<readonly Race[]>(() => this.raceCalendarStore.allRaces());
 
-  readonly selectedRace = computed<Race | null>(() => {
-    const id = this._selectedRaceId();
-    if (!id) return null;
-    return this.raceCalendarStore.allRaces().find((r: Race) => r.id === id) ?? null;
+  /** First selected race id — session key for sheet storage / stored scan. */
+  readonly selectedRaceId = computed(() => this._selectedRaceIds()[0] ?? null);
+
+  readonly selectedRaces = computed<readonly Race[]>(() => {
+    const ids = this._selectedRaceIds();
+    if (ids.length === 0) return [];
+    const byId = new Map(this.raceCalendarStore.allRaces().map((r) => [r.id, r]));
+    return ids.map((id) => byId.get(id)).filter((r): r is Race => !!r);
   });
 
+  readonly selectedRace = computed<Race | null>(() => this.selectedRaces()[0] ?? null);
+
+  /** True when every selected race is Level Rating (drives LR scan mode / prompt). */
+  readonly isLevelRatingSelection = computed(() => {
+    const races = this.selectedRaces();
+    return races.length > 0 && races.every((r) => r.type === 'Level Rating');
+  });
+
+  selectMany(raceIds: string[]): void {
+    const unique = [...new Set(raceIds.filter(Boolean))];
+    this.error.set(null);
+    this._selectedRaceIds.set(unique);
+    for (const id of unique) {
+      this.currentRaces.addRaceId(id);
+    }
+  }
+
   select(raceId: string): void {
-    this._selectedRaceId.set(raceId || null);
-    if (raceId) this.currentRaces.addRaceId(raceId);
+    this.selectMany(raceId ? [raceId] : []);
   }
 
   clear(): void {
-    this._selectedRaceId.set(null);
+    this._selectedRaceIds.set([]);
+    this.error.set(null);
   }
 }

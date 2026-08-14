@@ -1,6 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatOptionModule } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -15,6 +16,7 @@ import { AuthService } from 'app/auth';
   imports: [
     ReactiveFormsModule,
     MatCardModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
     MatOptionModule,
@@ -30,4 +32,5 @@ export class SetupStep {
   protected readonly auth = inject(AuthService);
 
   readonly isMultilapRace = computed(() => this.raceSelection.selectedRace()?.isAverageLap ?? false);
+  readonly isLevelRating = computed(() => this.raceSelection.isLevelRatingSelection());
 }

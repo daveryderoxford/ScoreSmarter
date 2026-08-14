@@ -14,9 +14,18 @@ const SCANNER_RACE_FILTERS: readonly RacesPanelFilter[] = ['past', 'hideComplete
       <app-races-panel
         [races]="raceSelection.raceOptions()"
         [selectedRaceIds]="selectedRaceIds()"
-        [maxSelections]="1"
+        [maxSelections]="20"
         [availableFilters]="filters"
         (selectedRaceIdsChange)="onSelectionChange($event)" />
+      @if (raceSelection.error()) {
+        <p class="selection-error">{{ raceSelection.error() }}</p>
+      }
+      <p class="selection-hint">
+        Select the race(s) on the scoring sheet.
+        @if (raceSelection.isLevelRatingSelection()) {
+          Level Rating sheets may include several races.
+        }
+      </p>
     </mat-card>
   `,
   styleUrl: './race-step.scss',
@@ -25,12 +34,9 @@ export class RaceStep {
   protected readonly raceSelection = inject(ScanSelectedRace);
   protected readonly filters = SCANNER_RACE_FILTERS;
 
-  readonly selectedRaceIds = computed<readonly string[]>(() => {
-    const id = this.raceSelection.selectedRaceId();
-    return id ? [id] : [];
-  });
+  readonly selectedRaceIds = computed<readonly string[]>(() => this.raceSelection.selectedRaceIds());
 
   onSelectionChange(ids: string[]): void {
-    this.raceSelection.select(ids[0] ?? '');
+    this.raceSelection.selectMany(ids);
   }
 }

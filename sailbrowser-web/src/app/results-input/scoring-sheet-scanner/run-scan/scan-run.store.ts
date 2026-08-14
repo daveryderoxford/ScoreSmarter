@@ -36,6 +36,7 @@ export class ScanRunStore {
     defaultLaps: [1, [Validators.min(1), Validators.max(20)]],
     scanStrategy: this.fb.nonNullable.control<ScanStrategy>('FullAIScan', Validators.required),
     specialInstructions: ['', [Validators.maxLength(500)]],
+    debug: [false],
   });
 
   // --- Stored scan (read-only) — resource keyed on the selected race ---
@@ -173,18 +174,36 @@ export class ScanRunStore {
 
   private buildScannerContext(): ScannerContext {
     const formData = this.contextForm.getRawValue();
-    const isMultilap = this.raceSelection.selectedRace()?.isAverageLap ?? false;
     const specialInstructions = formData.specialInstructions.trim();
+    const races = this.raceSelection.selectedRaceIds().map((id) => ({
+      id,
+      entries: [] as { id: string; class: string; sailNumber: string; name?: string }[],
+    }));
+    const isLevelRating = this.raceSelection.isLevelRatingSelection();
+
+    if (isLevelRating) {
+      return {
+        races,
+        listOrder: 'unsorted',
+        scanMode: 'levelRating',
+        scanStrategy: formData.scanStrategy,
+        ...(specialInstructions ? { specialInstructions } : {}),
+        ...(formData.debug ? { debug: true } : {}),
+      };
+    }
+
+    const isMultilap = this.raceSelection.selectedRace()?.isAverageLap ?? false;
     return {
-      targetRaces: [] as string[],
+      races,
       defaultHour: this.defaultHourForParsing(),
       defaultLaps: formData.defaultLaps,
       listOrder: formData.listOrder as 'chronological' | 'unsorted',
-      roster: [] as { id: string; class: string; sailNumber: string; name?: string }[],
       lapsPresentOnSheet: isMultilap,
       timeFormat: formData.timeFormat,
+      scanMode: 'handicap',
       scanStrategy: formData.scanStrategy,
       ...(specialInstructions ? { specialInstructions } : {}),
+      ...(formData.debug ? { debug: true } : {}),
     };
   }
 }

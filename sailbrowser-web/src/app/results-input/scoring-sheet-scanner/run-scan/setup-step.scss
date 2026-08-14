@@ -38,3 +38,21 @@
    align-items: flex-start;
    gap: 0.25rem;
 }
+
+.lr-hint {
+   font-size: 0.875rem;
+   color: var(--mat-sys-on-surface-variant);
+   margin: 0;
+   line-height: 1.4;
+}
+
+.debug-hint {
+   font-size: 0.75rem;
+   color: var(--mat-sys-on-surface-variant);
+   margin: -0.5rem 0 0;
+   line-height: 1.35;
+
+   code {
+      font-size: 0.7rem;
+   }
+}

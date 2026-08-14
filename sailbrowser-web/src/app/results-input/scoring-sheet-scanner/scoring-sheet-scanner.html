@@ -8,7 +8,7 @@
   [orientation]="isMobile() ? 'vertical' : 'horizontal'"
   (selectionChange)="onStepChange($event)">
 
-  <mat-step [completed]="!!raceSelection.selectedRaceId()">
+  <mat-step [completed]="raceSelection.selectedRaceIds().length > 0">
     <ng-template matStepLabel>Race</ng-template>
     <div class="step-container">
       <app-race-step />
@@ -22,7 +22,7 @@
           </div>
         } @else {
           <button matButton="filled" type="button" matStepperNext
-            [disabled]="!raceSelection.selectedRaceId() || scanRun.storedScan.isLoading()"
+            [disabled]="raceSelection.selectedRaceIds().length === 0 || scanRun.storedScan.isLoading()"
             style="margin-left:auto;">Next</button>
         }
       </div>

@@ -30,6 +30,10 @@ export interface ScannedResultRow {
   competitorName?: ScannedValue<string>;
   time?: ScannedValue<string>;
   laps?: ScannedValue<number>;
+  /** Level-rating: assigned race for this sheet row. */
+  raceId?: string;
+  /** Level-rating: finish / in-class position from the sheet. */
+  position?: ScannedValue<number>;
   status?: string;
   overallRowConfidence: string;
   matchedCompetitorId?: string;
@@ -106,18 +110,22 @@ export function applyClassAliasesToRow(row: ScannedResultRow): ScannedResultRow 
 
 /**
  * Applies the auto-accept rules shared by the live scan run and the stored-scan
- * read: a row is pre-accepted only when its overall, sail-number, and time
- * confidences are all HIGH. Pure; safe to reuse across services.
+ * read. Handicap: overall + sail + time HIGH. Level-rating: overall + sail +
+ * position HIGH (when position is present). Pure; safe to reuse across services.
  */
 export function applyAutoAccept(response: ScanResponse): ScanResponse {
   const { metrics, ...scanPayload } = response;
   const scannedResults = scanPayload.scannedResults.map(row => {
     const withAliases = applyClassAliasesToRow(row);
+    const isLevelRating = withAliases.position != null || !!withAliases.raceId;
+    const resultFieldOk = isLevelRating
+      ? withAliases.position?.confidence === 'HIGH'
+      : withAliases.time?.confidence === 'HIGH';
     return {
       ...withAliases,
       accepted: withAliases.overallRowConfidence === 'HIGH' &&
         withAliases.sailNumber?.confidence === 'HIGH' &&
-        withAliases.time?.confidence === 'HIGH',
+        resultFieldOk,
     };
   });
   return { ...scanPayload, scannedResults, ...(metrics ? { metrics } : {}) };
@@ -130,4 +138,5 @@ export interface ScannerContextForm {
   defaultLaps: FormControl<number>;
   scanStrategy: FormControl<ScanStrategy>;
   specialInstructions: FormControl<string>;
+  debug: FormControl<boolean>;
 }

@@ -1,13 +1,15 @@
 import test from "node:test";
 import * as assert from "node:assert/strict";
-import { buildPrompt } from "./prompt-builder.js";
+import { buildLevelRatingPrompt, buildPrompt } from "./prompt-builder.js";
 import type { ScannerContext } from "../ai-scan-model.js";
 
 const baseContext: ScannerContext = {
-  targetRaces: ["race-1"],
+  races: [{
+    id: "race-1",
+    entries: [{ id: "comp-1", class: "ILCA 7", sailNumber: "12345", name: "Sam" }],
+  }],
   defaultLaps: 3,
   listOrder: "chronological",
-  roster: [{ id: "comp-1", class: "ILCA 7", sailNumber: "12345", name: "Sam" }],
 };
 
 test("buildPrompt includes target race and roster details", () => {
@@ -126,4 +128,64 @@ test("buildPrompt omits SPECIAL INSTRUCTIONS when specialInstructions is empty o
     buildPrompt({ ...baseContext, specialInstructions: "   " }, "race-1"),
     /# 4\. SPECIAL INSTRUCTIONS/,
   );
+});
+
+const levelRatingContext: ScannerContext = {
+  races: [
+    {
+      id: "race-a",
+      seriesName: "Spring",
+      raceNumber: 1,
+      entries: [{ id: "c1", class: "ILCA 7", sailNumber: "12345", name: "Sam" }],
+    },
+    {
+      id: "race-b",
+      seriesName: "Spring",
+      raceNumber: 2,
+      entries: [{ id: "c2", class: "ILCA 6", sailNumber: "67890", name: "Alex" }],
+    },
+  ],
+  listOrder: "unsorted",
+  scanMode: "levelRating",
+};
+
+test("buildLevelRatingPrompt includes races, per-race lists, digit inference, and arrow swaps", () => {
+  const prompt = buildLevelRatingPrompt(levelRatingContext);
+  assert.match(prompt, /LEVEL RATING/i);
+  assert.match(prompt, /MULTIPLE races/i);
+  assert.match(prompt, /race-a/);
+  assert.match(prompt, /race-b/);
+  assert.match(prompt, /ILCA 7/);
+  assert.match(prompt, /ILCA 6/);
+  assert.match(prompt, /FINISH ORDER/i);
+  assert.match(prompt, /trailing digits/i);
+  assert.match(prompt, /Infer N/i);
+  assert.match(prompt, /Linked arrows/i);
+  assert.match(prompt, /position\.value/i);
+});
+
+test("buildLevelRatingPrompt uses single-race wording when only one target race", () => {
+  const prompt = buildLevelRatingPrompt({
+    races: [{
+      id: "race-a",
+      seriesName: "Spring",
+      raceNumber: 1,
+      entries: [{ id: "c1", class: "ILCA 7", sailNumber: "12345", name: "Sam" }],
+    }],
+    listOrder: "unsorted",
+    scanMode: "levelRating",
+  });
+  assert.match(prompt, /single race/i);
+  assert.doesNotMatch(prompt, /MULTIPLE races/i);
+  assert.match(prompt, /race-a/);
+  assert.match(prompt, /ILCA 7/);
+});
+
+test("buildLevelRatingPrompt appends SPECIAL INSTRUCTIONS as section 5", () => {
+  const prompt = buildLevelRatingPrompt({
+    ...levelRatingContext,
+    specialInstructions: "Ignore margin doodles",
+  });
+  assert.match(prompt, /# 5\. SPECIAL INSTRUCTIONS/);
+  assert.match(prompt, /Ignore margin doodles/);
 });
