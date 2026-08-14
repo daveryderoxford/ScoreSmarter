@@ -32,7 +32,12 @@ export interface ScannedResultRow {
   laps?: ScannedValue<number>;
   /** Level-rating: assigned race for this sheet row. */
   raceId?: string;
-  /** Level-rating: finish / in-class position from the sheet. */
+  /**
+   * Level-rating: post-arrow-swap order index. Present only when a linked-arrow
+   * swap applies to this row (the swap marker). Ranking uses this when set.
+   */
+  swappedRowIndex?: number;
+  /** Level-rating: finish / in-class position assigned in code after the scan. */
   position?: ScannedValue<number>;
   status?: string;
   overallRowConfidence: string;
@@ -108,23 +113,77 @@ export function applyClassAliasesToRow(row: ScannedResultRow): ScannedResultRow 
   };
 }
 
+const NON_FINISHER_STATUSES = new Set([
+  'DNC',
+  'DNS',
+  'DNF',
+  'RET',
+  'OCS',
+  'BFD',
+  'UFD',
+  'DSQ',
+  'DNE',
+  'NSC',
+  'NOT FINISHED',
+  'OOD',
+  'DGM',
+  'STRUCK_THROUGH',
+]);
+
+function isLevelRatingFinisher(status: string | undefined): boolean {
+  const code = (status ?? 'OK').trim().toUpperCase();
+  if (!code || code === 'OK') return true;
+  return !NON_FINISHER_STATUSES.has(code);
+}
+
+function effectiveOrderIndex(row: ScannedResultRow): number {
+  return row.swappedRowIndex ?? row.rowIndex;
+}
+
+/**
+ * Assigns finish places within each raceId from sheet order after arrow swaps.
+ * Non-finishers are skipped and do not consume a place number.
+ */
+export function assignLevelRatingPositions(rows: ScannedResultRow[]): ScannedResultRow[] {
+  if (!rows.some(row => !!row.raceId)) return rows;
+
+  const next = rows.map(row => ({ ...row }));
+  const finishersByRace = new Map<string, ScannedResultRow[]>();
+
+  for (const row of next) {
+    if (!row.raceId || !isLevelRatingFinisher(row.status)) continue;
+    const group = finishersByRace.get(row.raceId);
+    if (group) group.push(row);
+    else finishersByRace.set(row.raceId, [row]);
+  }
+
+  for (const group of finishersByRace.values()) {
+    group.sort((a, b) => effectiveOrderIndex(a) - effectiveOrderIndex(b));
+    group.forEach((row, i) => {
+      row.position = { value: i + 1, confidence: 'HIGH' };
+    });
+  }
+
+  return next;
+}
+
 /**
  * Applies the auto-accept rules shared by the live scan run and the stored-scan
- * read. Handicap: overall + sail + time HIGH. Level-rating: overall + sail +
- * position HIGH (when position is present). Pure; safe to reuse across services.
+ * read. Handicap: overall + sail + time HIGH. Level-rating: overall + sail HIGH
+ * with a raceId (position is assigned in code). Pure; safe to reuse across services.
  */
 export function applyAutoAccept(response: ScanResponse): ScanResponse {
   const { metrics, ...scanPayload } = response;
-  const scannedResults = scanPayload.scannedResults.map(row => {
-    const withAliases = applyClassAliasesToRow(row);
-    const isLevelRating = withAliases.position != null || !!withAliases.raceId;
+  const withAliases = scanPayload.scannedResults.map(applyClassAliasesToRow);
+  const scannedResults = assignLevelRatingPositions(withAliases).map(row => {
+    const isLevelRating = !!row.raceId;
     const resultFieldOk = isLevelRating
-      ? withAliases.position?.confidence === 'HIGH'
-      : withAliases.time?.confidence === 'HIGH';
+      ? true
+      : row.time?.confidence === 'HIGH';
     return {
-      ...withAliases,
-      accepted: withAliases.overallRowConfidence === 'HIGH' &&
-        withAliases.sailNumber?.confidence === 'HIGH' &&
+      ...row,
+      accepted: row.overallRowConfidence === 'HIGH' &&
+        row.sailNumber?.confidence === 'HIGH' &&
         resultFieldOk,
     };
   });

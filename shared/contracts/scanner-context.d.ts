@@ -25,6 +25,8 @@ export interface ScannerRace {
   seriesName?: string;
   raceNumber?: number;
   scheduledStartIso?: string;
+  /** Club fleet class/name for this race (BoatClass → boatClassId, otherwise fleet name). */
+  fleetClassName?: string;
   entries: ScannerRosterEntry[];
 }
 

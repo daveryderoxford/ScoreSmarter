@@ -27,8 +27,8 @@ test("buildPrompt uses structured ROW / COLUMN sections with co-located context"
   assert.match(prompt, /## Class \/ sail number/);
   assert.match(prompt, /## Time/);
   assert.match(prompt, /## Laps/);
-  assert.match(prompt, /## Class \/ sail number[\s\S]*CLASS ALIASES maps sheet text/);
-  assert.match(prompt, /## Class \/ sail number[\s\S]*ENTRY LIST/);
+  assert.match(prompt, /## Class \/ sail number[\s\S]*CLASS_ALIASES maps sheet text/);
+  assert.match(prompt, /## Class \/ sail number[\s\S]*ENTRY_LIST/);
 });
 
 test("buildPrompt includes default class aliases when client sends empty object", () => {
@@ -39,9 +39,8 @@ test("buildPrompt includes default class aliases when client sends empty object"
 
 test("buildPrompt requires boatClass.value to be the club class from aliases", () => {
   const prompt = buildPrompt(baseContext, "race-1");
-  assert.match(prompt, /Always set boatClass\.value to the club class name/i);
-  assert.match(prompt, /Never put sheet abbreviations[\s\S]*in boatClass\.value when an alias exists/i);
-  assert.match(prompt, /put the sheet text in boatClass\.alternatives/i);
+  assert.match(prompt, /always set boatClass\.value to the CLUB_CLASS_NAME/i);
+  assert.match(prompt, /NEVER put sheet text[\s\S]*in boatClass\.value when a CLASS_ALIASES matches/i);
   assert.match(prompt, /Radial \/ Laser R \/ LR → ILCA 6/i);
   assert.match(prompt, /Laser \/ L → ILCA 7/i);
 });
@@ -136,12 +135,14 @@ const levelRatingContext: ScannerContext = {
       id: "race-a",
       seriesName: "Spring",
       raceNumber: 1,
+      fleetClassName: "ILCA 7",
       entries: [{ id: "c1", class: "ILCA 7", sailNumber: "12345", name: "Sam" }],
     },
     {
       id: "race-b",
       seriesName: "Spring",
       raceNumber: 2,
+      fleetClassName: "ILCA 6",
       entries: [{ id: "c2", class: "ILCA 6", sailNumber: "67890", name: "Alex" }],
     },
   ],
@@ -149,19 +150,30 @@ const levelRatingContext: ScannerContext = {
   scanMode: "levelRating",
 };
 
-test("buildLevelRatingPrompt includes races, per-race lists, digit inference, and arrow swaps", () => {
+test("buildLevelRatingPrompt slims races and flattens entries with raceId", () => {
   const prompt = buildLevelRatingPrompt(levelRatingContext);
   assert.match(prompt, /LEVEL RATING/i);
   assert.match(prompt, /MULTIPLE races/i);
-  assert.match(prompt, /race-a/);
-  assert.match(prompt, /race-b/);
-  assert.match(prompt, /ILCA 7/);
-  assert.match(prompt, /ILCA 6/);
+  assert.match(prompt, /RACES: \[\{"id":"race-a","name":"Spring R1","class":"ILCA 7"\}/);
+  assert.match(prompt, /"id":"race-b","name":"Spring R2","class":"ILCA 6"/);
+  assert.match(prompt, /"raceId":"race-a","id":"c1"/);
+  assert.match(prompt, /"raceId":"race-b","id":"c2"/);
+  assert.doesNotMatch(prompt, /scheduledStart/);
+  assert.doesNotMatch(prompt, /ENTRY_LIST: \[\{"id":"c1"/);
+});
+
+test("buildLevelRatingPrompt requires competitor then raceId and swap-only swappedRowIndex", () => {
+  const prompt = buildLevelRatingPrompt(levelRatingContext);
+  assert.match(prompt, /Assign matchedCompetitorId first/i);
+  assert.match(prompt, /Assign raceId second/i);
+  assert.match(prompt, /copy that entry's raceId/i);
+  assert.match(prompt, /match the row's class[\s\S]*RACES\[\]\.class/i);
+  assert.match(prompt, /Omit swappedRowIndex when there is no arrow/i);
+  assert.match(prompt, /Do not assign position/i);
+  assert.doesNotMatch(prompt, /position\.value/i);
   assert.match(prompt, /FINISH ORDER/i);
   assert.match(prompt, /trailing digits/i);
-  assert.match(prompt, /Infer N/i);
   assert.match(prompt, /Linked arrows/i);
-  assert.match(prompt, /position\.value/i);
 });
 
 test("buildLevelRatingPrompt uses single-race wording when only one target race", () => {
@@ -170,6 +182,7 @@ test("buildLevelRatingPrompt uses single-race wording when only one target race"
       id: "race-a",
       seriesName: "Spring",
       raceNumber: 1,
+      fleetClassName: "ILCA 7",
       entries: [{ id: "c1", class: "ILCA 7", sailNumber: "12345", name: "Sam" }],
     }],
     listOrder: "unsorted",
@@ -177,8 +190,11 @@ test("buildLevelRatingPrompt uses single-race wording when only one target race"
   });
   assert.match(prompt, /single race/i);
   assert.doesNotMatch(prompt, /MULTIPLE races/i);
-  assert.match(prompt, /race-a/);
+  assert.match(prompt, /Spring R1/);
   assert.match(prompt, /ILCA 7/);
+  assert.match(prompt, /Assign matchedCompetitorId first/i);
+  assert.match(prompt, /set raceId to "race-a"/i);
+  assert.doesNotMatch(prompt, /position\.value/i);
 });
 
 test("buildLevelRatingPrompt appends SPECIAL INSTRUCTIONS as section 5", () => {

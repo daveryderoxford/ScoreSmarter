@@ -12,12 +12,31 @@ function entriesForRace(ctx: ScannerContext, raceId: string): string {
   return entries.length > 0 ? JSON.stringify(entries) : "No entry list provided";
 }
 
-function formatRaceLabel(r: ScannerRace): string {
-  const parts = [`id=${r.id}`];
-  if (r.seriesName) parts.push(`series=${r.seriesName}`);
-  if (typeof r.raceNumber === "number") parts.push(`raceNumber=${r.raceNumber}`);
-  if (r.scheduledStartIso) parts.push(`scheduledStart=${r.scheduledStartIso}`);
-  return parts.join(", ");
+function raceDisplayName(r: ScannerRace): string {
+  if (r.seriesName && typeof r.raceNumber === "number") return `${r.seriesName} R${r.raceNumber}`;
+  if (r.seriesName) return r.seriesName;
+  return r.id;
+}
+
+function racesJson(races: ScannerRace[]): string {
+  return JSON.stringify(races.map((r) => ({
+    id: r.id,
+    name: raceDisplayName(r),
+    class: r.fleetClassName ?? "",
+  })));
+}
+
+function flatEntryListJson(races: ScannerRace[]): string {
+  const entries = races.flatMap((r) =>
+    (r.entries ?? []).map((e) => ({
+      raceId: r.id,
+      id: e.id,
+      class: e.class,
+      sailNumber: e.sailNumber,
+      ...(e.name ? { name: e.name } : {}),
+    })),
+  );
+  return entries.length > 0 ? JSON.stringify(entries) : "No entry list provided";
 }
 
 export function buildPrompt(ctx: ScannerContext, raceId: string): string {
@@ -134,7 +153,8 @@ ${instructions}
 
 /**
  * Level-rating finish-order sheet prompt.
- * Uses `races[]` with per-race `entries`. Wording adapts for one vs many races.
+ * Races are slim (id, name, fleet class). Entries are a flat list with raceId.
+ * The model matches competitor then race; finish place is assigned in code.
  */
 export function buildLevelRatingPrompt(ctx: ScannerContext): string {
   const aliasesStr = JSON.stringify(mergeClassAliases(ctx.classAliases));
@@ -142,40 +162,16 @@ export function buildLevelRatingPrompt(ctx: ScannerContext): string {
   const singleRace = races.length <= 1;
   const soleRace = races[0];
   const targetRacesStr = JSON.stringify(races.map((r) => r.id));
+  const racesSection = `RACES: ${racesJson(races)}
+ENTRY_LIST: ${flatEntryListJson(races)}`;
 
-  let racesSection: string;
-  let intro: string;
-  let raceAssignmentRules: string;
-  let positionRules: string;
-  let entryListGuidance: string;
+  const intro = singleRace
+    ? `You are reading a handwritten LEVEL RATING sailing results sheet for a single race.`
+    : `You are reading a handwritten LEVEL RATING sailing results sheet that may cover MULTIPLE races.`;
 
-  if (singleRace) {
-    racesSection = soleRace
-      ? `Race: ${formatRaceLabel(soleRace)}\nENTRY_LIST: ${
-        soleRace.entries.length > 0 ? JSON.stringify(soleRace.entries) : "No entry list provided"
-      }`
-      : "ENTRY_LIST: No entry list provided";
-    intro = `You are reading a handwritten LEVEL RATING sailing results sheet for a single race.`;
-    raceAssignmentRules = `- Set raceId to ${soleRace ? JSON.stringify(soleRace.id) : "the target race id"}.`;
-    positionRules = `- Set position.value to the finishing place (integer, 1 = first).
-- Derive places from sheet finish order AFTER applying linked-arrow swaps.
-- Status codes (DNS, RET, OCS, BFD, DNF, DSQ, etc.): set status to that code; still emit the row; set position.value only if a place is clearly written, otherwise omit position or use MANUAL_CHECK.`;
-    entryListGuidance = `- Use ENTRY_LIST to set matchedCompetitorId and correct messy handwriting; when corrected from ENTRY_LIST, use HIGH confidence.`;
-  } else {
-    const racesDetail = races.map((r) =>
-      `- ${formatRaceLabel(r)}\n  ENTRY_LIST: ${
-        r.entries.length > 0 ? JSON.stringify(r.entries) : "No entry list provided"
-      }`,
-    ).join("\n");
-    racesSection = `Match each sheet row to exactly one of these races using that race's ENTRY_LIST:\n${racesDetail || "- (no races provided)"}`;
-    intro = `You are reading a handwritten LEVEL RATING sailing results sheet that may cover MULTIPLE races.`;
-    raceAssignmentRules = `- Set raceId to one of the target race ids above.
-- Choose the race whose ENTRY_LIST contains the matched competitor (class + sail). If ambiguous, set overallRowConfidence to MANUAL_CHECK and prefer the race with the strongest unique sail match.`;
-    positionRules = `- Set position.value to the finishing place for that competitor in their race (integer, 1 = first).
-- Derive places from sheet finish order AFTER applying linked-arrow swaps, counting separately within each raceId.
-- Status codes (DNS, RET, OCS, BFD, DNF, DSQ, etc.): set status to that code; still emit the row; set position.value only if a place is clearly written, otherwise omit position or use MANUAL_CHECK.`;
-    entryListGuidance = `- Use the matching race's ENTRY_LIST to set matchedCompetitorId and correct messy handwriting; when corrected from ENTRY_LIST, use HIGH confidence.`;
-  }
+  const unmatchedRaceRule = singleRace
+    ? `- If not matched: set raceId to ${soleRace ? JSON.stringify(soleRace.id) : "the target race id"} (the only race in this scan).`
+    : `- If not matched: match the row's class (after CLASS_ALIASES) to a RACES[].class (series fleet class name). If more than one race shares that class, set overallRowConfidence to MANUAL_CHECK.`;
 
   return `
 ${intro}
@@ -190,7 +186,7 @@ ${racesSection}
 - The sheet lists competitors in FINISH ORDER (top to bottom)${singleRace ? "" : ", not grouped by race"}.
 - Emit EVERY data row present.
 - Crossed-out rows: ignore struck-through / heavily scribbled rows, or emit status STRUCK_THROUGH with FAILED confidence.
-- Linked arrows between rows mean those competitors' finish order is SWAPPED relative to their written vertical order. Apply swaps when assigning positions.
+- Linked arrows between rows mean those competitors' finish order is SWAPPED relative to their written vertical order.
 - Row integrity: extract strictly row-by-row. Never shift class/sail vertically between rows.
 
 # 3. COLUMN DEFINITIONS
@@ -198,6 +194,7 @@ ${racesSection}
 ## Row index
 - First column is a typewritten integer row index.
 - Copy that number into rowIndex for each emitted row.
+- Linked-arrow swaps: ONLY when a linked arrow applies to this row, set swappedRowIndex to the post-swap order index (same integer scale as rowIndex). Omit swappedRowIndex when there is no arrow. Presence of swappedRowIndex marks a swap.
 
 ## Class / sail number
 - Read class and sail number from the same row.
@@ -205,13 +202,17 @@ ${racesSection}
 - When sheet text matches a CLASS_ALIAS, always set boatClass.value to the CLUB_CLASS_NAME.
 -- Examples: Radial / Laser R / LR → ILCA 6; Laser / L → ILCA 7.
 - Sail numbers on the sheet may be the FULL sail number OR only the last N trailing digits. Infer N from how the race officer wrote sails on this sheet (consistency across rows) and from uniqueness against ENTRY_LIST sails. Match to ENTRY_LIST accordingly.
-${entryListGuidance}
 
-## Race assignment
-${raceAssignmentRules}
+## Competitor then race assignment
+Assign fields in this order:
+1. Assign matchedCompetitorId first — match class + sail to ENTRY_LIST (including trailing-digit inference). When corrected from ENTRY_LIST, use HIGH confidence. Omit matchedCompetitorId if no match.
+2. Assign raceId second:
+- If matched: copy that entry's raceId.
+${unmatchedRaceRule}
+Do not assign position. Finish place is computed later from raceId and row order.
 
-## Position (position-in-class / finish place)
-${positionRules}
+## Status
+- Status codes (DNS, RET, OCS, BFD, DNF, DSQ, etc.): set status to that code; still emit the row.
 
 ## Name (optional)
 - Read competitor name when present; omit if absent.
@@ -220,7 +221,7 @@ ${positionRules}
 - If unsure of a value, report alternatives.
 - Per-field and overallRowConfidence: HIGH | MANUAL_CHECK | FAILED | AMBIGUOUS.
 - HIGH: certain read, especially exact ENTRY LIST match.
-- MANUAL_CHECK: unclear handwriting,${singleRace ? "" : " ambiguous race assignment,"} or uncertain position after arrow swaps.
+- MANUAL_CHECK: unclear handwriting${singleRace ? "" : ", or ambiguous race assignment"}.
 - FAILED / AMBIGUOUS: not readable. Use FAILED for completely unreadable scribbles.
 - Large multi-row notes go in pageNotes, not competitor rows.
 ${specialInstructionsSection(ctx, 5)}`;

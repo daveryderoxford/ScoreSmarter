@@ -480,14 +480,7 @@ function levelRatingScanResultResponseSchema() {
             sailNumber: scannedFieldString,
             competitorName: scannedFieldString,
             raceId: { type: Type.STRING },
-            position: {
-              type: Type.OBJECT,
-              properties: {
-                value: { type: Type.NUMBER },
-                confidence: { type: Type.STRING },
-                alternatives: { type: Type.ARRAY, items: { type: Type.NUMBER } },
-              },
-            },
+            swappedRowIndex: { type: Type.INTEGER },
             status: {
               type: Type.STRING,
               description: "Standard sailing status codes, e.g. OK, RET, DNS, DNF, DSQ",
@@ -503,7 +496,6 @@ function levelRatingScanResultResponseSchema() {
             "boatClass",
             "sailNumber",
             "raceId",
-            "position",
             "status",
             "overallRowConfidence",
           ],

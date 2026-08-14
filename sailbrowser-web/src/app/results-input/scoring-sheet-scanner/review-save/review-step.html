@@ -39,7 +39,14 @@
 
     <ng-container matColumnDef="rowIndex">
       <th mat-header-cell *matHeaderCellDef>Row</th>
-      <td mat-cell *matCellDef="let vm">{{ vm.row.rowIndex }}</td>
+      <td mat-cell *matCellDef="let vm">
+        {{ vm.row.rowIndex }}
+        @if (vm.row.swappedRowIndex != null) {
+          <span class="swap-marker" [attr.title]="'Arrow swap to row ' + vm.row.swappedRowIndex">
+            → {{ vm.row.swappedRowIndex }}
+          </span>
+        }
+      </td>
     </ng-container>
 
     <ng-container matColumnDef="sailNumber">
@@ -165,7 +172,14 @@
 
     <ng-container matColumnDef="rowIndex">
       <th mat-header-cell *matHeaderCellDef>Row</th>
-      <td mat-cell *matCellDef="let vm">{{ vm.row.rowIndex }}</td>
+      <td mat-cell *matCellDef="let vm">
+        {{ vm.row.rowIndex }}
+        @if (vm.row.swappedRowIndex != null) {
+          <span class="swap-marker" [attr.title]="'Arrow swap to row ' + vm.row.swappedRowIndex">
+            → {{ vm.row.swappedRowIndex }}
+          </span>
+        }
+      </td>
     </ng-container>
 
     <ng-container matColumnDef="sailNumber">

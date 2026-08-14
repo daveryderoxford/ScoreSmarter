@@ -11,6 +11,7 @@ import {
   logScanError,
 } from "../ai-scan-model.js";
 import { mergeClassAliases } from "./class-aliases.js";
+import { fleetNameMapFromClubData } from "./fleet-class-name.js";
 import { normalizeScanStrategy, resolveStrategyExecution } from "./scan-strategy.js";
 import { resultsSheetStoragePath } from "../image-upload/image-storage.js";
 import { detailedHttpsError } from "../../shared/https-error.js";
@@ -132,14 +133,28 @@ async function getRaceCompetitors(
   return competitors;
 }
 
-async function loadRaceSummary(clubId: string, raceId: string): Promise<ScanRaceSummary> {
-  const summary: ScanRaceSummary = { raceId };
+interface RaceScanMetadata extends ScanRaceSummary {
+  fleetId?: string;
+}
+
+function toScanRaceSummary(meta: RaceScanMetadata): ScanRaceSummary {
+  return {
+    raceId: meta.raceId,
+    ...(meta.seriesName ? { seriesName: meta.seriesName } : {}),
+    ...(typeof meta.raceNumber === "number" ? { raceNumber: meta.raceNumber } : {}),
+    ...(meta.scheduledStart ? { scheduledStart: meta.scheduledStart } : {}),
+  };
+}
+
+async function loadRaceSummary(clubId: string, raceId: string): Promise<RaceScanMetadata> {
+  const summary: RaceScanMetadata = { raceId };
   try {
     const snap = await db().doc(`clubs/${clubId}/races/${raceId}`).get();
     if (!snap.exists) return summary;
     const data = snap.data() ?? {};
     if (typeof data["seriesName"] === "string") summary.seriesName = data["seriesName"];
     if (typeof data["index"] === "number") summary.raceNumber = data["index"];
+    if (typeof data["fleetId"] === "string" && data["fleetId"]) summary.fleetId = data["fleetId"];
     const scheduledStart = data["scheduledStart"];
     if (scheduledStart && typeof scheduledStart.toDate === "function") {
       summary.scheduledStart = scheduledStart;
@@ -148,6 +163,15 @@ async function loadRaceSummary(clubId: string, raceId: string): Promise<ScanRace
     // Race metadata is optional for metrics persistence.
   }
   return summary;
+}
+
+async function loadClubFleetNames(clubId: string): Promise<Map<string, string>> {
+  try {
+    const snap = await db().doc(`clubs/${clubId}`).get();
+    return fleetNameMapFromClubData(snap.data()?.["fleets"]);
+  } catch {
+    return new Map();
+  }
 }
 
 async function persistScanMetrics(
@@ -300,6 +324,7 @@ async function parseFromStoredImage(
       (id, i, arr) => arr.indexOf(id) === i,
     );
     const scanMode = scannerContext.scanMode === "levelRating" ? "levelRating" : "handicap";
+    const fleetNames = await loadClubFleetNames(clubId);
 
     const races = await Promise.all(
       targetRaceIds.map(async (id) => {
@@ -307,12 +332,14 @@ async function parseFromStoredImage(
           getRaceCompetitors(clubId, id, requestId),
           loadRaceSummary(clubId, id),
         ]);
+        const fleetClassName = summary.fleetId ? fleetNames.get(summary.fleetId) : undefined;
         return {
           id: summary.raceId,
           seriesName: summary.seriesName,
           raceNumber: summary.raceNumber,
           scheduledStartIso: summary.scheduledStart?.toDate?.()?.toISOString(),
           entries: comps,
+          ...(fleetClassName ? { fleetClassName } : {}),
         };
       }),
     );
@@ -348,6 +375,7 @@ async function parseFromStoredImage(
     logScan(requestId, "merge_scanner_context", "Merged Firestore races into scanner context", {
       raceIds: races.map((r) => r.id),
       entryCounts: Object.fromEntries(races.map((r) => [r.id, r.entries.length])),
+      fleetClassNames: Object.fromEntries(races.map((r) => [r.id, r.fleetClassName ?? ""])),
       scanMode,
       listOrder: mergedContext.listOrder,
       defaultHour: mergedContext.defaultHour,
@@ -421,7 +449,7 @@ async function parseFromStoredImage(
       requestId,
       buildScanMetricsDocument({
         clubId,
-        race: raceSummary,
+        race: toScanRaceSummary(raceSummary),
         requestId,
         uid,
         execution: executionMetrics,
