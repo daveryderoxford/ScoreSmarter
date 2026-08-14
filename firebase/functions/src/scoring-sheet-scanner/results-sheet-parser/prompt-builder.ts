@@ -201,11 +201,13 @@ ${racesSection}
 - CLASS_ALIASES maps sheet text → CLUB_CLASS_NAME: ${aliasesStr}
 - When sheet text matches a CLASS_ALIAS, always set boatClass.value to the CLUB_CLASS_NAME.
 -- Examples: Radial / Laser R / LR → ILCA 6; Laser / L → ILCA 7.
-- Sail numbers on the sheet may be the FULL sail number OR only the last N trailing digits. Infer N from how the race officer wrote sails on this sheet (consistency across rows) and from uniqueness against ENTRY_LIST sails. Match to ENTRY_LIST accordingly.
+- Sail numbers on the sheet may be the FULL sail number OR only the last N trailing digits. 
+--- Infer N from how the race officer wrote sails on this sheet (consistency across rows) and from uniqueness against ENTRY_LIST sails. 
+--- Match to ENTRY_LIST based on last N digits of sail number.
 
-## Competitor then race assignment
+## matchedCompetitorId and raceId assignment
 Assign fields in this order:
-1. Assign matchedCompetitorId first — match class + sail to ENTRY_LIST (including trailing-digit inference). When corrected from ENTRY_LIST, use HIGH confidence. Omit matchedCompetitorId if no match.
+1. Assign matchedCompetitorId first — match class + sail to ENTRY_LIST (including trailing-digit inference). When corrected from ENTRY_LIST, use HIGH confidence. Omit matchedCompetitorId if no match. 
 2. Assign raceId second:
 - If matched: copy that entry's raceId.
 ${unmatchedRaceRule}
