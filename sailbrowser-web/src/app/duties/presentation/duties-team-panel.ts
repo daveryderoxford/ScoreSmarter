@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, output } from '@angular/core';
+import { Component, inject, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChip } from '@angular/material/chips';
 import { MatListModule } from '@angular/material/list';
-import { AuthService } from 'app/auth/auth.service';
 import type { RaceDayDutyMember } from '@shared/race-day';
+import { AuthService } from 'app/auth/auth.service';
 import { DutiesService } from '../services/duties.service';
 
 @Component({
