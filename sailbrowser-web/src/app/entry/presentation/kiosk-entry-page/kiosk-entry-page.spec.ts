@@ -15,7 +15,7 @@ import { RaceCompetitorMutator } from 'app/results-input/services/race-competito
 import { EntryService } from '../../services/entry.service';
 import { AuthService } from 'app/auth/auth.service';
 import { KioskAuthService } from 'app/auth/services/kiosk-auth.service';
-import { KioskEntryPage, helmGridLayout } from './kiosk-entry-page';
+import { KioskEntryPage, DUTY_CHECKIN_RETURN_MS, helmGridLayout } from './kiosk-entry-page';
 
 const clubClasses: BoatClass[] = [
   { id: 'ILCA 7', name: 'ILCA 7', handicaps: [], isSinglehander: true },
@@ -204,6 +204,20 @@ describe('KioskEntryPage', () => {
     expect(page.showBack()).toBe(true);
     page.goBack();
     expect(page.view()).toBe('category');
+  });
+
+  it('returns to category after idle on duty check-in', () => {
+    vi.useFakeTimers();
+    const page = createPage();
+    page.showDutyCheckinView();
+    expect(page.view()).toBe('dutyCheckin');
+
+    vi.advanceTimersByTime(DUTY_CHECKIN_RETURN_MS - 1);
+    expect(page.view()).toBe('dutyCheckin');
+
+    vi.advanceTimersByTime(1);
+    expect(page.view()).toBe('category');
+    vi.useRealTimers();
   });
 
   it('hides duty check-in for other clubs', () => {

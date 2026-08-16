@@ -86,6 +86,9 @@ const HELM_GRID_ROW_GAP = 4;
 const HELM_GRID_COLUMN_WIDTH = 220;
 const HELM_GRID_COLUMN_GAP = 16;
 
+/** Auto-return from duty check-in to the main kiosk category screen. */
+export const DUTY_CHECKIN_RETURN_MS = 8_000;
+
 /** Column count that keeps names in vertical lists, adding columns only when rows overflow. */
 export function helmGridLayout(
   itemCount: number,
@@ -164,6 +167,8 @@ export class KioskEntryPage {
   readonly successMessage = signal('');
   readonly showDutyCheckin = computed(() => this.clubTenant.clubId === DUTY_REGISTER_CLUB_ID);
   private readonly entryResultCode = signal<ResultCode | undefined>(undefined);
+  /** Pause auto-return while the OOD confirm dialog is open. */
+  private readonly dutyCheckinReturnPaused = signal(false);
 
   readonly clubHelmForm = this.fb.nonNullable.group({
     helm: ['', Validators.required],
@@ -399,15 +404,20 @@ export class KioskEntryPage {
   }
 
   async onDutyConfirmed(member: RaceDayDutyMember): Promise<void> {
-    const enter = await this.dialogs.confirm(
-      'Enter as OOD?',
-      `Enter today's races as Officer of the Day for ${member.name}?`,
-    );
-    if (!enter) return;
-    this.entryResultCode.set('OOD');
-    this.category.set('member');
-    this.letterRange.set(letterRangeForSurname(surnameOf(member.name)));
-    this.view.set('memberHelm');
+    this.dutyCheckinReturnPaused.set(true);
+    try {
+      const enter = await this.dialogs.confirm(
+        'Enter as OOD?',
+        `Enter today's races as Officer of the Day for ${member.name}?`,
+      );
+      if (!enter) return;
+      this.entryResultCode.set('OOD');
+      this.category.set('member');
+      this.letterRange.set(letterRangeForSurname(surnameOf(member.name)));
+      this.view.set('memberHelm');
+    } finally {
+      this.dutyCheckinReturnPaused.set(false);
+    }
   }
 
   constructor() {
@@ -428,6 +438,16 @@ export class KioskEntryPage {
       if (this.visitorIsSinglehander()) {
         this.visitorForm.controls['crew'].setValue('', { emitEvent: false });
       }
+    });
+
+    effect((onCleanup) => {
+      if (this.view() !== 'dutyCheckin' || this.dutyCheckinReturnPaused()) return;
+      const timer = window.setTimeout(() => {
+        if (this.view() === 'dutyCheckin') {
+          this.view.set('category');
+        }
+      }, DUTY_CHECKIN_RETURN_MS);
+      onCleanup(() => window.clearTimeout(timer));
     });
 
     effect((onCleanup) => {
