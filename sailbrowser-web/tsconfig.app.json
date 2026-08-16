@@ -12,7 +12,8 @@
       "@testing/*": ["src/testing/*"],
       "@shared/scanner-context": ["../shared/contracts/scanner-context.d.ts"],
       "@shared/scan-metrics": ["../shared/contracts/scan-metrics.d.ts"],
-      "@shared/duty-member": ["../shared/contracts/duty-member.d.ts"]
+      "@shared/duty-member": ["../shared/contracts/duty-member.d.ts"],
+      "@shared/race-day": ["../shared/contracts/race-day.d.ts"]
     }
   },
   "include": [

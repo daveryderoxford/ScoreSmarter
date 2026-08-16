@@ -13,6 +13,7 @@ import { SeriesEntry } from '../../results-input/model/series-entry';
 import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
 import { Handicap } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
+import type { ResultCode } from 'app/scoring/model/result-code';
 import { SeriesEntryPartialUpdate } from 'app/results-input/services/series-entry-store';
 import { resolveHandicapsForSeries } from './entry-helpers';
 import {
@@ -38,6 +39,8 @@ export interface EntryDetails {
    * Optional: omitted/undefined is treated as no boat tags (`[]`).
    */
   tags?: string[];
+  /** Defaults to `NOT FINISHED` when omitted. */
+  resultCode?: ResultCode;
 }
 
 /**
@@ -115,7 +118,7 @@ export class EntryService {
         raceId: race.id,
         seriesId: race.seriesId,
         seriesEntryId,
-        resultCode: 'NOT FINISHED',
+        resultCode: details.resultCode ?? 'NOT FINISHED',
       };
 
       await this.raceResultsStore.addResult(competitor);

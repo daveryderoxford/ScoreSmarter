@@ -1,19 +1,31 @@
-import { computed, effect, Injectable, inject, signal, resource } from '@angular/core';
+import { computed, effect, Injectable, InjectionToken, inject, signal } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
+import { type DocumentReference, docData, setDoc } from '@angular/fire/firestore';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from '@angular/fire/functions';
-import { ClubTenant } from 'app/club-tenant';
-import type { DutyMember } from '@shared/duty-member';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { ClubTenant, FirestoreTenantService } from 'app/club-tenant';
+import type { DutyAttendanceStatus, RaceDay, RaceDayDutyMember } from '@shared/race-day';
+import { firestoreWrite } from 'app/shared/utils/with-timeout';
+import { type Observable, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 /** Island Barn (IBRSC) — duty register integration is club-specific. */
 export const DUTY_REGISTER_CLUB_ID = 'ibrsc';
 
-interface GetDutyTeamResponse {
-  duties: DutyMember[] | null;
-}
+/** Override in tests to avoid a live Firestore listener. */
+export const RACE_DAY_DOC_DATA = new InjectionToken<
+  (ref: DocumentReference<RaceDay>) => Observable<RaceDay | undefined>
+>('RACE_DAY_DOC_DATA');
 
-interface DutyLoadParams {
-  date?: string;
+/** Override in tests to avoid a live Firestore write. */
+export const RACE_DAY_SET_DOC = new InjectionToken<
+  (ref: DocumentReference<RaceDay>, data: Partial<RaceDay>) => Promise<void>
+>('RACE_DAY_SET_DOC');
+
+/** yyyy-mm-dd in Europe/London (matches ensureRaceDay when date omitted). */
+export function raceDayDateId(date?: string, now: Date = new Date()): string {
+  if (date !== undefined) return date;
+  return now.toLocaleDateString('en-CA', { timeZone: 'Europe/London' });
 }
 
 @Injectable({
@@ -22,98 +34,128 @@ interface DutyLoadParams {
 export class DutiesService {
   private readonly app = inject(FirebaseApp);
   private readonly clubTenant = inject(ClubTenant);
+  private readonly tenant = inject(FirestoreTenantService);
+  private readonly raceDayDocData =
+    inject(RACE_DAY_DOC_DATA, { optional: true }) ??
+    ((ref: DocumentReference<RaceDay>) => docData(ref));
+  private readonly raceDaySetDoc =
+    inject(RACE_DAY_SET_DOC, { optional: true }) ??
+    ((ref: DocumentReference<RaceDay>, data: Partial<RaceDay>) =>
+      firestoreWrite(setDoc(ref, data, { merge: true }), 'Updating duty status'));
 
-  /** `undefined` = today's duty team (omit date on the API). Set explicitly for testing. */
+  /** `undefined` = today. Set explicitly for testing. */
   private readonly requestedDate = signal<string | undefined>(undefined);
-  private readonly attendanceByAckKey = signal<ReadonlyMap<string, boolean>>(new Map());
-  private readonly _actionError = signal<string | null>(null);
-  private readonly _updatingAckKeys = signal<ReadonlySet<string>>(new Set());
+  private readonly ensuring = signal(false);
+  private readonly ensureError = signal<string | null>(null);
+  private readonly writeError = signal<string | null>(null);
+  /** Date for which ensure has been started or skipped (doc already present). */
+  private readonly ensureAttemptedFor = signal<string | null>(null);
 
-  private readonly dutiesResource = resource<DutyMember[], DutyLoadParams | null>({
-    params: () => {
-      if (this.clubTenant.clubId !== DUTY_REGISTER_CLUB_ID) return null;
-      return { date: this.requestedDate() };
-    },
-    loader: async ({ params }) => {
-      if (!params) return [];
-      return this.fetchDutyTeam(params.date);
-    },
-    defaultValue: [],
+  readonly raceDayDate = computed(() => {
+    if (this.clubTenant.clubId !== DUTY_REGISTER_CLUB_ID) return undefined;
+    return raceDayDateId(this.requestedDate());
   });
 
-  readonly duties = computed(() => {
-    const base = this.dutiesResource.value() ?? [];
-    const attendance = this.attendanceByAckKey();
-    if (attendance.size === 0) return base;
-    return base.map(member => {
-      const attending = attendance.get(member.key);
-      return attending !== undefined ? { ...member, attending } : member;
-    });
+  private readonly raceDayResource = rxResource<RaceDay | undefined, string | undefined>({
+    params: () => this.raceDayDate(),
+    stream: ({ params: date }) => {
+      if (!date) return of(undefined);
+      return this.raceDayDocData(this.tenant.docRef<RaceDay>('race-days', date));
+    },
   });
 
-  readonly loading = this.dutiesResource.isLoading;
+  readonly duties = computed((): RaceDayDutyMember[] =>
+    this.raceDayResource.value()?.dutyTeam ?? [],
+  );
+
+  readonly loading = computed(() => {
+    if (this.raceDayResource.value() !== undefined) return false;
+    if (this.ensuring()) return true;
+    // Ensure finished (or skipped) but Listen still hung — don't spin forever.
+    if (this.ensureAttemptedFor() === this.raceDayDate()) return false;
+    return this.raceDayResource.isLoading();
+  });
+
   readonly error = computed(() => {
-    const actionError = this._actionError();
-    if (actionError) return actionError;
-    const loadError = this.dutiesResource.error();
+    const writeError = this.writeError();
+    if (writeError) return writeError;
+    const ensureError = this.ensureError();
+    if (ensureError) return ensureError;
+    const loadError = this.raceDayResource.error();
     if (!loadError) return null;
     return this.errorMessage(loadError, 'Could not load duty team.');
   });
-  readonly updatingAckKeys = this._updatingAckKeys.asReadonly();
 
   constructor() {
     effect(() => {
-      this.dutiesResource.value();
-      this.attendanceByAckKey.set(new Map());
-      this._actionError.set(null);
+      const date = this.raceDayDate();
+      if (!date) return;
+      if (this.ensureAttemptedFor() === date || this.ensuring()) return;
+
+      // Let a synchronous cache/snapshot emission win before calling ensure.
+      queueMicrotask(() => {
+        if (this.raceDayDate() !== date) return;
+        if (this.ensureAttemptedFor() === date || this.ensuring()) return;
+        if (this.raceDayResource.value() !== undefined) {
+          this.ensureAttemptedFor.set(date);
+          return;
+        }
+        // Do not wait for Listen to finish — offline/blocked streams never leave loading.
+        void this.ensureMissing(date);
+      });
     });
   }
 
   /** Override the duty day (testing). Omit or pass `undefined` for today. */
   setRequestedDate(date?: string): void {
+    this.ensureError.set(null);
+    this.writeError.set(null);
+    this.ensureAttemptedFor.set(null);
     this.requestedDate.set(date);
   }
 
   reload(): void {
-    this._actionError.set(null);
-    this.dutiesResource.reload();
+    this.ensureError.set(null);
+    this.writeError.set(null);
+    this.ensureAttemptedFor.set(null);
+    this.raceDayResource.reload();
   }
 
-  async setAttending(member: DutyMember, attending: boolean): Promise<void> {
-    const ackKey = member.key;
-    this._updatingAckKeys.update(keys => new Set([...keys, ackKey]));
-    this._actionError.set(null);
-    this.attendanceByAckKey.update(map => new Map(map).set(ackKey, attending));
+  async setStatus(member: RaceDayDutyMember, status: DutyAttendanceStatus): Promise<boolean> {
+    const date = this.raceDayDate();
+    const current = this.raceDayResource.value();
+    if (!date || !current) return false;
+
+    this.writeError.set(null);
     try {
-      const fn = httpsCallable<{ key: string; attending: boolean }, { success: true }>(
-        this.functions(),
-        'setDutyAttendance',
+      const dutyTeam = current.dutyTeam.map(m =>
+        m.key === member.key ? { ...m, status } : m,
       );
-      await fn({ key: ackKey, attending });
+      await this.raceDaySetDoc(this.tenant.docRef<RaceDay>('race-days', date), { dutyTeam });
+      return true;
     } catch (err: unknown) {
-      console.error('DutiesService.setAttending: failed', err);
-      this.attendanceByAckKey.update(map => {
-        const next = new Map(map);
-        next.delete(ackKey);
-        return next;
-      });
-      this._actionError.set(this.errorMessage(err, 'Could not update duty attendance.'));
-    } finally {
-      this._updatingAckKeys.update(keys => {
-        const next = new Set(keys);
-        next.delete(ackKey);
-        return next;
-      });
+      console.error('DutiesService.setStatus: failed', err);
+      this.writeError.set(this.errorMessage(err, 'Could not update duty attendance.'));
+      return false;
     }
   }
 
-  private async fetchDutyTeam(date?: string): Promise<DutyMember[]> {
-    const fn = httpsCallable<{ date?: string }, GetDutyTeamResponse>(
-      this.functions(),
-      'getDutyTeamForDay',
-    );
-    const result = await fn(date ? { date } : {});
-    return result.data.duties ?? [];
+  private async ensureMissing(date: string): Promise<void> {
+    this.ensureAttemptedFor.set(date);
+    this.ensuring.set(true);
+    this.ensureError.set(null);
+    try {
+      const fn = httpsCallable<{ clubId: string; date: string }, { date: string; created: boolean }>(
+        this.functions(),
+        'ensureRaceDay',
+      );
+      await fn({ clubId: DUTY_REGISTER_CLUB_ID, date });
+    } catch (err: unknown) {
+      console.error('DutiesService.ensureMissing: failed', err);
+      this.ensureError.set(this.errorMessage(err, 'Could not load duty team.'));
+    } finally {
+      this.ensuring.set(false);
+    }
   }
 
   private functions() {

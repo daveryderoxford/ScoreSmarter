@@ -4,8 +4,9 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BoatsStore } from 'app/boats';
-import { ClubStore } from 'app/club-tenant';
+import { ClubStore, ClubTenant } from 'app/club-tenant';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
+import { DUTY_REGISTER_CLUB_ID, DutiesService } from 'app/duties';
 import { RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces } from 'app/results-input';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
@@ -82,7 +83,22 @@ function baseProviders(overrides: Record<string, unknown> = {}) {
     },
     {
       provide: ClubStore,
-      useValue: { club: () => ({ classes: clubClasses }) },
+      useValue: { club: () => ({ classes: clubClasses, supportedHandicapSchemes: [], tagDefinitions: [] }) },
+    },
+    {
+      provide: ClubTenant,
+      useValue: { clubId: (overrides['clubId'] as string) ?? DUTY_REGISTER_CLUB_ID },
+    },
+    {
+      provide: DutiesService,
+      useValue: {
+        duties: () => [],
+        loading: () => false,
+        error: () => null,
+        reload: vi.fn(),
+        setStatus: vi.fn(),
+        ...(overrides['dutiesService'] as object),
+      },
     },
     {
       provide: CurrentRaces,
@@ -177,6 +193,94 @@ describe('KioskEntryPage', () => {
     page.startClub();
     expect(page.view()).toBe('clubClass');
     expect(page.clubClasses()).toEqual(['420']);
+  });
+
+  it('opens duty check-in from category and back returns to category', () => {
+    const page = createPage();
+    expect(page.showDutyCheckin()).toBe(true);
+    page.showDutyCheckinView();
+    expect(page.view()).toBe('dutyCheckin');
+    expect(page.stepTitle()).toBe('Duty check-in');
+    expect(page.showBack()).toBe(true);
+    page.goBack();
+    expect(page.view()).toBe('category');
+  });
+
+  it('hides duty check-in for other clubs', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [KioskEntryPage],
+      providers: baseProviders({ clubId: 'test' }),
+    });
+    expect(createPage().showDutyCheckin()).toBe(false);
+  });
+
+  it.each(['not-attending', 'attending'] as const)(
+    'starts member helm step with surname range after confirm from %s',
+    async status => {
+      const dialogs = TestBed.inject(DialogsService);
+      vi.mocked(dialogs.confirm).mockResolvedValue(true);
+
+      const page = createPage();
+      await page.onDutyConfirmed({
+        key: 'ack-1',
+        name: 'Doug Clow',
+        role: 'duty race officer',
+        status,
+      });
+
+      expect(page.view()).toBe('memberHelm');
+      expect(page.category()).toBe('member');
+      expect(page.letterRange()).toBe('C-D');
+      expect(page.filteredMemberHelms()).toEqual([]);
+    },
+  );
+
+  it('submits OOD result code after duty confirm', async () => {
+    const dialogs = TestBed.inject(DialogsService);
+    vi.mocked(dialogs.confirm).mockResolvedValue(true);
+    const entry = TestBed.inject(EntryService);
+    vi.mocked(entry.enterRaces).mockResolvedValue(undefined);
+
+    const page = createPage();
+    await page.onDutyConfirmed({
+      key: 'ack-1',
+      name: 'Alice Smith',
+      role: 'duty race officer',
+      status: 'confirmed',
+    });
+    const boat = TestBed.inject(BoatsStore).boats()[0];
+    page.selectMemberHelm('Alice Smith');
+    page.selectMemberBoat(boat);
+    await page.submit();
+
+    expect(entry.enterRaces).toHaveBeenCalledWith(
+      expect.objectContaining({ resultCode: 'OOD', helm: 'Alice Smith' }),
+    );
+  });
+
+  it('navigates visitor flow to boat details then confirm, without register save', () => {
+    const page = createPage();
+    page.startVisitor();
+    expect(page.view()).toBe('visitorBoat');
+    expect(page.category()).toBe('visitor');
+    expect(page.stepTitle()).toBe('Visitor boat');
+
+    page.visitorForm.patchValue({
+      boatClass: 'ILCA 7',
+      sailNumber: '9999',
+      helm: 'Pat Visitor',
+    });
+    page.confirmVisitorBoat();
+
+    expect(page.view()).toBe('memberConfirm');
+    expect(page.selectedBoat()?.helm).toBe('Pat Visitor');
+    expect(page.selectedBoat()?.sailNumber).toBe('9999');
+    expect(page.selectedBoat()?.id.startsWith('new-')).toBe(true);
+    expect(page.selectedBoat()?.isClub).toBe(false);
+
+    page.goBack();
+    expect(page.view()).toBe('visitorBoat');
   });
 
   it('resets to category after start over', () => {

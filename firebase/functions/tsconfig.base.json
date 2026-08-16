@@ -21,6 +21,9 @@
       ],
       "@shared/duty-member": [
         "../../shared/contracts/duty-member.d.ts"
+      ],
+      "@shared/race-day": [
+        "../../shared/contracts/race-day.d.ts"
       ]
     },
     "rootDir": "src",
