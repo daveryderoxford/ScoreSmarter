@@ -16,7 +16,7 @@
       <span class="header-spacer"></span>
     }
     <h1 class="kiosk-title">{{ stepTitle() }}</h1>
-    @if (view() !== 'category' && view() !== 'success' && view() !== 'entries') {
+    @if (view() !== 'category' && view() !== 'success' && view() !== 'entries' && view() !== 'dutyCheckin') {
       <button matButton type="button" (click)="resetToCategory()">Return to start</button>
     } @else {
       <span class="header-spacer"></span>
@@ -30,14 +30,22 @@
           <button mat-flat-button type="button" class="category-btn category-btn-member" (click)="startMember()">
             Member's Boats
           </button>
-          <button mat-stroked-button type="button" class="category-btn category-btn-club" (click)="startClub()">
-            Club Boats
-          </button>
-          <button mat-stroked-button type="button" class="category-btn category-btn-visitor" (click)="startVisitor()">
-            Visitor boats
-          </button>
+          <div class="category-row">
+            <button mat-stroked-button type="button" class="category-btn" (click)="startClub()">
+              Club Boats
+            </button>
+            <button mat-stroked-button type="button" class="category-btn" (click)="startVisitor()">
+              Visitor entry
+            </button>
+          </div>
         </div>
-        <button mat-fab extended type="button" class="add-new-fab" (click)="showEntries()">
+        @if (showDutyCheckin()) {
+          <button mat-fab extended type="button" class="kiosk-fab duty-checkin-fab" (click)="showDutyCheckinView()">
+            <mat-icon>badge</mat-icon>
+            Duty Checkin
+          </button>
+        }
+        <button mat-fab extended type="button" class="kiosk-fab add-new-fab" (click)="showEntries()">
           <mat-icon>list</mat-icon>
           Entries
         </button>
@@ -46,6 +54,12 @@
       @case ('entries') {
         <div class="entries-panel">
           <app-entries-list-panel />
+        </div>
+      }
+
+      @case ('dutyCheckin') {
+        <div class="entries-panel">
+          <app-duties-team-panel (confirmed)="onDutyConfirmed($event)" />
         </div>
       }
 
@@ -82,7 +96,7 @@
             </div>
           }
         </div>
-        <button mat-fab extended type="button" class="add-new-fab" (click)="addNewHelm()">
+        <button mat-fab extended type="button" class="kiosk-fab add-new-fab" (click)="addNewHelm()">
           <mat-icon>add</mat-icon>
           Add new helm
         </button>
@@ -114,7 +128,7 @@
           mat-fab
           extended
           type="button"
-          class="add-new-fab"
+          class="kiosk-fab add-new-fab"
           (click)="addNewBoat(selectedHelm() ?? undefined)">
           <mat-icon>add</mat-icon>
           Add new boat
@@ -122,7 +136,7 @@
       }
 
       @case ('visitorBoat') {
-        <p class="instruction">Enter visitor boat details</p>
+        <p class="instruction">Enter boat details</p>
         <form [formGroup]="visitorForm" class="visitor-form kiosk-scroll">
           <app-boat-core-fields
             [form]="visitorForm"

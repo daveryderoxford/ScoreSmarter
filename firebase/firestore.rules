@@ -121,6 +121,35 @@ service cloud.firestore {
         && clubUserRoleUnchanged();
     }
 
+    function isDutyAttendanceStatus(status) {
+      return status in ['not-attending', 'attending', 'confirmed'];
+    }
+
+    // Only dutyTeam[].status may change; identity fields and length stay put.
+    function dutyTeamMemberStatusOnlyUpdate(before, after, i) {
+      return i >= before.size() || (
+        after[i].keys().hasOnly(['key', 'name', 'role', 'status'])
+        && before[i].key == after[i].key
+        && before[i].name == after[i].name
+        && before[i].role == after[i].role
+        && isDutyAttendanceStatus(after[i].status)
+        && dutyTeamMemberStatusOnlyUpdate(before, after, i + 1)
+      );
+    }
+
+    function isRaceDayStatusOnlyUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['dutyTeam'])
+        && request.resource.data.date == resource.data.date
+        && request.resource.data.dutyTeam is list
+        && resource.data.dutyTeam is list
+        && request.resource.data.dutyTeam.size() == resource.data.dutyTeam.size()
+        && dutyTeamMemberStatusOnlyUpdate(
+          resource.data.dutyTeam,
+          request.resource.data.dutyTeam,
+          0
+        );
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -197,6 +226,14 @@ service cloud.firestore {
       match /authorized_kiosks/{deviceId} {
         allow read: if isClubAdmin(clubId);
         allow write: if false;
+      }
+
+      // Duty roster: create/delete via Admin SDK (ensureRaceDay); clients may
+      // only change dutyTeam[].status when signed in.
+      match /race-days/{date} {
+        allow read: if true;
+        allow create, delete: if false;
+        allow update: if isAuthenticated() && isRaceDayStatusOnlyUpdate();
       }
     }
 

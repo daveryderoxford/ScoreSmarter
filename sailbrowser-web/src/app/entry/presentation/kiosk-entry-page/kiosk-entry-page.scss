@@ -137,32 +137,29 @@
 }
 
 .category-grid {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  flex: 1;
+  // Keep Club / Visitor clear of the fixed bottom FABs (Entries + Duty Checkin).
+  padding-bottom: calc(var(--kiosk-add-fab-height) + var(--kiosk-add-fab-inset) + 16px);
+}
+
+.category-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-areas:
-    'member member'
-    'club visitor';
   gap: 16px;
-  align-content: center;
-  flex: 1;
 }
 
 .category-btn {
   min-height: 120px;
+  width: 100%;
 }
 
 .category-btn-member {
-  grid-area: member;
-  justify-self: center;
+  align-self: center;
   width: calc((100% - 16px) / 2);
-}
-
-.category-btn-club {
-  grid-area: club;
-}
-
-.category-btn-visitor {
-  grid-area: visitor;
 }
 
 .header-spacer {
@@ -292,7 +289,7 @@
   flex-wrap: wrap;
 }
 
-.add-new-fab {
+.kiosk-fab {
   @include mat.fab-overrides((
     extended-container-height: var(--kiosk-add-fab-height),
     extended-label-text-size: calc(var(--mat-sys-title-medium-size) * 1.2),
@@ -302,13 +299,20 @@
   z-index: 10;
   width: auto;
   bottom: max(var(--kiosk-add-fab-inset), calc(env(safe-area-inset-bottom) + var(--kiosk-add-fab-inset)));
-  right: max(var(--kiosk-add-fab-inset), calc(env(safe-area-inset-right) + var(--kiosk-add-fab-inset)));
 
   .mat-icon {
     width: var(--kiosk-add-fab-icon-size);
     height: var(--kiosk-add-fab-icon-size);
     font-size: var(--kiosk-add-fab-icon-size);
   }
+}
+
+.add-new-fab {
+  right: max(var(--kiosk-add-fab-inset), calc(env(safe-area-inset-right) + var(--kiosk-add-fab-inset)));
+}
+
+.duty-checkin-fab {
+  left: max(var(--kiosk-add-fab-inset), calc(env(safe-area-inset-left) + var(--kiosk-add-fab-inset)));
 }
 
 .actions .spacer {

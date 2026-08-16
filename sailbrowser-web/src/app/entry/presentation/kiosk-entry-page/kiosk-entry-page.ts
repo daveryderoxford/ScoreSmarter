@@ -27,8 +27,11 @@ import {
 } from 'app/boats';
 import { BoatCoreFields } from 'app/boats/presentation/boat-form/boat-core-fields';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
-import { ClubStore } from 'app/club-tenant';
+import { ClubStore, ClubTenant } from 'app/club-tenant';
 import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
+import { DUTY_REGISTER_CLUB_ID } from 'app/duties';
+import { DutiesTeamPanel } from 'app/duties/presentation/duties-team-panel';
+import type { RaceDayDutyMember } from '@shared/race-day';
 import { RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces } from 'app/results-input';
 import { type Handicap } from 'app/scoring/model/handicap';
@@ -48,9 +51,11 @@ import {
   formatHelmSurnameLast,
   HELM_LETTER_RANGES,
   helmMatchesLetterRange,
+  letterRangeForSurname,
   type HelmLetterRangeId,
   surnameOf,
 } from '../../utils/helm-surname';
+import type { ResultCode } from 'app/scoring/model/result-code';
 import { EntriesListPanel } from '../entries-list-panel';
 import { KioskNewHelmDialog } from '../kiosk-new-helm-dialog';
 import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
@@ -67,6 +72,7 @@ type KioskView =
   | 'clubClass'
   | 'clubSail'
   | 'clubHelm'
+  | 'dutyCheckin'
   | 'success';
 
 function sortBoatsInGroup(a: Boat, b: Boat): number {
@@ -119,6 +125,7 @@ export function helmGridLayout(
     HelmNameAutocomplete,
     EntriesListPanel,
     BoatCoreFields,
+    DutiesTeamPanel,
   ],
 })
 export class KioskEntryPage {
@@ -126,6 +133,7 @@ export class KioskEntryPage {
   private readonly boatsStore = inject(BoatsStore);
   private readonly raceCalendar = inject(RaceCalendarStore);
   private readonly clubStore = inject(ClubStore);
+  private readonly clubTenant = inject(ClubTenant);
   private readonly currentRaces = inject(CurrentRaces);
   private readonly dialog = inject(MatDialog);
   private readonly dialogs = inject(DialogsService);
@@ -154,6 +162,8 @@ export class KioskEntryPage {
   readonly selectedClubClass = signal<string | null>(null);
   readonly busy = signal(false);
   readonly successMessage = signal('');
+  readonly showDutyCheckin = computed(() => this.clubTenant.clubId === DUTY_REGISTER_CLUB_ID);
+  private readonly entryResultCode = signal<ResultCode | undefined>(undefined);
 
   readonly clubHelmForm = this.fb.nonNullable.group({
     helm: ['', Validators.required],
@@ -371,6 +381,8 @@ export class KioskEntryPage {
         return this.selectedClubClass() ?? 'Select sail number';
       case 'clubHelm':
         return 'Helm and crew';
+      case 'dutyCheckin':
+        return 'Duty check-in';
       case 'success':
         return 'Done';
     }
@@ -380,6 +392,22 @@ export class KioskEntryPage {
 
   showEntries(): void {
     this.view.set('entries');
+  }
+
+  showDutyCheckinView(): void {
+    this.view.set('dutyCheckin');
+  }
+
+  async onDutyConfirmed(member: RaceDayDutyMember): Promise<void> {
+    const enter = await this.dialogs.confirm(
+      'Enter as OOD?',
+      `Enter today's races as Officer of the Day for ${member.name}?`,
+    );
+    if (!enter) return;
+    this.entryResultCode.set('OOD');
+    this.category.set('member');
+    this.letterRange.set(letterRangeForSurname(surnameOf(member.name)));
+    this.view.set('memberHelm');
   }
 
   constructor() {
@@ -525,6 +553,9 @@ export class KioskEntryPage {
       case 'entries':
         this.view.set('category');
         break;
+      case 'dutyCheckin':
+        this.view.set('category');
+        break;
       case 'memberHelm':
         this.resetToCategory();
         break;
@@ -562,6 +593,7 @@ export class KioskEntryPage {
     this.memberCrewControl.reset('');
     this.resetVisitorForm();
     this.successMessage.set('');
+    this.entryResultCode.set(undefined);
   }
 
   async addNewHelm(): Promise<void> {
@@ -691,6 +723,7 @@ export class KioskEntryPage {
       handicaps: activeSchemes.size > 0 ? activeHandicaps : undefined,
       personalHandicapBand: candidate.personalHandicapBand,
       tags: boat.tags,
+      resultCode: this.entryResultCode(),
     };
 
     const conflicts = this.entryService.findEntryConflicts(entryData);

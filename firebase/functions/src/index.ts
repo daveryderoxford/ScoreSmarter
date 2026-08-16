@@ -21,7 +21,10 @@ export { createNewTenant } from "./sys-admin/newTenant.js";
 export { assignRole } from "./sys-admin/roles.js";
 export { ensureUserData } from "./user/user.js";
 export { getForcast } from "./forecast/forecast.js";
-export { getDutyTeamForDay, setDutyAttendance } from "./duties/duty-register.js";
+export {
+  ensureRaceDay,
+} from "./duties/duty-register.js";
+export { raceDayDutyConfirmed } from "./duties/duty-race-day-trigger.js";
 export {
   cancelStaleFutureRacesWeekly,
 } from "./maintenance/weekly-maintenance.js";
