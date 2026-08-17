@@ -24,7 +24,7 @@
    </mat-form-field>
 
    <div fxLayout="row" fxLayoutAlign="space-between center">
-      <button [disabled]="signupForm.invalid || loading()" mat-flat-button type="submit" aria-label="Signup">Sign up</button>
+      <button [disabled]="signupForm.invalid || loading()" matButton="filled" type="submit" aria-label="Signup">Sign up</button>
       <a mat-button routerLink="/auth/login">Already have user name</a>
    </div>
 

@@ -64,6 +64,8 @@ import { SailNumberInput } from '../sail-number-input';
       </mat-form-field>
       }
 
+      <ng-content select="[boatExtraFields]" />
+
       <mat-form-field>
         <mat-label>Boat Name</mat-label>
         <input matInput formControlName="name" placeholder="eg Flying Fish">

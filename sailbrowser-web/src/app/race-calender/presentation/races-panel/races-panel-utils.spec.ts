@@ -73,12 +73,12 @@ describe('races-panel-utils', () => {
     expect(periodChipNeededForRace(tomorrow, now)).toBe('future');
   });
 
-  it('groups races by local day, sorting future days ascending and races within a day by start then index', () => {
+  it('groups races by local day, sorting future days ascending and races within a day by start, race of day, then series name', () => {
     const races = [
-      race({ id: 'today-r2', scheduledStart: new Date(2026, 3, 29, 11, 0), index: 2 }),
-      race({ id: 'today-r1', scheduledStart: new Date(2026, 3, 29, 11, 0), index: 1 }),
-      race({ id: 'tomorrow-1', scheduledStart: new Date(2026, 3, 30, 9, 0), index: 1 }),
-      race({ id: 'next-week', scheduledStart: new Date(2026, 4, 5, 10, 0), index: 1 }),
+      race({ id: 'today-r2', scheduledStart: new Date(2026, 3, 29, 11, 0), raceOfDay: 2 }),
+      race({ id: 'today-r1', scheduledStart: new Date(2026, 3, 29, 11, 0), raceOfDay: 1 }),
+      race({ id: 'tomorrow-1', scheduledStart: new Date(2026, 3, 30, 9, 0), raceOfDay: 1 }),
+      race({ id: 'next-week', scheduledStart: new Date(2026, 4, 5, 10, 0), raceOfDay: 1 }),
     ];
 
     const groups = groupRacesForPanel(races, 'future', now);
@@ -87,6 +87,19 @@ describe('races-panel-utils', () => {
     expect(ids).toEqual(['today-r1', 'today-r2', 'tomorrow-1', 'next-week']);
     expect(groups[0].races.length).toBe(2);
     expect(groups[0].races[0].id).toBe('today-r1');
+  });
+
+  it('orders same-start races by race of day, then series name alphabetically', () => {
+    const start = new Date(2026, 3, 29, 11, 0);
+    const races = [
+      race({ id: 'wednesday-2', seriesName: 'Wednesday', scheduledStart: start, raceOfDay: 2 }),
+      race({ id: 'zeta-1', seriesName: 'Zeta', scheduledStart: start, raceOfDay: 1 }),
+      race({ id: 'alpha-1', seriesName: 'Alpha', scheduledStart: start, raceOfDay: 1 }),
+      race({ id: 'earlier', seriesName: 'Zeta', scheduledStart: new Date(2026, 3, 29, 10, 0), raceOfDay: 1 }),
+    ];
+
+    const groups = groupRacesForPanel(races, null, now);
+    expect(groups[0].races.map(r => r.id)).toEqual(['earlier', 'alpha-1', 'zeta-1', 'wednesday-2']);
   });
 
   it('puts the most recent past day at the top when the past chip is active', () => {

@@ -297,6 +297,26 @@ describe('KioskEntryPage', () => {
     expect(page.view()).toBe('visitorBoat');
   });
 
+  it('passes visitor club through to enterRaces', async () => {
+    const entry = TestBed.inject(EntryService);
+    vi.mocked(entry.enterRaces).mockResolvedValue(undefined);
+
+    const page = createPage();
+    page.startVisitor();
+    page.visitorForm.patchValue({
+      boatClass: 'ILCA 7',
+      sailNumber: '9999',
+      helm: 'Pat Visitor',
+      club: 'HYC',
+    });
+    page.confirmVisitorBoat();
+    await page.submit();
+
+    expect(entry.enterRaces).toHaveBeenCalledWith(
+      expect.objectContaining({ helm: 'Pat Visitor', club: 'HYC' }),
+    );
+  });
+
   it('resets to category after start over', () => {
     const page = createPage();
     page.startMember();

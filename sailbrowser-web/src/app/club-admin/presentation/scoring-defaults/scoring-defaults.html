@@ -189,7 +189,7 @@
   </mat-tab-group>
 
   <div class="actions-footer">
-    <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid || form.pristine || clubStore.isLoading()">
+    <button matButton="filled" color="primary" (click)="save()" [disabled]="form.invalid || form.pristine || clubStore.isLoading()">
       <mat-icon>save</mat-icon>
       Save Configurations
     </button>

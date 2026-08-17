@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import type { Race } from 'app/race-calender';
+import { sortRaces, type Race } from 'app/race-calender';
 import { RaceCalendarStore } from '../../race-calender/services/full-race-calander';
 
 /** Manages a list of 'currect races'
@@ -28,11 +28,11 @@ export class CurrentRaces {
     return ids;
   });
 
-  /** Stable ordered list of today's races (time/index), no manual extras. */
+  /** Stable ordered list of today's races (date, start, race of day, series name). */
   readonly todaysRaces = computed(() => {
     return [...this.allRacesById().values()]
       .filter(isScheduledToday)
-      .sort(sortRacesByTimeThenIndex);
+      .sort(sortRaces);
   });
 
   /** Today's races (from calendar) plus any manual extras still present in `allRaces`. */
@@ -44,13 +44,13 @@ export class CurrentRaces {
       if (!racesById.has(id)) continue; // ignore stale ids
       selected.add(id);
     }
-    // Preserve deterministic order: today's races first, then manual extras by race time/index.
+    // Preserve deterministic order: today's races first, then manual extras by the shared race order.
     const orderedToday = this.todaysRaces().map(race => race.id);
     const manualExtras = [...selected]
       .filter(id => !todayIds.has(id))
       .map(id => racesById.get(id))
       .filter((race): race is Race => race != null)
-      .sort(sortRacesByTimeThenIndex)
+      .sort(sortRaces)
       .map(race => race.id);
 
     return [...orderedToday, ...manualExtras];
@@ -103,8 +103,4 @@ export class CurrentRaces {
 
 function isScheduledToday(race: Race): boolean {
   return new Date(race.scheduledStart).toDateString() === new Date().toDateString();
-}
-
-function sortRacesByTimeThenIndex(a: Race, b: Race): number {
-  return a.scheduledStart.getTime() - b.scheduledStart.getTime() || a.index - b.index;
 }

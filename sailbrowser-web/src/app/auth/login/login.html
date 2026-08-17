@@ -33,7 +33,7 @@
                      </mat-form-field>
 
                      <div fxLayout="row" fxLayoutAlign="center">
-                        <button mat-flat-button type="submit" [disabled]="loading()" aria-label="login">
+                        <button matButton="filled" type="submit" [disabled]="loading()" aria-label="login">
                            @if (loading()) {
                               <mat-spinner diameter="24" color="accent"></mat-spinner>
                            } @else {
@@ -56,9 +56,9 @@
 
             <span class="mat-title-medium">OR LOGIN USING</span>
 
-            <button mat-flat-button (click)="signInWith('Google')" [disabled]="loading()"
+            <button matButton="filled" (click)="signInWith('Google')" [disabled]="loading()"
                fxFlexAlign="stretch">GOOGLE</button>
-            <button mat-flat-button (click)="signInWith('Facebook')" [disabled]="loading()"
+            <button matButton="filled" (click)="signInWith('Facebook')" [disabled]="loading()"
                fxFlexAlign="stretch">FACEBOOK</button>
 
          </div>

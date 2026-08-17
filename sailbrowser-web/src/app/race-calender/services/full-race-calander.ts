@@ -121,7 +121,11 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
       const existingRaces = this.allRaces().filter(r => r.seriesId === seriesDetails.id);
 
       // Create temporary IDs for sorting purposes for new races
-      const newRacesWithIds = races.map((race, i) => ({ ...race, id: `new-${i}` })) as Race[];
+      const newRacesWithIds = races.map((race, i) => ({
+         ...race,
+         id: `new-${i}`,
+         seriesName: seriesDetails.name,
+      })) as Race[];
 
       const allRacesForSeries = [...existingRaces, ...newRacesWithIds].sort(sortRaces);
 

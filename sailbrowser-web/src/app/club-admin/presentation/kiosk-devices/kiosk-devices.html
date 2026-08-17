@@ -20,7 +20,7 @@
       <mat-label>Label (optional)</mat-label>
       <input matInput formControlName="label" placeholder="Clubhouse tablet" />
     </mat-form-field>
-    <button mat-flat-button type="submit" [disabled]="addForm.invalid || busy()">
+    <button matButton="filled" type="submit" [disabled]="addForm.invalid || busy()">
       Register tablet
     </button>
   </form>
