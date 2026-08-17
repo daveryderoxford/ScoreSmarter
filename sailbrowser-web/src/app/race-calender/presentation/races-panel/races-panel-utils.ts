@@ -1,5 +1,6 @@
 import type { Race } from '../../model/race';
 import type { RaceStatus } from '../../model/race-status';
+import { sortRaces } from '../../services/race-calendar-store-base';
 
 export type RacesPanelPeriod = 'past' | 'future' | null;
 
@@ -41,10 +42,6 @@ function dayHeading(d: Date): string {
     month: 'long',
     year: 'numeric',
   }).format(d);
-}
-
-export function sortRacesByTimeThenIndex(a: Race, b: Race): number {
-  return new Date(a.scheduledStart).getTime() - new Date(b.scheduledStart).getTime() || a.index - b.index;
 }
 
 function ordinal(n: number): string {
@@ -121,7 +118,7 @@ export function emptyMessagePeriodSuffix(
 export function groupRacesForPanel(races: readonly Race[], period: RacesPanelPeriod, now: Date): RaceDayGroup[] {
   const filtered = races
     .filter(race => isRaceVisibleForPeriodChip(race, period, now))
-    .sort(sortRacesByTimeThenIndex);
+    .sort(sortRaces);
   const byDay = new Map<string, Race[]>();
 
   for (const race of filtered) {

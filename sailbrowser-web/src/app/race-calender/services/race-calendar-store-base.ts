@@ -100,12 +100,11 @@ export function seriesSort(a: Series, b: Series): number {
   }
 }
 
+/** Date, scheduled start, race of day, then series name. `scheduledStart` covers date then time. */
 export function sortRaces(a: Race, b: Race): number {
-  const ret = a.scheduledStart.getTime() - b.scheduledStart.getTime();
-
-  if (ret === 0) {
-    return a.raceOfDay - b.raceOfDay;
-  } else {
-    return ret;
-  }
+  return (
+    new Date(a.scheduledStart).getTime() - new Date(b.scheduledStart).getTime() ||
+    (a.raceOfDay ?? 0) - (b.raceOfDay ?? 0) ||
+    (a.seriesName ?? '').localeCompare(b.seriesName ?? '')
+  );
 }

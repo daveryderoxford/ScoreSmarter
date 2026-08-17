@@ -111,17 +111,19 @@ describe('CurrentRaces', () => {
     expect(current.selectedRaces()).toHaveLength(2);
   });
 
-  it('lists only today’s races in todaysRaces, sorted by start time then index', () => {
+  it('lists only today’s races in todaysRaces, sorted by start, race of day, then series name', () => {
     fakeCalendar.setAllRaces([
-      raceFixture({ id: 'later', index: 1, scheduledStart: todayAt(14, 0) }),
-      raceFixture({ id: 'yesterday', index: 1, scheduledStart: yesterdayAt(10, 0) }),
-      raceFixture({ id: 'earlier', index: 2, scheduledStart: todayAt(10, 0) }),
-      raceFixture({ id: 'same-time-higher-index', index: 3, scheduledStart: todayAt(10, 0) }),
+      raceFixture({ id: 'later', scheduledStart: todayAt(14, 0) }),
+      raceFixture({ id: 'yesterday', scheduledStart: yesterdayAt(10, 0) }),
+      raceFixture({ id: 'zeta-1', seriesName: 'Zeta', scheduledStart: todayAt(10, 0), raceOfDay: 1 }),
+      raceFixture({ id: 'alpha-1', seriesName: 'Alpha', scheduledStart: todayAt(10, 0), raceOfDay: 1 }),
+      raceFixture({ id: 'alpha-2', seriesName: 'Alpha', scheduledStart: todayAt(10, 0), raceOfDay: 2 }),
     ]);
 
     expect(current.todaysRaces().map(r => r.id)).toEqual([
-      'earlier',
-      'same-time-higher-index',
+      'alpha-1',
+      'zeta-1',
+      'alpha-2',
       'later',
     ]);
   });
