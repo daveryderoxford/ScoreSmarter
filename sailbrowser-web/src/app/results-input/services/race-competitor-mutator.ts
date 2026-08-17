@@ -221,6 +221,7 @@ export class RaceCompetitorMutator {
       boatClass: input.boatClass,
       sailNumber: input.sailNumber,
       crew: input.crew,
+      club: input.club,
       handicaps: input.handicaps,
       personalHandicapBand: input.personalHandicapBand,
       tags: input.tags,

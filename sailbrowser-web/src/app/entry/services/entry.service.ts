@@ -39,8 +39,28 @@ export interface EntryDetails {
    * Optional: omitted/undefined is treated as no boat tags (`[]`).
    */
   tags?: string[];
+  /** Visiting helm's club. Set on create only; reuse does not overwrite. */
+  club?: string;
   /** Defaults to `NOT FINISHED` when omitted. */
   resultCode?: ResultCode;
+}
+
+/** Validated CSV import payload. Callers must not pass a plan that still has errors. */
+export interface SeriesEntryImportPlan {
+  errors: string[];
+  series: Array<{
+    seriesId: string;
+    races: Race[];
+    entries: Array<{
+      helm: string;
+      crew?: string;
+      club?: string;
+      boatClass: string;
+      sailNumber: string;
+      tags: string[];
+      handicaps: Handicap[];
+    }>;
+  }>;
 }
 
 /**
@@ -259,6 +279,7 @@ export class EntryService {
         seriesId: race.seriesId,
         helm: details.helm,
         crew: details.crew,
+        club: details.club,
         boatClass: details.boatClass,
         sailNumber: details.sailNumber,
         handicaps,
@@ -278,6 +299,40 @@ export class EntryService {
         );
       }
       throw err;
+    }
+  }
+
+  /**
+   * Creates series entries and race competitors for every race in each planned
+   * series. Callers must pass a plan with no validation errors.
+   * Does not write to the boat register.
+   */
+  async importEntries(plan: SeriesEntryImportPlan): Promise<void> {
+    if (plan.errors.length > 0) {
+      throw new ScoreSmarterError('Cannot import entries: the file has validation errors.');
+    }
+
+    for (const seriesPlan of plan.series) {
+      for (const entry of seriesPlan.entries) {
+        const seriesEntryId = await this.mutator.createSeriesEntry({
+          seriesId: seriesPlan.seriesId,
+          helm: entry.helm,
+          crew: entry.crew,
+          club: entry.club,
+          boatClass: entry.boatClass,
+          sailNumber: entry.sailNumber,
+          handicaps: entry.handicaps,
+          tags: entry.tags,
+        });
+        for (const race of seriesPlan.races) {
+          await this.raceResultsStore.addResult({
+            raceId: race.id,
+            seriesId: race.seriesId,
+            seriesEntryId,
+            resultCode: 'NOT FINISHED',
+          });
+        }
+      }
     }
   }
 }

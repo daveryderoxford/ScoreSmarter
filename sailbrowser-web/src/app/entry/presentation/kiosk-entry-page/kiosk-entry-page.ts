@@ -189,6 +189,7 @@ export class KioskEntryPage {
     crew: [''],
     personalHandicapBand: ['unknown' as PersonalHandicapBand | 'unknown'],
     tags: this.fb.nonNullable.control<string[]>([]),
+    club: [''],
   });
 
   private readonly visitorBoatClassValue = toSignal(
@@ -530,6 +531,7 @@ export class KioskEntryPage {
       crew: '',
       personalHandicapBand: 'unknown',
       tags: [],
+      club: '',
     });
     for (const scheme of this.visitorBoatSchemes()) {
       if (scheme === 'Personal') continue;
@@ -743,6 +745,9 @@ export class KioskEntryPage {
       handicaps: activeSchemes.size > 0 ? activeHandicaps : undefined,
       personalHandicapBand: candidate.personalHandicapBand,
       tags: boat.tags,
+      club: this.category() === 'visitor'
+        ? String(this.visitorForm.controls['club'].value ?? '').trim() || undefined
+        : undefined,
       resultCode: this.entryResultCode(),
     };
 

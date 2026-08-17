@@ -27,7 +27,7 @@
     @switch (view()) {
       @case ('category') {
         <div class="category-grid">
-          <button mat-flat-button type="button" class="category-btn category-btn-member" (click)="startMember()">
+          <button matButton="filled" type="button" class="category-btn category-btn-member" (click)="startMember()">
             Member's Boats
           </button>
           <div class="category-row">
@@ -141,12 +141,16 @@
           <app-boat-core-fields
             [form]="visitorForm"
             [boatLevelSchemes]="visitorBoatSchemes()"
-            [showCrew]="!visitorIsSinglehander()" />
+            [showCrew]="!visitorIsSinglehander()">
+            <mat-form-field boatExtraFields>
+              <mat-label>Club (optional)</mat-label>
+              <input matInput formControlName="club" autocomplete="organization" />
+            </mat-form-field>
+          </app-boat-core-fields>
         </form>
         <div class="actions">
           <button
-            mat-flat-button
-            color="primary"
+            matButton="filled"
             type="button"
             class="enter-btn"
             [disabled]="visitorForm.invalid"
@@ -176,7 +180,7 @@
         </div>
         <div class="actions">
           <button
-            mat-flat-button
+            matButton="filled"
             color="primary"
             type="button"
             class="enter-btn"
@@ -235,7 +239,7 @@
         </div>
         <div class="actions">
           <button
-            mat-flat-button
+            matButton="filled"
             color="primary"
             type="button"
             class="enter-btn"

@@ -1,4 +1,21 @@
-<app-toolbar title="Entries" />
+<app-toolbar title="Entries">
+  @if (auth.loggedIn()) {
+    <button
+      matIconButton
+      type="button"
+      [matMenuTriggerFor]="entriesMenu"
+      aria-label="Entries options"
+      title="Entries options">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #entriesMenu="matMenu">
+      <button mat-menu-item type="button" (click)="openImport()">
+        <mat-icon>upload</mat-icon>
+        <span>Import entries</span>
+      </button>
+    </mat-menu>
+  }
+</app-toolbar>
 
 <div class="content">
   <a matFab extended class="entry-button" [routerLink]="['/entry', 'enter']">
