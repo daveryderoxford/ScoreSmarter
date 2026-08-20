@@ -15,6 +15,7 @@ import {
   PhoneCaptureQrDialog,
   PhoneCaptureQrDialogResult,
 } from '../../capture/phone-capture-qr-dialog/phone-capture-qr-dialog';
+import { toScanInlineCapture } from '../../capture/resize-scan-image';
 import { ResultsSheetCaptureService } from '../../capture/services/results-sheet-capture.service';
 import { from, of } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
@@ -24,15 +25,6 @@ import { ScanSelectedRace } from '../select-race/race-selection.store';
 interface CameraCaptureResult {
   base64: string;
   preview: string;
-}
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error ?? new Error('Could not read file.'));
-    reader.readAsDataURL(file);
-  });
 }
 
 /**
@@ -116,13 +108,7 @@ export class SheetCaptureStore {
 
   async setFromFile(file: File): Promise<void> {
     this.dismissedStoredRaceSheet.set(true);
-    const dataUrl = await readFileAsDataUrl(file);
-    this.captureImage.set({
-      kind: 'inline',
-      base64: dataUrl.split(',')[1],
-      mimeType: file.type || 'image/jpeg',
-      previewUrl: dataUrl,
-    });
+    this.captureImage.set(await toScanInlineCapture(file));
     this.markAcquired(false);
   }
 
@@ -135,12 +121,7 @@ export class SheetCaptureStore {
     });
     const result = (await firstValueFrom(ref.afterClosed())) as CameraCaptureResult | null;
     if (!result) return;
-    this.captureImage.set({
-      kind: 'inline',
-      base64: result.base64,
-      mimeType: 'image/jpeg',
-      previewUrl: result.preview,
-    });
+    this.captureImage.set(await toScanInlineCapture(result.preview));
     this.markAcquired(false);
   }
 

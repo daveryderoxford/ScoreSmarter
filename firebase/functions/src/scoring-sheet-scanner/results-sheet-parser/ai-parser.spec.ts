@@ -1,6 +1,6 @@
 import test from "node:test";
 import * as assert from "node:assert/strict";
-import { validateAndNormalizeTimes } from "./single-pass-ai-parser.js";
+import { validateAndNormalizeTimes } from "./ai-parser.js";
 
 test("validateAndNormalizeTimes accepts clock_hms", () => {
   const parsed = {

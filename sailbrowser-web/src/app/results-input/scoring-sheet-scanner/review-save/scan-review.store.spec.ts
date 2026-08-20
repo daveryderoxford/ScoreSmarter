@@ -92,7 +92,8 @@ class FakeScanRunStore {
     listOrder: ['chronological', Validators.required],
     timeFormat: this.fb.nonNullable.control<ScannerTimeFormat>('clock_hms', Validators.required),
     defaultLaps: [1, [Validators.min(1), Validators.max(20)]],
-    scanStrategy: this.fb.nonNullable.control('FullAIScan' as const, Validators.required),
+    model: this.fb.nonNullable.control('gemini-3.7-flash', Validators.required),
+    thinkingLevel: this.fb.nonNullable.control('medium'),
     specialInstructions: [''],
     debug: [false],
   });

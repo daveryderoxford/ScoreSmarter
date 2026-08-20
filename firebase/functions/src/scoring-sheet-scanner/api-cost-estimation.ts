@@ -6,7 +6,7 @@ export interface ModelTierConfig {
   hasContextThreshold: boolean;
 }
 
-/** Per-million-token pricing (USD). Keys match Gemini model ids used by scan strategies. */
+/** Per-million-token pricing (USD). Keys match Gemini model ids used for AI scan. */
 export const DYNAMIC_MODEL_PRICING: Record<string, ModelTierConfig> = {
   "gemini-3.1-pro-preview": {
     inputUnder200k: 2.0, outputUnder200k: 12.0,
@@ -17,6 +17,12 @@ export const DYNAMIC_MODEL_PRICING: Record<string, ModelTierConfig> = {
     inputUnder200k: 1.25, outputUnder200k: 10.0,
     inputOver200k: 2.50, outputOver200k: 15.0,
     hasContextThreshold: true,
+  },
+  /* Figures for full price from Jan 2027 - currently half price */
+  "gemini-3.7-flash": {
+    inputUnder200k: 1.5, outputUnder200k: 7.5,
+    inputOver200k: 1.5, outputOver200k: 7.5,
+    hasContextThreshold: false,
   },
   "gemini-3.5-flash": {
     inputUnder200k: 1.5, outputUnder200k: 9.0,

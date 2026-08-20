@@ -93,4 +93,21 @@ describe('applyAutoAccept', () => {
     expect(result.scannedResults[1].accepted).toBe(false);
     expect(result.scannedResults[0].position).toBeUndefined();
   });
+
+  it('treats missing field confidence as HIGH for auto-accept', () => {
+    const result = applyAutoAccept({
+      scannedResults: [
+        {
+          rowIndex: 1,
+          overallRowConfidence: 'HIGH',
+          sailNumber: { value: '1234', confidence: undefined as unknown as 'HIGH' },
+          time: { value: '12:00:00', confidence: undefined as unknown as 'HIGH' },
+        },
+      ],
+      unreadableRowsCount: 0,
+    });
+    expect(result.scannedResults[0].sailNumber?.confidence).toBe('HIGH');
+    expect(result.scannedResults[0].time?.confidence).toBe('HIGH');
+    expect(result.scannedResults[0].accepted).toBe(true);
+  });
 });

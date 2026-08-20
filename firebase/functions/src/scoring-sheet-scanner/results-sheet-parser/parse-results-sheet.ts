@@ -9,10 +9,11 @@ import {
   SeriesEntryDoc,
   logScan,
   logScanError,
+  resolveScanModelParams,
 } from "../ai-scan-model.js";
 import { mergeClassAliases } from "./class-aliases.js";
 import { fleetNameMapFromClubData } from "./fleet-class-name.js";
-import { normalizeScanStrategy, resolveStrategyExecution } from "./scan-strategy.js";
+import { AIParser, type ScanPromptCapture } from "./ai-parser.js";
 import { resultsSheetStoragePath } from "../image-upload/image-storage.js";
 import { detailedHttpsError } from "../../shared/https-error.js";
 import {
@@ -21,7 +22,6 @@ import {
   callerClaims,
   isSysAdmin,
 } from "../../shared/authorisation.js";
-import type { ScanPromptCapture } from "./single-pass-ai-parser.js";
 import {
   buildExecutionMetrics,
   buildScanMetricsDocument,
@@ -307,8 +307,10 @@ async function parseFromStoredImage(
 ) {
   const parseStartMs = Date.now();
   const storagePath = resultsSheetStoragePath(clubId, raceId);
-  const scanStrategy = normalizeScanStrategy(scannerContext.scanStrategy);
-  const execution = resolveStrategyExecution(scanStrategy);
+  const modelParams = resolveScanModelParams(
+    scannerContext.model,
+    scannerContext.thinkingLevel,
+  );
   const raceSummary = await loadRaceSummary(clubId, raceId);
   const tokenCapture = emptyTokenCapture();
   const promptCapture: ScanPromptCapture | undefined = debugPrompt
@@ -385,14 +387,14 @@ async function parseFromStoredImage(
       storagePath,
     });
 
-    logScan(requestId, "merge_scanner_context", "Resolved scan strategy for AI parser", {
-      scanStrategy: execution.strategy,
-      model: execution.model,
-      location: execution.location,
+    logScan(requestId, "merge_scanner_context", "Resolved AI model for parser", {
+      model: modelParams.model,
+      thinkingLevel: modelParams.thinkingLevel ?? null,
+      location: modelParams.location,
     });
 
-    parsed = await execution.parser(
-      execution,
+    parsed = await AIParser(
+      modelParams,
       requestId,
       imageBase64,
       imageMimeType,
@@ -408,9 +410,9 @@ async function parseFromStoredImage(
 
     executionMetrics = buildExecutionMetrics({
       success: true,
-      strategy: execution.strategy,
-      model: execution.model,
-      location: execution.location,
+      model: modelParams.model,
+      thinkingLevel: modelParams.thinkingLevel,
+      location: modelParams.location,
       requestId,
       tokenCapture: tokenCapture.executionTimeSec > 0
         ? tokenCapture
@@ -425,9 +427,9 @@ async function parseFromStoredImage(
     executionMetrics = buildExecutionMetrics({
       success: false,
       errorMessage,
-      strategy: execution.strategy,
-      model: execution.model,
-      location: execution.location,
+      model: modelParams.model,
+      thinkingLevel: modelParams.thinkingLevel,
+      location: modelParams.location,
       requestId,
       tokenCapture: tokenCapture.executionTimeSec > 0
         ? tokenCapture

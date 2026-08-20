@@ -1,12 +1,15 @@
 export type ScannerTimeFormat = "clock_hms" | "stopwatch_hms_elapsed" | "stopwatch_ms_elapsed";
 
-/** Which backend parser pipeline to use for a scan. */
-export type ScanStrategy = "FullAIScan" | "FullAIScan-Fast" | "SplitScan";
-
 export type ScannerListOrder = "chronological" | "firstLap" | "unsorted";
 
 /** Handicap (times) vs level-rating (finish positions across one or more races). */
 export type ScannerScanMode = "handicap" | "levelRating";
+
+/**
+ * Gemini 3 thinking intensity. When omitted, the model uses its own default
+ * (typically high for Pro, medium for Flash).
+ */
+export type ScannerThinkingLevel = "minimal" | "low" | "medium" | "high";
 
 /** Competitor entry within a race's entry list. */
 export interface ScannerRosterEntry {
@@ -40,8 +43,10 @@ export interface ScannerContext {
   /** When false, the sheet has no lap column; use defaultLaps per row. Defaults to true if omitted. */
   lapsPresentOnSheet?: boolean;
   timeFormat?: ScannerTimeFormat;
-  /** Parser pipeline; defaults to OCR-Typescript when omitted. */
-  scanStrategy?: ScanStrategy;
+  /** Gemini model id; server defaults when missing/empty. */
+  model?: string;
+  /** Gemini thinkingConfig.thinkingLevel; omit for the model default. */
+  thinkingLevel?: ScannerThinkingLevel;
   /** Free-text sheet-specific instructions appended to the AI prompt when non-empty. */
   specialInstructions?: string;
   /** Defaults to handicap when omitted. */

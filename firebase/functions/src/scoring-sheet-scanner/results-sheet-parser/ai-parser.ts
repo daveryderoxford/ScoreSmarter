@@ -1,8 +1,20 @@
-import { ApiError, GoogleGenAI, Type, type GenerateContentResponse } from "@google/genai";
-import { ScannerContext, ScannerTimeFormat, logScan, logScanError } from "../ai-scan-model.js";
+import {
+  ApiError,
+  GoogleGenAI,
+  ThinkingLevel,
+  Type,
+  type GenerateContentResponse,
+} from "@google/genai";
+import {
+  ScannerContext,
+  ScannerTimeFormat,
+  type ScanModelParams,
+  type ScannerThinkingLevel,
+  logScan,
+  logScanError,
+} from "../ai-scan-model.js";
 import { buildLevelRatingPrompt, buildPrompt } from "./prompt-builder.js";
 import { detailedHttpsError } from '../../shared/https-error.js';
-import { StratageyParemeters } from './scan-strategy.js';
 import { type ScanTokenCapture, captureTokenUsage } from '../scan-metrics.js';
 import { mergeClassAliases, normalizeBoatClasses } from "./class-aliases.js";
 
@@ -16,8 +28,8 @@ export interface ScanPromptCapture {
   prompt: string | null;
 }
 
-export async function singlePassAIParser(
-  stratagy: StratageyParemeters,
+export async function AIParser(
+  modelParams: ScanModelParams,
   requestId: string,
   imageBase64: string,
   imageMimeType: string,
@@ -49,9 +61,10 @@ export async function singlePassAIParser(
 
   const promptPreviewMax = 800;
   logScan(requestId, "build_prompt", "Built text prompt for Gemini via Vertex (image sent separately)", {
-    model: stratagy.model,
+    model: modelParams.model,
+    thinkingLevel: modelParams.thinkingLevel ?? null,
     project: GCP_PROJECT,
-    location: stratagy.location,
+    location: modelParams.location,
     scanMode: isLevelRating ? "levelRating" : "handicap",
     promptCharLength: prompt.length,
     promptPreview: prompt.slice(0, promptPreviewMax),
@@ -62,14 +75,16 @@ export async function singlePassAIParser(
   const genai = new GoogleGenAI({
     vertexai: true,
     project: GCP_PROJECT,
-    location: stratagy.location,
+    location: modelParams.location,
   });
+
+  const thinkingLevel = toSdkThinkingLevel(modelParams.thinkingLevel);
 
   let result: GenerateContentResponse;
   const generateStartMs = Date.now();
   try {
     result = await genai.models.generateContent({
-      model: stratagy.model,
+      model: modelParams.model,
       contents: [
         {
           role: "user",
@@ -89,6 +104,9 @@ export async function singlePassAIParser(
         responseSchema: isLevelRating
           ? levelRatingScanResultResponseSchema()
           : scanResultResponseSchemaForMode(mergedContext.timeFormat ?? "clock_hms"),
+        ...(thinkingLevel
+          ? { thinkingConfig: { thinkingLevel } }
+          : {}),
       },
     });
   } catch (e: unknown) {
@@ -96,8 +114,9 @@ export async function singlePassAIParser(
     const status = e instanceof ApiError ? e.status : undefined;
     logScanError(requestId, "vertex_generate", `Gemini generateContent failed: ${msg}`, {
       cause: "vertex_error",
-      model: stratagy.model,
-      location: stratagy.location,
+      model: modelParams.model,
+      thinkingLevel: modelParams.thinkingLevel ?? null,
+      location: modelParams.location,
       httpStatus: status,
     });
     throw detailedHttpsError(
@@ -107,8 +126,9 @@ export async function singlePassAIParser(
         requestId,
         stage: "vertex_generate",
         cause: "vertex_error",
-        model: stratagy.model,
-        location: stratagy.location,
+        model: modelParams.model,
+        thinkingLevel: modelParams.thinkingLevel,
+        location: modelParams.location,
         vertexMessage: msg.slice(0, 500),
         httpStatus: status,
       },
@@ -120,7 +140,7 @@ export async function singlePassAIParser(
     Object.assign(
       tokenCapture,
       captureTokenUsage(
-        stratagy.model,
+        modelParams.model,
         generateStartMs,
         usage?.promptTokenCount,
         usage?.candidatesTokenCount,
@@ -506,4 +526,17 @@ function levelRatingScanResultResponseSchema() {
     },
     required: ["scannedResults", "unreadableRowsCount"],
   };
+}
+
+const THINKING_LEVEL_TO_SDK: Record<ScannerThinkingLevel, ThinkingLevel> = {
+  minimal: ThinkingLevel.MINIMAL,
+  low: ThinkingLevel.LOW,
+  medium: ThinkingLevel.MEDIUM,
+  high: ThinkingLevel.HIGH,
+};
+
+function toSdkThinkingLevel(
+  level: ScannerThinkingLevel | undefined,
+): ThinkingLevel | undefined {
+  return level ? THINKING_LEVEL_TO_SDK[level] : undefined;
 }

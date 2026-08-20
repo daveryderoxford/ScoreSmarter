@@ -18,8 +18,8 @@ export interface ScanHistoryRecord {
   seriesName?: string;
   raceNumber?: number;
   scannedAt: Date | null;
-  strategy: string;
   model: string;
+  thinkingLevel?: string;
   success: boolean;
   errorMessage?: string;
   competitorCount: number;
@@ -104,8 +104,8 @@ export class ScanHistoryService {
       seriesName: typeof race['seriesName'] === 'string' ? race['seriesName'] : undefined,
       raceNumber: typeof race['raceNumber'] === 'number' ? race['raceNumber'] : undefined,
       scannedAt,
-      strategy: typeof data['strategy'] === 'string' ? data['strategy'] : '—',
       model: typeof data['model'] === 'string' ? data['model'] : '—',
+      thinkingLevel: typeof data['thinkingLevel'] === 'string' ? data['thinkingLevel'] : undefined,
       success: data['success'] === true,
       errorMessage: typeof data['errorMessage'] === 'string' ? data['errorMessage'] : undefined,
       competitorCount: typeof data['competitorCount'] === 'number' ? data['competitorCount'] : 0,

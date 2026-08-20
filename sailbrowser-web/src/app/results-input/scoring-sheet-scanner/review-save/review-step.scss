@@ -46,11 +46,26 @@
   align-items: center;
   padding: 4rem 2rem;
   color: var(--mat-sys-on-surface-variant);
-  
+}
+
+.scan-progress {
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 1rem;
+
   mat-progress-bar {
-    max-width: 300px;
-    margin-bottom: 1rem;
+    width: 100%;
+    margin-bottom: 0.35rem;
   }
+}
+
+.scan-elapsed {
+  margin: 0;
+  text-align: left;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .error-text {
