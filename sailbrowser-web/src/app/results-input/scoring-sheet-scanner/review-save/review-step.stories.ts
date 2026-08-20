@@ -175,6 +175,7 @@ function storeProviders(state: ReviewState) {
     running: signal(state.running ?? false),
     scanResult: signal<ScanResponse | null>(state.result ?? null),
     scanStage: signal<string | null>('Scanning sheet…'),
+    elapsedLabel: signal('0:00'),
     error: signal<string | null>(null),
     runScan: () => undefined,
   };

@@ -3,7 +3,9 @@ import type { ScanExecutionMetrics } from '@shared/scan-metrics';
 export function formatScanMetricsSummary(metrics: ScanExecutionMetrics): string {
   const parts: string[] = [
     metrics.success ? 'Scan succeeded' : 'Scan failed',
-    `${metrics.strategy} · ${metrics.model}`,
+    metrics.thinkingLevel
+      ? `${metrics.model} (${metrics.thinkingLevel})`
+      : `${metrics.model}`,
     `${metrics.executionTimeSec.toFixed(1)}s`,
   ];
 

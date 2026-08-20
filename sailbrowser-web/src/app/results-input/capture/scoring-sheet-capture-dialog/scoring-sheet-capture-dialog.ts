@@ -21,6 +21,7 @@ import {
   PhoneCaptureQrDialogData,
   PhoneCaptureQrDialogResult,
 } from '../phone-capture-qr-dialog/phone-capture-qr-dialog';
+import { toScanInlineCapture } from '../resize-scan-image';
 import { ResultsSheetCaptureService } from '../services/results-sheet-capture.service';
 
 export interface ScoringSheetCaptureDialogData {
@@ -112,37 +113,21 @@ export class ScoringSheetCaptureDialog {
     return 'newPreview';
   }
 
-  protected onFileChange(file: File): void {
+  protected async onFileChange(file: File): Promise<void> {
     this.dismissedStoredRaceSheet.set(true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const readResult = reader.result as string;
-      this.captureImage.set({
-        kind: 'inline',
-        base64: readResult.split(',')[1],
-        mimeType: file.type || 'image/jpeg',
-        previewUrl: readResult,
-      });
-    };
-    reader.readAsDataURL(file);
+    this.captureImage.set(await toScanInlineCapture(file));
   }
 
-  protected openCameraDialog(): void {
+  protected async openCameraDialog(): Promise<void> {
     const ref = this.subDialog.open(CameraCaptureDialog, {
       width: '800px',
       maxWidth: '95vw',
       disableClose: true,
     });
-    ref.afterClosed().subscribe(result => {
-      if (!result) return;
-      this.dismissedStoredRaceSheet.set(true);
-      this.captureImage.set({
-        kind: 'inline',
-        base64: result.base64,
-        mimeType: 'image/jpeg',
-        previewUrl: result.preview,
-      });
-    });
+    const result = await firstValueFrom(ref.afterClosed());
+    if (!result) return;
+    this.dismissedStoredRaceSheet.set(true);
+    this.captureImage.set(await toScanInlineCapture(result.preview));
   }
 
   protected async startPhoneCapture(): Promise<void> {

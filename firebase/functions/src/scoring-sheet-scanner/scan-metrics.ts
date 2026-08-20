@@ -1,10 +1,11 @@
 import type { ScanExecutionMetrics } from "@shared/scan-metrics";
+import type { ScannerThinkingLevel } from "@shared/scanner-context";
 import { FieldValue, type Timestamp } from "firebase-admin/firestore";
 import { calculateRealizedApiCost, DEFAULT_SCAN_COST_OPTIONS } from "./api-cost-estimation.js";
 
 export type { ScanExecutionMetrics };
 
-export const SCAN_PARSER_NAME = "singlePassAIParser" as const;
+export const SCAN_PARSER_NAME = "AIParser" as const;
 
 export interface ScanTokenCapture {
   executionTimeSec: number;
@@ -41,9 +42,9 @@ export interface ScanMetricsDocument {
   scannedAt: ReturnType<typeof FieldValue.serverTimestamp>;
   requestId: string;
   uid?: string;
-  strategy: string;
   parser: typeof SCAN_PARSER_NAME;
   model: string;
+  thinkingLevel?: ScannerThinkingLevel;
   location: string;
   success: boolean;
   errorMessage?: string;
@@ -168,8 +169,8 @@ export function extractScanQualityMetrics(parsed: unknown): ScanQualityMetrics {
 export function buildExecutionMetrics(params: {
   success: boolean;
   errorMessage?: string;
-  strategy: string;
   model: string;
+  thinkingLevel?: ScannerThinkingLevel;
   location: string;
   tokenCapture: ScanTokenCapture;
   requestId?: string;
@@ -177,9 +178,9 @@ export function buildExecutionMetrics(params: {
   return {
     success: params.success,
     ...(params.errorMessage ? { errorMessage: params.errorMessage } : {}),
-    strategy: params.strategy,
     parser: SCAN_PARSER_NAME,
     model: params.model,
+    ...(params.thinkingLevel ? { thinkingLevel: params.thinkingLevel } : {}),
     location: params.location,
     executionTimeSec: params.tokenCapture.executionTimeSec,
     inputTokens: params.tokenCapture.inputTokens,
@@ -205,9 +206,11 @@ export function buildScanMetricsDocument(params: {
     scannedAt: FieldValue.serverTimestamp(),
     requestId: params.requestId,
     ...(params.uid ? { uid: params.uid } : {}),
-    strategy: params.execution.strategy,
     parser: SCAN_PARSER_NAME,
     model: params.execution.model,
+    ...(params.execution.thinkingLevel
+      ? { thinkingLevel: params.execution.thinkingLevel }
+      : {}),
     location: params.execution.location,
     success: params.execution.success,
     ...(params.execution.errorMessage ? { errorMessage: params.execution.errorMessage } : {}),

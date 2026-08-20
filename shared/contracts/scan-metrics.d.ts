@@ -1,10 +1,13 @@
+import type { ScannerThinkingLevel } from "./scanner-context";
+
 /** Metrics returned to the client after a scan completes. */
 export interface ScanExecutionMetrics {
   success: boolean;
   errorMessage?: string;
-  strategy: string;
-  parser: "singlePassAIParser";
+  parser: "AIParser";
   model: string;
+  /** Present when the client overrode the model thinking default. */
+  thinkingLevel?: ScannerThinkingLevel;
   location: string;
   executionTimeSec: number;
   inputTokens: number | null;

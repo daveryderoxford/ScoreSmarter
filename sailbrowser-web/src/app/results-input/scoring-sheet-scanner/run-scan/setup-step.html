@@ -52,12 +52,25 @@
 
       <div [hidden]="!auth.isSysAdmin()">
         <mat-form-field subscriptSizing="dynamic">
-          <mat-label>Scan strategy</mat-label>
-          <mat-select formControlName="scanStrategy">
-            <mat-option value="FullAIScan-Fast">Full AI scan (fast)</mat-option>
-            <mat-option value="FullAIScan">Full AI scan (Pro, legacy)</mat-option>
+          <mat-label>AI model</mat-label>
+          <mat-select formControlName="model">
+            <mat-option value="gemini-3.7-flash">3.7 Flash (gemini-3.7-flash)</mat-option>
+            <mat-option value="gemini-3.1-pro-preview">Pro (gemini-3.1-pro-preview)</mat-option>
+            <mat-option value="gemini-3.5-flash">3.5 Flash (gemini-3.5-flash)</mat-option>
           </mat-select>
-          <mat-hint>Compare strategies on the same sheet by re-scanning with the other option.</mat-hint>
+          <mat-hint>Compare models on the same sheet by re-scanning with another option.</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label>Thinking level</mat-label>
+          <mat-select formControlName="thinkingLevel">
+            <mat-option value="">Default (model)</mat-option>
+            <mat-option value="minimal">Minimal</mat-option>
+            <mat-option value="low">Low</mat-option>
+            <mat-option value="medium">Medium</mat-option>
+            <mat-option value="high">High</mat-option>
+          </mat-select>
+          <mat-hint>Gemini thinkingConfig.thinkingLevel. Leave as Default to use the model default.</mat-hint>
         </mat-form-field>
 
         <mat-checkbox formControlName="debug">

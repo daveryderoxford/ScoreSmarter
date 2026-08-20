@@ -1,6 +1,9 @@
 @if (scanRun.running() && !scanRun.scanResult()) {
 <div class="empty-state">
-  <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+  <div class="scan-progress">
+    <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    <p class="scan-elapsed" aria-live="polite">{{ scanRun.elapsedLabel() }}</p>
+  </div>
   <p>{{ scanRun.scanStage() }}</p>
 </div>
 } @else if (scanRun.error() && !scanRun.scanResult()) {

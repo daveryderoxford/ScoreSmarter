@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { MobilePhotoPicker } from 'app/results-input/capture/mobile-photo-picker';
+import { toScanInlineCapture } from 'app/results-input/capture/resize-scan-image';
 import { CaptureSessionUploadService } from './capture-session-upload.service';
 
 type CapturePhase = 'idle' | 'uploading' | 'success' | 'error';
@@ -106,21 +107,18 @@ export class MobileCapturePage {
   readonly preview = signal<string | null>(null);
   readonly uploadError = signal<string | null>(null);
 
-  onFileSelected(file: File): void {
+  async onFileSelected(file: File): Promise<void> {
     this.uploadError.set(null);
-    this.imageMimeType.set(file.type || 'image/jpeg');
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result ?? '');
-      this.preview.set(result);
-      this.imageBase64.set(result.split(',')[1] ?? null);
-      void this.runUpload();
-    };
-    reader.onerror = () => {
-      this.uploadError.set('Could not read the image file.');
+    try {
+      const inline = await toScanInlineCapture(file);
+      this.preview.set(inline.previewUrl);
+      this.imageBase64.set(inline.base64);
+      this.imageMimeType.set(inline.mimeType);
+      await this.runUpload();
+    } catch (e: unknown) {
+      this.uploadError.set(e instanceof Error ? e.message : 'Could not process the image file.');
       this.phase.set('error');
-    };
-    reader.readAsDataURL(file);
+    }
   }
 
   async retryUpload(): Promise<void> {

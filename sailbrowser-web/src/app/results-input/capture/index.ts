@@ -16,3 +16,12 @@ export {
   type CaptureSessionDoc,
   type UploadFromSessionInput,
 } from './capture-phone-session.model';
+export {
+  SCAN_IMAGE_JPEG_QUALITY,
+  SCAN_IMAGE_MAX_LONG_EDGE,
+  resizeDataUrlToScanJpeg,
+  resizeFileToScanJpeg,
+  scanImageTargetSize,
+  toScanInlineCapture,
+  type ScanJpegImage,
+} from './resize-scan-image';

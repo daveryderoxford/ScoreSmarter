@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
-import type { ScanStrategy, ScannerTimeFormat } from '@shared/scanner-context';
+import type { ScannerThinkingLevel, ScannerTimeFormat } from '@shared/scanner-context';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { from, of } from 'rxjs';
 import { ScanSelectedRace } from '../select-race/race-selection.store';
@@ -13,6 +13,27 @@ import {
   promoteRowAlternative,
   type ScannedValueField,
 } from './promote-scanned-alternative';
+
+const SCAN_THINKING_LEVELS = new Set<ScannerThinkingLevel>([
+  'minimal',
+  'low',
+  'medium',
+  'high',
+]);
+
+function asThinkingLevel(value: string): ScannerThinkingLevel | undefined {
+  return SCAN_THINKING_LEVELS.has(value as ScannerThinkingLevel)
+    ? (value as ScannerThinkingLevel)
+    : undefined;
+}
+
+/** Formats elapsed scan time as m:ss (or mm:ss once past 10 minutes). */
+export function formatScanElapsed(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
 
 /**
  * Area 3 — owns the scanner-context form, the stored-scan read (a resource), and
@@ -34,7 +55,8 @@ export class ScanRunStore {
     listOrder: ['chronological', Validators.required],
     timeFormat: this.fb.nonNullable.control<ScannerTimeFormat>('clock_hms', Validators.required),
     defaultLaps: [1, [Validators.min(1), Validators.max(20)]],
-    scanStrategy: this.fb.nonNullable.control<ScanStrategy>('FullAIScan', Validators.required),
+    model: this.fb.nonNullable.control('gemini-3.7-flash', Validators.required),
+    thinkingLevel: this.fb.nonNullable.control('medium'),
     specialInstructions: ['', [Validators.maxLength(500)]],
     debug: [false],
   });
@@ -57,6 +79,9 @@ export class ScanRunStore {
   readonly scanStage = this._scanStage.asReadonly();
   private readonly _error = signal<string | null>(null);
   readonly error = this._error.asReadonly();
+  private readonly _elapsedSec = signal(0);
+  readonly elapsedLabel = computed(() => formatScanElapsed(this._elapsedSec()));
+  private elapsedTimer: ReturnType<typeof setInterval> | null = null;
 
   /** Seed the working copy from the stored scan (after applying auto-accept). */
   useStoredScan(): void {
@@ -86,6 +111,7 @@ export class ScanRunStore {
 
     this._error.set(null);
     this._scanResult.set(null);
+    this.startElapsedTimer();
     const scannerContext = this.buildScannerContext();
 
     await new Promise<void>((resolve) => {
@@ -102,6 +128,7 @@ export class ScanRunStore {
             this._scanStage.set(state.stageMessage ?? this.scanExecution.defaultStageMessage());
             return;
           }
+          this.stopElapsedTimer();
           this._running.set(false);
           this._scanStage.set(null);
           if (state.status === 'success' && state.result) {
@@ -159,10 +186,12 @@ export class ScanRunStore {
   }
 
   reset(): void {
+    this.stopElapsedTimer();
     this._scanResult.set(null);
     this._running.set(false);
     this._scanStage.set(null);
     this._error.set(null);
+    this._elapsedSec.set(0);
   }
 
   /** Hour assumed for clock times recorded without hours (from race scheduled start). */
@@ -172,9 +201,24 @@ export class ScanRunStore {
     return new Date(race.scheduledStart).getHours();
   }
 
+  private startElapsedTimer(): void {
+    this.stopElapsedTimer();
+    this._elapsedSec.set(0);
+    this.elapsedTimer = setInterval(() => {
+      this._elapsedSec.update((sec) => sec + 1);
+    }, 1000);
+  }
+
+  private stopElapsedTimer(): void {
+    if (this.elapsedTimer == null) return;
+    clearInterval(this.elapsedTimer);
+    this.elapsedTimer = null;
+  }
+
   private buildScannerContext(): ScannerContext {
     const formData = this.contextForm.getRawValue();
     const specialInstructions = formData.specialInstructions.trim();
+    const thinkingLevel = asThinkingLevel(formData.thinkingLevel.trim());
     const races = this.raceSelection.selectedRaceIds().map((id) => ({
       id,
       entries: [] as { id: string; class: string; sailNumber: string; name?: string }[],
@@ -186,7 +230,8 @@ export class ScanRunStore {
         races,
         listOrder: 'unsorted',
         scanMode: 'levelRating',
-        scanStrategy: formData.scanStrategy,
+        model: formData.model,
+        ...(thinkingLevel ? { thinkingLevel } : {}),
         ...(specialInstructions ? { specialInstructions } : {}),
         ...(formData.debug ? { debug: true } : {}),
       };
@@ -201,7 +246,8 @@ export class ScanRunStore {
       lapsPresentOnSheet: isMultilap,
       timeFormat: formData.timeFormat,
       scanMode: 'handicap',
-      scanStrategy: formData.scanStrategy,
+      model: formData.model,
+      ...(thinkingLevel ? { thinkingLevel } : {}),
       ...(specialInstructions ? { specialInstructions } : {}),
       ...(formData.debug ? { debug: true } : {}),
     };

@@ -2,7 +2,6 @@ import type { FormControl } from '@angular/forms';
 import type {
   ScannerContext as SharedScannerContext,
   ScannerTimeFormat,
-  ScanStrategy,
 } from '@shared/scanner-context';
 import type { ScanExecutionMetrics as SharedScanExecutionMetrics } from '@shared/scan-metrics';
 import { resolveClassAlias } from './class-aliases';
@@ -171,23 +170,49 @@ export function assignLevelRatingPositions(rows: ScannedResultRow[]): ScannedRes
  * Applies the auto-accept rules shared by the live scan run and the stored-scan
  * read. Handicap: overall + sail + time HIGH. Level-rating: overall + sail HIGH
  * with a raceId (position is assigned in code). Pure; safe to reuse across services.
+ *
+ * Missing per-field confidence is treated as HIGH (Gemini often sets overall HIGH
+ * but omits field confidence). Explicit MANUAL_CHECK / FAILED / AMBIGUOUS are kept.
  */
 export function applyAutoAccept(response: ScanResponse): ScanResponse {
   const { metrics, ...scanPayload } = response;
   const withAliases = scanPayload.scannedResults.map(applyClassAliasesToRow);
   const scannedResults = assignLevelRatingPositions(withAliases).map(row => {
-    const isLevelRating = !!row.raceId;
+    const normalized = withDefaultFieldConfidence(row);
+    const isLevelRating = !!normalized.raceId;
     const resultFieldOk = isLevelRating
       ? true
-      : row.time?.confidence === 'HIGH';
+      : normalized.time?.confidence === 'HIGH';
     return {
-      ...row,
-      accepted: row.overallRowConfidence === 'HIGH' &&
-        row.sailNumber?.confidence === 'HIGH' &&
+      ...normalized,
+      accepted: normalized.overallRowConfidence === 'HIGH' &&
+        normalized.sailNumber?.confidence === 'HIGH' &&
         resultFieldOk,
     };
   });
   return { ...scanPayload, scannedResults, ...(metrics ? { metrics } : {}) };
+}
+
+const FIELD_CONFIDENCES = new Set(['HIGH', 'MANUAL_CHECK', 'FAILED', 'AMBIGUOUS']);
+
+function withDefaultFieldConfidence(row: ScannedResultRow): ScannedResultRow {
+  return {
+    ...row,
+    boatClass: defaultFieldConfidence(row.boatClass),
+    sailNumber: defaultFieldConfidence(row.sailNumber),
+    competitorName: defaultFieldConfidence(row.competitorName),
+    time: defaultFieldConfidence(row.time),
+    laps: defaultFieldConfidence(row.laps),
+    position: defaultFieldConfidence(row.position),
+  };
+}
+
+function defaultFieldConfidence<T>(
+  field: ScannedValue<T> | undefined,
+): ScannedValue<T> | undefined {
+  if (!field) return field;
+  if (FIELD_CONFIDENCES.has(field.confidence)) return field;
+  return { ...field, confidence: 'HIGH' };
 }
 
 /** Typed reactive form for the scanner-context setup step (Area 3: run scan). */
@@ -195,7 +220,9 @@ export interface ScannerContextForm {
   listOrder: FormControl<string>;
   timeFormat: FormControl<ScannerTimeFormat>;
   defaultLaps: FormControl<number>;
-  scanStrategy: FormControl<ScanStrategy>;
+  model: FormControl<string>;
+  /** Empty string = omit (model default). */
+  thinkingLevel: FormControl<string>;
   specialInstructions: FormControl<string>;
   debug: FormControl<boolean>;
 }
