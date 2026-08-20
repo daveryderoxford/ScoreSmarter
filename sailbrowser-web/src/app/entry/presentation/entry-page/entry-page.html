@@ -1,138 +1,184 @@
 <app-toolbar title="Enter"></app-toolbar>
-<mat-stepper class="content" orientation="horizontal" [linear]="true" #stepper>
-  <mat-step [completed]="canProceedToRaces()">
-    <form [formGroup]="competitorDetailsGroup">
-      <ng-template matStepLabel>Details</ng-template>
-
-      <div class="category-header">
-        <mat-tab-group
-          class="category-tabs"
-          animationDuration="0ms"
-          [selectedIndex]="categoryTabIndex()"
-          (selectedIndexChange)="onCategoryTabChange($event)">
-          <mat-tab label="Member's Boats" />
-          <mat-tab label="Club Boats" />
-        </mat-tab-group>
-      </div>
-
-      <div class="boat-selection">
-        <mat-form-field subscriptSizing="dynamic" class="search-field">
-          <mat-label>Search for boat</mat-label>
-          <mat-icon matPrefix>search</mat-icon>
-          <input matInput [formControl]="boatSearchControl" [matAutocomplete]="auto"
-            [placeholder]="boatCategory() === 'club' ? 'Class or Sail No' : 'Helm, Class or Sail No'">
-          <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayBoatFn"
-            (optionSelected)="onBoatSelected($event)">
-            @for (group of filteredBoatsByHelm(); track group.key) {
-            <mat-optgroup [label]="group.key">
-              @for (boat of group.boats; track boat.id) {
-              <mat-option [value]="boat">
-                <span [classList]="boat.isClub ? 'muted' : ''">
-                  @if (boat.isClub) {
-                  {{ boat.boatClass }} - {{ boat.sailNumber }}
-                  } @else {
-                  {{ boat.boatClass }} {{ boat.sailNumber }}
-                  }
-                </span>
-              </mat-option>
-              }
-            </mat-optgroup>
-            }
-          </mat-autocomplete>
-          @if (boatSearchControl.value) {
-          <button mat-icon-button matSuffix (click)="boatSearchControl.setValue('')" aria-label="Clear search">
-            <mat-icon>close</mat-icon>
+<div class="content">
+  @switch (step()) {
+    @case ('category') {
+      <div class="category-grid">
+        <button matButton="filled" type="button" class="category-btn category-btn-member" (click)="startMember()">
+          Member's Boats
+        </button>
+        <div class="category-row">
+          <button mat-stroked-button type="button" class="category-btn" (click)="startClub()">
+            Club Boats
           </button>
-          }
-        </mat-form-field>
+          <button mat-stroked-button type="button" class="category-btn" (click)="startVisitor()">
+            Visitor entry
+          </button>
+        </div>
       </div>
+    }
 
-      <mat-card appearance="outlined" class="boat-details-panel">
-        @if (selectedBoat(); as boat) {
-          <div class="boat-summary">
-            <span class="boat-summary-main">{{ boat.boatClass }} · {{ boat.sailNumber }}</span>
-            @if (!boat.isClub && boat.helm) {
-              <span class="boat-summary-sub">{{ boat.helm }}</span>
-            }
-          </div>
-
-          @if (displayHandicaps().length > 0) {
-            <div class="handicap-line" role="group" aria-label="Handicaps">
-              <span class="handicap-line-title">Handicaps</span>
-              @for (h of displayHandicaps(); track h.scheme) {
-                <span class="handicap-chip">{{ h.scheme }} {{ h.value }}</span>
-              }
-            </div>
-          } @else {
-            <div class="handicap-line">
-              <span class="handicap-line-title">Handicaps</span>
-              <span class="handicap-chip handicap-chip--empty">No handicaps configured.</span>
-            </div>
-          }
-
-          <div class="helm-crew-row">
-            @if (boat.isClub) {
-              <mat-form-field>
-                <mat-label>Helm</mat-label>
-                <input
-                  matInput
-                  formControlName="helm"
-                  placeholder="Helm for this race entry"
-                  autocomplete="off"
-                  [matAutocomplete]="clubHelmAutocomplete.panel()" />
-                <app-helm-name-autocomplete
-                  #clubHelmAutocomplete
-                  [control]="competitorDetailsGroup.controls['helm']" />
-                <mat-error>Helm name required</mat-error>
-              </mat-form-field>
-            }
-            @if (!isSinglehander()) {
-            <mat-form-field>
-              <mat-label>Crew (optional)</mat-label>
-              <input matInput formControlName="crew" placeholder="Optional" autocomplete="off" />
+    @case ('details') {
+      @if (boatCategory() === 'visitor') {
+        <form [formGroup]="visitorForm" class="visitor-form">
+          <p class="step-instruction">Enter boat details</p>
+          <app-boat-core-fields
+            [form]="visitorForm"
+            [boatLevelSchemes]="visitorBoatSchemes()"
+            [showCrew]="!visitorIsSinglehander()">
+            <mat-form-field boatExtraFields>
+              <mat-label>Club (optional)</mat-label>
+              <input matInput formControlName="club" autocomplete="organization" />
             </mat-form-field>
-            }
+          </app-boat-core-fields>
+          <div class="actions details-step-actions">
+            <button matButton="text" type="button" (click)="goBack()">Back</button>
+            <button
+              matButton="filled"
+              type="button"
+              class="step-next"
+              [disabled]="visitorForm.invalid"
+              (click)="goNext()">
+              Next
+            </button>
           </div>
-        } @else {
-          <div class="boat-details-instructions">
-
-          </div>
-        }
-      </mat-card>
-
-      <div class="actions details-step-actions">
-        @if (boatCategory() === 'member') {
-          <button matButton="text" type="button" (click)="createNewBoat()">New Members Boat</button>
-        }
-        <button matButton="filled" matStepperNext class="step-next" [disabled]="!canProceedToRaces()">Next</button>
-      </div>
-    </form>
-  </mat-step>
-
-  <mat-step [stepControl]="raceSelectionGroup">
-    <form [formGroup]="raceSelectionGroup">
-      <ng-template matStepLabel>Races</ng-template>
-
-      @if (!showForm()) {
-      <app-centered-text>Select a boat first.</app-centered-text>
-      } @else if (eligibleRaces().length > 0) {
-      <mat-card appearance="outlined" class="form-card race-selection-card">
-        <app-races-panel
-          [races]="eligibleRaces()"
-          [selectedRaceIds]="enteredRaceIds()"
-          emptyMessage="No eligible races for this boat."
-          (selectedRaceIdsChange)="onEntryRaceIdsChange($event)" />
-      </mat-card>
+        </form>
       } @else {
-      <app-centered-text>No eligible races for this boat.</app-centered-text>
-      }
+        <form [formGroup]="competitorDetailsGroup">
+          <p class="step-instruction">
+            {{ boatCategory() === 'club' ? 'Select a club boat' : "Select a member's boat" }}
+          </p>
+          <div class="boat-selection">
+            <mat-form-field subscriptSizing="dynamic" class="search-field">
+              <mat-label>Search for boat</mat-label>
+              <mat-icon matPrefix>search</mat-icon>
+              <input
+                #boatSearchInput
+                matInput
+                [formControl]="boatSearchControl"
+                [matAutocomplete]="auto"
+                [placeholder]="boatCategory() === 'club' ? 'Class or Sail No' : 'Helm, Class or Sail No'">
+              <mat-autocomplete
+                #auto="matAutocomplete"
+                [displayWith]="displayBoatFn"
+                (optionSelected)="onBoatSelected($event)">
+                @for (group of filteredBoatsByHelm(); track group.key) {
+                  <mat-optgroup [label]="group.key">
+                    @for (boat of group.boats; track boat.id) {
+                      <mat-option [value]="boat">
+                        <span [classList]="boat.isClub ? 'muted' : ''">
+                          @if (boat.isClub) {
+                            {{ boat.boatClass }} - {{ boat.sailNumber }}
+                          } @else {
+                            {{ boat.boatClass }} {{ boat.sailNumber }}
+                          }
+                        </span>
+                      </mat-option>
+                    }
+                  </mat-optgroup>
+                }
+              </mat-autocomplete>
+              @if (boatSearchControl.value) {
+                <button mat-icon-button matSuffix (click)="boatSearchControl.setValue('')" aria-label="Clear search">
+                  <mat-icon>close</mat-icon>
+                </button>
+              }
+            </mat-form-field>
+          </div>
 
-      <div class="actions race-step-actions">
-        <button matButton="text" matStepperPrevious type="button">Back</button>
-        <app-busy-button (click)="onSubmit()" [disabled]="raceSelectionGroup.invalid || !showForm()" [busy]="busy()">
-          Enter
-        </app-busy-button>
-      </div>
-    </form>
-  </mat-step>
-</mat-stepper>
+          <mat-card appearance="outlined" class="boat-details-panel">
+            @if (selectedBoat(); as boat) {
+              <div class="boat-summary">
+                <span class="boat-summary-main">{{ boat.boatClass }} · {{ boat.sailNumber }}</span>
+                @if (!boat.isClub && boat.helm) {
+                  <span class="boat-summary-sub">{{ boat.helm }}</span>
+                }
+              </div>
+
+              @if (displayHandicaps().length > 0) {
+                <div class="handicap-line" role="group" aria-label="Handicaps">
+                  <span class="handicap-line-title">Handicaps</span>
+                  @for (h of displayHandicaps(); track h.scheme) {
+                    <span class="handicap-chip">{{ h.scheme }} {{ h.value }}</span>
+                  }
+                </div>
+              } @else {
+                <div class="handicap-line">
+                  <span class="handicap-line-title">Handicaps</span>
+                  <span class="handicap-chip handicap-chip--empty">No handicaps configured.</span>
+                </div>
+              }
+
+              <div class="helm-crew-row">
+                @if (boat.isClub) {
+                  <mat-form-field>
+                    <mat-label>Helm</mat-label>
+                    <input
+                      matInput
+                      formControlName="helm"
+                      placeholder="Helm for this race entry"
+                      autocomplete="off"
+                      [matAutocomplete]="clubHelmAutocomplete.panel()" />
+                    <app-helm-name-autocomplete
+                      #clubHelmAutocomplete
+                      [control]="competitorDetailsGroup.controls['helm']" />
+                    <mat-error>Helm name required</mat-error>
+                  </mat-form-field>
+                }
+                @if (!isSinglehander()) {
+                  <mat-form-field>
+                    <mat-label>Crew (optional)</mat-label>
+                    <input matInput formControlName="crew" placeholder="Optional" autocomplete="off" />
+                  </mat-form-field>
+                }
+              </div>
+            }
+          </mat-card>
+
+          @if (boatCategory() === 'member') {
+            <div class="actions new-boat-actions">
+              <button matButton="text" type="button" (click)="createNewBoat()">New Members Boat</button>
+            </div>
+          }
+          <div class="actions details-step-actions">
+            <button matButton="text" type="button" (click)="goBack()">Back</button>
+            <button
+              matButton="filled"
+              type="button"
+              class="step-next"
+              [disabled]="!canProceedToRaces()"
+              (click)="goNext()">
+              Next
+            </button>
+          </div>
+        </form>
+      }
+    }
+
+    @case ('races') {
+      <form [formGroup]="raceSelectionGroup">
+        @if (!showForm()) {
+          <app-centered-text>Select a boat first.</app-centered-text>
+        } @else if (eligibleRaces().length > 0) {
+          <mat-card appearance="outlined" class="form-card race-selection-card">
+            <app-races-panel
+              [races]="eligibleRaces()"
+              [selectedRaceIds]="enteredRaceIds()"
+              [availableFilters]="racePanelFilters()"
+              [initialPeriod]="racePanelInitialPeriod()"
+              emptyMessage="No eligible races for this boat."
+              (selectedRaceIdsChange)="onEntryRaceIdsChange($event)" />
+          </mat-card>
+        } @else {
+          <app-centered-text>No eligible races for this boat.</app-centered-text>
+        }
+
+        <div class="actions race-step-actions">
+          <button matButton="text" type="button" (click)="goBack()">Back</button>
+          <app-busy-button (click)="onSubmit()" [disabled]="raceSelectionGroup.invalid || !showForm()" [busy]="busy()">
+            Enter
+          </app-busy-button>
+        </div>
+      </form>
+    }
+  }
+</div>

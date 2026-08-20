@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { afterRenderEffect, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -9,31 +9,40 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatStepperModule } from '@angular/material/stepper';
-import { MatTabsModule } from '@angular/material/tabs';
 import { ActivatedRoute, Router } from '@angular/router';
+import { AuthService } from 'app/auth/auth.service';
 import {
   Boat,
   boatFilter,
   BoatsStore,
   compareSailNumbers,
   normalizeSailNumber,
+  sailNumberValidator,
   sailNumbersEqual,
 } from 'app/boats';
+import { BoatCoreFields } from 'app/boats/presentation/boat-form/boat-core-fields';
 import { ClubStore } from 'app/club-tenant';
 import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { RacesPanel } from 'app/race-calender/presentation/races-panel/races-panel';
+import type { RacesPanelFilter, RacesPanelPeriod } from 'app/race-calender/presentation/races-panel/races-panel-utils';
 import { CurrentRaces } from 'app/results-input';
 import { type Handicap } from 'app/scoring/model/handicap';
 import { handicapSchemesRequiredForRaces } from 'app/scoring/model/handicap-race-requirements';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { type PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
+import {
+  getHandicapSchemeMetadata,
+  getSchemesForTarget,
+  handicapControlName,
+} from 'app/scoring/model/handicap-scheme-metadata';
 import { BusyButton } from 'app/shared/components/busy-button';
 import { CenteredText } from 'app/shared/components/centered-text';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dialog';
 import { groupBy } from 'app/shared/utils/group-by';
+import { startOfDay } from 'date-fns';
 import { firstValueFrom, debounceTime, map, startWith } from 'rxjs';
 import { resolveHandicapsForSeries } from '../../services/entry-helpers';
 import { meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
@@ -65,20 +74,19 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
 @Component({
   selector: 'app-entry',
   imports: [
-    MatStepperModule,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
     HelmNameAutocomplete,
     MatButtonModule,
     MatAutocompleteModule,
-    MatTabsModule,
     MatCardModule,
     Toolbar,
     MatIcon,
     BusyButton,
     CenteredText,
-    RacesPanel
+    RacesPanel,
+    BoatCoreFields,
 ],
   templateUrl: 'entry-page.html',
   styles: [
@@ -87,6 +95,11 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     @use '@angular/material' as mat;
 
     @include mix.centered-column-page(".content", 480px);
+
+    .content {
+      padding: 16px 20px 24px;
+      box-sizing: border-box;
+    }
 
     .form-card {
       padding: 15px 25px;
@@ -152,6 +165,10 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     .details-step-actions .step-next {
       margin-left: auto;
     }
+    .new-boat-actions {
+      margin-bottom: 0;
+      justify-content: flex-start;
+    }
     .race-step-actions {
       justify-content: space-between;
       align-items: center;
@@ -162,16 +179,39 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
       margin-left: 0;
     }
 
-    .category-header {
-      margin-bottom: 16px;
+    .category-grid {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 16px;
+      min-height: 280px;
     }
 
-    .category-tabs {
+    .category-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .category-btn {
+      min-height: 88px;
       width: 100%;
     }
 
-    .category-tabs ::ng-deep .mat-mdc-tab-body-wrapper {
-      display: none;
+    .category-btn-member {
+      align-self: center;
+      width: calc((100% - 16px) / 2);
+    }
+
+    .step-instruction {
+      margin: 0 0 16px;
+      color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-title-medium);
+    }
+
+    .visitor-form mat-form-field {
+      display: block;
+      width: 100%;
     }
 
     .helm-crew-row {
@@ -241,9 +281,10 @@ export class EntryPage {
   private readonly snackbar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly dialogs = inject(DialogsService);
+  private readonly auth = inject(AuthService);
 
-  boatCategory = signal<'club' | 'member'>('member');
-  readonly categoryTabIndex = computed(() => (this.boatCategory() === 'member' ? 0 : 1));
+  readonly step = signal<'category' | 'details' | 'races'>('category');
+  boatCategory = signal<'club' | 'member' | 'visitor'>('member');
   selectedBoat = signal<Boat | null>(null);
   busy = signal(false);
 
@@ -266,11 +307,48 @@ export class EntryPage {
   );
 
   readonly canProceedToRaces = computed(() => {
+    if (this.boatCategory() === 'visitor') {
+      return this.visitorForm.valid;
+    }
     const boat = this.selectedBoat();
     if (!boat) return false;
     if (!boat.isClub) return true;
     return String(this.helmValue() ?? '').trim().length > 0;
   });
+
+  readonly visitorBoatSchemes = computed(() =>
+    getSchemesForTarget(this.cs.club().supportedHandicapSchemes ?? [], 'boat'),
+  );
+
+  readonly visitorForm: FormGroup = this.formBuilder.group({
+    boatClass: ['', Validators.required],
+    sailNumber: ['', [Validators.required, sailNumberValidator]],
+    name: [''],
+    helm: ['', Validators.required],
+    crew: [''],
+    personalHandicapBand: ['unknown' as PersonalHandicapBand | 'unknown'],
+    tags: this.formBuilder.nonNullable.control<string[]>([]),
+    club: [''],
+  });
+
+  private readonly visitorBoatClassValue = toSignal(
+    this.visitorForm.controls['boatClass'].valueChanges.pipe(
+      startWith(this.visitorForm.controls['boatClass'].value),
+    ),
+    { initialValue: this.visitorForm.controls['boatClass'].value },
+  );
+
+  readonly visitorIsSinglehander = computed(() =>
+    isSinglehanderClass(String(this.visitorBoatClassValue() ?? '').trim(), this.cs.club().classes),
+  );
+
+  readonly racePanelFilters = computed<readonly RacesPanelFilter[]>(() =>
+    this.auth.isRaceOfficer() ? ['past', 'future', 'hideCompleted'] : ['future'],
+  );
+
+  readonly racePanelInitialPeriod = computed<RacesPanelPeriod>(() =>
+    this.auth.isRaceOfficer() ? null : 'future',
+  );
 
   readonly classHandicaps = computed<Handicap[]>(() => {
     const boat = this.selectedBoat();
@@ -345,6 +423,9 @@ export class EntryPage {
     if (!candidate) return [];
     const seriesById = new Map(this.rc.allSeries().map(s => [s.id, s]));
     return this.rc.allRaces().filter(race => {
+      if (!this.auth.isRaceOfficer()) {
+        if (new Date(race.scheduledStart) < startOfDay(new Date())) return false;
+      }
       const series = seriesById.get(race.seriesId);
       if (!series) return false;
 
@@ -393,6 +474,7 @@ export class EntryPage {
 
   readonly filteredBoatsByHelm = computed((): BoatAutocompleteGroup[] => {
     const category = this.boatCategory();
+    if (category === 'visitor') return [];
     const grouped = groupBy(this.filteredBoats(), boat => boatGroupKey(boat, category));
     return [...grouped.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
@@ -408,12 +490,40 @@ export class EntryPage {
   private readonly initialSailNumber = this.route.snapshot.queryParamMap.get('sailNumber');
   private readonly scopedRacePreselected = signal(false);
 
+  private readonly boatSearchInput = viewChild<ElementRef<HTMLInputElement>>('boatSearchInput');
+
   constructor() {
+    for (const scheme of this.visitorBoatSchemes()) {
+      if (scheme === 'Personal') continue;
+      const meta = getHandicapSchemeMetadata(scheme);
+      this.visitorForm.addControl(
+        handicapControlName(scheme),
+        this.formBuilder.control<number | null>(meta.defaultValue, [
+          Validators.required,
+          Validators.min(meta.min),
+          Validators.max(meta.max),
+        ]),
+      );
+    }
+
+    effect(() => {
+      if (this.visitorIsSinglehander()) {
+        this.visitorForm.controls['crew'].setValue('', { emitEvent: false });
+      }
+    });
+
     effect(() => {
       // Clear selection when category changes
       this.boatCategory();
       this.selectedBoat.set(null);
       this.boatSearchControl.setValue('', { emitEvent: false });
+    });
+
+    afterRenderEffect(() => {
+      if (this.step() !== 'details' || this.boatCategory() === 'visitor' || this.selectedBoat()) {
+        return;
+      }
+      this.boatSearchInput()?.nativeElement.focus();
     });
 
     if (this.scopedRaceId) {
@@ -510,8 +620,90 @@ export class EntryPage {
     this.selectedBoat.set(event.option.value as Boat);
   }
 
-  onCategoryTabChange(index: number): void {
-    this.boatCategory.set(index === 0 ? 'member' : 'club');
+  startMember(): void {
+    this.boatCategory.set('member');
+    this.step.set('details');
+  }
+
+  startClub(): void {
+    this.boatCategory.set('club');
+    this.step.set('details');
+  }
+
+  startVisitor(): void {
+    this.boatCategory.set('visitor');
+    this.resetVisitorForm();
+    this.step.set('details');
+  }
+
+  goBack(): void {
+    if (this.step() === 'races') {
+      this.step.set('details');
+      return;
+    }
+    this.selectedBoat.set(null);
+    this.boatSearchControl.setValue('', { emitEvent: false });
+    this.resetVisitorForm();
+    this.step.set('category');
+  }
+
+  goNext(): void {
+    if (this.boatCategory() === 'visitor') {
+      this.confirmVisitorBoat();
+      if (!this.selectedBoat()) return;
+    } else if (!this.canProceedToRaces()) {
+      return;
+    }
+    this.step.set('races');
+  }
+
+  private confirmVisitorBoat(): void {
+    if (this.visitorForm.invalid) return;
+    const raw = this.visitorForm.getRawValue() as Record<string, unknown>;
+    const boatClass = String(raw['boatClass'] ?? '').trim();
+    const singlehander = isSinglehanderClass(boatClass, this.cs.club().classes);
+    const handicaps: Handicap[] = this.visitorBoatSchemes()
+      .filter(s => s !== 'Personal')
+      .map(scheme => {
+        const meta = getHandicapSchemeMetadata(scheme);
+        const value = Number(raw[handicapControlName(scheme)] ?? meta.defaultValue);
+        return { scheme, value: Number.isFinite(value) && value > 0 ? value : meta.defaultValue };
+      });
+
+    this.selectedBoat.set({
+      id: `new-${Date.now()}`,
+      boatClass,
+      sailNumber: normalizeSailNumber(raw['sailNumber']),
+      helm: String(raw['helm'] ?? '').trim(),
+      crew: singlehander ? '' : String(raw['crew'] ?? '').trim(),
+      name: String(raw['name'] ?? '').trim(),
+      isClub: false,
+      handicaps: handicaps.length > 0 ? handicaps : undefined,
+      personalHandicapBand: raw['personalHandicapBand'] === 'unknown'
+        ? undefined
+        : (raw['personalHandicapBand'] as PersonalHandicapBand | undefined),
+      tags: Array.isArray(raw['tags']) ? (raw['tags'] as string[]) : [],
+    });
+  }
+
+  private resetVisitorForm(): void {
+    this.visitorForm.reset({
+      boatClass: '',
+      sailNumber: '',
+      name: '',
+      helm: '',
+      crew: '',
+      personalHandicapBand: 'unknown',
+      tags: [],
+      club: '',
+    });
+    for (const scheme of this.visitorBoatSchemes()) {
+      if (scheme === 'Personal') continue;
+      const control = this.visitorForm.get(handicapControlName(scheme));
+      if (control) {
+        control.setValue(getHandicapSchemeMetadata(scheme).defaultValue);
+      }
+    }
   }
 
   onEntryRaceIdsChange(ids: string[]): void {
@@ -599,6 +791,9 @@ export class EntryPage {
       handicaps: active.size > 0 ? activeHandicaps : undefined,
       personalHandicapBand: candidate.personalHandicapBand,
       tags: selected.tags,
+      club: this.boatCategory() === 'visitor'
+        ? String(this.visitorForm.controls['club'].value ?? '').trim() || undefined
+        : undefined,
     };
 
     const conflicts = this._entryService.findEntryConflicts(entryData);
@@ -632,6 +827,8 @@ export class EntryPage {
     this.competitorDetailsGroup.reset();
     this.selectedBoat.set(null);
     this.boatSearchControl.setValue('', { emitEvent: false });
+    this.resetVisitorForm();
+    this.step.set('category');
 
     if (this.returnTo === 'results-input' && this.scopedRaceId) {
       this.router.navigate(['results-input', 'manual'], {
@@ -668,7 +865,7 @@ export class EntryPage {
   }
 
   public canDeactivate(): boolean {
-    return !this.raceSelectionGroup.dirty && !this.competitorDetailsGroup.dirty;
+    return !this.raceSelectionGroup.dirty && !this.competitorDetailsGroup.dirty && !this.visitorForm.dirty;
   }
 
   /**

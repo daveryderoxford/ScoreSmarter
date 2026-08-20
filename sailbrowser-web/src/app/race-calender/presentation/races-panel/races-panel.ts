@@ -6,6 +6,7 @@ import {
   effect,
   ElementRef,
   input,
+  linkedSignal,
   output,
   signal,
   viewChild,
@@ -180,11 +181,13 @@ export class RacesPanel {
    * so removing a chip can never leave a stale filter applied.
    */
   availableFilters = input<readonly RacesPanelFilter[]>(DEFAULT_AVAILABLE_FILTERS);
+  /** Starting Past/Future chip. `null` is today-only until the user toggles a chip. */
+  initialPeriod = input<RacesPanelPeriod>(null);
   selectedRaceIdsChange = output<string[]>();
 
   private readonly raceListContainer = viewChild<ElementRef<HTMLElement>>('raceListContainer');
 
-  protected readonly selectedPeriod = signal<RacesPanelPeriod>(null);
+  protected readonly selectedPeriod = linkedSignal<RacesPanelPeriod>(() => this.initialPeriod());
   protected readonly hideCompleted = signal(false);
   /** One-shot: align period/hide-completed with initial selection only. */
   private readonly startupFiltersSynced = signal(false);
