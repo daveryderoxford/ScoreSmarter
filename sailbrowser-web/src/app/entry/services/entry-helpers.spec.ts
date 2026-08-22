@@ -5,7 +5,12 @@ import { DEFAULT_SHORT_DISCARDS } from 'app/scoring/model/discard-profile';
 import { describe, expect, it } from 'vitest';
 import { getHandicapSchemeMetadata } from '../../scoring/model/handicap-scheme-metadata';
 import type { HandicapConfiguration, LevelRatingConfiguration } from '../../scoring/model/scoring-configuration';
-import { meetsPrimaryFleetEligibility, resolveHandicapsForSeries } from './entry-helpers';
+import {
+  entryClubForCategory,
+  hostClubLabel,
+  meetsPrimaryFleetEligibility,
+  resolveHandicapsForSeries,
+} from './entry-helpers';
 
 const testFleet: Fleet = { type: 'GeneralHandicap', id: 'f-general', name: 'General Handicap' };
 
@@ -180,5 +185,29 @@ describe('meetsPrimaryFleetEligibility', () => {
   it('returns false for Tag fleet primary eligibility in entry UI', () => {
     const series = eligibilitySeries({ type: 'Tag', id: 'f4', name: 'Novice', value: 'Novice' }, 'PY');
     expect(meetsPrimaryFleetEligibility(series, { boatClass: 'Laser', handicaps: [] })).toBe(false);
+  });
+});
+
+describe('hostClubLabel / entryClubForCategory', () => {
+  it('prefers shortName over full name', () => {
+    expect(hostClubLabel({ name: 'Hayling Island Sailing Club', shortName: 'HYC' })).toBe('HYC');
+  });
+
+  it('falls back to name when shortName is blank', () => {
+    expect(hostClubLabel({ name: 'Hayling Island Sailing Club', shortName: '  ' })).toBe(
+      'Hayling Island Sailing Club',
+    );
+  });
+
+  it('uses host label for member and club categories', () => {
+    const host = { name: 'Hayling Island Sailing Club', shortName: 'HYC' };
+    expect(entryClubForCategory('member', 'ignored', host)).toBe('HYC');
+    expect(entryClubForCategory('club', '', host)).toBe('HYC');
+  });
+
+  it('uses optional visitor club text', () => {
+    const host = { name: 'Hayling Island Sailing Club', shortName: 'HYC' };
+    expect(entryClubForCategory('visitor', '  WSC  ', host)).toBe('WSC');
+    expect(entryClubForCategory('visitor', '   ', host)).toBeUndefined();
   });
 });

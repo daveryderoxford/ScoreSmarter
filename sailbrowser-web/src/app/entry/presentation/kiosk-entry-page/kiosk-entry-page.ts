@@ -43,6 +43,7 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dialog';
 import { firstValueFrom, startWith } from 'rxjs';
 import {
+  entryClubForCategory,
   meetsPrimaryFleetEligibility,
   resolveHandicapsForSeries,
 } from '../../services/entry-helpers';
@@ -745,9 +746,11 @@ export class KioskEntryPage {
       handicaps: activeSchemes.size > 0 ? activeHandicaps : undefined,
       personalHandicapBand: candidate.personalHandicapBand,
       tags: boat.tags,
-      club: this.category() === 'visitor'
-        ? String(this.visitorForm.controls['club'].value ?? '').trim() || undefined
-        : undefined,
+      club: entryClubForCategory(
+        this.category() ?? 'visitor',
+        this.visitorForm.controls['club'].value,
+        this.clubStore.club(),
+      ),
       resultCode: this.entryResultCode(),
     };
 

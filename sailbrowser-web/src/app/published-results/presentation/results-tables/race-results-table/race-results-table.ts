@@ -4,7 +4,7 @@ import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
 import { doesRaceRequireHandicap, type RaceType } from 'app/race-calender/model/race-type';
 import { isRankedRaceResult, RaceResult } from 'app/published-results/model/published-race';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
-import { competitorColumns, nameColumnWidth as computeNameColumnWidth } from '../results-table-shared';
+import { competitorColumns, nameColumnWidth as computeNameColumnWidth, withOptionalClubColumn } from '../results-table-shared';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { HorizontalScrollIndicator } from 'app/shared/components/horizontal-scroll-indicator/horizontal-scroll-indicator';
 import { TagLegend } from '../tag-legend';
@@ -41,7 +41,10 @@ export class RaceResultsTable {
     if (rt !== undefined && !doesRaceRequireHandicap(rt)) {
       filtered = filtered.filter(c => c !== 'elapsed' && c !== 'corrected' && c !== 'handicap');
     }
-    return [...filtered];
+    return withOptionalClubColumn(
+      filtered,
+      this.results().map(r => r.club),
+    );
   });
 
   nameColumnWidth = computed(() => computeNameColumnWidth(this.results()));

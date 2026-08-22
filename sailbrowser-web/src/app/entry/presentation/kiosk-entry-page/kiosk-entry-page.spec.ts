@@ -83,7 +83,15 @@ function baseProviders(overrides: Record<string, unknown> = {}) {
     },
     {
       provide: ClubStore,
-      useValue: { club: () => ({ classes: clubClasses, supportedHandicapSchemes: [], tagDefinitions: [] }) },
+      useValue: {
+        club: () => ({
+          name: 'Hayling Island Sailing Club',
+          shortName: 'HYC',
+          classes: clubClasses,
+          supportedHandicapSchemes: [],
+          tagDefinitions: [],
+        }),
+      },
     },
     {
       provide: ClubTenant,
@@ -314,6 +322,40 @@ describe('KioskEntryPage', () => {
 
     expect(entry.enterRaces).toHaveBeenCalledWith(
       expect.objectContaining({ helm: 'Pat Visitor', club: 'HYC' }),
+    );
+  });
+
+  it('passes host short club name for member boat entries', async () => {
+    const entry = TestBed.inject(EntryService);
+    vi.mocked(entry.enterRaces).mockResolvedValue(undefined);
+
+    const page = createPage();
+    const boat = TestBed.inject(BoatsStore).boats()[0];
+    page.startMember();
+    page.selectMemberHelm('Alice Smith');
+    page.selectMemberBoat(boat);
+    await page.submit();
+
+    expect(entry.enterRaces).toHaveBeenCalledWith(
+      expect.objectContaining({ helm: 'Alice Smith', club: 'HYC' }),
+    );
+  });
+
+  it('passes host short club name for club boat entries', async () => {
+    const entry = TestBed.inject(EntryService);
+    vi.mocked(entry.enterRaces).mockResolvedValue(undefined);
+
+    const page = createPage();
+    const clubBoat = TestBed.inject(BoatsStore).boats()[1];
+    page.startClub();
+    page.selectClubClass('420');
+    page.selectClubBoat(clubBoat);
+    page.clubHelmForm.controls.helm.setValue('Sam Helm');
+    page.clubHelmForm.controls.crew.setValue('Pat Crew');
+    await page.submit();
+
+    expect(entry.enterRaces).toHaveBeenCalledWith(
+      expect.objectContaining({ helm: 'Sam Helm', club: 'HYC' }),
     );
   });
 

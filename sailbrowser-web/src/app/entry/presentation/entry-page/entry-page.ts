@@ -44,8 +44,7 @@ import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dia
 import { groupBy } from 'app/shared/utils/group-by';
 import { startOfDay } from 'date-fns';
 import { firstValueFrom, debounceTime, map, startWith } from 'rxjs';
-import { resolveHandicapsForSeries } from '../../services/entry-helpers';
-import { meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
+import { resolveHandicapsForSeries, entryClubForCategory, meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
 import { EntryConflict, EntryService } from '../../services/entry.service';
 import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
@@ -791,9 +790,11 @@ export class EntryPage {
       handicaps: active.size > 0 ? activeHandicaps : undefined,
       personalHandicapBand: candidate.personalHandicapBand,
       tags: selected.tags,
-      club: this.boatCategory() === 'visitor'
-        ? String(this.visitorForm.controls['club'].value ?? '').trim() || undefined
-        : undefined,
+      club: entryClubForCategory(
+        this.boatCategory(),
+        this.visitorForm.controls['club'].value,
+        this.cs.club(),
+      ),
     };
 
     const conflicts = this._entryService.findEntryConflicts(entryData);

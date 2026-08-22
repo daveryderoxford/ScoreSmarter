@@ -19,6 +19,28 @@ export interface PrimaryFleetEligibilityEntry {
   handicaps: Handicap[];
 }
 
+/** Host club label for member / club-boat series entries (short name preferred). */
+export function hostClubLabel(club: { name: string; shortName?: string }): string {
+  const short = club.shortName?.trim();
+  return short || club.name;
+}
+
+/**
+ * Club stored on a new series entry by sign-on category.
+ * Visitors: optional typed club. Member/club boats: host short name (else name).
+ */
+export function entryClubForCategory(
+  category: 'member' | 'club' | 'visitor',
+  visitorClub: string | undefined | null,
+  hostClub: { name: string; shortName?: string },
+): string | undefined {
+  if (category === 'visitor') {
+    const trimmed = visitorClub?.trim();
+    return trimmed || undefined;
+  }
+  return hostClubLabel(hostClub);
+}
+
 /**
  * Resolves the `Handicap[]` for a given series using:
  * 1) source overrides,
