@@ -32,6 +32,8 @@ export const UNKNOWN_HANDICAP_VALUE_BY_SCHEME: Readonly<Record<HandicapScheme, n
   'Level Rating': 900001,
   PY: 900002,
   IRC: 900003,
+  YTC: 900005,
+  'YTC Spinnaker': 900006,
   Personal: 900004,
 };
 

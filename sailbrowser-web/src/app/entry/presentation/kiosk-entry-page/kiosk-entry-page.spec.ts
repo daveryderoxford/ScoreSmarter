@@ -446,6 +446,43 @@ describe('KioskEntryPage', () => {
     expect(page.raceCountLabel()).not.toContain('No races today');
     expect(page.canEnter()).toBe(false);
   });
+
+  it('includes boat name in pick labels when present', () => {
+    const page = createPage();
+    expect(
+      page.boatPickLabel({
+        id: 'y1',
+        boatClass: 'J/109',
+        sailNumber: 'GBR1234',
+        helm: 'Sam',
+        name: 'Flying Fish',
+        isClub: false,
+        tags: [],
+      }),
+    ).toBe('Flying Fish · J/109 · GBR1234');
+    expect(
+      page.boatPickLabel({
+        id: 'd1',
+        boatClass: 'ILCA 7',
+        sailNumber: '1234',
+        helm: 'Alice',
+        name: '',
+        isClub: false,
+        tags: [],
+      }),
+    ).toBe('ILCA 7 1234');
+    expect(
+      page.clubSailPickLabel({
+        id: 'c1',
+        boatClass: '420',
+        sailNumber: '99',
+        helm: '',
+        name: '',
+        isClub: true,
+        tags: [],
+      }),
+    ).toBe('99');
+  });
 });
 
 describe('helmGridLayout', () => {

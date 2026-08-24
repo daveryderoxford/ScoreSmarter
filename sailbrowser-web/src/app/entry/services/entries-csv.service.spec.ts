@@ -98,6 +98,7 @@ describe('EntriesCsvService', () => {
       sailNumber: '1234',
       crew: 'Bob',
       club: 'HYC',
+      boatName: 'Flying Fish',
       tags: ['gold', 'u16'],
     });
     expect(plan.series[0].entries[0].handicaps.some(h => h.scheme === 'PY' && h.value === 1100)).toBe(true);

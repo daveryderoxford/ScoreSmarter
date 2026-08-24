@@ -14,6 +14,8 @@ export interface SeriesEntry {
    // Default Boat Details
    boatClass: string;
    sailNumber: SailNumber;
+   /** Yacht or named boat; display-only, not part of per-hull identity. */
+   boatName?: string;
    handicaps: Handicap[];
    personalHandicapBand?: PersonalHandicapBand;
 

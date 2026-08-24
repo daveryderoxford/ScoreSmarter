@@ -68,6 +68,7 @@ export interface CreateSeriesEntryInput {
   boatClass: string;
   sailNumber: string;
   club?: string;
+  boatName?: string;
   crew?: string;
   handicaps: Handicap[];
   personalHandicapBand?: PersonalHandicapBand;
@@ -121,6 +122,7 @@ function seriesEntriesEqual(a: SeriesEntry, b: SeriesEntry): boolean {
     a.helm === b.helm &&
     (a.crew ?? '') === (b.crew ?? '') &&
     (a.club ?? '') === (b.club ?? '') &&
+    (a.boatName ?? '') === (b.boatName ?? '') &&
     a.boatClass === b.boatClass &&
     sailNumbersEqual(a.sailNumber, b.sailNumber) &&
     (a.personalHandicapBand ?? null) === (b.personalHandicapBand ?? null) &&
@@ -222,6 +224,7 @@ export class RaceCompetitorMutator {
       sailNumber: input.sailNumber,
       crew: input.crew,
       club: input.club,
+      boatName: input.boatName,
       handicaps: input.handicaps,
       personalHandicapBand: input.personalHandicapBand,
       tags: input.tags,

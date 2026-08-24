@@ -41,6 +41,8 @@ export interface EntryDetails {
   tags?: string[];
   /** Visiting helm's club. Set on create only; reuse does not overwrite. */
   club?: string;
+  /** Copied from boat register or visitor form at create; reuse does not overwrite. */
+  boatName?: string;
   /** Defaults to `NOT FINISHED` when omitted. */
   resultCode?: ResultCode;
 }
@@ -55,6 +57,7 @@ export interface SeriesEntryImportPlan {
       helm: string;
       crew?: string;
       club?: string;
+      boatName?: string;
       boatClass: string;
       sailNumber: string;
       tags: string[];
@@ -280,6 +283,7 @@ export class EntryService {
         helm: details.helm,
         crew: details.crew,
         club: details.club,
+        boatName: details.boatName,
         boatClass: details.boatClass,
         sailNumber: details.sailNumber,
         handicaps,
@@ -319,6 +323,7 @@ export class EntryService {
           helm: entry.helm,
           crew: entry.crew,
           club: entry.club,
+          boatName: entry.boatName,
           boatClass: entry.boatClass,
           sailNumber: entry.sailNumber,
           handicaps: entry.handicaps,

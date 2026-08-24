@@ -23,6 +23,7 @@ interface CompetitorFixtureOptions {
   crew?: string;
   boatClass?: string;
   sailNumber?: string;
+  boatName?: string;
   handicaps?: { scheme: string; value: number }[];
 }
 
@@ -62,7 +63,9 @@ function createCompetitor(
     crew: options.crew,
     boatClass: options.boatClass ?? 'Test Class',
     sailNumber: options.sailNumber ?? String(100 + parseInt(id, 10)),
+    boatName: options.boatName,
     handicaps: (options.handicaps ?? [{ scheme: 'PY', value: 1000 }]) as SeriesEntry['handicaps'],
+    tags: [],
   } as SeriesEntry;
 
   return { competitor, entry };
@@ -467,6 +470,24 @@ describe('RaceScorer', () => {
 
     const r2 = results.find(r => r.sailNumber === '102')!;
     expect(r2.points).toBe(4);
+  });
+
+  it('copies boatName from series entry into race results', () => {
+    const fixtures = [
+      createCompetitor('1', 600, 'OK', {
+        boatName: 'Flying Fish',
+        boatClass: 'J/109',
+        sailNumber: 'GBR1234',
+      }),
+    ];
+    const results = buildRaceResults(
+      competitorsOf(fixtures),
+      entriesOf(fixtures),
+      'YTC',
+      'classSailNumberHelm',
+    );
+    expect(results[0].boatName).toBe('Flying Fish');
+    expect(results[0].boatClass).toBe('J/109');
   });
 
   it('should support calculateRacePoints for re-scoring without re-calculating times', () => {

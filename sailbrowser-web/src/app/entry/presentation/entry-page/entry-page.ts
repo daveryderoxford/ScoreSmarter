@@ -45,6 +45,7 @@ import { groupBy } from 'app/shared/utils/group-by';
 import { startOfDay } from 'date-fns';
 import { firstValueFrom, debounceTime, map, startWith } from 'rxjs';
 import { resolveHandicapsForSeries, entryClubForCategory, meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
+import { trimBoatName, formatBoatOptionLabel } from 'app/boats/model/boat-display';
 import { EntryConflict, EntryService } from '../../services/entry.service';
 import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
@@ -281,6 +282,8 @@ export class EntryPage {
   private readonly dialog = inject(MatDialog);
   private readonly dialogs = inject(DialogsService);
   private readonly auth = inject(AuthService);
+
+  protected readonly formatBoatOptionLabel = formatBoatOptionLabel;
 
   readonly step = signal<'category' | 'details' | 'races'>('category');
   boatCategory = signal<'club' | 'member' | 'visitor'>('member');
@@ -795,6 +798,7 @@ export class EntryPage {
         this.visitorForm.controls['club'].value,
         this.cs.club(),
       ),
+      boatName: trimBoatName(selected.name),
     };
 
     const conflicts = this._entryService.findEntryConflicts(entryData);

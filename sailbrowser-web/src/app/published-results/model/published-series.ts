@@ -23,6 +23,8 @@ export interface PublishedSeriesResult {
    crew?: string;
    boatClass: string;
    sailNumber: SailNumber;
+   /** Display name copied from the seed series entry when present. */
+   boatName?: string;
    club: string;
    handicap: number;
    personalHandicapBand?: PersonalHandicapBand;

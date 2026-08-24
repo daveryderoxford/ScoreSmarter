@@ -155,6 +155,7 @@ export function buildRaceResults(
       rank: seededRank,
       boatClass: entry.boatClass,
       sailNumber: entry.sailNumber,
+      boatName: entry.boatName,
       helm: entry.helm,
       crew: comp.crewOverride ?? entry.crew,
       club: entry.club,

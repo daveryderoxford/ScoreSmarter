@@ -40,6 +40,24 @@ export const HANDICAP_SCHEME_METADATA: Record<HandicapScheme, HandicapSchemeMeta
     step: 0.001,
     defaultValue: 1,
   },
+  YTC: {
+    scheme: 'YTC',
+    label: 'YTC',
+    appliesTo: 'boat',
+    min: 700,
+    max: 1400,
+    step: 1,
+    defaultValue: 1000,
+  },
+  'YTC Spinnaker': {
+    scheme: 'YTC Spinnaker',
+    label: 'YTC Spinnaker',
+    appliesTo: 'boat',
+    min: 700,
+    max: 1400,
+    step: 1,
+    defaultValue: 1000,
+  },
   Personal: {
     scheme: 'Personal',
     label: 'Personal handicap',
@@ -55,6 +73,8 @@ const CONTROL_NAMES: Record<HandicapScheme, string> = {
   'Level Rating': 'levelRating',
   PY: 'py',
   IRC: 'irc',
+  YTC: 'ytc',
+  'YTC Spinnaker': 'ytcSpinnaker',
   Personal: 'personal',
 };
 

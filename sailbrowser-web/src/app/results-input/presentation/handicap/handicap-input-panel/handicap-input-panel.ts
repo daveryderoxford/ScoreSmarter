@@ -32,6 +32,7 @@ import { ResultCode } from 'app/scoring/model/result-code';
 import { requiresTime } from 'app/scoring/model/result-code-scoring';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
+import { formatEntrySearchLabel, entrySearchHaystack } from 'app/boats/model/boat-display';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { firstValueFrom, startWith } from 'rxjs';
 import { manualRaceTableSort, ManualResultsService } from '../../../services/manual-results.service';
@@ -82,6 +83,8 @@ export class HandicapInputPanel {
   /** Two-way bound from parent so the results table can highlight the selected row. */
   selectedCompetitor = model<ResolvedRaceCompetitor | undefined>(undefined);
   readonly addEntryRequested = output<void>();
+
+  protected readonly formatEntrySearchLabel = formatEntrySearchLabel;
 
   readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
   private readonly autocompleteTrigger = viewChild(MatAutocompleteTrigger);
@@ -186,7 +189,12 @@ export class HandicapInputPanel {
     if (term.length === 0) return [];
 
     const filtered = this.sortedCompetitors().filter(c => {
-      const searchStr = normaliseString(`${c.boatClass} ${c.sailNumber} ${c.helm}`);
+      const searchStr = entrySearchHaystack({
+        boatName: c.boatName,
+        boatClass: c.boatClass,
+        sailNumber: c.sailNumber,
+        helm: c.helm,
+      });
       return searchStr.includes(term);
     });
 

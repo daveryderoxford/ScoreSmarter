@@ -27,7 +27,7 @@
           <mat-optgroup [label]="group.name">
             @for (comp of group.competitors; track comp.id) {
               <mat-option [value]="comp.id">
-                {{comp.boatClass}} {{comp.sailNumber}} - {{comp.helm}}
+                {{ formatEntrySearchLabel({ boatName: comp.boatName, boatClass: comp.boatClass, sailNumber: comp.sailNumber, helm: comp.helm }) }}
               </mat-option>
             }
           </mat-optgroup>

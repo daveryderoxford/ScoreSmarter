@@ -47,6 +47,7 @@ import {
   meetsPrimaryFleetEligibility,
   resolveHandicapsForSeries,
 } from '../../services/entry-helpers';
+import { formatBoatOptionLabel, trimBoatName } from 'app/boats/model/boat-display';
 import { EntryConflict, EntryService } from '../../services/entry.service';
 import {
   formatHelmSurnameLast,
@@ -472,6 +473,22 @@ export class KioskEntryPage {
     return formatHelmSurnameLast(helm);
   }
 
+  boatPickLabel(boat: Boat): string {
+    return formatBoatOptionLabel({
+      boatName: boat.name,
+      boatClass: boat.boatClass,
+      sailNumber: boat.sailNumber,
+    });
+  }
+
+  /** Club bow-number grid: keep sail-only when unnamed; show full label when named. */
+  clubSailPickLabel(boat: Boat): string {
+    if (trimBoatName(boat.name)) {
+      return this.boatPickLabel(boat);
+    }
+    return String(boat.sailNumber);
+  }
+
   startMember(): void {
     this.category.set('member');
     this.view.set('memberHelm');
@@ -751,6 +768,7 @@ export class KioskEntryPage {
         this.visitorForm.controls['club'].value,
         this.clubStore.club(),
       ),
+      boatName: trimBoatName(boat.name),
       resultCode: this.entryResultCode(),
     };
 

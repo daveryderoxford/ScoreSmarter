@@ -3,6 +3,8 @@ export const HANDICAP_SCHEMES = [
   "Level Rating", 
   "PY",
   'IRC',
+  'YTC',
+  'YTC Spinnaker',
   'Personal'
  ] as const;
 

@@ -118,7 +118,7 @@
                   class="pick-grid-item"
                   role="listitem"
                   (click)="selectMemberBoat(boat)">
-                  {{ boat.boatClass }} · {{ boat.sailNumber }}
+                  {{ boatPickLabel(boat) }}
                 </button>
               }
             </div>
@@ -164,7 +164,7 @@
         @if (selectedBoat(); as boat) {
           <div class="summary">
             <p><strong>{{ boat.helm }}</strong></p>
-            <p>{{ boat.boatClass }} · {{ boat.sailNumber }}</p>
+            <p>{{ boatPickLabel(boat) }}</p>
           </div>
         }
         <form class="helm-form">
@@ -206,7 +206,7 @@
         <div class="kiosk-scroll grid-list">
           @for (boat of clubBoatsForClass(); track boat.id) {
             <button mat-stroked-button type="button" class="grid-btn" (click)="selectClubBoat(boat)">
-              {{ boat.sailNumber }}
+              {{ clubSailPickLabel(boat) }}
             </button>
           }
         </div>
@@ -215,7 +215,7 @@
       @case ('clubHelm') {
         @if (selectedBoat(); as boat) {
           <div class="summary">
-            <p>{{ boat.boatClass }} · {{ boat.sailNumber }}</p>
+            <p>{{ boatPickLabel(boat) }}</p>
           </div>
         }
         <form [formGroup]="clubHelmForm" class="helm-form">
