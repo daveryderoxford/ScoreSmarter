@@ -36,6 +36,9 @@
       <ng-container cdkColumnDef="boat">
          <th cdk-header-cell *cdkHeaderCellDef>Boat</th>
          <td cdk-cell *cdkCellDef="let competitor">
+            @if (competitor.boatName) {
+               <span class="boat-name">{{ competitor.boatName }}</span><br>
+            }
             @if (showBoatClass()) {
                {{ competitor.boatClass }} <br>
             }

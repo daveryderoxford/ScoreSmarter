@@ -66,11 +66,7 @@
                     @for (boat of group.boats; track boat.id) {
                       <mat-option [value]="boat">
                         <span [classList]="boat.isClub ? 'muted' : ''">
-                          @if (boat.isClub) {
-                            {{ boat.boatClass }} - {{ boat.sailNumber }}
-                          } @else {
-                            {{ boat.boatClass }} {{ boat.sailNumber }}
-                          }
+                          {{ formatBoatOptionLabel({ boatName: boat.name, boatClass: boat.boatClass, sailNumber: boat.sailNumber }) }}
                         </span>
                       </mat-option>
                     }

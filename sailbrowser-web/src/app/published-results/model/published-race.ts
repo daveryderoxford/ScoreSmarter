@@ -41,6 +41,8 @@ export interface RaceResult {
    club?: string;
    boatClass: string;
    sailNumber: SailNumber;
+   /** Yacht name copied from the series entry when present. */
+   boatName?: string;
    helm: string;
    crew?: string;
    handicap: number;

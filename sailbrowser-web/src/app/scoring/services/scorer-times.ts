@@ -48,6 +48,8 @@ export function getCorrectedTime(
 
   switch (scheme) {
     case 'PY':
+    case 'YTC':
+    case 'YTC Spinnaker':
       return Math.round((elapsedSeconds * 1000.0) / handicapValue);
     case 'Personal':
       // Same as PY for now.

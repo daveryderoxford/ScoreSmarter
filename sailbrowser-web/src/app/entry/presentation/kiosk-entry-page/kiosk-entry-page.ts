@@ -43,9 +43,11 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dialog';
 import { firstValueFrom, startWith } from 'rxjs';
 import {
+  entryClubForCategory,
   meetsPrimaryFleetEligibility,
   resolveHandicapsForSeries,
 } from '../../services/entry-helpers';
+import { formatBoatOptionLabel, trimBoatName } from 'app/boats/model/boat-display';
 import { EntryConflict, EntryService } from '../../services/entry.service';
 import {
   formatHelmSurnameLast,
@@ -471,6 +473,22 @@ export class KioskEntryPage {
     return formatHelmSurnameLast(helm);
   }
 
+  boatPickLabel(boat: Boat): string {
+    return formatBoatOptionLabel({
+      boatName: boat.name,
+      boatClass: boat.boatClass,
+      sailNumber: boat.sailNumber,
+    });
+  }
+
+  /** Club bow-number grid: keep sail-only when unnamed; show full label when named. */
+  clubSailPickLabel(boat: Boat): string {
+    if (trimBoatName(boat.name)) {
+      return this.boatPickLabel(boat);
+    }
+    return String(boat.sailNumber);
+  }
+
   startMember(): void {
     this.category.set('member');
     this.view.set('memberHelm');
@@ -745,9 +763,12 @@ export class KioskEntryPage {
       handicaps: activeSchemes.size > 0 ? activeHandicaps : undefined,
       personalHandicapBand: candidate.personalHandicapBand,
       tags: boat.tags,
-      club: this.category() === 'visitor'
-        ? String(this.visitorForm.controls['club'].value ?? '').trim() || undefined
-        : undefined,
+      club: entryClubForCategory(
+        this.category() ?? 'visitor',
+        this.visitorForm.controls['club'].value,
+        this.clubStore.club(),
+      ),
+      boatName: trimBoatName(boat.name),
       resultCode: this.entryResultCode(),
     };
 

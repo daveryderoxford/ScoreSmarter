@@ -83,7 +83,15 @@ function baseProviders(overrides: Record<string, unknown> = {}) {
     },
     {
       provide: ClubStore,
-      useValue: { club: () => ({ classes: clubClasses, supportedHandicapSchemes: [], tagDefinitions: [] }) },
+      useValue: {
+        club: () => ({
+          name: 'Hayling Island Sailing Club',
+          shortName: 'HYC',
+          classes: clubClasses,
+          supportedHandicapSchemes: [],
+          tagDefinitions: [],
+        }),
+      },
     },
     {
       provide: ClubTenant,
@@ -317,6 +325,40 @@ describe('KioskEntryPage', () => {
     );
   });
 
+  it('passes host short club name for member boat entries', async () => {
+    const entry = TestBed.inject(EntryService);
+    vi.mocked(entry.enterRaces).mockResolvedValue(undefined);
+
+    const page = createPage();
+    const boat = TestBed.inject(BoatsStore).boats()[0];
+    page.startMember();
+    page.selectMemberHelm('Alice Smith');
+    page.selectMemberBoat(boat);
+    await page.submit();
+
+    expect(entry.enterRaces).toHaveBeenCalledWith(
+      expect.objectContaining({ helm: 'Alice Smith', club: 'HYC' }),
+    );
+  });
+
+  it('passes host short club name for club boat entries', async () => {
+    const entry = TestBed.inject(EntryService);
+    vi.mocked(entry.enterRaces).mockResolvedValue(undefined);
+
+    const page = createPage();
+    const clubBoat = TestBed.inject(BoatsStore).boats()[1];
+    page.startClub();
+    page.selectClubClass('420');
+    page.selectClubBoat(clubBoat);
+    page.clubHelmForm.controls.helm.setValue('Sam Helm');
+    page.clubHelmForm.controls.crew.setValue('Pat Crew');
+    await page.submit();
+
+    expect(entry.enterRaces).toHaveBeenCalledWith(
+      expect.objectContaining({ helm: 'Sam Helm', club: 'HYC' }),
+    );
+  });
+
   it('resets to category after start over', () => {
     const page = createPage();
     page.startMember();
@@ -403,6 +445,43 @@ describe('KioskEntryPage', () => {
     expect(page.raceCountLabel()).toContain('Enter helm to sign on');
     expect(page.raceCountLabel()).not.toContain('No races today');
     expect(page.canEnter()).toBe(false);
+  });
+
+  it('includes boat name in pick labels when present', () => {
+    const page = createPage();
+    expect(
+      page.boatPickLabel({
+        id: 'y1',
+        boatClass: 'J/109',
+        sailNumber: 'GBR1234',
+        helm: 'Sam',
+        name: 'Flying Fish',
+        isClub: false,
+        tags: [],
+      }),
+    ).toBe('Flying Fish · J/109 · GBR1234');
+    expect(
+      page.boatPickLabel({
+        id: 'd1',
+        boatClass: 'ILCA 7',
+        sailNumber: '1234',
+        helm: 'Alice',
+        name: '',
+        isClub: false,
+        tags: [],
+      }),
+    ).toBe('ILCA 7 1234');
+    expect(
+      page.clubSailPickLabel({
+        id: 'c1',
+        boatClass: '420',
+        sailNumber: '99',
+        helm: '',
+        name: '',
+        isClub: true,
+        tags: [],
+      }),
+    ).toBe('99');
   });
 });
 

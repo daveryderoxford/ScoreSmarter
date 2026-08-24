@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { CdkTableModule } from '@angular/cdk/table';
 import { PublishedSeries, PublishedSeriesResult } from 'app/published-results';
 import { format } from 'date-fns';
-import { competitorColumns, nameColumnWidth as computeNameColumnWidth } from '../results-table-shared';
+import { competitorColumns, nameColumnWidth as computeNameColumnWidth, withOptionalClubColumn } from '../results-table-shared';
 import { HighlightPosition } from "../highlighted-position";
 import { HorizontalScrollIndicator } from 'app/shared/components/horizontal-scroll-indicator/horizontal-scroll-indicator';
 import { TagLegend } from '../tag-legend';
@@ -39,7 +39,13 @@ export class SeriesResultsTable {
 
   });
 
-  displayedColumns = computed(() => [...this.seriesColumns(), ...this.raceColumns()]);
+  displayedColumns = computed(() => {
+    const withClub = withOptionalClubColumn(
+      this.seriesColumns(),
+      this.series()?.competitors.map(c => c.club) ?? [],
+    );
+    return [...withClub, ...this.raceColumns()];
+  });
 
   tableData = computed(() => this.series()?.competitors || []);
 

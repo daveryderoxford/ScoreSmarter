@@ -30,6 +30,12 @@
     <input matInput formControlName="club" autocomplete="organization" />
   </mat-form-field>
 
+  <mat-form-field class="field-full">
+    <mat-label>Boat name</mat-label>
+    <input matInput formControlName="boatName" autocomplete="off" />
+    <mat-hint>Optional; shown on published results when set</mat-hint>
+  </mat-form-field>
+
   @if (editableHandicapSchemes().length > 0) {
     <div class="handicaps-block">
       <span class="handicaps-title">Handicaps</span>

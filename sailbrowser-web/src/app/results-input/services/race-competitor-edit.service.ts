@@ -45,6 +45,7 @@ export interface SeriesTypoEditCommand {
   helm: string;
   crew?: string;
   club?: string;
+  boatName?: string;
   personalHandicapBand?: PersonalHandicapBand | null;
   tags?: string[];
   handicaps?: Handicap[];
@@ -100,6 +101,7 @@ export class RaceCompetitorEditService {
         boatClass,
         sailNumber,
         club: entry.club,
+        boatName: entry.boatName,
         crew: entry.crew,
         tags: entry.tags,
         personalHandicapBand: entry.personalHandicapBand,
@@ -199,6 +201,9 @@ export class RaceCompetitorEditService {
     }
     if (command.club !== undefined && workingEntry.club !== command.club) {
       entryUpdate.club = command.club;
+    }
+    if (command.boatName !== undefined && workingEntry.boatName !== command.boatName) {
+      entryUpdate.boatName = command.boatName || undefined;
     }
     if (commandSpecifiesBand && bandChanged) {
       entryUpdate.personalHandicapBand =

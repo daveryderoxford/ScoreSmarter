@@ -1,4 +1,3 @@
-
 /** Shared functionality between series and results tables */
 
 export interface HelmCrew  {
@@ -33,3 +32,35 @@ export function nameColumnWidth(names: HelmCrew[]) {
 
 /** Shared leading columns (tags render as dots beside the name, not a column). */
 export const competitorColumns = ['rank', 'name', 'boat', 'handicap'] as const;
+
+/**
+ * Show Club when at least two distinct non-empty club names appear
+ * (typical of open events mixing host and visitor clubs).
+ */
+export function shouldShowClubColumn(clubs: Array<string | undefined | null>): boolean {
+  const distinct = new Set<string>();
+  for (const club of clubs) {
+    const trimmed = club?.trim();
+    if (trimmed) distinct.add(trimmed);
+  }
+  return distinct.size >= 2;
+}
+
+/** Insert `club` after `boat` when the column set should include it. */
+export function withOptionalClubColumn(
+  columns: readonly string[],
+  clubs: Array<string | undefined | null>,
+): string[] {
+  const cols = [...columns];
+  if (!shouldShowClubColumn(clubs)) {
+    return cols.filter(c => c !== 'club');
+  }
+  if (cols.includes('club')) return cols;
+  const boatIdx = cols.indexOf('boat');
+  if (boatIdx === -1) {
+    cols.push('club');
+    return cols;
+  }
+  cols.splice(boatIdx + 1, 0, 'club');
+  return cols;
+}

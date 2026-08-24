@@ -59,6 +59,10 @@ export class ResolvedRaceCompetitor extends RaceCompetitor {
     return this.entry.club;
   }
 
+  get boatName(): string | undefined {
+    return this.entry.boatName;
+  }
+
   get helmCrew(): string {
     const crew = this.crew;
     return crew && crew.trim().length > 0 ? `${this.helm} / ${crew}` : this.helm;

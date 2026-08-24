@@ -184,6 +184,7 @@ function makeSeriesRow(
     helm: seed.helm,
     crew: seed.crew,
     sailNumber: seed.sailNumber,
+    boatName: seed.boatName,
     club: seed.club || '',
     handicap: getHandicapValue(seed.handicaps, handicapScheme) ?? 0,
     personalHandicapBand: seed.personalHandicapBand,
@@ -209,6 +210,7 @@ function seedDisplayFromEntry(
   row.helm = entry.helm;
   row.crew = entry.crew;
   row.sailNumber = entry.sailNumber;
+  row.boatName = entry.boatName;
   row.club = entry.club || '';
   row.handicap = getHandicapValue(entry.handicaps, handicapScheme) ?? 0;
   row.personalHandicapBand = entry.personalHandicapBand;

@@ -87,6 +87,7 @@ export class SeriesEditForm implements OnInit {
     helm: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     crew: new FormControl('', { nonNullable: true }),
     club: new FormControl('', { nonNullable: true }),
+    boatName: new FormControl('', { nonNullable: true }),
     personalHandicapBand: new FormControl<PersonalBandFormValue>('unknown', {
       nonNullable: true,
     }),
@@ -114,6 +115,7 @@ export class SeriesEditForm implements OnInit {
       helm: c.helm,
       crew: this.isSinglehander() ? '' : (c.entry.crew ?? ''),
       club: c.club ?? '',
+      boatName: c.entry.boatName ?? '',
       personalHandicapBand: bandForm,
       tags: c.entry.tags ?? [],
     });
@@ -151,6 +153,7 @@ export class SeriesEditForm implements OnInit {
       helm: v.helm,
       crew: this.isSinglehander() ? undefined : (v.crew || undefined),
       club: v.club || undefined,
+      boatName: v.boatName.trim() || undefined,
       personalHandicapBand: supports ? personalHandicapBand : undefined,
       tags: [...v.tags],
       handicaps,

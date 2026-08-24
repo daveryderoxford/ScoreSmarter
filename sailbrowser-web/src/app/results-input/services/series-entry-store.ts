@@ -32,11 +32,12 @@ import { CurrentRaces } from './current-races-store';
  * `undefined` is *omitted* and leaves the existing value alone.
  */
 export type SeriesEntryPartialUpdate =
-  Omit<Partial<SeriesEntry>, 'personalHandicapBand' | 'crew' | 'club'>
+  Omit<Partial<SeriesEntry>, 'personalHandicapBand' | 'crew' | 'club' | 'boatName'>
   & {
     personalHandicapBand?: PersonalHandicapBand | null;
     crew?: string | null;
     club?: string | null;
+    boatName?: string | null;
   };
 
 @Injectable({

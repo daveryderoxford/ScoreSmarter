@@ -50,6 +50,7 @@ export interface EntriesCsvPlannedEntry {
   helm: string;
   crew?: string;
   club?: string;
+  boatName?: string;
   boatClass: string;
   sailNumber: string;
   tags: string[];
@@ -164,6 +165,7 @@ export class EntriesCsvService {
 
       const crew = fields.crew.trim() || undefined;
       const club = fields.club.trim() || undefined;
+      const boatName = fields.boatName.trim() || undefined;
       const handicaps = resolveHandicapsForSeries(
         mapping.series,
         {
@@ -178,6 +180,7 @@ export class EntriesCsvService {
         helm,
         crew,
         club,
+        boatName,
         boatClass: boatClass!.name,
         sailNumber,
         tags: tagResult.ids,
