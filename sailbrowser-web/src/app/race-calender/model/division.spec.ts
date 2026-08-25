@@ -8,9 +8,8 @@ import {
 } from './division';
 
 describe('division helpers', () => {
-  it('falls back from leftover series-entry tags as exact ids', () => {
-    expect(entryDivisionIds({ tags: ['D-youth'] })).toEqual(['D-youth']);
-    expect(entryDivisionIds({ divisions: ['D-gold'], tags: ['D-youth'] })).toEqual(['D-gold']);
+  it('reads entry division ids only', () => {
+    expect(entryDivisionIds({ divisions: ['D-gold'] })).toEqual(['D-gold']);
     expect(entryDivisionIds({})).toEqual([]);
   });
 

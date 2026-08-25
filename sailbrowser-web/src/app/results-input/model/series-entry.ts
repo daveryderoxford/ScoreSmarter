@@ -21,9 +21,6 @@ export interface SeriesEntry {
 
    /**
     * Series division ids (from `Series.divisions`). Always an array (default `[]`).
-    * Older documents may only have `tags` with exact division ids; use `entryDivisionIds` when reading.
     */
    divisions: string[];
-   /** @deprecated Read via `entryDivisionIds` as exact ids. Ignored on write. */
-   tags?: string[];
 }

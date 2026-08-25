@@ -539,7 +539,7 @@ export class SeriesForm {
       style: 'text' | 'marker';
       markerColor: string;
     }>).map(row => ({
-      id: row.id.trim() || generateSecureID(20, 'D'),
+      id: row.id,
       name: row.name.trim(),
       scoreAs: row.scoreAs,
       display: {

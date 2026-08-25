@@ -97,21 +97,3 @@ export const WithDivisions: Story = {
     props: args,
   }),
 };
-
-/** Legacy Youth label + canonical youth id dedupe to one neutral dot plus gold. */
-export const WithTagAliases: Story = {
-  args: {
-    ...Default.args,
-    series: {
-      ...PUBLIC_SERIES_MOCK,
-      divisionDefinitions: STORY_DIVISIONS,
-      competitors: PUBLIC_SERIES_MOCK.competitors.map((c, i) => ({
-        ...c,
-        divisions: i === 0 ? ['Youth', 'youth', 'gold'] : i === 1 ? ['gold'] : [],
-      })),
-    },
-  },
-  render: (args) => ({
-    props: args,
-  }),
-};

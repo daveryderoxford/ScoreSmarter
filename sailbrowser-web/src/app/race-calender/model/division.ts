@@ -15,17 +15,11 @@ export interface Division {
   display: DivisionDisplay;
 }
 
-/**
- * Series-entry division ids. Older documents may only have leftover `tags`;
- * those values are treated as exact division ids when `divisions` is absent.
- */
+/** Series-entry division ids (exact). */
 export function entryDivisionIds(entry: {
   divisions?: string[] | null;
-  tags?: string[] | null;
 }): string[] {
-  if (Array.isArray(entry.divisions)) return [...entry.divisions];
-  if (Array.isArray(entry.tags)) return [...entry.tags];
-  return [];
+  return Array.isArray(entry.divisions) ? [...entry.divisions] : [];
 }
 
 export function rowDivisionIds(row: {
@@ -44,13 +38,6 @@ export function legendDivisions(definitions: readonly Division[]): Division[] {
   return [...definitions]
     .filter(d => d.display.style === 'marker' && d.name.trim().length > 0)
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-}
-
-export function ensureEntryDivisions<T extends { divisions?: string[]; tags?: string[] }>(
-  entry: T,
-): T & { divisions: string[] } {
-  const divisions = entryDivisionIds(entry);
-  return { ...entry, divisions };
 }
 
 export function divisionIdsEqual(a: string[] | undefined, b: string[] | undefined): boolean {
