@@ -42,7 +42,7 @@
    gap: 4px;
 }
 
-.table-with-legend > app-tag-legend {
+.table-with-legend > app-division-legend {
    flex: 0 0 auto;
    align-self: stretch;
 }
@@ -103,7 +103,7 @@
    text-align: center;
 }
 
-/* Helm row + optional tag badges (dots) on one line; crew below. */
+/* Helm row + optional division badges (dots) on one line; crew below. */
 .name-cell {
    min-width: 0;
 }

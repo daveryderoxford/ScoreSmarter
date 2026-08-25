@@ -10,7 +10,6 @@ function boat(helm: string): Boat {
     crew: '',
     name: '',
     isClub: false,
-    tags: [],
   };
 }
 

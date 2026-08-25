@@ -13,7 +13,7 @@ function entry(id: string, helm: string, sailNumber: string, boatClass = 'ILCA 7
     boatClass,
     sailNumber,
     handicaps: [{ scheme: 'PY', value: 1100 }],
-    tags: [],
+    divisions: [],
   };
 }
 
@@ -28,7 +28,7 @@ function race(index: number, entries: SeriesEntry[], strategy: MergeStrategy): P
     type: 'Handicap',
     isDiscardable: true,
     isAverageLap: false,
-    tagDefinitions: [],
+    divisionDefinitions: [],
     results: entries.map((e, i) => ({
       seriesEntryId: e.id,
       competitorKey: mergeKeyFor(e, strategy),
@@ -47,7 +47,7 @@ function race(index: number, entries: SeriesEntry[], strategy: MergeStrategy): P
       correctedTime: 3600,
       points: i + 1,
       resultCode: 'OK' as const,
-      tags: [],
+      divisions: [],
     })),
   };
 }

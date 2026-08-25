@@ -15,7 +15,7 @@ function createMockRace(raceIndex: number, results: Partial<RaceResult>[]): Publ
     type: 'Handicap',
     isDiscardable: true, // This property on the RACE is correct
     isAverageLap: false,
-    tagDefinitions: [],
+    divisionDefinitions: [],
     results: results.map((res, i) => {
       const seriesEntryId = res.seriesEntryId || `entry${101 + i}`;
       return {
@@ -34,7 +34,7 @@ function createMockRace(raceIndex: number, results: Partial<RaceResult>[]): Publ
         correctedTime: 600 + i * 10,
         points: i + 1,
         resultCode: 'OK',
-        tags: [],
+        divisions: [],
         ...res,
       };
     }),
@@ -51,7 +51,7 @@ function createMockEntries(keys: string[]): SeriesEntry[] {
       boatClass,
       sailNumber: sailNumber,
       handicaps: [{ scheme: 'PY', value: 1000 }],
-      tags: [],
+      divisions: [],
     };
   });
 }

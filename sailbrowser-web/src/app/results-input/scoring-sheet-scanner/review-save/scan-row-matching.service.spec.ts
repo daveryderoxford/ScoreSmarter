@@ -68,8 +68,8 @@ describe('ScanRowMatchingService', () => {
   describe('findBoatMatches', () => {
     it('matches on class + sail number', () => {
       const boats = [
-        { id: 'b1', boatClass: 'ILCA 7', sailNumber: '12345', helm: 'A', name: '', crew: '', isClub: false, tags: [] },
-        { id: 'b2', boatClass: 'RS Aero', sailNumber: '12345', helm: 'B', name: '', crew: '', isClub: false, tags: [] },
+        { id: 'b1', boatClass: 'ILCA 7', sailNumber: '12345', helm: 'A', name: '', crew: '', isClub: false },
+        { id: 'b2', boatClass: 'RS Aero', sailNumber: '12345', helm: 'B', name: '', crew: '', isClub: false },
       ];
       const matches = service.findBoatMatches(
         row({ boatClass: { value: 'ilca 7', confidence: 'HIGH' }, sailNumber: { value: '12345', confidence: 'HIGH' } }),
@@ -80,7 +80,7 @@ describe('ScanRowMatchingService', () => {
 
     it('matches boats when scan reports an aliased class name', () => {
       const boats = [
-        { id: 'b1', boatClass: 'ILCA 6', sailNumber: '211111', helm: 'Sam', name: '', crew: '', isClub: false, tags: [] },
+        { id: 'b1', boatClass: 'ILCA 6', sailNumber: '211111', helm: 'Sam', name: '', crew: '', isClub: false },
       ];
       const matches = service.findBoatMatches(
         row({ boatClass: { value: 'Radial', confidence: 'HIGH' }, sailNumber: { value: '211111', confidence: 'HIGH' } }),
@@ -154,7 +154,7 @@ describe('ScanRowMatchingService', () => {
 
     it('offers Enter when scan class is an alias of a known club class', () => {
       const boats = [
-        { id: 'b1', boatClass: 'ILCA 6', sailNumber: '211111', helm: 'Sam', name: '', crew: '', isClub: false, tags: [] },
+        { id: 'b1', boatClass: 'ILCA 6', sailNumber: '211111', helm: 'Sam', name: '', crew: '', isClub: false },
       ];
       const [vm] = service.buildUnmatchedRows(
         [

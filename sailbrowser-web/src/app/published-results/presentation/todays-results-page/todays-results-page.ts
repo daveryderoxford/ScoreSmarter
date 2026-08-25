@@ -16,6 +16,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from 'app/auth/auth.service';
 import { ClubStore } from 'app/club-tenant';
+import { publishedDivisionDefinitions } from 'app/race-calender/model/division';
 import { getFleetName } from 'app/club-tenant/model/fleet';
 import { CurrentRaces } from 'app/results-input';
 import { CenteredText } from 'app/shared/components/centered-text';
@@ -117,6 +118,10 @@ export class TodaysResultsPage {
       year: 'numeric',
     }).format(new Date());
   });
+
+  protected divisionsFor(race: { divisionDefinitions?: unknown }) {
+    return publishedDivisionDefinitions(race as Parameters<typeof publishedDivisionDefinitions>[0]);
+  }
 
   protected readonly isEmpty = computed(
     () => !this.loading() && !this.loadError() && this.blocks().length === 0,

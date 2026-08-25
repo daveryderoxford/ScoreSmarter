@@ -2,6 +2,7 @@ import { PublishedSeriesResult } from '../../published-results';
 import { SeriesScoringScheme } from '../model/scoring-algotirhm';
 import { PublishedRace, RaceResult } from '../../published-results/model/published-race';
 import { getShortAlgorithm, includeInAveragePool, isDiscardable as isResultCodeDiscardable, ResultCodeAlgorithm, isStartAreaComp, isFinishedComp } from '../model/result-code-scoring';
+import { entryDivisionIds } from '../../race-calender/model/division';
 import { SeriesEntry } from '../../results-input';
 import { getHandicapValue } from '../model/handicap';
 import { HandicapScheme } from '../model/handicap-scheme';
@@ -195,9 +196,7 @@ function makeSeriesRow(
     netPoints: 0,
     rank: 0,
     scoresForTiebreak: [],
-    // Tags come from the first chronologically contributing entry; see
-    // `seedDisplayFromEntry` for the override path.
-    tags: [...(seed.tags ?? [])],
+    divisions: entryDivisionIds(seed),
   };
 }
 
@@ -215,9 +214,7 @@ function seedDisplayFromEntry(
   row.handicap = getHandicapValue(entry.handicaps, handicapScheme) ?? 0;
   row.personalHandicapBand = entry.personalHandicapBand;
   row.boatClass = entry.boatClass;
-  // Tags follow the same first-chronological rule as the display fields:
-  // the seeded value is overwritten on first actual race contribution.
-  row.tags = [...(entry.tags ?? [])];
+  row.divisions = entryDivisionIds(entry);
 }
 
 function calculateTotalsAndDiscards(

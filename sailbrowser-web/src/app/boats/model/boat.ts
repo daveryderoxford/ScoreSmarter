@@ -14,10 +14,4 @@ export interface Boat {
   handicaps?: Handicap[];
   /** Personal handicap band used to derive Personal handicap from PY */
   personalHandicapBand?: PersonalHandicapBand;
-  /**
-   * User-authored tag ids propagated onto new series entries at sign-on
-   * (existing entries keep whatever tags the RO has overridden). Always
-   * an array (default `[]`) so callers can iterate without null checks.
-   */
-  tags: string[];
 }

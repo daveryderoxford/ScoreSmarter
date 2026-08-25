@@ -57,7 +57,7 @@ function comp(p: CompSeed): ResolvedRaceCompetitor {
     boatClass: p.boatClass,
     sailNumber: p.sailNumber,
     handicaps: [{ scheme: 'PY', value: 1000 }],
-    tags: [],
+    divisions: [],
   };
   return new ResolvedRaceCompetitor(competitor, entry);
 }

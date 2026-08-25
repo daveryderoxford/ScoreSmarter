@@ -1,6 +1,7 @@
 import { ScoringConfiguration } from "app/scoring/model/scoring-configuration";
 import { SeriesScoringScheme } from "app/scoring/model/scoring-algotirhm";
 import { SeriesEntryMatchingStrategy } from "app/entry/model/entry-grouping";
+import type { Division } from './division';
 
 export interface Series {
    id: string;
@@ -27,5 +28,7 @@ export interface Series {
    // Scoring configurations
    primaryScoringConfiguration: ScoringConfiguration;
    secondaryScoringConfigurations?: ScoringConfiguration[];
+   /** Series catalog of divisions (classification and/or separate published series). */
+   divisions?: Division[];
    dirty?: boolean;
 }

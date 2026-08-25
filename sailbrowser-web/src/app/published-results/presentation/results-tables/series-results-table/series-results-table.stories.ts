@@ -1,13 +1,13 @@
 import { Meta, StoryObj } from '@storybook/angular';
-import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
+import type { Division } from 'app/race-calender/model/division';
 import { SeriesResultsTable } from './series-results-table';
 import { PUBLIC_SERIES_MOCK } from '@testing/mocks/published-results/published-series-mocks';
 import { MERGED_BOAT_CLASS_SEPARATOR } from 'app/scoring/services/series-scorer';
 
-const STORY_TAG_DEFINITIONS: ClubTagDefinition[] = [
-  { id: 'gold', label: 'Gold Fleet', color: 'gold' },
-  { id: 'u16', label: 'Under 16', color: 'blue' },
-  { id: 'youth', label: 'Youth' },
+const STORY_DIVISIONS: Division[] = [
+  { id: 'gold', name: 'Gold Fleet', scoreAs: 'none', display: { style: 'marker', markerColor: '#C9A227' } },
+  { id: 'u16', name: 'Under 16', scoreAs: 'none', display: { style: 'marker', markerColor: '#1976D2' } },
+  { id: 'youth', name: 'Youth', scoreAs: 'none', display: { style: 'marker' } },
 ];
 
 export default {
@@ -80,16 +80,16 @@ export const MergedClasses: Story = {
   }),
 };
 
-/** Tag colours as dots beside helm names on the series summary. */
-export const WithTags: Story = {
+/** Division colours as dots beside helm names on the series summary. */
+export const WithDivisions: Story = {
   args: {
     ...Default.args,
     series: {
       ...PUBLIC_SERIES_MOCK,
-      tagDefinitions: STORY_TAG_DEFINITIONS,
+      divisionDefinitions: STORY_DIVISIONS,
       competitors: PUBLIC_SERIES_MOCK.competitors.map((c, i) => ({
         ...c,
-        tags: i === 0 ? ['gold'] : i === 1 ? ['gold', 'u16'] : [],
+        divisions: i === 0 ? ['gold'] : i === 1 ? ['gold', 'u16'] : [],
       })),
     },
   },
@@ -104,10 +104,10 @@ export const WithTagAliases: Story = {
     ...Default.args,
     series: {
       ...PUBLIC_SERIES_MOCK,
-      tagDefinitions: STORY_TAG_DEFINITIONS,
+      divisionDefinitions: STORY_DIVISIONS,
       competitors: PUBLIC_SERIES_MOCK.competitors.map((c, i) => ({
         ...c,
-        tags: i === 0 ? ['Youth', 'youth', 'gold'] : i === 1 ? ['gold'] : [],
+        divisions: i === 0 ? ['Youth', 'youth', 'gold'] : i === 1 ? ['gold'] : [],
       })),
     },
   },

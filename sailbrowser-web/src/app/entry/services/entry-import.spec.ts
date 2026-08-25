@@ -69,7 +69,7 @@ describe('EntryService.importEntries', () => {
               boatClass: 'ILCA 7',
               sailNumber: '1234',
               club: 'HYC',
-              tags: ['gold'],
+              divisions: ['gold'],
               handicaps: [{ scheme: 'PY', value: 1100 }],
             },
           ],
@@ -82,10 +82,11 @@ describe('EntryService.importEntries', () => {
       helm: 'Alice',
       crew: undefined,
       club: 'HYC',
+      boatName: undefined,
       boatClass: 'ILCA 7',
       sailNumber: '1234',
       handicaps: [{ scheme: 'PY', value: 1100 }],
-      tags: ['gold'],
+      divisions: ['gold'],
     });
     expect(addResult).toHaveBeenCalledTimes(2);
     expect(addResult).toHaveBeenCalledWith({

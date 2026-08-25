@@ -11,7 +11,7 @@ import {
 } from '@angular/fire/firestore';
 import { firstValueFrom, filter } from 'rxjs';
 import { Club, ScoringDefaults } from '../model/club';
-import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
+import { Fleet, getFleetName, isSupportedFleet } from 'app/club-tenant/model/fleet';
 import { BoatClass } from '../model/boat-class';
 import { Season, SeasonStatus } from 'app/race-calender/model/season';
 
@@ -57,7 +57,6 @@ const EMPTY_CLUB: Club = {
   suspectTimeThresholds: DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES,
   longSeriesDefaults: DEFAULT_LONG_SERIES_DEFAULTS,
   shortSeriesDefaults: DEFAULT_SHORT_SERIES_DEFAULTS,
-  tagDefinitions: [],
 };
 
 @Injectable({
@@ -101,7 +100,8 @@ export class ClubStore {
 
     // Combine system fleets with club fleets, avoiding duplicates by id
     const allFleets = [...systemFleets];
-    club.fleets.forEach(f => {
+    club.fleets.forEach((f: { type: string }) => {
+      if (!isSupportedFleet(f)) return;
       if (!allFleets.find(sf => sf.id === f.id)) {
         allFleets.push(f);
       }
@@ -127,7 +127,6 @@ export class ClubStore {
       seasons,
       longSeriesDefaults: club.longSeriesDefaults ?? DEFAULT_LONG_SERIES_DEFAULTS,
       shortSeriesDefaults: club.shortSeriesDefaults ?? DEFAULT_SHORT_SERIES_DEFAULTS,
-      tagDefinitions: club.tagDefinitions ?? [],
       suspectTimeThresholds: {
         ...DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES,
         ...(club.suspectTimeThresholds ?? {}),

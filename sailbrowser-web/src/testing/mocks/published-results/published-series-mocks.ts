@@ -5,7 +5,7 @@ export const PUBLIC_SERIES_MOCK : PublishedSeries = {
    id: 's1',
    name: 'Spring Series', 
    fleetId: 'laser',
-   tagDefinitions: [],
+   divisionDefinitions: [],
    competitors: [
       {
          seriesEntryId: 'entry-1',
@@ -28,7 +28,7 @@ export const PUBLIC_SERIES_MOCK : PublishedSeries = {
             { raceIndex: 6, points: 2, resultCode: 'OK', isDiscard: true },
          ],
          scoresForTiebreak: [],
-         tags: [],
+         divisions: [],
       },
       {
          seriesEntryId: 'entry-2',
@@ -52,7 +52,7 @@ export const PUBLIC_SERIES_MOCK : PublishedSeries = {
             { raceIndex: 6, points: 3, resultCode: 'OK', isDiscard: false },
          ],
          scoresForTiebreak: [],
-         tags: [],
+         divisions: [],
       },
    ],
 };

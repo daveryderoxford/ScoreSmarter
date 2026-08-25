@@ -1,6 +1,6 @@
 import type { SailNumber } from 'app/boats/model/sail-number';
 import { RaceType } from '../../race-calender/model/race-type';
-import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
+import type { Division } from 'app/race-calender/model/division';
 import type { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { ResultCode } from 'app/scoring/model/result-code';
 
@@ -17,12 +17,10 @@ export interface PublishedRace {
    isAverageLap: boolean;
    results: RaceResult[];
    /**
-    * Snapshot of the club tag definitions referenced by any row in `results`
-    * at publish time. Display layers resolve `RaceResult.tags` against this
-    * snapshot so historical results render stably even if the club later
-    * renames or deletes a tag definition. Default `[]`.
+    * Snapshot of series division definitions referenced by any row in `results`
+    * at publish time. Default `[]`.
     */
-   tagDefinitions: ClubTagDefinition[];
+   divisionDefinitions: Division[];
 }
 
 export interface RaceResult {
@@ -55,8 +53,8 @@ export interface RaceResult {
    correctedTime: number;
    points: number;
    resultCode: ResultCode;
-   /** Tag ids copied from the contributing series entry. Default `[]`. */
-   tags: string[];
+   /** Division ids copied from the contributing series entry. Default `[]`. */
+   divisions: string[];
 }
 
 /** Published race results use this sentinel when a competitor has no finishing rank. */

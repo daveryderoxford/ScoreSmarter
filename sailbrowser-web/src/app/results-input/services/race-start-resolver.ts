@@ -4,10 +4,9 @@ import { isInFleet } from 'app/scoring/app-bridge/fleet';
 import type { SeriesEntry } from '../model/series-entry';
 
 const priority: Record<Fleet['type'], number> = {
-  Tag: 0,
-  BoatClass: 1,
-  HandicapRange: 2,
-  GeneralHandicap: 3,
+  BoatClass: 0,
+  HandicapRange: 1,
+  GeneralHandicap: 2,
 };
 
 export function resolveStartTimeForEntry(

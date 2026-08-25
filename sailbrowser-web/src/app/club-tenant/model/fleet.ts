@@ -21,15 +21,13 @@ export interface HandicapRangeFleet {
    max: number;
 }
 
-export interface TagFleet {
-   type: 'Tag';
-   id: string;
-   name: string; // e.g. "Youth"
-   /** Club tag definition id to match on `SeriesEntry.tags` (e.g. `youth`). */
-   value: string;
-}
+export type Fleet = GeneralHandicapFleet | BoatClassFleet | HandicapRangeFleet;
 
-export type Fleet = GeneralHandicapFleet | BoatClassFleet | HandicapRangeFleet | TagFleet;
+export function isSupportedFleet(fleet: { type: string }): fleet is Fleet {
+   return fleet.type === 'GeneralHandicap'
+      || fleet.type === 'BoatClass'
+      || fleet.type === 'HandicapRange';
+}
 
 export function getFleetName(fleet: Fleet): string {
    switch (fleet.type) {
@@ -38,8 +36,6 @@ export function getFleetName(fleet: Fleet): string {
       case 'BoatClass':
          return fleet.boatClassId;
       case 'HandicapRange':
-         return fleet.name;
-      case 'Tag':
          return fleet.name;
    }
 }

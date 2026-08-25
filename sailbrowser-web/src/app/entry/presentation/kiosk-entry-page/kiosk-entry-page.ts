@@ -33,7 +33,10 @@ import { DUTY_REGISTER_CLUB_ID } from 'app/duties';
 import { DutiesTeamPanel } from 'app/duties/presentation/duties-team-panel';
 import type { RaceDayDutyMember } from '@shared/race-day';
 import { RaceCalendarStore } from 'app/race-calender';
+import { DivisionValuePicker } from 'app/club-tenant/presentation/divisions/division-value-picker';
 import { CurrentRaces } from 'app/results-input';
+import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
+import { prefillDivisionsFromExistingEntry, divisionCatalogForRaces } from '../../services/prefill-entry-divisions';
 import { type Handicap } from 'app/scoring/model/handicap';
 import { handicapSchemesRequiredForRaces } from 'app/scoring/model/handicap-race-requirements';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
@@ -130,6 +133,7 @@ export function helmGridLayout(
     HelmNameAutocomplete,
     EntriesListPanel,
     BoatCoreFields,
+    DivisionValuePicker,
     DutiesTeamPanel,
   ],
 })
@@ -146,6 +150,7 @@ export class KioskEntryPage {
   private readonly fb = inject(FormBuilder);
   private readonly kioskAuth = inject(KioskAuthService);
   private readonly authService = inject(AuthService);
+  private readonly seriesEntries = inject(SeriesEntryStore);
 
   /** Hardware ID when running on Fully Kiosk (or emulator override); for admin registration. */
   readonly deviceId = this.kioskAuth.getDeviceId();
@@ -178,6 +183,7 @@ export class KioskEntryPage {
   });
 
   readonly memberCrewControl = this.fb.nonNullable.control('');
+  readonly divisionsControl = this.fb.nonNullable.control<string[]>([]);
 
   readonly visitorBoatSchemes = computed<HandicapScheme[]>(() =>
     getSchemesForTarget(this.clubStore.club().supportedHandicapSchemes ?? [], 'boat'),
@@ -190,7 +196,6 @@ export class KioskEntryPage {
     helm: ['', Validators.required],
     crew: [''],
     personalHandicapBand: ['unknown' as PersonalHandicapBand | 'unknown'],
-    tags: this.fb.nonNullable.control<string[]>([]),
     club: [''],
   });
 
@@ -398,6 +403,10 @@ export class KioskEntryPage {
 
   readonly canEnter = computed(() => this.todaysEligibleRaces().length > 0 && !!this.candidateBoat());
 
+  readonly divisionCatalog = computed(() =>
+    divisionCatalogForRaces(this.todaysEligibleRaces(), this.raceCalendar.allSeries()),
+  );
+
   showEntries(): void {
     this.view.set('entries');
   }
@@ -467,6 +476,26 @@ export class KioskEntryPage {
       observer.observe(el);
       onCleanup(() => observer.disconnect());
     });
+
+    effect(() => {
+      const candidate = this.candidateBoat();
+      const races = this.todaysEligibleRaces();
+      if (!candidate || races.length === 0) {
+        this.divisionsControl.setValue([], { emitEvent: false });
+        return;
+      }
+      void prefillDivisionsFromExistingEntry(
+        {
+          helm: candidate.helm,
+          boatClass: candidate.boatClassName,
+          sailNumber: candidate.sailNumber,
+        },
+        races,
+        id => this.seriesEntries.getSeriesEntries(id),
+      ).then(ids => {
+        this.divisionsControl.setValue(ids, { emitEvent: false });
+      });
+    });
   }
 
   formatHelm(helm: string): string {
@@ -531,7 +560,6 @@ export class KioskEntryPage {
       personalHandicapBand: raw['personalHandicapBand'] === 'unknown'
         ? undefined
         : (raw['personalHandicapBand'] as PersonalHandicapBand | undefined),
-      tags: Array.isArray(raw['tags']) ? (raw['tags'] as string[]) : [],
     };
 
     this.selectedHelm.set(boat.helm);
@@ -548,7 +576,6 @@ export class KioskEntryPage {
       helm: '',
       crew: '',
       personalHandicapBand: 'unknown',
-      tags: [],
       club: '',
     });
     for (const scheme of this.visitorBoatSchemes()) {
@@ -696,7 +723,6 @@ export class KioskEntryPage {
       isClub: false,
       handicaps: created.boat.handicaps,
       personalHandicapBand: created.boat.personalHandicapBand,
-      tags: created.boat.tags ?? [],
     };
     this.selectedHelm.set(newBoat.helm);
     this.selectedBoat.set(newBoat);
@@ -726,7 +752,6 @@ export class KioskEntryPage {
             isClub: false,
             handicaps: selected.handicaps,
             personalHandicapBand: selected.personalHandicapBand,
-            tags: selected.tags,
           });
           const persisted = this.boatsStore.boats().find(
             b =>
@@ -762,7 +787,7 @@ export class KioskEntryPage {
       crew: candidate.crew,
       handicaps: activeSchemes.size > 0 ? activeHandicaps : undefined,
       personalHandicapBand: candidate.personalHandicapBand,
-      tags: boat.tags,
+      divisions: this.divisionsControl.getRawValue(),
       club: entryClubForCategory(
         this.category() ?? 'visitor',
         this.visitorForm.controls['club'].value,

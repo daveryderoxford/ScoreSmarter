@@ -109,7 +109,5 @@ export function meetsPrimaryFleetEligibility(
       const value = getHandicapValue(entry.handicaps, fleet.scheme);
       return value != null && value >= fleet.min && value <= fleet.max;
     }
-    case 'Tag':
-      return false;
   }
 }

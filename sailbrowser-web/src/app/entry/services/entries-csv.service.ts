@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { isValidSailNumber, normalizeSailNumber } from 'app/boats/model/sail-number';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
-import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
+import type { Division } from 'app/race-calender/model/division';
 import type { Race } from 'app/race-calender/model/race';
 import type { Series } from 'app/race-calender/model/series';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
@@ -28,7 +28,8 @@ const HEADER_ALIASES: Record<string, string> = {
   sailno: 'sailNumber',
   boatname: 'boatName',
   club: 'club',
-  tags: 'tags',
+  division: 'divisions',
+  divisions: 'divisions',
 };
 
 export interface EntriesCsvSeriesMapping {
@@ -41,7 +42,6 @@ export interface EntriesCsvContext {
   series: readonly Series[];
   races: readonly Race[];
   classes: readonly BoatClass[];
-  tagDefinitions: readonly ClubTagDefinition[];
   existingEntriesBySeriesId: ReadonlyMap<string, readonly SeriesEntry[]>;
 }
 
@@ -53,7 +53,7 @@ export interface EntriesCsvPlannedEntry {
   boatName?: string;
   boatClass: string;
   sailNumber: string;
-  tags: string[];
+  divisions: string[];
   handicaps: Handicap[];
 }
 
@@ -132,8 +132,8 @@ export class EntriesCsvService {
       }
       const sailNumber = isValidSailNumber(sailRaw) ? normalizeSailNumber(sailRaw) : '';
 
-      const tagResult = this.parseTags(fields.tags, context.tagDefinitions);
-      if (tagResult.error) rowErrors.push(tagResult.error);
+      const divisionResult = this.parseDivisions(fields.divisions, mapping?.series.divisions ?? []);
+      if (divisionResult.error) rowErrors.push(divisionResult.error);
 
       if (!mapping || rowErrors.length > 0) {
         errors.push(...rowErrors.map(e => `Line ${lineNumber}: ${e}`));
@@ -183,7 +183,7 @@ export class EntriesCsvService {
         boatName,
         boatClass: boatClass!.name,
         sailNumber,
-        tags: tagResult.ids,
+        divisions: divisionResult.ids,
         handicaps,
       };
       const list = bySeries.get(mapping.series.id) ?? [];
@@ -292,7 +292,7 @@ export class EntriesCsvService {
   private readFields(
     record: Record<string, string>,
     columns: Record<string, string>,
-  ): Record<(typeof REQUIRED_FIELDS)[number] | 'crew' | 'club' | 'tags' | 'boatName', string> {
+  ): Record<(typeof REQUIRED_FIELDS)[number] | 'crew' | 'club' | 'divisions' | 'boatName', string> {
     const get = (key: string) => (columns[key] ? record[columns[key]] ?? '' : '');
     return {
       series: get('series'),
@@ -301,7 +301,7 @@ export class EntriesCsvService {
       sailNumber: get('sailNumber'),
       crew: get('crew'),
       club: get('club'),
-      tags: get('tags'),
+      divisions: get('divisions'),
       boatName: get('boatName'),
     };
   }
@@ -317,9 +317,9 @@ export class EntriesCsvService {
     return classes.find(c => normaliseString(c.name) === key);
   }
 
-  private parseTags(
+  private parseDivisions(
     raw: string,
-    definitions: readonly ClubTagDefinition[],
+    catalog: readonly Division[],
   ): { ids: string[]; error?: string } {
     const parts = raw
       .split(/[;,]/)
@@ -330,7 +330,7 @@ export class EntriesCsvService {
     const ids: string[] = [];
     const unknown: string[] = [];
     for (const part of parts) {
-      const match = definitions.find(t => t.id.toLowerCase() === part.toLowerCase());
+      const match = resolveDivisionToken(part, catalog);
       if (!match) {
         unknown.push(part);
         continue;
@@ -338,10 +338,23 @@ export class EntriesCsvService {
       if (!ids.includes(match.id)) ids.push(match.id);
     }
     if (unknown.length > 0) {
-      return { ids: [], error: `unknown tag id${unknown.length === 1 ? '' : 's'} ${unknown.map(t => `"${t}"`).join(', ')}` };
+      return { ids: [], error: `unknown division id${unknown.length === 1 ? '' : 's'} ${unknown.map(t => `"${t}"`).join(', ')}` };
     }
     return { ids };
   }
+}
+
+/** Resolve a CSV token to a catalog division by exact id or unique display name. */
+function resolveDivisionToken(
+  token: string,
+  catalog: readonly Division[],
+): Division | undefined {
+  if (!token) return undefined;
+  const exact = catalog.find(d => d.id === token);
+  if (exact) return exact;
+  const lower = token.trim().toLowerCase();
+  const byName = catalog.filter(d => d.name.trim().toLowerCase() === lower);
+  return byName.length === 1 ? byName[0] : undefined;
 }
 
 function normalizeHeader(name: string): string {

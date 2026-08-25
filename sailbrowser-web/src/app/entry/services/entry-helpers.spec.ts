@@ -181,11 +181,6 @@ describe('meetsPrimaryFleetEligibility', () => {
       })
     ).toBe(false);
   });
-
-  it('returns false for Tag fleet primary eligibility in entry UI', () => {
-    const series = eligibilitySeries({ type: 'Tag', id: 'f4', name: 'Novice', value: 'Novice' }, 'PY');
-    expect(meetsPrimaryFleetEligibility(series, { boatClass: 'Laser', handicaps: [] })).toBe(false);
-  });
 });
 
 describe('hostClubLabel / entryClubForCategory', () => {

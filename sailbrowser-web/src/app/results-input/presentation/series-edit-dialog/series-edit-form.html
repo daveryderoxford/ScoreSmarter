@@ -55,10 +55,10 @@
     </mat-form-field>
   }
 
-  @if (availableTags().length > 0) {
-    <div class="tags-block" role="group" aria-label="Tags">
-      <span class="tags-block-title">Tags</span>
-      <app-tag-value-picker formControlName="tags" [availableTags]="availableTags()" />
+  @if (availableDivisions().length > 0) {
+    <div class="divisions-block" role="group" aria-label="Divisions">
+      <span class="divisions-block-title">Divisions</span>
+      <app-division-value-picker formControlName="divisions" [availableDivisions]="availableDivisions()" />
     </div>
   }
 

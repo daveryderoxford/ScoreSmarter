@@ -21,7 +21,8 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ClubStore } from 'app/club-tenant';
 import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
-import { TagValuePicker } from 'app/club-tenant/presentation/tags/tag-value-picker';
+import { DivisionValuePicker } from 'app/club-tenant/presentation/divisions/division-value-picker';
+import { entryDivisionIds } from 'app/race-calender/model/division';
 import { Series } from 'app/race-calender/model/series';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
 import { Handicap } from 'app/scoring/model/handicap';
@@ -47,7 +48,7 @@ type PersonalBandFormValue = 'unknown' | PersonalHandicapBand;
     MatSelectModule,
     MatAutocompleteModule,
     SubmitButton,
-    TagValuePicker,
+    DivisionValuePicker,
     HandicapSchemeInputs,
     HelmNameAutocomplete,
   ],
@@ -67,7 +68,7 @@ export class SeriesEditForm implements OnInit {
 
   readonly personalBands = PERSONAL_HANDICAP_BANDS;
 
-  readonly availableTags = computed(() => this.clubStore.club().tagDefinitions);
+  readonly availableDivisions = computed(() => this.series().divisions ?? []);
 
   readonly editableHandicapSchemes = computed(() =>
     handicapSchemesRequiredForSeries(this.series()).filter(
@@ -91,7 +92,7 @@ export class SeriesEditForm implements OnInit {
     personalHandicapBand: new FormControl<PersonalBandFormValue>('unknown', {
       nonNullable: true,
     }),
-    tags: new FormControl<string[]>([], { nonNullable: true }),
+    divisions: new FormControl<string[]>([], { nonNullable: true }),
     handicaps: this.fb.group({}),
   });
 
@@ -117,7 +118,7 @@ export class SeriesEditForm implements OnInit {
       club: c.club ?? '',
       boatName: c.entry.boatName ?? '',
       personalHandicapBand: bandForm,
-      tags: c.entry.tags ?? [],
+      divisions: entryDivisionIds(c.entry),
     });
 
     const patch: Record<string, number> = {};
@@ -155,7 +156,7 @@ export class SeriesEditForm implements OnInit {
       club: v.club || undefined,
       boatName: v.boatName.trim() || undefined,
       personalHandicapBand: supports ? personalHandicapBand : undefined,
-      tags: [...v.tags],
+      divisions: [...v.divisions],
       handicaps,
     });
   }

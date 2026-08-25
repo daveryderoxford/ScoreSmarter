@@ -30,7 +30,7 @@ export function nameColumnWidth(names: HelmCrew[]) {
    return `${maxLenPixels}px`;
 }
 
-/** Shared leading columns (tags render as dots beside the name, not a column). */
+/** Shared leading columns (division markers render as dots beside the name, not a column). */
 export const competitorColumns = ['rank', 'name', 'boat', 'handicap'] as const;
 
 /**

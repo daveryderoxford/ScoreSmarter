@@ -9,7 +9,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { Fleet } from 'app/club-tenant/model/fleet';
 import { ClubStore } from 'app/club-tenant';
-import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
 import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-scheme';
 
 @Component({
@@ -50,22 +49,13 @@ export class FleetForm {
   busy = input<boolean>(false);
   submitted = output<Partial<Fleet>>();
 
-  /** Tag definitions available for Tag fleets (non-blank labels only). */
-  protected readonly tagOptions = computed(() =>
-    this.cs.club().tagDefinitions.filter(t => t.label.trim().length > 0),
-  );
-
   form = new FormGroup({
     name: new FormControl<string>('', { nonNullable: true }),
-    type: new FormControl<'BoatClass' | 'HandicapRange' | 'Tag'>('HandicapRange', { validators: [Validators.required], nonNullable: true }),
-    // Boat type
+    type: new FormControl<'BoatClass' | 'HandicapRange'>('HandicapRange', { validators: [Validators.required], nonNullable: true }),
     boatClassId: new FormControl<string>('', { nonNullable: true }),
-    // Handicap type
     min: new FormControl<number | null>(null),
     max: new FormControl<number | null>(null),
     scheme: new FormControl<HandicapScheme | null>(null),
-    // Tag type
-    value: new FormControl<string>('', { nonNullable: true }),
   });
 
   constructor() {
@@ -73,7 +63,6 @@ export class FleetForm {
       .pipe(takeUntilDestroyed())
       .subscribe(type => this.updateValidators(type));
 
-    // Initialize validators based on default value
     this.updateValidators(this.form.controls.type.value);
 
     effect(() => {
@@ -86,22 +75,19 @@ export class FleetForm {
           min: f.type === 'HandicapRange' ? f.min : null,
           max: f.type === 'HandicapRange' ? f.max : null,
           scheme: f.type === 'HandicapRange' ? f.scheme : null,
-          value: f.type === 'Tag' ? normalizeTagFleetValue(f.value, this.tagOptions()) : '',
         });
       }
     });
   }
 
-  private updateValidators(type: 'BoatClass' | 'HandicapRange' | 'Tag') {
-    const { name, boatClassId, min, max, scheme, value } = this.form.controls;
+  private updateValidators(type: 'BoatClass' | 'HandicapRange') {
+    const { name, boatClassId, min, max, scheme } = this.form.controls;
 
-    // Reset controls to disabled state first
     name.disable();
     boatClassId.disable();
     min.disable();
     max.disable();
     scheme.disable();
-    value.disable();
 
     if (type === 'BoatClass') {
       boatClassId.enable();
@@ -115,14 +101,8 @@ export class FleetForm {
       min.setValidators(Validators.required);
       max.setValidators(Validators.required);
       scheme.setValidators(Validators.required);
-    } else if (type === 'Tag') {
-      name.enable();
-      value.enable();
-      name.setValidators(Validators.required);
-      value.setValidators(Validators.required);
     }
 
-    // Ensure status is updated after validator changes
     this.form.updateValueAndValidity();
   }
 
@@ -148,13 +128,6 @@ export class FleetForm {
           scheme: raw.scheme as HandicapScheme,
         };
         break;
-      case 'Tag':
-        output = {
-          type: 'Tag',
-          name: raw.name,
-          value: raw.value,
-        };
-        break;
       default:
         return;
     }
@@ -166,15 +139,4 @@ export class FleetForm {
   public canDeactivate(): boolean {
     return !this.form.dirty;
   }
-}
-
-/** Maps legacy Tag fleet values (label text) to the canonical tag definition id. */
-function normalizeTagFleetValue(value: string, definitions: readonly ClubTagDefinition[]): string {
-  if (!value) return value;
-  if (definitions.some(d => d.id === value)) return value;
-  const lower = value.toLowerCase();
-  const byId = definitions.find(d => d.id.toLowerCase() === lower);
-  if (byId) return byId.id;
-  const byLabel = definitions.find(d => d.label.trim().toLowerCase() === lower);
-  return byLabel?.id ?? value;
 }

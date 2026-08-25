@@ -148,7 +148,7 @@ export class UnmatchedRowEntryDialog {
       crew,
       boatClass: this.data.boatClass,
       sailNumber: this.data.sailNumber,
-      tags: [] as string[],
+      divisions: [] as string[],
     };
 
     const conflicts = this.entryService.findEntryConflicts(entryData);

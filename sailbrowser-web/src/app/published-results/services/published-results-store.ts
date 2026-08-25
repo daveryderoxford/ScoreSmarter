@@ -4,28 +4,31 @@ import { of, combineLatest, map } from 'rxjs';
 import { PublishedSeason } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
 import { PublishedRace } from '../model/published-race';
+import { publishedDivisionDefinitions } from 'app/race-calender/model/division';
 import { FirestoreTenantService } from 'app/club-tenant/services/firestore-tenant';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 
-/** Defaults the mandatory tags / tagDefinitions arrays for older docs read off the wire. */
+/** Defaults missing `divisions` / `divisionDefinitions` on read. */
 function coercePublishedSeries(series: PublishedSeries | undefined): PublishedSeries | undefined {
   if (!series) return series;
   return {
     ...series,
-    competitors: series.competitors.map(c =>
-      Array.isArray(c.tags) ? c : { ...c, tags: [] },
-    ),
-    tagDefinitions: Array.isArray(series.tagDefinitions) ? series.tagDefinitions : [],
+    competitors: series.competitors.map(c => ({
+      ...c,
+      divisions: Array.isArray(c.divisions) ? c.divisions : [],
+    })),
+    divisionDefinitions: publishedDivisionDefinitions(series),
   };
 }
 
 function coercePublishedRace(race: PublishedRace): PublishedRace {
   return {
     ...race,
-    results: race.results.map(r =>
-      Array.isArray(r.tags) ? r : { ...r, tags: [] },
-    ),
-    tagDefinitions: Array.isArray(race.tagDefinitions) ? race.tagDefinitions : [],
+    results: race.results.map(r => ({
+      ...r,
+      divisions: Array.isArray(r.divisions) ? r.divisions : [],
+    })),
+    divisionDefinitions: publishedDivisionDefinitions(race),
   };
 }
 

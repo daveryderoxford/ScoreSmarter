@@ -6,7 +6,7 @@ import type { RaceCompetitor } from 'app/results-input/model/race-competitor';
 import type { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import { computeDncPoints } from 'app/scoring/services/dnc-policy';
 import { mergeKeyFor, type MergeStrategy } from 'app/scoring/services/merge-key';
-import { competitorsForConfigRace } from './eligibility';
+import { competitorsForConfigRace, type EntryMembership } from './eligibility';
 import { countableSeriesEntryIds, isCountingCompetitorResultCode } from './counting-policy';
 
 export interface DncContext {
@@ -27,21 +27,23 @@ export function buildDncContext(args: {
   allSeriesCompetitors: RaceCompetitor[];
   mergeStrategy: MergeStrategy;
   dncPolicy: DncCalculation;
+  membership?: EntryMembership;
 }): DncContext {
   const { racesToScore, config, seriesEntries, allSeriesCompetitors, mergeStrategy, dncPolicy } = args;
+  const membership = args.membership ?? { kind: 'fleet' as const };
 
   const competitorsForScoredRaces = racesToScore.flatMap(race =>
-    competitorsForConfigRace(race, config, allSeriesCompetitors, seriesEntries),
+    competitorsForConfigRace(race, config, allSeriesCompetitors, seriesEntries, membership),
   );
   const countableEntryIds = countableSeriesEntryIds(competitorsForScoredRaces);
   const dncBasisSeriesEntries = seriesEntries.filter(entry => countableEntryIds.has(entry.id));
   const dncBasisEntriesById = new Map(dncBasisSeriesEntries.map(entry => [entry.id, entry]));
 
   const dncBasisRaces: PublishedRace[] = racesToScore.map(race => {
-    const filteredCompetitors = competitorsForConfigRace(race, config, allSeriesCompetitors, seriesEntries);
+    const filteredCompetitors = competitorsForConfigRace(race, config, allSeriesCompetitors, seriesEntries, membership);
     return {
       ...race,
-      tagDefinitions: [],
+      divisionDefinitions: [],
       results: filteredCompetitors
         .filter(comp =>
           countableEntryIds.has(comp.seriesEntryId) &&
@@ -74,7 +76,7 @@ export function buildDncContext(args: {
           correctedTime: 0,
           points: 0,
           resultCode: 'DNC' as const,
-          tags: [],
+          divisions: [],
         })),
     };
   });

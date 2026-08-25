@@ -65,7 +65,7 @@ function createCompetitor(
     sailNumber: options.sailNumber ?? String(100 + parseInt(id, 10)),
     boatName: options.boatName,
     handicaps: (options.handicaps ?? [{ scheme: 'PY', value: 1000 }]) as SeriesEntry['handicaps'],
-    tags: [],
+    divisions: [],
   } as SeriesEntry;
 
   return { competitor, entry };

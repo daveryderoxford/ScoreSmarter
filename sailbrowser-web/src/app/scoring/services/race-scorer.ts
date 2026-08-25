@@ -1,3 +1,4 @@
+import { entryDivisionIds } from '../../race-calender/model/division';
 import { hasRaceRank, RaceResult, UNRANKED_RACE_RANK } from '../../published-results/model/published-race';
 import { Race, RaceType } from '../../race-calender';
 import { RaceCompetitor, SeriesEntry } from '../../results-input';
@@ -168,11 +169,8 @@ export function buildRaceResults(
       correctedTime: 0,
       points: 0,
       resultCode: adjustedResultCode,
-      // Copy entry tags onto the race result so per-race tables can
-      // render them and the published-results snapshot can union them
-      // for tagDefinitions. `entry.tags` is mandatory; defensive `?? []`
-      // only matters for old fixtures.
-      tags: [...(entry.tags ?? [])],
+      // Copy entry divisions onto the race result for published display.
+      divisions: entryDivisionIds(entry),
     };
   });
 }

@@ -24,9 +24,12 @@ import { BoatCoreFields } from 'app/boats/presentation/boat-form/boat-core-field
 import { ClubStore } from 'app/club-tenant';
 import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 import { Race, RaceCalendarStore } from 'app/race-calender';
+import { DivisionValuePicker } from 'app/club-tenant/presentation/divisions/division-value-picker';
 import { RacesPanel } from 'app/race-calender/presentation/races-panel/races-panel';
 import type { RacesPanelFilter, RacesPanelPeriod } from 'app/race-calender/presentation/races-panel/races-panel-utils';
 import { CurrentRaces } from 'app/results-input';
+import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
+import { prefillDivisionsFromExistingEntry, divisionCatalogForRaces } from '../../services/prefill-entry-divisions';
 import { type Handicap } from 'app/scoring/model/handicap';
 import { handicapSchemesRequiredForRaces } from 'app/scoring/model/handicap-race-requirements';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
@@ -85,6 +88,7 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     MatIcon,
     BusyButton,
     CenteredText,
+    DivisionValuePicker,
     RacesPanel,
     BoatCoreFields,
 ],
@@ -251,6 +255,16 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     .handicap-chip--empty {
       font-style: italic;
     }
+    .divisions-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .divisions-block-title {
+      font-weight: 500;
+      color: var(--mat-sys-on-surface-variant);
+    }
     .boat-selection {
       display: flex;
       align-items: baseline;
@@ -282,6 +296,7 @@ export class EntryPage {
   private readonly dialog = inject(MatDialog);
   private readonly dialogs = inject(DialogsService);
   private readonly auth = inject(AuthService);
+  private readonly seriesEntries = inject(SeriesEntryStore);
 
   protected readonly formatBoatOptionLabel = formatBoatOptionLabel;
 
@@ -329,7 +344,6 @@ export class EntryPage {
     helm: ['', Validators.required],
     crew: [''],
     personalHandicapBand: ['unknown' as PersonalHandicapBand | 'unknown'],
-    tags: this.formBuilder.nonNullable.control<string[]>([]),
     club: [''],
   });
 
@@ -405,12 +419,12 @@ export class EntryPage {
       handicaps: [...handicapByScheme.entries()].map(([scheme, value]) => ({ scheme, value })),
       personalHandicapBand: boat.personalHandicapBand,
       personalHandicapUnknown: !boat.personalHandicapBand,
-      tags: [] as string[],
     };
   });
 
   readonly raceSelectionGroup = this.formBuilder.group({
     enteredRaces: [[] as Race[], Validators.required],
+    divisions: this.formBuilder.nonNullable.control<string[]>([]),
   });
 
   readonly enteredRacesSig = toSignal(
@@ -449,6 +463,10 @@ export class EntryPage {
   });
 
   readonly enteredRaceIds = computed(() => (this.enteredRacesSig() ?? []).map(race => race.id));
+
+  readonly divisionCatalog = computed(() =>
+    divisionCatalogForRaces(this.enteredRacesSig() ?? [], this.rc.allSeries()),
+  );
 
   readonly entryHandicapSchemes = computed(() => {
     const races = this.enteredRacesSig() ?? [];
@@ -606,6 +624,26 @@ export class EntryPage {
       this.selectedBoat.set(persisted);
       this.boatSearchControl.setValue(persisted, { emitEvent: false });
     });
+
+    effect(() => {
+      const candidate = this.candidateBoat();
+      const races = this.enteredRacesSig() ?? [];
+      if (!candidate || races.length === 0) {
+        this.raceSelectionGroup.controls.divisions.setValue([], { emitEvent: false });
+        return;
+      }
+      void prefillDivisionsFromExistingEntry(
+        {
+          helm: candidate.helm,
+          boatClass: candidate.boatClassName,
+          sailNumber: candidate.sailNumber,
+        },
+        races,
+        id => this.seriesEntries.getSeriesEntries(id),
+      ).then(ids => {
+        this.raceSelectionGroup.controls.divisions.setValue(ids, { emitEvent: false });
+      });
+    });
   }
 
   displayBoatFn(boat: Boat | string | null): string {
@@ -684,7 +722,6 @@ export class EntryPage {
       personalHandicapBand: raw['personalHandicapBand'] === 'unknown'
         ? undefined
         : (raw['personalHandicapBand'] as PersonalHandicapBand | undefined),
-      tags: Array.isArray(raw['tags']) ? (raw['tags'] as string[]) : [],
     });
   }
 
@@ -696,7 +733,6 @@ export class EntryPage {
       helm: '',
       crew: '',
       personalHandicapBand: 'unknown',
-      tags: [],
       club: '',
     });
     for (const scheme of this.visitorBoatSchemes()) {
@@ -769,7 +805,6 @@ export class EntryPage {
       isClub: false,
       handicaps: created.boat.handicaps,
       personalHandicapBand: created.boat.personalHandicapBand,
-      tags: created.boat.tags ?? [],
     };
     this.selectedBoat.set(newBoat);
     this.boatSearchControl.setValue(newBoat, { emitEvent: false });
@@ -792,7 +827,7 @@ export class EntryPage {
       crew: candidate.crew,
       handicaps: active.size > 0 ? activeHandicaps : undefined,
       personalHandicapBand: candidate.personalHandicapBand,
-      tags: selected.tags,
+      divisions: this.raceSelectionGroup.controls.divisions.getRawValue(),
       club: entryClubForCategory(
         this.boatCategory(),
         this.visitorForm.controls['club'].value,

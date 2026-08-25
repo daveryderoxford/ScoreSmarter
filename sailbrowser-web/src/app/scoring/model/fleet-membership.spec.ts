@@ -1,43 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
-import type { TagFleet } from 'app/club-tenant/model/fleet';
-import { entryHasTagFleetValue, isInFleet } from './fleet-membership';
+import { isInFleet } from './fleet-membership';
 
-function entry(tags: string[]): SeriesEntry {
+function entry(): SeriesEntry {
   return {
     id: 'e1',
     seriesId: 's1',
     helm: 'Helm',
     boatClass: 'Laser',
     sailNumber: '100',
-    handicaps: [],
-    tags,
+    handicaps: [{ scheme: 'PY', value: 1100 }],
+    divisions: [],
   };
 }
 
-const youthFleet: TagFleet = {
-  type: 'Tag',
-  id: 'youth-xWgxDxw0J',
-  name: 'Youth',
-  value: 'Youth',
-};
-
-describe('entryHasTagFleetValue', () => {
-  it('matches tag id exactly', () => {
-    expect(entryHasTagFleetValue(entry(['youth']), 'youth')).toBe(true);
+describe('isInFleet', () => {
+  it('includes every entry in GeneralHandicap', () => {
+    expect(isInFleet(entry(), { type: 'GeneralHandicap', id: 'g', name: 'General Handicap' })).toBe(true);
   });
 
-  it('matches tag id case-insensitively when fleet value used display label', () => {
-    expect(entryHasTagFleetValue(entry(['youth']), 'Youth')).toBe(true);
-  });
-
-  it('returns false when tag is not on the entry', () => {
-    expect(entryHasTagFleetValue(entry(['gold']), 'youth')).toBe(false);
-  });
-});
-
-describe('isInFleet Tag fleet', () => {
-  it('includes youth-tagged entries when fleet.value is legacy label "Youth"', () => {
-    expect(isInFleet(entry(['youth']), youthFleet)).toBe(true);
+  it('matches BoatClass by class name', () => {
+    expect(isInFleet(entry(), { type: 'BoatClass', id: 'laser', boatClassId: 'Laser' })).toBe(true);
+    expect(isInFleet(entry(), { type: 'BoatClass', id: 'ilca', boatClassId: 'ILCA 7' })).toBe(false);
   });
 });

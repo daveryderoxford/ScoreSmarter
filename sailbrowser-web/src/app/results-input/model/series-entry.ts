@@ -20,9 +20,10 @@ export interface SeriesEntry {
    personalHandicapBand?: PersonalHandicapBand;
 
    /**
-    * User-authored tag ids carried on this entry (e.g. 'gold', 'u16').
-    * Always an array (default `[]`); display metadata is resolved against
-    * `Club.tagDefinitions` and the published-results snapshots.
+    * Series division ids (from `Series.divisions`). Always an array (default `[]`).
+    * Older documents may only have `tags` with exact division ids; use `entryDivisionIds` when reading.
     */
-   tags: string[];
+   divisions: string[];
+   /** @deprecated Read via `entryDivisionIds` as exact ids. Ignored on write. */
+   tags?: string[];
 }

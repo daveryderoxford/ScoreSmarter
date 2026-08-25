@@ -5,7 +5,6 @@
     <mat-select formControlName="type">
       <mat-option value="HandicapRange">Handicap Range</mat-option>
       <mat-option value="BoatClass">Class of boat</mat-option>
-      <mat-option value="Tag">Value of tag field</mat-option>
     </mat-select>
   </mat-form-field>
 
@@ -49,18 +48,6 @@
           }
         </mat-select>
       </mat-form-field>
-  }
-
-  @if (form.get('type')?.value === 'Tag') {
-    <mat-form-field>
-      <mat-label>Tag</mat-label>
-      <mat-select formControlName="value">
-        @for (tag of tagOptions(); track tag.id) {
-          <mat-option [value]="tag.id">{{ tag.label }}</mat-option>
-        }
-      </mat-select>
-      <mat-hint>Must match the tag id stored on series entries.</mat-hint>
-    </mat-form-field>
   }
 
   <div class="actions">

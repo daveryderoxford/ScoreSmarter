@@ -3,10 +3,11 @@ import { CdkTableModule } from '@angular/cdk/table';
 import { PublishedSeries, PublishedSeriesResult } from 'app/published-results';
 import { format } from 'date-fns';
 import { competitorColumns, nameColumnWidth as computeNameColumnWidth, withOptionalClubColumn } from '../results-table-shared';
+import { withOptionalDivisionColumn, publishedDivisionDefinitions, rowDivisionIds, markerDivisionIds, textDivisionNames } from 'app/race-calender/model/division';
 import { HighlightPosition } from "../highlighted-position";
 import { HorizontalScrollIndicator } from 'app/shared/components/horizontal-scroll-indicator/horizontal-scroll-indicator';
-import { TagLegend } from '../tag-legend';
-import { TagsCell } from '../tags-cell';
+import { DivisionLegend } from '../division-legend';
+import { DivisionMarkersCell } from '../division-markers-cell';
 import { MERGED_BOAT_CLASS_SEPARATOR } from 'app/scoring/services/series-scorer';
 
 export const seriesColumns = [...competitorColumns, 'total', 'net'] as const;
@@ -17,7 +18,7 @@ export type SeriesColumn = typeof seriesColumns[number];
   templateUrl: './series-results-table.html',
   styleUrls: ['../results-table-shared.scss', './series-results-table.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CdkTableModule, HighlightPosition, TagsCell, TagLegend, HorizontalScrollIndicator]
+  imports: [CdkTableModule, HighlightPosition, DivisionMarkersCell, DivisionLegend, HorizontalScrollIndicator]
 })
 export class SeriesResultsTable {
 
@@ -28,8 +29,18 @@ export class SeriesResultsTable {
   fontSize = input<string>('10pt');
   raceClicked = output<string>();
 
-  /** Snapshot of tag definitions for resolving tag colours beside the helm name. */
-  protected readonly tagDefinitions = computed(() => this.series()?.tagDefinitions ?? []);
+  /** Snapshot of division definitions for markers and the Division column. */
+  protected readonly divisionDefinitions = computed(() =>
+    publishedDivisionDefinitions(this.series() ?? {}),
+  );
+
+  protected markerIds(row: { divisions?: string[] }): string[] {
+    return markerDivisionIds(rowDivisionIds(row), this.divisionDefinitions());
+  }
+
+  protected divisionLabel(row: { divisions?: string[] }): string {
+    return textDivisionNames(rowDivisionIds(row), this.divisionDefinitions()).join(', ');
+  }
 
   raceColumns = computed(() => {
     const scores = this.series()?.competitors[0]?.raceScores ?? [];
@@ -44,7 +55,11 @@ export class SeriesResultsTable {
       this.seriesColumns(),
       this.series()?.competitors.map(c => c.club) ?? [],
     );
-    return [...withClub, ...this.raceColumns()];
+    return withOptionalDivisionColumn(
+      [...withClub, ...this.raceColumns()],
+      this.series()?.competitors ?? [],
+      this.divisionDefinitions(),
+    );
   });
 
   tableData = computed(() => this.series()?.competitors || []);

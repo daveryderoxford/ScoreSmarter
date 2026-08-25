@@ -23,6 +23,7 @@ import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { firestoreWrite } from 'app/shared/utils/with-timeout';
 import { map, of, tap } from 'rxjs';
 import { SeriesEntry } from '../model/series-entry';
+import { ensureEntryDivisions } from 'app/race-calender/model/division';
 import { CurrentRaces } from './current-races-store';
 
 /**
@@ -57,7 +58,7 @@ export class SeriesEntryStore {
   async getSeriesEntries(seriesId: string): Promise<SeriesEntry[]> {
     const q = query(this.collection, where('seriesId', '==', seriesId));
     const snapshot = await firestoreWrite(getDocs(q), 'Loading series entries');
-    return snapshot.docs.map(doc => ensureEntryTags({ ...doc.data(), id: doc.id }));
+    return snapshot.docs.map(doc => ensureEntryDivisions({ ...doc.data(), id: doc.id }));
   }
 
   /**
@@ -67,7 +68,7 @@ export class SeriesEntryStore {
   async getSeriesEntry(id: string): Promise<SeriesEntry | null> {
     const snapshot = await firestoreWrite(getDoc(this.ref(id)), 'Loading series entry');
     if (!snapshot.exists()) return null;
-    return ensureEntryTags({ ...snapshot.data(), id: snapshot.id });
+    return ensureEntryDivisions({ ...snapshot.data(), id: snapshot.id });
   }
 
   private readonly selectedEntriesResource = rxResource({
@@ -82,7 +83,7 @@ export class SeriesEntryStore {
           where('seriesId', 'in', selectedIds)
         );
         return collectionData(q, { idField: 'id' }).pipe(
-          map(entries => entries.map(ensureEntryTags).sort(sortEntries)),
+          map(entries => entries.map(ensureEntryDivisions).sort(sortEntries)),
           tap(entries => console.log(`SeriesEntryStore. Loaded ${entries.length} entries`))
         );
       }
@@ -149,13 +150,6 @@ export class SeriesEntryStore {
   }
 }
 
-/** Ensures missing tags default to an empty array. */
-function ensureEntryTags(entry: SeriesEntry): SeriesEntry {
-  if (Array.isArray(entry.tags)) return entry;
-  return { ...entry, tags: [] };
-}
-
-/** Sort entries by boat class and sail number */
 export function sortEntries(a: SeriesEntry, b: SeriesEntry): number {
   const classCompare = a.boatClass.localeCompare(b.boatClass);
   if (classCompare !== 0) {

@@ -71,7 +71,6 @@ export class KnownBoatEntryDialog {
           crew: boat.crew,
           handicaps: boat.handicaps,
           personalHandicapBand: boat.personalHandicapBand,
-          tags: boat.tags,
         }),
         FIRESTORE_BULK_WRITE_TIMEOUT_MS,
         'Creating entry',

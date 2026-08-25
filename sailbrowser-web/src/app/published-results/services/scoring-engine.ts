@@ -6,19 +6,21 @@ import { RaceCompetitor, SeriesEntry, SeriesEntryStore } from 'app/results-input
 import { RaceCompetitorStore } from 'app/results-input/services/race-competitor-store';
 import { scoreSeriesSnapshot } from 'app/scoring/core/public-api';
 import { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
-import { getHandicapValue } from 'app/scoring/model/handicap';
 import { discardsForRaceIndex } from 'app/scoring/model/discard-profile';
-import { isInFleet } from 'app/scoring/model/fleet-membership';
+import { doesRaceRequireHandicap } from 'app/race-calender/model/race-type';
+import {
+  buildDivisionSnapshot,
+  rowDivisionIds,
+} from 'app/race-calender/model/division';
+import type { Division } from 'app/race-calender/model/division';
 import { groupBy } from 'app/shared/utils/group-by';
 import { PublishedRace } from '../model/published-race';
 import { PublishedSeason, SeriesInfo } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
 import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH } from './published-results-store';
-import { buildTagDefinitionSnapshot } from './published-tag-snapshot';
-import { normalizeTagIds } from './resolved-tag';
 
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
-import { competitorsForConfigRace, doesRaceRequireHandicap, isRaceScorable } from 'app/scoring/core/rules/eligibility';
+import { competitorsForConfigRace, isRaceScorable, seriesEntriesForConfig, type EntryMembership } from 'app/scoring/core/rules/eligibility';
 import { startOfDay, subDays } from 'date-fns';
 import { buildDncContext, DEFAULT_DNC_POLICY } from 'app/scoring/core/rules/dnc-context';
 
@@ -154,6 +156,29 @@ export class ScoringEngine {
         await this.rescoreAllRacesForConfig(batch, seasonUpdates, series, config, publishedSeriesId, publishedSeriesName, scorableRaces, allSeriesCompetitors, seriesEntries);
       }
 
+      const primary = series.primaryScoringConfiguration;
+      for (const division of series.divisions ?? []) {
+        if (division.scoreAs !== 'separateSeries') continue;
+        const publishedSeriesId = `${series.id}_div_${division.id}`;
+        const publishedSeriesName = `${series.name} - ${division.name}`;
+        const membership: EntryMembership = { kind: 'division', divisionId: division.id };
+        const scorableRaces = candidateRaces.filter(race =>
+          isRaceScorable(race, primary, allSeriesCompetitors, seriesEntries, membership),
+        );
+        await this.rescoreAllRacesForConfig(
+          batch,
+          seasonUpdates,
+          series,
+          primary,
+          publishedSeriesId,
+          publishedSeriesName,
+          scorableRaces,
+          allSeriesCompetitors,
+          seriesEntries,
+          membership,
+        );
+      }
+
       this.cleanupStaleSeries(batch, seasonUpdates, series, configsToScore);
     }
 
@@ -179,8 +204,11 @@ export class ScoringEngine {
     publishedSeriesName: string,
     racesToScore: Race[],
     allSeriesCompetitors: RaceCompetitor[],
-    seriesEntries: SeriesEntry[]
+    seriesEntries: SeriesEntry[],
+    membership: EntryMembership = { kind: 'fleet' },
   ): Promise<void> {
+    const catalog: Division[] = series.divisions ?? [];
+
     if (racesToScore.length === 0) {
       this.savePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, [], []);
       const existingRaces = await this.readPublishedRaces(publishedSeriesId);
@@ -198,12 +226,12 @@ export class ScoringEngine {
       return;
     }
 
-    const handicapScheme = config.handicapScheme;
     const anyRaceRequiresHandicap = racesToScore.some(race => doesRaceRequireHandicap(race.type));
-
-    const filteredSeriesEntries = seriesEntries.filter(e =>
-      isInFleet(e, config.fleet) &&
-      (!anyRaceRequiresHandicap || getHandicapValue(e.handicaps, handicapScheme) != null)
+    const filteredSeriesEntries = seriesEntriesForConfig(
+      seriesEntries,
+      config,
+      anyRaceRequiresHandicap,
+      membership,
     );
 
     let existingPublishedRaces: PublishedRace[] = [];
@@ -222,12 +250,19 @@ export class ScoringEngine {
       allSeriesCompetitors,
       mergeStrategy,
       dncPolicy,
+      membership,
     });
 
     for (let i = 0; i < racesToScore.length; i++) {
       const race = racesToScore[i];
 
-      const filteredCompetitors = competitorsForConfigRace(race, config, allSeriesCompetitors, seriesEntries);
+      const filteredCompetitors = competitorsForConfigRace(
+        race,
+        config,
+        allSeriesCompetitors,
+        seriesEntries,
+        membership,
+      );
 
       const raceIndex = i + 1;
 
@@ -255,24 +290,18 @@ export class ScoringEngine {
       currentSeriesResults = seriesResults;
     }
 
-    // Attach the immutable `tagDefinitions` snapshot to each PublishedRace
-    // and the PublishedSeries doc, scoped to ids actually referenced by the
-    // rows in each doc. Pulling colour/label metadata in at publish time
-    // (vs. lookup at read time) keeps historical results stable when the
-    // club later renames or deletes a tag definition.
-    const clubTagDefinitions = club?.tagDefinitions ?? [];
     for (const race of existingPublishedRaces) {
       for (const result of race.results) {
-        result.tags = normalizeTagIds(result.tags ?? [], clubTagDefinitions);
+        result.divisions = rowDivisionIds(result);
       }
-      const ids = race.results.flatMap(r => r.tags);
-      race.tagDefinitions = buildTagDefinitionSnapshot(ids, clubTagDefinitions);
+      const ids = race.results.flatMap(r => r.divisions);
+      race.divisionDefinitions = buildDivisionSnapshot(ids, catalog);
     }
     for (const competitor of currentSeriesResults) {
-      competitor.tags = normalizeTagIds(competitor.tags ?? [], clubTagDefinitions);
+      competitor.divisions = rowDivisionIds(competitor);
     }
-    const seriesTagIds = currentSeriesResults.flatMap(c => c.tags);
-    const seriesTagDefinitions = buildTagDefinitionSnapshot(seriesTagIds, clubTagDefinitions);
+    const seriesDivisionIds = currentSeriesResults.flatMap(c => c.divisions);
+    const seriesDivisionDefinitions = buildDivisionSnapshot(seriesDivisionIds, catalog);
 
     this.savePublishedSeries(
       batch,
@@ -280,7 +309,7 @@ export class ScoringEngine {
       publishedSeriesName,
       config.fleet.id,
       currentSeriesResults,
-      seriesTagDefinitions,
+      seriesDivisionDefinitions,
     );
     const existingRaces = await this.readPublishedRaces(publishedSeriesId);
     this.savePublishedRaces(batch, publishedSeriesId, existingPublishedRaces, existingRaces);
@@ -303,8 +332,8 @@ export class ScoringEngine {
       const race = doc.data();
       return {
         ...race,
-        results: race.results.map(r => Array.isArray(r.tags) ? r : { ...r, tags: [] }),
-        tagDefinitions: Array.isArray(race.tagDefinitions) ? race.tagDefinitions : [],
+        results: race.results.map(r => Array.isArray(r.divisions) ? r : { ...r, divisions: [] }),
+        divisionDefinitions: Array.isArray(race.divisionDefinitions) ? race.divisionDefinitions : [],
       };
     });
   }
@@ -315,7 +344,7 @@ export class ScoringEngine {
     publishedSeriesName: string,
     fleetId: string,
     results: PublishedSeries['competitors'],
-    tagDefinitions: PublishedSeries['tagDefinitions'],
+    divisionDefinitions: Division[],
   ): void {
     const seriesDoc = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, publishedSeriesId);
     const publishedSeries: PublishedSeries = {
@@ -323,7 +352,7 @@ export class ScoringEngine {
       name: publishedSeriesName,
       fleetId: fleetId,
       competitors: results,
-      tagDefinitions,
+      divisionDefinitions,
     };
     batch.set(seriesDoc, publishedSeries);
   }
@@ -351,7 +380,12 @@ export class ScoringEngine {
     series: Series,
     configsToScore: ScoringConfiguration[]
   ): void {
-    const currentConfigIds = new Set(configsToScore.map(c => c.id === series.primaryScoringConfiguration.id ? series.id : `${series.id}_${c.id}`));
+    const currentConfigIds = new Set([
+      ...configsToScore.map(c => c.id === series.primaryScoringConfiguration.id ? series.id : `${series.id}_${c.id}`),
+      ...(series.divisions ?? [])
+        .filter(d => d.scoreAs === 'separateSeries')
+        .map(d => `${series.id}_div_${d.id}`),
+    ]);
     for (const [, seasonData] of seasonUpdates) {
       const staleSeries = seasonData.series.filter(s => s.baseSeriesId === series.id && !currentConfigIds.has(s.id));
       for (const stale of staleSeries) {

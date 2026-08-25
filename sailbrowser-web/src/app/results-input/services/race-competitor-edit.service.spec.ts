@@ -115,7 +115,7 @@ describe('RaceCompetitorEditService', () => {
     it('deletes orphaned series entry after deleting last competitor', async () => {
       raceCalendar.series = [pySeries('s1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: '123', handicaps: [], tags: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Old', boatClass: 'ILCA 7', sailNumber: '123', handicaps: [], divisions: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -130,7 +130,7 @@ describe('RaceCompetitorEditService', () => {
     it('preserves the series entry when another race still references it', async () => {
       raceCalendar.series = [pySeries('s1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], divisions: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -149,8 +149,8 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
-        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], divisions: [] },
+        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], divisions: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
@@ -183,7 +183,7 @@ describe('RaceCompetitorEditService', () => {
           boatClass: 'ILCA 6',
           sailNumber: '100',
           handicaps: [{ scheme: 'PY', value: 1165 }],
-          tags: [],
+          divisions: [],
         },
       ];
       compStore.comps = [
@@ -207,8 +207,8 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
-        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], divisions: [] },
+        { id: 'se-2', seriesId: 's1', helm: 'Bob', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], divisions: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c-edit', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-2' }),
@@ -231,7 +231,7 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Sam', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], divisions: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({
@@ -275,7 +275,7 @@ describe('RaceCompetitorEditService', () => {
           boatClass: 'ILCA 7',
           sailNumber: '100',
           handicaps: [{ scheme: 'PY', value: 1100 }],
-          tags: [],
+          divisions: [],
         },
       ];
       compStore.comps = [
@@ -307,7 +307,7 @@ describe('RaceCompetitorEditService', () => {
           boatClass: 'ILCA 7',
           sailNumber: '100',
           handicaps: [{ scheme: 'PY', value: 1100 }],
-          tags: [],
+          divisions: [],
         },
       ];
       compStore.comps = [
@@ -331,8 +331,8 @@ describe('RaceCompetitorEditService', () => {
       raceCalendar.series = [pySeries('s1')];
       raceCalendar.races = [testRace('r1', 's1')];
       entryStore.entries = [
-        { id: 'se-1', seriesId: 's1', helm: 'Fred Blogggs', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
-        { id: 'se-2', seriesId: 's1', helm: 'Fred Bloggs', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], tags: [] },
+        { id: 'se-1', seriesId: 's1', helm: 'Fred Blogggs', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], divisions: [] },
+        { id: 'se-2', seriesId: 's1', helm: 'Fred Bloggs', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], divisions: [] },
       ];
       compStore.comps = [
         new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
@@ -366,7 +366,7 @@ describe('RaceCompetitorEditService', () => {
           boatClass: 'ILCA 7',
           sailNumber: '100',
           handicaps: [{ scheme: 'PY', value: 1100 }],
-          tags: [],
+          divisions: [],
         },
       ];
       compStore.comps = [

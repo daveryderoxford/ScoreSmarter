@@ -9,6 +9,7 @@ import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import { DUTY_REGISTER_CLUB_ID, DutiesService } from 'app/duties';
 import { RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces } from 'app/results-input';
+import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { RaceCompetitorReader } from 'app/results-input/services/race-competitor-reader';
 import { RaceCompetitorMutator } from 'app/results-input/services/race-competitor-mutator';
@@ -56,7 +57,6 @@ function baseProviders(overrides: Record<string, unknown> = {}) {
             crew: 'Bob Jones',
             name: '',
             isClub: false,
-            tags: [],
           },
           {
             id: 'c1',
@@ -66,11 +66,16 @@ function baseProviders(overrides: Record<string, unknown> = {}) {
             crew: '',
             name: '',
             isClub: true,
-            tags: [],
           },
         ],
         add: vi.fn(),
         ...(overrides['boatsStore'] as object),
+      },
+    },
+    {
+      provide: SeriesEntryStore,
+      useValue: {
+        getSeriesEntries: vi.fn(async () => []),
       },
     },
     {
@@ -89,7 +94,6 @@ function baseProviders(overrides: Record<string, unknown> = {}) {
           shortName: 'HYC',
           classes: clubClasses,
           supportedHandicapSchemes: [],
-          tagDefinitions: [],
         }),
       },
     },
@@ -396,7 +400,6 @@ describe('KioskEntryPage', () => {
               crew: 'Dan Green',
               name: '',
               isClub: false,
-              tags: [],
             },
           ],
         },
@@ -456,8 +459,8 @@ describe('KioskEntryPage', () => {
         sailNumber: 'GBR1234',
         helm: 'Sam',
         name: 'Flying Fish',
+        crew: '',
         isClub: false,
-        tags: [],
       }),
     ).toBe('Flying Fish · J/109 · GBR1234');
     expect(
@@ -467,8 +470,8 @@ describe('KioskEntryPage', () => {
         sailNumber: '1234',
         helm: 'Alice',
         name: '',
+        crew: '',
         isClub: false,
-        tags: [],
       }),
     ).toBe('ILCA 7 1234');
     expect(
@@ -478,8 +481,8 @@ describe('KioskEntryPage', () => {
         sailNumber: '99',
         helm: '',
         name: '',
+        crew: '',
         isClub: true,
-        tags: [],
       }),
     ).toBe('99');
   });
