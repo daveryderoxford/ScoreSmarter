@@ -1,10 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
 import { MatDialog } from '@angular/material/dialog';
-import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
+import { cloudCallable } from 'app/shared/firebase/cloud-functions';
 import { resolveStorageDownloadUrl } from 'app/shared/firebase/storage-download';
 import { firstValueFrom } from 'rxjs';
-import { environment } from '../../../../environments/environment';
 import {
   ScoringSheetCaptureDialog,
   ScoringSheetCaptureDialogData,
@@ -41,13 +40,9 @@ export class ResultsSheetCaptureService {
   async uploadInlineImage(
     { clubId, raceId, base64, mimeType }: UploadInlineImageOptions,
   ): Promise<{ storagePath: string }> {
-    const functions = getFunctions(this.app, 'europe-west1');
-    if (environment.useEmulators) {
-      try { connectFunctionsEmulator(functions, 'localhost', 5001); } catch { /* already configured */ }
-    }
-    const uploadFn = httpsCallable(functions, 'uploadResultsSheetImage', {
+    const uploadFn = await cloudCallable('uploadResultsSheetImage', {
       timeout: UPLOAD_RESULTS_SHEET_IMAGE_CALLABLE_TIMEOUT_MS,
-    });
+    }, this.app);
     const res = await uploadFn({
       imageBase64: base64,
       imageMimeType: mimeType,

@@ -2,9 +2,9 @@ import { Injectable, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { Auth } from '@angular/fire/auth';
 import { Firestore, collectionGroup, collectionSnapshots, query, where } from '@angular/fire/firestore';
-import { Functions, httpsCallable } from '@angular/fire/functions';
 import { AuthService } from 'app/auth/auth.service';
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
+import { cloudCallable } from 'app/shared/firebase/cloud-functions';
 import { dataObjectConverter } from 'app/shared/firebase/firestore-helper';
 import { map, of } from 'rxjs';
 import { UserData } from '../../user/model/user';
@@ -17,7 +17,6 @@ export class UserAdminService {
   private auth = inject(Auth);
   private readonly tenant = inject(FirestoreTenantService);
   private readonly clubStore = inject(ClubStore);
-  private readonly functions = inject(Functions);
   private readonly firestore = inject(Firestore);
 
   private _load = signal(false);
@@ -69,7 +68,7 @@ export class UserAdminService {
 
   async assignRole(targetUid: string, role: string): Promise<void> {
     const clubId = this.clubStore.club().id;
-    const assignRoleFn = httpsCallable(this.functions, 'assignRole');
+    const assignRoleFn = await cloudCallable('assignRole');
     await assignRoleFn({ targetUid, clubId, role });
   }
 

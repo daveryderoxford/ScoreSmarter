@@ -1,13 +1,12 @@
 import { computed, effect, Injectable, InjectionToken, inject, signal } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
 import { type DocumentReference, docData, setDoc } from '@angular/fire/firestore';
-import { connectFunctionsEmulator, getFunctions, httpsCallable } from '@angular/fire/functions';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { ClubTenant, FirestoreTenantService } from 'app/club-tenant';
 import type { DutyAttendanceStatus, RaceDay, RaceDayDutyMember } from '@shared/race-day';
+import { cloudCallable } from 'app/shared/firebase/cloud-functions';
 import { firestoreWrite } from 'app/shared/utils/with-timeout';
 import { type Observable, of } from 'rxjs';
-import { environment } from '../../../environments/environment';
 
 /** Island Barn (IBRSC) — duty register integration is club-specific. */
 export const DUTY_REGISTER_CLUB_ID = 'ibrsc';
@@ -145,9 +144,10 @@ export class DutiesService {
     this.ensuring.set(true);
     this.ensureError.set(null);
     try {
-      const fn = httpsCallable<{ clubId: string; date: string }, { date: string; created: boolean }>(
-        this.functions(),
+      const fn = await cloudCallable<{ clubId: string; date: string }, { date: string; created: boolean }>(
         'ensureRaceDay',
+        undefined,
+        this.app,
       );
       await fn({ clubId: DUTY_REGISTER_CLUB_ID, date });
     } catch (err: unknown) {
@@ -156,18 +156,6 @@ export class DutiesService {
     } finally {
       this.ensuring.set(false);
     }
-  }
-
-  private functions() {
-    const functions = getFunctions(this.app, 'europe-west1');
-    if (environment.useEmulators) {
-      try {
-        connectFunctionsEmulator(functions, 'localhost', 5001);
-      } catch {
-        /* already configured */
-      }
-    }
-    return functions;
   }
 
   private errorMessage(err: unknown, fallback: string): string {

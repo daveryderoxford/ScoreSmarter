@@ -11,8 +11,12 @@ import { Toolbar } from 'app/shared/components/toolbar';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { ClubLogoService } from '../../services/club-logo.service';
 import { ClubLogo } from 'app/shared/components/club-logo/club-logo';
+import {
+  CLUB_LOGO_MAX_SOURCE_BYTES,
+  resizeFileToClubLogoJpeg,
+  type ClubLogoJpeg,
+} from '../../services/resize-club-logo';
 
-const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const ALLOWED_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 @Component({
@@ -41,7 +45,7 @@ export class ClubSettingsComponent {
   readonly busy = signal(false);
   readonly pendingLogoPreviewUrl = signal<string | null>(null);
   readonly hasPendingLogo = signal(false);
-  private pendingLogoFile: File | null = null;
+  private pendingLogo: ClubLogoJpeg | null = null;
 
   readonly form = this.fb.group({
     name: ['', Validators.required],
@@ -74,7 +78,7 @@ export class ClubSettingsComponent {
     });
   }
 
-  onLogoSelected(event: Event): void {
+  async onLogoSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) {
@@ -85,15 +89,26 @@ export class ClubSettingsComponent {
       input.value = '';
       return;
     }
-    if (file.size > MAX_LOGO_BYTES) {
-      this.snackBar.open('Logo must be 2 MB or smaller.', 'Dismiss', { duration: 5000 });
+    if (file.size > CLUB_LOGO_MAX_SOURCE_BYTES) {
+      this.snackBar.open('Logo source file must be 8 MB or smaller.', 'Dismiss', { duration: 5000 });
       input.value = '';
       return;
     }
-    this.pendingLogoFile = file;
-    this.hasPendingLogo.set(true);
-    this.form.markAsDirty();
-    this.pendingLogoPreviewUrl.set(URL.createObjectURL(file));
+
+    this.busy.set(true);
+    try {
+      const jpeg = await resizeFileToClubLogoJpeg(file);
+      this.pendingLogo = jpeg;
+      this.hasPendingLogo.set(true);
+      this.form.markAsDirty();
+      this.pendingLogoPreviewUrl.set(jpeg.previewUrl);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Could not process logo image.';
+      this.snackBar.open(message, 'Dismiss', { duration: 6000 });
+      input.value = '';
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   async save(): Promise<void> {
@@ -106,10 +121,13 @@ export class ClubSettingsComponent {
       const clubId = this.clubTenant.clubId;
       const v = this.form.getRawValue();
 
-      if (this.pendingLogoFile) {
-        const { base64, mimeType } = await this.readFileAsBase64(this.pendingLogoFile);
-        await this.clubLogoService.uploadLogo(clubId, base64, mimeType);
-        this.pendingLogoFile = null;
+      if (this.pendingLogo) {
+        await this.clubLogoService.uploadLogo(
+          clubId,
+          this.pendingLogo.base64,
+          this.pendingLogo.mimeType,
+        );
+        this.pendingLogo = null;
         this.hasPendingLogo.set(false);
       }
 
@@ -134,7 +152,7 @@ export class ClubSettingsComponent {
   }
 
   canDeactivate(): boolean {
-    return !this.form.dirty && !this.pendingLogoFile;
+    return !this.form.dirty && !this.pendingLogo;
   }
 
   private toOptionalNumber(value: number | null | undefined): number | undefined {
@@ -142,22 +160,5 @@ export class ClubSettingsComponent {
       return undefined;
     }
     return value;
-  }
-
-  private readFileAsBase64(file: File): Promise<{ base64: string; mimeType: string }> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        const base64 = result.split(',')[1];
-        if (!base64) {
-          reject(new Error('Could not read image file.'));
-          return;
-        }
-        resolve({ base64, mimeType: file.type });
-      };
-      reader.onerror = () => reject(reader.error ?? new Error('Could not read image file.'));
-      reader.readAsDataURL(file);
-    });
   }
 }

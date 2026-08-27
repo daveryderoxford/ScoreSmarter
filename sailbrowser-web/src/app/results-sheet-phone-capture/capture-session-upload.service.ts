@@ -1,7 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
-import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
-import { environment } from '../../environments/environment';
+import { cloudCallable } from 'app/shared/firebase/cloud-functions';
 
 /**
  * Upload-only callable for the phone capture lazy route ({@link MobileCapturePage}),
@@ -18,11 +17,7 @@ export class CaptureSessionUploadService {
     imageBase64: string;
     imageMimeType: string;
   }): Promise<{ status: string; storagePath?: string }> {
-    const functions = getFunctions(this.app, 'europe-west1');
-    if (environment.useEmulators) {
-      try { connectFunctionsEmulator(functions, 'localhost', 5001); } catch { /* already configured */ }
-    }
-    const fn = httpsCallable(functions, 'uploadImageFromPhone', { timeout: 120_000 });
+    const fn = await cloudCallable('uploadImageFromPhone', { timeout: 120_000 }, this.app);
     const res = await fn(payload);
     return res.data as { status: string; storagePath?: string };
   }
