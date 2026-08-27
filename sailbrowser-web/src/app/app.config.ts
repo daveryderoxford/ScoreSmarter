@@ -16,7 +16,6 @@ import {
   persistentMultipleTabManager,
   provideFirestore
 } from '@angular/fire/firestore';
-import { getFunctions, provideFunctions } from '@angular/fire/functions';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { environment } from '../environments/environment';
@@ -58,7 +57,6 @@ export const appConfig: ApplicationConfig = {
       }
       return auth;
     }),
-    provideFunctions(() => getFunctions(getApp(), "europe-west1")),
     provideFirestore(() => {
       const app = getApp();
       let firestore;

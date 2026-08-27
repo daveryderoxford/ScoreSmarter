@@ -23,10 +23,6 @@ export const CLUB_ADMIN_ROUTES: Routes = [
     loadComponent: () => import('./presentation/scoring-defaults/scoring-defaults').then(m => m.ScoringDefaultsComponent),
   },
   {
-    path: 'tags',
-    loadComponent: () => import('./presentation/tags-admin/tags-admin').then(m => m.TagsAdmin),
-  },
-  {
     path: 'kiosk-devices',
     title: 'Kiosk tablets',
     loadComponent: () =>

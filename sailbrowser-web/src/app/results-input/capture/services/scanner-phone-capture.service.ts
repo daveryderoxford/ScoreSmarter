@@ -1,11 +1,10 @@
 import { inject, Injectable } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
 import { docData } from '@angular/fire/firestore';
-import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
 import { map, Observable } from 'rxjs';
 import { CaptureSessionUploadService } from 'app/results-sheet-phone-capture/capture-session-upload.service';
 import { FirestoreTenantService } from 'app/club-tenant';
-import { environment } from '../../../../environments/environment';
+import { cloudCallable } from 'app/shared/firebase/cloud-functions';
 import { CaptureSession, CaptureSessionDoc, UploadFromSessionInput } from '../capture-phone-session.model';
 
 /**
@@ -21,11 +20,7 @@ export class ScannerPhoneCaptureService {
   private readonly captureSessionUpload = inject(CaptureSessionUploadService);
 
   async createCaptureSession(clubId: string, raceId: string): Promise<CaptureSession> {
-    const functions = getFunctions(this.app, 'europe-west1');
-    if (environment.useEmulators) {
-      try { connectFunctionsEmulator(functions, 'localhost', 5001); } catch { /* already configured */ }
-    }
-    const createFn = httpsCallable(functions, 'createPhoneUploadRequest', { timeout: 60_000 });
+    const createFn = await cloudCallable('createPhoneUploadRequest', { timeout: 60_000 }, this.app);
     const res = await createFn({ clubId, raceId });
     return res.data as CaptureSession;
   }

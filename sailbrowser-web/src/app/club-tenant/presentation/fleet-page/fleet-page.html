@@ -27,8 +27,6 @@
           <span matListItemLine>Class: {{ fleet.boatClassId }}</span>
         } @else if (fleet.type === 'HandicapRange') {
           <span matListItemLine>Handicap range: {{ fleet.min }} to {{ fleet.max }} ({{ fleet.scheme }})</span>
-        } @else if (fleet.type === 'Tag') {
-          <span matListItemLine>Tag Value: {{ fleet.value }}</span>
         }
         <span matListItemMeta>
           <button matIconButton [routerLink]="['edit', fleet.id]" (click)="$event.stopPropagation()">

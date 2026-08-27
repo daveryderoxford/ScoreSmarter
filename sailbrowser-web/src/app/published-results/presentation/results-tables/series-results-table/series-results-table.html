@@ -1,7 +1,7 @@
 <div class="published-results-table-frame">
   <div #scrollContainer class="container">
     <div class="table-with-legend">
-      <app-tag-legend [definitions]="tagDefinitions()" />
+      <app-division-legend [definitions]="divisionDefinitions()" />
       <table cdk-table class="table" [dataSource]="tableData()" [trackBy]="trackByKey" [style.font-size]="fontSize()">
 
     <!-- Initial columns -->
@@ -17,12 +17,11 @@
       <td cdk-cell class="name-cell" *cdkCellDef="let competitor" [style.width]="nameColumnWidth()">
         <div class="name-cell__topline">
           <span class="name-cell__helm">{{ competitor.helm }}</span>
-          @if ((competitor.tags ?? []).length > 0) {
-            <app-tags-cell
+          @if (markerIds(competitor).length > 0) {
+            <app-division-markers-cell
               class="name-cell__badges"
-              appearance="badges"
-              [ids]="competitor.tags ?? []"
-              [definitions]="tagDefinitions()" />
+              [ids]="markerIds(competitor)"
+              [definitions]="divisionDefinitions()" />
           }
         </div>
         @if (competitor.crew) {
@@ -51,6 +50,11 @@
     <ng-container cdkColumnDef="club">
       <th cdk-header-cell *cdkHeaderCellDef>Club</th>
       <td cdk-cell *cdkCellDef="let competitor"> {{ competitor.club }} </td>
+    </ng-container>
+
+    <ng-container cdkColumnDef="division">
+      <th cdk-header-cell *cdkHeaderCellDef>Division</th>
+      <td cdk-cell *cdkCellDef="let competitor"> {{ divisionLabel(competitor) }} </td>
     </ng-container>
 
     <ng-container cdkColumnDef="handicap">

@@ -1,14 +1,21 @@
 import { CdkTableModule } from '@angular/cdk/table';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
 import { doesRaceRequireHandicap, type RaceType } from 'app/race-calender/model/race-type';
+import {
+  markerDivisionIds,
+  publishedDivisionDefinitions,
+  rowDivisionIds,
+  textDivisionNames,
+  withOptionalDivisionColumn,
+  type Division,
+} from 'app/race-calender/model/division';
 import { isRankedRaceResult, RaceResult } from 'app/published-results/model/published-race';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { competitorColumns, nameColumnWidth as computeNameColumnWidth, withOptionalClubColumn } from '../results-table-shared';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { HorizontalScrollIndicator } from 'app/shared/components/horizontal-scroll-indicator/horizontal-scroll-indicator';
-import { TagLegend } from '../tag-legend';
-import { TagsCell } from '../tags-cell';
+import { DivisionLegend } from '../division-legend';
+import { DivisionMarkersCell } from '../division-markers-cell';
 
 export const raceColumns = [...competitorColumns, 'elapsed', 'corrected', 'points'] as const;
 export type RaceColumn = (typeof raceColumns)[number];
@@ -16,7 +23,7 @@ export type RaceColumn = (typeof raceColumns)[number];
 @Component({
   selector: 'app-race-results-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CdkTableModule, DurationPipe, TagsCell, TagLegend, HorizontalScrollIndicator],
+  imports: [CdkTableModule, DurationPipe, DivisionMarkersCell, DivisionLegend, HorizontalScrollIndicator],
   templateUrl: './race-results-table.html',
   styleUrls: ['../results-table-shared.scss', './race-results-table.scss'],
 })
@@ -29,8 +36,8 @@ export class RaceResultsTable {
   raceType = input<RaceType | undefined>(undefined);
   /** Series scoring scheme (used to show personal handicap band under rating). */
   scoringHandicapScheme = input<HandicapScheme | undefined>(undefined);
-  /** Snapshot of tag definitions for resolving tag colours beside the helm name. */
-  tagDefinitions = input<readonly ClubTagDefinition[]>([]);
+  /** Snapshot of division definitions for markers and the Division column. */
+  divisionDefinitions = input<readonly Division[]>([]);
   showBoatClass = input(true);
   fontSize = input(10);
 
@@ -41,11 +48,29 @@ export class RaceResultsTable {
     if (rt !== undefined && !doesRaceRequireHandicap(rt)) {
       filtered = filtered.filter(c => c !== 'elapsed' && c !== 'corrected' && c !== 'handicap');
     }
-    return withOptionalClubColumn(
-      filtered,
-      this.results().map(r => r.club),
+    return withOptionalDivisionColumn(
+      withOptionalClubColumn(
+        filtered,
+        this.results().map(r => r.club),
+      ),
+      this.results(),
+      this.resolvedDefinitions(),
     );
   });
+
+  protected readonly resolvedDefinitions = computed(() =>
+    this.divisionDefinitions().length > 0
+      ? this.divisionDefinitions()
+      : publishedDivisionDefinitions({}),
+  );
+
+  protected markerIds(row: RaceResult): string[] {
+    return markerDivisionIds(rowDivisionIds(row), this.resolvedDefinitions());
+  }
+
+  protected divisionLabel(row: RaceResult): string {
+    return textDivisionNames(rowDivisionIds(row), this.resolvedDefinitions()).join(', ');
+  }
 
   nameColumnWidth = computed(() => computeNameColumnWidth(this.results()));
 

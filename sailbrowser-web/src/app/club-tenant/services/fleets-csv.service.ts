@@ -84,10 +84,6 @@ export class FleetsCsvService {
           if (!minRaw) rowErrors.push('min is required for HandicapRange type');
           if (!maxRaw) rowErrors.push('max is required for HandicapRange type');
           break;
-        case 'Tag':
-          if (!name) rowErrors.push('name is required for Tag type');
-          if (!value) rowErrors.push('value is required for Tag type');
-          break;
         default:
           rowErrors.push(`Unknown fleet type: ${type}`);
       }
@@ -112,10 +108,6 @@ export class FleetsCsvService {
         fleet.scheme = scheme;
         fleet.min = Number(minRaw);
         fleet.max = Number(maxRaw);
-        break;
-      case 'Tag':
-        fleet.name = name;
-        fleet.value = value;
         break;
     }
 

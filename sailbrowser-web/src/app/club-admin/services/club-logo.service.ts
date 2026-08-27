@@ -1,11 +1,10 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FirebaseApp } from '@angular/fire/app';
-import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
 import { ClubStore } from 'app/club-tenant';
+import { cloudCallable } from 'app/shared/firebase/cloud-functions';
 import { resolveStorageDownloadUrl } from 'app/shared/firebase/storage-download';
 import { from, of } from 'rxjs';
-import { environment } from '../../../environments/environment';
 
 const UPLOAD_CLUB_LOGO_CALLABLE_TIMEOUT_MS = 60_000;
 
@@ -40,17 +39,9 @@ export class ClubLogoService {
     base64: string,
     mimeType: string,
   ): Promise<{ storagePath: string }> {
-    const functions = getFunctions(this.app, 'europe-west1');
-    if (environment.useEmulators) {
-      try {
-        connectFunctionsEmulator(functions, 'localhost', 5001);
-      } catch {
-        /* already configured */
-      }
-    }
-    const uploadFn = httpsCallable(functions, 'uploadClubLogo', {
+    const uploadFn = await cloudCallable('uploadClubLogo', {
       timeout: UPLOAD_CLUB_LOGO_CALLABLE_TIMEOUT_MS,
-    });
+    }, this.app);
     const res = await uploadFn({
       imageBase64: base64,
       imageMimeType: mimeType,

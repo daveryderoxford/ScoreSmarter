@@ -27,8 +27,6 @@ export function getConfigName(hcapScheme: HandicapScheme, fleet?: Fleet) {
    switch (fleet.type) {
       case 'BoatClass':
          return getFleetName(fleet);
-      case 'Tag':
-         return getFleetName(fleet);
       case 'GeneralHandicap':
       case 'HandicapRange':
          return hcapScheme;

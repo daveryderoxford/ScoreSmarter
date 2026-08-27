@@ -78,7 +78,6 @@ export class NewBoatDialog {
     helm: [this.dialogData?.prefilledHelm ?? '', Validators.required],
     crew: [''],
     personalHandicapBand: ['unknown' as PersonalHandicapBand | 'unknown'],
-    tags: this.fb.nonNullable.control<string[]>([]),
     saveBoat: [true],
   });
 
@@ -140,7 +139,6 @@ export class NewBoatDialog {
       personalHandicapBand: raw['personalHandicapBand'] === 'unknown'
         ? undefined
         : (raw['personalHandicapBand'] as PersonalHandicapBand | undefined),
-      tags: Array.isArray(raw['tags']) ? (raw['tags'] as string[]) : [],
     };
 
     this.dialogRef.close({

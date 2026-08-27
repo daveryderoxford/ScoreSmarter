@@ -20,9 +20,7 @@ export interface SeriesEntry {
    personalHandicapBand?: PersonalHandicapBand;
 
    /**
-    * User-authored tag ids carried on this entry (e.g. 'gold', 'u16').
-    * Always an array (default `[]`); display metadata is resolved against
-    * `Club.tagDefinitions` and the published-results snapshots.
+    * Series division ids (from `Series.divisions`). Always an array (default `[]`).
     */
-   tags: string[];
+   divisions: string[];
 }

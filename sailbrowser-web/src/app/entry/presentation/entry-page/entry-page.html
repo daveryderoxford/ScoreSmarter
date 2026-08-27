@@ -163,6 +163,14 @@
               [initialPeriod]="racePanelInitialPeriod()"
               emptyMessage="No eligible races for this boat."
               (selectedRaceIdsChange)="onEntryRaceIdsChange($event)" />
+            @if (divisionCatalog().length > 0) {
+              <div class="divisions-block" role="group" aria-label="Divisions">
+                <span class="divisions-block-title">Divisions</span>
+                <app-division-value-picker
+                  formControlName="divisions"
+                  [availableDivisions]="divisionCatalog()" />
+              </div>
+            }
           </mat-card>
         } @else {
           <app-centered-text>No eligible races for this boat.</app-centered-text>

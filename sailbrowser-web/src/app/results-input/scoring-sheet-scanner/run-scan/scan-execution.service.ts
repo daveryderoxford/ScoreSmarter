@@ -1,8 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
-import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
 import { Observable } from 'rxjs';
-import { environment } from '../../../../environments/environment';
+import { cloudCallable } from 'app/shared/firebase/cloud-functions';
 import { applyAutoAccept, ScanResponse, ScanRunRequest, ScanRunState } from '../model/scan-model';
 
 const PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS = 318_000;
@@ -63,17 +62,12 @@ export class ScanExecutionService {
     const useStoredRaceSheet = !!request.useStoredRaceSheet;
     if (!hasInlineImage && !useStoredRaceSheet) throw new Error('Missing image data for scan.');
 
-    const functions = getFunctions(this.app, 'europe-west1');
-    if (environment.useEmulators) {
-      try { connectFunctionsEmulator(functions, 'localhost', 5001); } catch { /* already configured */ }
-    }
-
-    const uploadFn = httpsCallable(functions, 'uploadResultsSheetImage', {
+    const uploadFn = await cloudCallable('uploadResultsSheetImage', {
       timeout: UPLOAD_RESULTS_SHEET_IMAGE_CALLABLE_TIMEOUT_MS,
-    });
-    const parseFn = httpsCallable(functions, 'parseStoredResultsSheet', {
+    }, this.app);
+    const parseFn = await cloudCallable('parseStoredResultsSheet', {
       timeout: PARSE_RESULTS_SHEET_CALLABLE_TIMEOUT_MS,
-    });
+    }, this.app);
 
     if (!useStoredRaceSheet) {
       await uploadFn({

@@ -7,8 +7,7 @@ import type { Boat } from 'app/boats';
 import { of } from 'rxjs';
 import { UserData } from '../model/user';
 import { ClubTenant, FirestoreTenantService } from 'app/club-tenant';
-import { httpsCallable } from 'firebase/functions';
-import { Functions } from '@angular/fire/functions';
+import { cloudCallable } from 'app/shared/firebase/cloud-functions';
 
 @Injectable({
   providedIn: "root"
@@ -16,7 +15,6 @@ import { Functions } from '@angular/fire/functions';
 export class UserDataService {
   private as = inject(AuthService);
   private tenant = inject(FirestoreTenantService);
-  private functions = inject(Functions);
   private clubId = inject(ClubTenant).clubId;
 
   private userCollection = this.tenant.collectionRef<UserData>('users');
@@ -33,9 +31,12 @@ export class UserDataService {
   constructor() {
     /** Ensure user data exists on login */
     effect( async () => {
-      const ensureUserData = httpsCallable<{clubId: string}, {user: UserData, id: string, isNew: boolean}>(this.functions, 'ensureUserData');
       if (this.as.loggedIn()) {
         try  {
+          const ensureUserData = await cloudCallable<
+            { clubId: string },
+            { user: UserData; id: string; isNew: boolean }
+          >('ensureUserData');
           const result = await ensureUserData({ clubId: this.clubId });
 
           console.log('UserDataService: User data returned for ' + result.data.id);

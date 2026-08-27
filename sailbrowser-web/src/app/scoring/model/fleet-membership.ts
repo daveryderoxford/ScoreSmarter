@@ -13,18 +13,5 @@ export function isInFleet(entry: SeriesEntry, fleet: Fleet): boolean {
       const value = getHandicapValue(entry.handicaps, fleet.scheme);
       return value != null && value >= fleet.min && value <= fleet.max;
     }
-    case 'Tag':
-      return entryHasTagFleetValue(entry, fleet.value);
   }
-}
-
-/**
- * Whether a series entry carries a tag that satisfies a Tag fleet.
- * `fleetValue` must be the club tag definition `id`; legacy fleets may have
- * stored the display label instead — we match ids case-insensitively.
- */
-export function entryHasTagFleetValue(entry: SeriesEntry, fleetValue: string): boolean {
-  if (!entry.tags?.length || !fleetValue) return false;
-  const target = fleetValue.toLowerCase();
-  return entry.tags.some(tag => tag.toLowerCase() === target);
 }

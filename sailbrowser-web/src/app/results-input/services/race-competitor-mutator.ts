@@ -14,6 +14,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Firestore, setDoc, writeBatch } from '@angular/fire/firestore';
 import { sailNumbersEqual } from 'app/boats/model/sail-number';
+import { divisionIdsEqual, entryDivisionIds } from 'app/race-calender/model/division';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Handicap } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
@@ -72,8 +73,8 @@ export interface CreateSeriesEntryInput {
   crew?: string;
   handicaps: Handicap[];
   personalHandicapBand?: PersonalHandicapBand;
-  /** Tag ids to seed on the new entry; caller passes `[]` when none. */
-  tags: string[];
+  /** Division ids to seed on the new entry. */
+  divisions: string[];
 }
 
 const RACE_PATCH_KEYS: (keyof RaceScopedCompetitorPatch)[] = [
@@ -107,13 +108,6 @@ function handicapListsEqual(a: Handicap[] | undefined, b: Handicap[] | undefined
   return true;
 }
 
-function tagListsEqual(a: string[] | undefined, b: string[] | undefined): boolean {
-  const ax = [...(a ?? [])].sort();
-  const bx = [...(b ?? [])].sort();
-  if (ax.length !== bx.length) return false;
-  return ax.every((t, i) => t === bx[i]);
-}
-
 /** True when persisted entry fields match (including optional band as null vs absent). */
 function seriesEntriesEqual(a: SeriesEntry, b: SeriesEntry): boolean {
   return (
@@ -127,7 +121,7 @@ function seriesEntriesEqual(a: SeriesEntry, b: SeriesEntry): boolean {
     sailNumbersEqual(a.sailNumber, b.sailNumber) &&
     (a.personalHandicapBand ?? null) === (b.personalHandicapBand ?? null) &&
     handicapListsEqual(a.handicaps, b.handicaps) &&
-    tagListsEqual(a.tags, b.tags)
+    divisionIdsEqual(entryDivisionIds(a), entryDivisionIds(b))
   );
 }
 
@@ -227,7 +221,7 @@ export class RaceCompetitorMutator {
       boatName: input.boatName,
       handicaps: input.handicaps,
       personalHandicapBand: input.personalHandicapBand,
-      tags: input.tags,
+      divisions: input.divisions,
     };
     return await this.seriesEntries.addEntry(entry);
   }

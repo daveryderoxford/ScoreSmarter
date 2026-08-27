@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { sailNumbersEqual } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
 import { resolveHandicapsForSeries } from 'app/entry/services/entry-helpers';
+import { divisionIdsEqual, entryDivisionIds } from 'app/race-calender/model/division';
 import { RaceCalendarStore, Series } from 'app/race-calender';
 import { Handicap } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
@@ -47,7 +48,7 @@ export interface SeriesTypoEditCommand {
   club?: string;
   boatName?: string;
   personalHandicapBand?: PersonalHandicapBand | null;
-  tags?: string[];
+  divisions?: string[];
   handicaps?: Handicap[];
 }
 
@@ -103,7 +104,7 @@ export class RaceCompetitorEditService {
         club: entry.club,
         boatName: entry.boatName,
         crew: entry.crew,
-        tags: entry.tags,
+        divisions: entryDivisionIds(entry),
         personalHandicapBand: entry.personalHandicapBand,
         handicaps: handicapsForCreate,
       });
@@ -229,10 +230,10 @@ export class RaceCompetitorEditService {
     ) {
       entryUpdate.handicaps = command.handicaps;
     }
-    if (command.tags !== undefined) {
-      const nextTags = [...command.tags];
-      if (!tagsEqual(workingEntry.tags, nextTags)) {
-        entryUpdate.tags = nextTags;
+    if (command.divisions !== undefined) {
+      const nextDivisions = [...command.divisions];
+      if (!divisionIdsEqual(entryDivisionIds(workingEntry), nextDivisions)) {
+        entryUpdate.divisions = nextDivisions;
       }
     }
 
@@ -373,11 +374,4 @@ function handicapsEqual(a: Handicap[] | undefined, b: Handicap[] | undefined): b
     if (ax[i].scheme !== bx[i].scheme || ax[i].value !== bx[i].value) return false;
   }
   return true;
-}
-
-function tagsEqual(a: string[] | undefined, b: string[] | undefined): boolean {
-  const ax = [...(a ?? [])].sort();
-  const bx = [...(b ?? [])].sort();
-  if (ax.length !== bx.length) return false;
-  return ax.every((t, i) => t === bx[i]);
 }

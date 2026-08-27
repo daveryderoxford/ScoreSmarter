@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/angular';
-import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
+import type { Division } from 'app/race-calender/model/division';
 import { RaceResultsTable } from './race-results-table';
 import { PUBLISHED_RACES_MOCKS } from '@testing/mocks/published-results/published-races-mocks';
 
-const STORY_TAG_DEFINITIONS: ClubTagDefinition[] = [
-  { id: 'gold', label: 'Gold Fleet', color: 'gold' },
-  { id: 'u16', label: 'Under 16', color: 'blue' },
+const STORY_DIVISIONS: Division[] = [
+  { id: 'gold', name: 'Gold Fleet', scoreAs: 'none', display: { style: 'marker', markerColor: '#C9A227' } },
+  { id: 'u16', name: 'Under 16', scoreAs: 'none', display: { style: 'marker', markerColor: '#1976D2' } },
 ];
 
 const meta: Meta<RaceResultsTable> = {
@@ -32,19 +32,19 @@ export const Default: Story = {
 
 export const WithDNSRaceResult: Story = {
   args: {
-    results: [...PUBLISHED_RACES_MOCKS[0].results, { rank: 16, helm: 'Did Not Start', seriesEntryId: 'seriesEntry', competitorKey: 'seriesEntry', boatClass: 'Laser', sailNumber: '999', club: 'SBSC', finishTime: new Date('2024-05-01T12:00:00Z'), correctedTime: 99999, points: 16, resultCode: 'DNS', handicap: 1000, laps: 0, startTime: new Date('2024-05-01T12:00:00Z'), elapsedTime: 0, tags: [] }],
+    results: [...PUBLISHED_RACES_MOCKS[0].results, { rank: 16, helm: 'Did Not Start', seriesEntryId: 'seriesEntry', competitorKey: 'seriesEntry', boatClass: 'Laser', sailNumber: '999', club: 'SBSC', finishTime: new Date('2024-05-01T12:00:00Z'), correctedTime: 99999, points: 16, resultCode: 'DNS', handicap: 1000, laps: 0, startTime: new Date('2024-05-01T12:00:00Z'), elapsedTime: 0, divisions: [] }],
     showBoatClass: true,
   },
 };
 
-/** Tag colours as dots beside helm names (`tagDefinitions` + row `tags`). */
-export const WithTags: Story = {
+/** Colour markers beside helm names. */
+export const WithDivisions: Story = {
   args: {
     results: PUBLISHED_RACES_MOCKS[0].results.slice(0, 8).map((r, i) => ({
       ...r,
-      tags: i < 2 ? ['gold'] : i < 5 ? ['u16'] : i === 5 ? ['gold', 'u16'] : [],
+      divisions: i < 2 ? ['gold'] : i < 5 ? ['u16'] : i === 5 ? ['gold', 'u16'] : [],
     })),
-    tagDefinitions: STORY_TAG_DEFINITIONS,
+    divisionDefinitions: STORY_DIVISIONS,
     showBoatClass: true,
   },
 };

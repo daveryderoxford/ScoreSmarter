@@ -39,7 +39,8 @@ export class RaceCalendarStoreBase {
       'entryAlgorithm',
       'discards',
       'primaryScoringConfiguration',
-      'secondaryScoringConfigurations'
+      'secondaryScoringConfigurations',
+      'divisions',
     ];
 
     const hasScoringChange = scoringCriticalFields.some(field => field in data);

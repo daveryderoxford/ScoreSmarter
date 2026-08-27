@@ -31,7 +31,7 @@ function entry(over: Partial<SeriesEntry> & Pick<SeriesEntry, 'id'>): SeriesEntr
     boatClass: 'ILCA 7',
     sailNumber: '1000',
     handicaps: [{ scheme: 'PY', value: 1100 }],
-    tags: [],
+    divisions: [],
     ...over,
   };
 }
@@ -57,7 +57,7 @@ function rr(seed: ResultSeed, entries: SeriesEntry[], mergeStrategy: MergeStrate
     correctedTime: 1800,
     points: seed.points,
     resultCode: seed.resultCode ?? 'OK',
-    tags: [],
+    divisions: [],
   };
 }
 
@@ -77,7 +77,7 @@ function race(
     type: 'Handicap',
     isDiscardable: true,
     isAverageLap: false,
-    tagDefinitions: [],
+    divisionDefinitions: [],
     results: seeds
       .filter(s => s.raceIndex === index)
       .map(s => rr(s, entries, mergeStrategy)),

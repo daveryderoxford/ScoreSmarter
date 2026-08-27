@@ -22,7 +22,7 @@ export class BoatsStore {
     name: 'boats',
     stream: () =>
       collectionData(this.boatsCollection, { idField: 'id' }).pipe(
-        map(boats => boats.map(ensureBoatTags).sort(boatsSort)),
+        map(boats => [...boats].sort(boatsSort)),
       ),
     defaultValue: [],
   });
@@ -77,12 +77,6 @@ export class BoatsStore {
     const docRef = this.ref(id);
     await firestoreWrite(deleteDoc(docRef), 'Deleting boat');
   }
-}
-
-/** Ensures missing tags default to an empty array. */
-function ensureBoatTags(boat: Boat): Boat {
-  if (Array.isArray(boat.tags)) return boat;
-  return { ...boat, tags: [] };
 }
 
 /** Sort boats by sail number then class */

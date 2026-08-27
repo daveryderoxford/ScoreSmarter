@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { divisionIdsEqual, entryDivisionIds } from 'app/race-calender/model/division';
 import { RaceCalendarStore } from 'app/race-calender';
 import {
   RaceCompetitorMutator,
@@ -33,12 +34,10 @@ export interface EntryDetails {
   handicaps?: Handicap[];
   personalHandicapBand?: PersonalHandicapBand;
   /**
-   * Tag ids to seed on a newly-created SeriesEntry. Typically `Boat.tags`
-   * forwarded by the entry UI. Existing entries keep their tags - the RO
-   * may have overridden them; this field is ignored on the reuse path.
-   * Optional: omitted/undefined is treated as no boat tags (`[]`).
+   * Division ids from the series catalog. Pre-filled from an existing SeriesEntry
+   * when signing on again; written onto that entry if the user changes them.
    */
-  tags?: string[];
+  divisions?: string[];
   /** Visiting helm's club. Set on create only; reuse does not overwrite. */
   club?: string;
   /** Copied from boat register or visitor form at create; reuse does not overwrite. */
@@ -60,7 +59,7 @@ export interface SeriesEntryImportPlan {
       boatName?: string;
       boatClass: string;
       sailNumber: string;
-      tags: string[];
+      divisions: string[];
       handicaps: Handicap[];
     }>;
   }>;
@@ -254,20 +253,14 @@ export class EntryService {
     const existing = matches[0];
 
     if (existing) {
-      // Reuse path: refresh derived fields only. Tags are user-authored and
-      // may have been overridden by an RO on the existing entry; do not
-      // overwrite them with the incoming boat tags.
-      //
-      // `personalHandicapBand` is passed as `null` when the caller has no
-      // band so the typed converter clears the field via `deleteField()`
-      // on the partial write. Passing raw `undefined` would be *omitted*
-      // by the converter (leave any stale band intact). The `null`
-      // sentinel is part of the converter contract documented in
-      // `firestore-helper.ts`.
+      const incomingDivisions = details.divisions ?? [];
       const entryUpdate: SeriesEntryPartialUpdate = {
         handicaps,
         personalHandicapBand: details.personalHandicapBand ?? null,
       };
+      if (!divisionIdsEqual(entryDivisionIds(existing), incomingDivisions)) {
+        entryUpdate.divisions = incomingDivisions;
+      }
       if (details.crew !== undefined && details.crew !== existing.crew) {
         entryUpdate.crew = details.crew;
       }
@@ -288,7 +281,7 @@ export class EntryService {
         sailNumber: details.sailNumber,
         handicaps,
         personalHandicapBand: details.personalHandicapBand,
-        tags: details.tags ?? [],
+        divisions: details.divisions ?? [],
       });
     } catch (err) {
       // The mutator runs an authoritative collision check that may surface a
@@ -327,7 +320,7 @@ export class EntryService {
           boatClass: entry.boatClass,
           sailNumber: entry.sailNumber,
           handicaps: entry.handicaps,
-          tags: entry.tags,
+          divisions: entry.divisions,
         });
         for (const race of seriesPlan.races) {
           await this.raceResultsStore.addResult({

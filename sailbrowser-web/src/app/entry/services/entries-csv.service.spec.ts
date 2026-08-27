@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
-import type { ClubTagDefinition } from 'app/club-tenant/model/club-tag';
-import type { Race } from 'app/race-calender/model/race';
 import type { Series } from 'app/race-calender/model/series';
+import type { Race } from 'app/race-calender/model/race';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
 import {
   EntriesCsvService,
@@ -17,9 +16,6 @@ const ilca: BoatClass = {
   isSinglehander: true,
 };
 
-const gold: ClubTagDefinition = { id: 'gold', label: 'Gold Fleet', color: 'gold' };
-const u16: ClubTagDefinition = { id: 'u16', label: 'Under 16', color: 'blue' };
-
 function makeSeries(over: Partial<Series> & Pick<Series, 'id' | 'name'>): Series {
   return {
     seasonId: 'season1',
@@ -27,6 +23,10 @@ function makeSeries(over: Partial<Series> & Pick<Series, 'id' | 'name'>): Series
     scoringAlgorithm: 'short',
     entryAlgorithm: 'classSailNumberHelm',
     discards: [4],
+    divisions: [
+      { id: 'gold', name: 'Gold Fleet', scoreAs: 'none', display: { style: 'marker', markerColor: '#C9A227' } },
+      { id: 'u16', name: 'Under 16', scoreAs: 'none', display: { style: 'marker', markerColor: '#1976D2' } },
+    ],
     primaryScoringConfiguration: {
       id: 'cfg-py',
       name: 'PY',
@@ -67,7 +67,6 @@ function context(over: Partial<EntriesCsvContext> = {}): EntriesCsvContext {
       makeRace({ id: 'r3', seriesId: 's2', index: 1 }),
     ],
     classes: over.classes ?? [ilca],
-    tagDefinitions: over.tagDefinitions ?? [gold, u16],
     existingEntriesBySeriesId: over.existingEntriesBySeriesId ?? new Map(),
   };
 }
@@ -81,7 +80,7 @@ describe('EntriesCsvService', () => {
 
   it('accepts header aliases and builds a plan for mapped series', () => {
     const csv = [
-      'Series name,Boat class,Helm,Sail No,Crew,Club,Tags,Boat name',
+      'Series name,Boat class,Helm,Sail No,Crew,Club,Division,Boat name',
       'Spring Series,ILCA 7,Alice Smith,1234,Bob,HYC,gold;u16,Flying Fish',
     ].join('\n');
 
@@ -99,7 +98,7 @@ describe('EntriesCsvService', () => {
       crew: 'Bob',
       club: 'HYC',
       boatName: 'Flying Fish',
-      tags: ['gold', 'u16'],
+      divisions: ['gold', 'u16'],
     });
     expect(plan.series[0].entries[0].handicaps.some(h => h.scheme === 'PY' && h.value === 1100)).toBe(true);
   });
@@ -168,14 +167,14 @@ describe('EntriesCsvService', () => {
     expect(plan.errors).toEqual(['Line 2: unknown class "Laser"']);
   });
 
-  it('rejects unknown tag ids (labels are not accepted)', () => {
+  it('rejects unknown division ids', () => {
     const csv = [
-      'series,class,helm,sail number,tags',
-      'Spring Series,ILCA 7,Alice,1,Gold Fleet',
+      'series,class,helm,sail number,divisions',
+      'Spring Series,ILCA 7,Alice,1,not-a-division',
     ].join('\n');
 
     const plan = service.buildPlan(csv, defaultMappings, context());
-    expect(plan.errors).toEqual(['Line 2: unknown tag id "Gold Fleet"']);
+    expect(plan.errors).toEqual(['Line 2: unknown division id "not-a-division"']);
   });
 
   it('rejects a duplicate identity inside the file', () => {
@@ -198,7 +197,7 @@ describe('EntriesCsvService', () => {
       boatClass: 'ILCA 7',
       sailNumber: '1',
       handicaps: [],
-      tags: [],
+      divisions: [],
     };
     const csv = [
       'series,class,helm,sail number',

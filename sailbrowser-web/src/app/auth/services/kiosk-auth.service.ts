@@ -1,8 +1,8 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Auth, signInWithCustomToken } from '@angular/fire/auth';
 import { FirebaseApp } from '@angular/fire/app';
-import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
 import { AppCheckFailureReporter } from 'app/shared/firebase/app-check-failure-reporter';
+import { cloudCallable } from 'app/shared/firebase/cloud-functions';
 import { environment } from '../../../environments/environment';
 
 export interface KioskAuthFailure {
@@ -67,18 +67,10 @@ export class KioskAuthService {
     }
 
     try {
-      const functions = getFunctions(this.app, 'europe-west1');
-      if (environment.useEmulators) {
-        try {
-          connectFunctionsEmulator(functions, 'localhost', 5001);
-        } catch {
-          /* already configured */
-        }
-      }
-      const exchange = httpsCallable<{ clubId: string; deviceId: string }, { token: string }>(
-        functions,
+      const exchange = await cloudCallable<{ clubId: string; deviceId: string }, { token: string }>(
         'exchangeKioskId',
         { timeout: 30_000 },
+        this.app,
       );
       const result = await exchange({ clubId, deviceId });
 

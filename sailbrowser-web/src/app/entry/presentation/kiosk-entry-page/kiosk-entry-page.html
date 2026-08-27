@@ -178,6 +178,14 @@
         <div class="summary">
           <p>{{ raceCountLabel() }}</p>
         </div>
+        @if (divisionCatalog().length > 0) {
+          <div class="divisions-block" role="group" aria-label="Divisions">
+            <span class="divisions-block-title">Divisions</span>
+            <app-division-value-picker
+              [formControl]="divisionsControl"
+              [availableDivisions]="divisionCatalog()" />
+          </div>
+        }
         <div class="actions">
           <button
             matButton="filled"
@@ -237,6 +245,14 @@
         <div class="summary">
           <p>{{ raceCountLabel() }}</p>
         </div>
+        @if (divisionCatalog().length > 0) {
+          <div class="divisions-block" role="group" aria-label="Divisions">
+            <span class="divisions-block-title">Divisions</span>
+            <app-division-value-picker
+              [formControl]="divisionsControl"
+              [availableDivisions]="divisionCatalog()" />
+          </div>
+        }
         <div class="actions">
           <button
             matButton="filled"

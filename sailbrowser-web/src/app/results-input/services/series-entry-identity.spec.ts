@@ -16,7 +16,7 @@ function entry(over: Partial<SeriesEntry> & Pick<SeriesEntry, 'id'>): SeriesEntr
     boatClass: 'ILCA 7',
     sailNumber: '100',
     handicaps: [],
-    tags: [],
+    divisions: [],
     ...over,
   };
 }

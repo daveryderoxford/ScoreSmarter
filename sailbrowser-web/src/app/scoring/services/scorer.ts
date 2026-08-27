@@ -89,7 +89,7 @@ function updateGridWithRace(scoringGrid: PublishedRace[], race: Race, updatedRes
       ...race,
       isAverageLap: race.isAverageLap,
       results: updatedResults,
-      tagDefinitions: [],
+      divisionDefinitions: [],
     });
   }
 }

@@ -1,5 +1,5 @@
 import { Component, effect, inject, input, output, computed, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -9,10 +9,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { CommonModule } from '@angular/common';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { startWith } from 'rxjs';
+import { map, merge, startWith } from 'rxjs';
 import { ClubStore } from 'app/club-tenant';
 import { RaceCalendarStore } from '../services/full-race-calander';
+import { Division } from '../model/division';
 import { Series } from '../model/series';
+import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { SeriesScoringScheme, seriesScoringSchemeDetails } from 'app/scoring/model/scoring-algotirhm';
 import { getConfigName, ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import { seriesEntryGroupingDetails } from 'app/scoring';
@@ -152,8 +154,49 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
         </button>
       </div>
 
+      <div class="section">
+        <h3>Divisions</h3>
+        <p class="discard-summary">Optional classifications on series entries. Separate series publishes a results view for that division.</p>
+        <div formArrayName="divisions">
+          @for (div of divisions.controls; track div; let i = $index) {
+            <div [formGroupName]="i" class="division-row">
+              <mat-form-field class="flex-1">
+                <mat-label>Name</mat-label>
+                <input matInput formControlName="name">
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Score as</mat-label>
+                <mat-select formControlName="scoreAs">
+                  <mat-option value="none">Classification only</mat-option>
+                  <mat-option value="separateSeries">Separate series</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field>
+                <mat-label>Display</mat-label>
+                <mat-select formControlName="style">
+                  <mat-option value="marker">Colour marker</mat-option>
+                  <mat-option value="text">Column text</mat-option>
+                </mat-select>
+              </mat-form-field>
+              @if (div.get('style')?.value === 'marker') {
+                <mat-form-field>
+                  <mat-label>Colour</mat-label>
+                  <input matInput type="color" formControlName="markerColor">
+                </mat-form-field>
+              }
+              <button mat-icon-button color="warn" type="button" (click)="removeDivision(i)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+        <button matButton="outlined" type="button" (click)="addDivision()">
+          <mat-icon>add</mat-icon> Add Division
+        </button>
+      </div>
+
       <div>
-        <app-submit-button [disabled]="form.invalid" [busy]="busy()">Save Series</app-submit-button>
+        <app-submit-button [disabled]="saveDisabled()" [busy]="busy()">Save Series</app-submit-button>
       </div>
     </form>
   `,
@@ -196,6 +239,13 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
       font-size: 13px;
       color: var(--mat-sys-outline);
       line-height: 1.4;
+    }
+
+    .division-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
     }
   `,
 })
@@ -245,7 +295,20 @@ export class SeriesForm {
     }),
     entryAlgorithm: new FormControl('helm', { nonNullable: true, validators: [Validators.required] }),
     secondaryScoringConfigurations: new FormArray<FormGroup>([]),
+    divisions: new FormArray<FormGroup>([]),
   });
+
+  /**
+   * Zoneless: Material CVA updates do not always re-check this template, so bind
+   * Save to a signal driven by form status/value changes.
+   */
+  protected readonly saveDisabled = toSignal(
+    merge(this.form.statusChanges, this.form.valueChanges).pipe(
+      startWith(null),
+      map(() => this.form.invalid),
+    ),
+    { initialValue: this.form.invalid },
+  );
 
   scoringSchemes = seriesScoringSchemeDetails;
   entryAlgorithms = seriesEntryGroupingDetails;
@@ -256,10 +319,11 @@ export class SeriesForm {
   constructor() {
     effect(() => {
       const s = this.series();
-      if (s) {
-        this.calendarSeriesId.set(s.id);
-        this.patchFromSeries(s);
-      }
+      if (!s) return;
+      // Only hydrate when switching series — avoid wiping in-progress edits on store refreshes.
+      if (this.calendarSeriesId() === s.id) return;
+      this.calendarSeriesId.set(s.id);
+      this.patchFromSeries(s);
     });
 
     this.form
@@ -290,9 +354,11 @@ export class SeriesForm {
 
   private patchFromSeries(series: Series) {
     this.secondaryConfigs.clear();
+    this.divisions.clear();
     if (series.secondaryScoringConfigurations) {
       series.secondaryScoringConfigurations.forEach(config => this.addSecondaryConfig(config));
     }
+    (series.divisions ?? []).forEach(d => this.addDivision(d));
 
     this.seriesDiscards.set([...(series.discards ?? [])]);
 
@@ -306,6 +372,8 @@ export class SeriesForm {
       scoringAlgorithm: series.scoringAlgorithm,
       entryAlgorithm: series.entryAlgorithm,
     });
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
   }
 
   async editDiscardSchedule(): Promise<void> {
@@ -327,6 +395,29 @@ export class SeriesForm {
       this.seriesDiscards.set(next);
       this.form.markAsDirty();
     }
+  }
+
+  get divisions() {
+    return this.form.get('divisions') as FormArray;
+  }
+
+  addDivision(def?: Division) {
+    const group = new FormGroup({
+      id: new FormControl(def?.id || generateSecureID(20, 'D'), { nonNullable: true }),
+      name: new FormControl(def?.name || '', { nonNullable: true, validators: [Validators.required] }),
+      scoreAs: new FormControl<'none' | 'separateSeries'>(def?.scoreAs || 'none', { nonNullable: true }),
+      style: new FormControl<'text' | 'marker'>(def?.display.style || 'marker', { nonNullable: true }),
+      markerColor: new FormControl(def?.display.markerColor || '#1976D2', { nonNullable: true }),
+    });
+    this.divisions.push(group);
+    if (!def) {
+      this.form.markAsDirty();
+    }
+  }
+
+  removeDivision(index: number) {
+    this.divisions.removeAt(index);
+    this.form.markAsDirty();
   }
 
   get secondaryConfigs() {
@@ -441,6 +532,22 @@ export class SeriesForm {
       },
     );
 
+    const divisions: Division[] = (formValue.divisions as Array<{
+      id: string;
+      name: string;
+      scoreAs: 'none' | 'separateSeries';
+      style: 'text' | 'marker';
+      markerColor: string;
+    }>).map(row => ({
+      id: row.id,
+      name: row.name.trim(),
+      scoreAs: row.scoreAs,
+      display: {
+        style: row.style,
+        markerColor: row.style === 'marker' ? row.markerColor : undefined,
+      },
+    })).filter(d => d.id && d.name);
+
     const payload: Series = {
       id: formValue.id,
       seasonId: formValue.seasonId,
@@ -451,6 +558,7 @@ export class SeriesForm {
       discards: triggers,
       primaryScoringConfiguration,
       secondaryScoringConfigurations,
+      divisions,
     };
 
     this.save.emit(payload);

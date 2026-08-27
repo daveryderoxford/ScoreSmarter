@@ -9,8 +9,19 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&amp;display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Non-blocking: do not compete with main.js / first paint on Slow 4G. -->
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&amp;display=swap"
+        media="print"
+        onload="this.media='all'">
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/icon?family=Material+Icons"
+        media="print"
+        onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&amp;display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  </noscript>
   <link rel="manifest" href="manifest.webmanifest">
   <style>
     /* Pre-bootstrap shell: mirrors home (toolbar + centered mat-card). RGB fallbacks match measured UI. */
@@ -21,7 +32,8 @@
     body {
       margin: 0;
       height: 100%;
-      font-family: Roboto, "Helvetica Neue", sans-serif;
+      /* System stack first so deferred Roboto is not required for first paint. */
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
       background-color: var(--mat-sys-background, rgb(250, 249, 253));
       color: var(--mat-sys-on-background, #1a1b1f);
     }
@@ -50,15 +62,28 @@
     }
 
     .boot-menu-button {
-      padding: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
       color: var(--mat-sys-primary, rgb(0, 92, 187));
+    }
+
+    /* CSS hamburger — avoids Material Icons font on the critical boot path. */
+    .boot-menu-icon {
+      display: block;
+      width: 18px;
+      height: 2px;
+      background: currentColor;
+      border-radius: 1px;
+      box-shadow: 0 -6px 0 currentColor, 0 6px 0 currentColor;
     }
 
     .app-boot-title {
       font-size: 22px;
       margin-left: 8px;
       font-weight: 500;
-      font-size: 22px;
     }
 
     .app-boot-content {
@@ -113,8 +138,8 @@
     <div class="app-boot">
       <header class="app-boot-toolbar">
         <div class="app-boot-toolbar-left">
-          <span class="boot-menu-button">
-          <span class="material-icons" aria-hidden="true">menu</span>
+          <span class="boot-menu-button" aria-hidden="true">
+            <span class="boot-menu-icon"></span>
           </span>
           <span class="app-boot-title">ScoreSmarter</span>
         </div>

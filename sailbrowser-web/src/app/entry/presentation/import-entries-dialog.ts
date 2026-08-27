@@ -219,7 +219,6 @@ export class ImportEntriesDialog {
         series: this.calendar.allSeries(),
         races: this.calendar.allRaces(),
         classes: this.club.club().classes,
-        tagDefinitions: this.club.club().tagDefinitions ?? [],
         existingEntriesBySeriesId: this.existingBySeries(),
       },
     );

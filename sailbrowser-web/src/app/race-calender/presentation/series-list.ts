@@ -92,8 +92,10 @@ export class SeriesList {
 
   filteredSeries = computed(() => {
     const term = normaliseString(this.searchTerm());
-    return this.rcs.allSeries().filter((s: Series) => 
-      !term || normaliseString(s.name).includes(term) || normaliseString(s.seasonId).includes(term));
+    return this.rcs.allSeries().filter((s: Series) =>
+      !term
+      || normaliseString(s.name).includes(term)
+      || normaliseString(this.getSeasonName(s.seasonId)).includes(term));
   });
 
   getFleetName = (id: string | undefined) => {

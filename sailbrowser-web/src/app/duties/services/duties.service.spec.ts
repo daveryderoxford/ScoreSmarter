@@ -29,7 +29,7 @@ const { ensureRaceDay } = vi.hoisted(() => ({
 
 const raceDaySetDoc = vi.fn(async () => undefined);
 
-vi.mock('@angular/fire/functions', () => ({
+vi.mock('firebase/functions', () => ({
   getFunctions: vi.fn(() => ({})),
   connectFunctionsEmulator: vi.fn(),
   httpsCallable: vi.fn((_functions, name: string) => {

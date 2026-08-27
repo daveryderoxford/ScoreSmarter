@@ -93,13 +93,12 @@ export class ClubAdminSwitchboard {
     },
     {
       title: 'Club Data',
-      description: 'Manage clubm data boats, classes, fleets and entry tag values',
+      description: 'Manage boats, classes, and fleets',
       icon: 'sailing',
       resources: [
         { label: 'Boats', route: '/boats' },
         { label: 'Classes', route: '/club/classes' },
         { label: 'Fleets', route: '/club/fleets' },
-        { label: 'Tags', route: '/club-admin/tags' },
 
       ],
       importExportContexts: ['boats', 'classes', 'fleets']

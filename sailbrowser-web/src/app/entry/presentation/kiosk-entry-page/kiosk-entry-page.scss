@@ -278,6 +278,17 @@
   margin-bottom: 0;
 }
 
+.divisions-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.divisions-block-title {
+  font-weight: 500;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .crew {
   max-width: 200px;
 }

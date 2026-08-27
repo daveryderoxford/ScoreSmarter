@@ -1,13 +1,14 @@
 import { Routes } from '@angular/router';
-import { ResultsViewer } from './presentation/results-viewer/results-viewer';
-import { SeasonList } from './presentation/season-list/season-list';
-import { SeasonPage } from './presentation/season-page/season-page';
 
 export const PUBLISHED_RESULTS_ROUTES: Routes = [
 
    // On Mobile: Navigates to this route to see the list full-screen
    // On Desktop: This route shows the sidebar + a "Select an item" message
-   { path: 'mobile-results-list', component: SeasonPage },
+   {
+      path: 'mobile-results-list',
+      loadComponent: () =>
+         import('./presentation/season-page/season-page').then(m => m.SeasonPage),
+   },
 
    {
       path: 'today',
@@ -16,8 +17,16 @@ export const PUBLISHED_RESULTS_ROUTES: Routes = [
          import('./presentation/todays-results-page/todays-results-page').then(m => m.TodaysResultsPage),
    },
 
-   { path: 'viewer', component: ResultsViewer },
-   { path: 'viewer/:id', component: ResultsViewer },
+   {
+      path: 'viewer',
+      loadComponent: () =>
+         import('./presentation/results-viewer/results-viewer').then(m => m.ResultsViewer),
+   },
+   {
+      path: 'viewer/:id',
+      loadComponent: () =>
+         import('./presentation/results-viewer/results-viewer').then(m => m.ResultsViewer),
+   },
 
    { path: '', redirectTo: 'items', pathMatch: 'full' }
 
