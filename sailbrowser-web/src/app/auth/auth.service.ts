@@ -34,7 +34,7 @@ export class AuthService {
   isSysAdmin = computed<boolean>(() => this.idTokenResult()?.claims['sysAdmin'] === true);
 
   /** JWT claims excluding standard Firebase metadata fields. */
-  readonly customClaims = computed<ReadonlyArray<{ key: string; value: string }>>(() => {
+  readonly customClaims = computed<readonly { key: string; value: string }[]>(() => {
     const claims = this.idTokenResult()?.claims;
     if (!claims) return [];
     const skip = new Set([
@@ -60,6 +60,7 @@ export class AuthService {
   });
 
   isRaceOfficer = computed<boolean>(() => {
+    return false;
     if (this.isClubAdmin()) return true;
     const clubs = this.idTokenResult()?.claims['clubs'] as Record<string, string> | undefined;
     return clubs?.[this.clubId] === 'race-officer';

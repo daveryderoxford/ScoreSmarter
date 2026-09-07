@@ -4,10 +4,11 @@ import { User } from "@angular/fire/auth";
 import { DocumentReference, arrayRemove, arrayUnion, doc, docData, setDoc } from "@angular/fire/firestore";
 import { AuthService } from 'app/auth';
 import type { Boat } from 'app/boats';
-import { of } from 'rxjs';
-import { UserData } from '../model/user';
 import { ClubTenant, FirestoreTenantService } from 'app/club-tenant';
 import { cloudCallable } from 'app/shared/firebase/cloud-functions';
+import { of } from 'rxjs';
+import { UserData } from '../model/user';
+import { pushRecentBoat } from './recent-boats';
 
 @Injectable({
   providedIn: "root"
@@ -66,6 +67,20 @@ export class UserDataService {
 
   private _doc(uid: string): DocumentReference<UserData> {
     return doc(this.userCollection, uid)
+  }
+
+  /**
+   * Records a boat in the user's recent entry boats (MRU list up to 5 boats).
+   */
+  async recordRecentBoat(boat: Boat): Promise<void> {
+    const userId = this.id();
+    if (!userId) {
+      console.warn('UserDataService: Cannot record recent boat without user id');
+      return;
+    }
+    const current = this.user()?.boats ?? [];
+    const updated = pushRecentBoat(current, boat, 5);
+    await setDoc(this._doc(userId), { boats: updated }, { merge: true });
   }
 
   // Same rationale as `updateDetails` above: prefer `setDoc({ merge: true })`

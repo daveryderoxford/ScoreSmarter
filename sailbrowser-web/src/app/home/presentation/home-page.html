@@ -24,11 +24,13 @@
           <mat-icon>assignment</mat-icon>
           <span>Entry</span>
         </a>
-        <button matButton="tonal" type="button" [matMenuTriggerFor]="inputResultsMenu">
-          <mat-icon>list_alt</mat-icon>
-          <span>Input results</span>
-          <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
-        </button>
+        @if (auth.isRaceOfficer()) {
+          <button matButton="tonal" type="button" [matMenuTriggerFor]="inputResultsMenu">
+            <mat-icon>list_alt</mat-icon>
+            <span>Input results</span>
+            <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+          </button>
+        }
         <mat-menu #inputResultsMenu="matMenu">
           <a mat-menu-item routerLink="/results-input/manual">
             <mat-icon>schedule</mat-icon>

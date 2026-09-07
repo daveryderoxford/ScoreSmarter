@@ -1,6 +1,39 @@
 <app-toolbar title="Enter"></app-toolbar>
 <div class="content">
   @switch (step()) {
+    @case ('recent') {
+      <div class="recent-boats-container">
+        <p class="step-instruction">Select your boat</p>
+        <div class="recent-boats-list">
+          @for (boat of recentBoats(); track boat.id || boat.sailNumber) {
+            <button
+              matButton="outlined"
+              type="button"
+              class="recent-boat-btn"
+              (click)="selectRecentBoat(boat)">
+              <div class="recent-boat-content">
+                <span class="recent-boat-title">
+                  {{ formatBoatOptionLabel({ boatName: boat.name, boatClass: boat.boatClass, sailNumber: boat.sailNumber }) }}
+                </span>
+                @if (boat.isClub) {
+                  <span class="recent-boat-badge">(Club Boat)</span>
+                } @else if (boat.helm) {
+                  <span class="recent-boat-helm">{{ boat.helm }}</span>
+                }
+              </div>
+            </button>
+          }
+          <button
+            matButton="filled"
+            type="button"
+            class="another-boat-btn"
+            (click)="chooseAnotherBoat()">
+            ...another boat
+          </button>
+        </div>
+      </div>
+    }
+
     @case ('category') {
       <div class="category-grid">
         <button matButton="filled" type="button" class="category-btn category-btn-member" (click)="startMember()">
@@ -11,9 +44,16 @@
             Club Boats
           </button>
           <button mat-stroked-button type="button" class="category-btn" (click)="startVisitor()">
-            Visitor entry
+            Visitor/One off entry
           </button>
         </div>
+        @if (hasRecentBoats()) {
+          <div class="category-back-row">
+            <button matButton="text" type="button" (click)="goBack()">
+              Back to my boats
+            </button>
+          </div>
+        }
       </div>
     }
 

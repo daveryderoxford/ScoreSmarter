@@ -73,6 +73,18 @@ export function isScheduledToday(race: Race, now: Date): boolean {
 }
 
 /**
+ * Checks whether a race falls within the next N days from `now` (inclusive of today through today + N days).
+ */
+export function isWithinNextDays(race: Race, now: Date, days = 7): boolean {
+  const scheduled = new Date(race.scheduledStart);
+  const start = startOfLocalDay(now);
+  const end = new Date(start);
+  end.setDate(end.getDate() + days);
+  end.setHours(23, 59, 59, 999);
+  return scheduled >= start && scheduled <= end;
+}
+
+/**
  * Default (no chip / `period === null`) shows today only; Past and Future add earlier or later days.
  * Today's races always pass so they stay visible when switching chips.
  */

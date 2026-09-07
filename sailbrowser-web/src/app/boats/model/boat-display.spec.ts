@@ -51,7 +51,7 @@ describe('boat-display', () => {
       sailNumber: 'GBR1234',
       helm: 'Sam',
     });
-    expect(haystack).toContain('flying fish');
+    expect(haystack).toContain('flyingfish');
     expect(haystack).toContain('j/109');
   });
 });

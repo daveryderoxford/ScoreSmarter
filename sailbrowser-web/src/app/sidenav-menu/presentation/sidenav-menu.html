@@ -53,27 +53,30 @@
 
     <mat-divider />
 
-    <a
-      mat-list-item
-      class="sidenav-nav-item"
-      routerLink="/results-input/manual"
-      routerLinkActive="mdc-list-item--activated"
-      [routerLinkActiveOptions]="prefixNavMatch"
-      (click)="onNavClick()">
-      <mat-icon matListItemIcon>schedule</mat-icon>
-      <span matListItemTitle>Results Input</span>
-    </a>
+    @if (auth.isRaceOfficer()) {
 
-    <a
-      mat-list-item
-      class="sidenav-nav-item"
-      routerLink="/results-input/scan-scoring-sheet"
-      routerLinkActive="mdc-list-item--activated"
-      [routerLinkActiveOptions]="prefixNavMatch"
-      (click)="onNavClick()">
-      <mat-icon matListItemIcon>document_scanner</mat-icon>
-      <span matListItemTitle>Scan Scoring Sheet</span>
-    </a>
+      <a
+        mat-list-item
+        class="sidenav-nav-item"
+        routerLink="/results-input/manual"
+        routerLinkActive="mdc-list-item--activated"
+        [routerLinkActiveOptions]="prefixNavMatch"
+        (click)="onNavClick()">
+        <mat-icon matListItemIcon>schedule</mat-icon>
+        <span matListItemTitle>Results Input</span>
+      </a>
+
+      <a
+        mat-list-item
+        class="sidenav-nav-item"
+        routerLink="/results-input/scan-scoring-sheet"
+        routerLinkActive="mdc-list-item--activated"
+        [routerLinkActiveOptions]="prefixNavMatch"
+        (click)="onNavClick()">
+        <mat-icon matListItemIcon>document_scanner</mat-icon>
+        <span matListItemTitle>Scan Scoring Sheet</span>
+      </a>
+    }
 
     @if (auth.loggedIn() && auth.isClubAdmin()) {
       <mat-divider />

@@ -1,11 +1,10 @@
-/** Must load before services that import `RaceCompetitorMutator` (registers `writeBatch` mock). */
-import { TestBed } from '@angular/core/testing';
-import { Firestore } from '@angular/fire/firestore';
 import {
   installMutatorWriteBatchHarness,
   MutatorTestRaceCompetitorStore,
   MutatorTestSeriesEntryStore,
 } from '@testing/race-competitor-mutator-test-harness';
+import { TestBed } from '@angular/core/testing';
+import { Firestore } from '@angular/fire/firestore';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ClubStore } from 'app/club-tenant';
 import type { SeriesEntryMatchingStrategy } from 'app/entry/model/entry-grouping';

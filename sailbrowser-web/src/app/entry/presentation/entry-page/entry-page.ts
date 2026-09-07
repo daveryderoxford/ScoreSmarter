@@ -1,4 +1,15 @@
-import { afterRenderEffect, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
+import {
+  afterRenderEffect,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  linkedSignal,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -26,7 +37,12 @@ import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { DivisionValuePicker } from 'app/club-tenant/presentation/divisions/division-value-picker';
 import { RacesPanel } from 'app/race-calender/presentation/races-panel/races-panel';
-import type { RacesPanelFilter, RacesPanelPeriod } from 'app/race-calender/presentation/races-panel/races-panel-utils';
+import {
+  isScheduledToday,
+  isWithinNextDays,
+  type RacesPanelFilter,
+  type RacesPanelPeriod,
+} from 'app/race-calender/presentation/races-panel/races-panel-utils';
 import { CurrentRaces } from 'app/results-input';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
 import { prefillDivisionsFromExistingEntry, divisionCatalogForRaces } from '../../services/prefill-entry-divisions';
@@ -53,6 +69,7 @@ import { EntryConflict, EntryService } from '../../services/entry.service';
 import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
 import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, FIRESTORE_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
+import { UserDataService } from 'app/user';
 
 interface BoatAutocompleteGroup {
   readonly key: string;
@@ -207,6 +224,56 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
       width: calc((100% - 16px) / 2);
     }
 
+    .category-back-row {
+      display: flex;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .recent-boats-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 280px;
+    }
+
+    .recent-boats-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .recent-boat-btn {
+      min-height: 52px;
+      padding: 10px 16px;
+      text-align: left;
+      justify-content: flex-start;
+      width: 100%;
+    }
+
+    .recent-boat-content {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .recent-boat-title {
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+
+    .recent-boat-helm, .recent-boat-badge {
+      font-size: 0.8125rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .another-boat-btn {
+      margin-top: 8px;
+      min-height: 48px;
+      width: 100%;
+    }
+
     .step-instruction {
       margin: 0 0 16px;
       color: var(--mat-sys-on-surface-variant);
@@ -297,10 +364,35 @@ export class EntryPage {
   private readonly dialogs = inject(DialogsService);
   private readonly auth = inject(AuthService);
   private readonly seriesEntries = inject(SeriesEntryStore);
+  private readonly userData = inject(UserDataService);
 
   protected readonly formatBoatOptionLabel = formatBoatOptionLabel;
 
-  readonly step = signal<'category' | 'details' | 'races'>('category');
+  private readonly scopedRaceId = this.route.snapshot.queryParamMap.get('raceId') ?? undefined;
+  private readonly returnTo = this.route.snapshot.queryParamMap.get('returnTo');
+  private readonly initialBoatClass = this.route.snapshot.queryParamMap.get('boatClass');
+  private readonly initialSailNumber = this.route.snapshot.queryParamMap.get('sailNumber');
+  private readonly scopedRacePreselected = signal(false);
+
+  private readonly defaultStep = computed<'recent' | 'category' | 'details'>(() => {
+    if (this.initialBoatClass && this.initialSailNumber) {
+      return 'details';
+    }
+    if (this.auth.isRaceOfficer() || !this.auth.loggedIn()) {
+      return 'category';
+    }
+    const user = this.userData.user();
+    if (!user || user.boats.length === 0) {
+      return 'category';
+    }
+    return 'recent';
+  });
+
+  readonly step = linkedSignal<'recent' | 'category' | 'details' | 'races'>(() => this.defaultStep());
+  readonly recentBoats = computed(() => this.userData.user()?.boats ?? []);
+  readonly hasRecentBoats = computed(() => !this.auth.isRaceOfficer() && this.recentBoats().length > 0);
+  private readonly startedFromRecent = signal(false);
+
   boatCategory = signal<'club' | 'member' | 'visitor'>('member');
   selectedBoat = signal<Boat | null>(null);
   busy = signal(false);
@@ -362,9 +454,12 @@ export class EntryPage {
     this.auth.isRaceOfficer() ? ['past', 'future', 'hideCompleted'] : ['future'],
   );
 
-  readonly racePanelInitialPeriod = computed<RacesPanelPeriod>(() =>
-    this.auth.isRaceOfficer() ? null : 'future',
-  );
+  readonly racePanelInitialPeriod = computed<RacesPanelPeriod>(() => {
+    if (this.auth.isRaceOfficer()) return null;
+    const now = new Date();
+    const hasToday = this.eligibleRaces().some(r => isScheduledToday(r, now));
+    return hasToday ? null : 'future';
+  });
 
   readonly classHandicaps = computed<Handicap[]>(() => {
     const boat = this.selectedBoat();
@@ -438,9 +533,11 @@ export class EntryPage {
     const candidate = this.candidateBoat();
     if (!candidate) return [];
     const seriesById = new Map(this.rc.allSeries().map(s => [s.id, s]));
+    const now = new Date();
+    const isRO = this.auth.isRaceOfficer();
     return this.rc.allRaces().filter(race => {
-      if (!this.auth.isRaceOfficer()) {
-        if (new Date(race.scheduledStart) < startOfDay(new Date())) return false;
+      if (!isRO) {
+        if (!isWithinNextDays(race, now, 7)) return false;
       }
       const series = seriesById.get(race.seriesId);
       if (!series) return false;
@@ -504,12 +601,6 @@ export class EntryPage {
       }));
   });
 
-  private readonly scopedRaceId = this.route.snapshot.queryParamMap.get('raceId') ?? undefined;
-  private readonly returnTo = this.route.snapshot.queryParamMap.get('returnTo');
-  private readonly initialBoatClass = this.route.snapshot.queryParamMap.get('boatClass');
-  private readonly initialSailNumber = this.route.snapshot.queryParamMap.get('sailNumber');
-  private readonly scopedRacePreselected = signal(false);
-
   private readonly boatSearchInput = viewChild<ElementRef<HTMLInputElement>>('boatSearchInput');
 
   constructor() {
@@ -568,7 +659,7 @@ export class EntryPage {
       if (boat.isClub) {
         this.helmControl.enable({ emitEvent: false });
         this.helmControl.setValidators([Validators.required]);
-        this.helmControl.setValue('', { emitEvent: false });
+        this.helmControl.setValue(boat.helm ?? '');
       } else {
         this.helmControl.setValue('', { emitEvent: false });
         this.helmControl.clearValidators();
@@ -660,17 +751,47 @@ export class EntryPage {
     this.selectedBoat.set(event.option.value as Boat);
   }
 
+  selectRecentBoat(boat: Boat): void {
+    this.startedFromRecent.set(true);
+    this.boatCategory.set(boat.isClub ? 'club' : 'member');
+    this.selectedBoat.set(boat);
+    if (boat.isClub && boat.helm) {
+      this.helmControl.setValue(boat.helm);
+    }
+    if (boat.crew) {
+      this.crewControl.setValue(boat.crew);
+    }
+    this.step.set('races');
+  }
+
+  chooseAnotherBoat(): void {
+    this.startedFromRecent.set(false);
+    this.selectedBoat.set(null);
+    this.boatSearchControl.setValue('', { emitEvent: false });
+    this.boatCategory.set('member');
+    this.step.set('category');
+  }
+
   startMember(): void {
+    this.startedFromRecent.set(false);
+    this.selectedBoat.set(null);
+    this.boatSearchControl.setValue('', { emitEvent: false });
     this.boatCategory.set('member');
     this.step.set('details');
   }
 
   startClub(): void {
+    this.startedFromRecent.set(false);
+    this.selectedBoat.set(null);
+    this.boatSearchControl.setValue('', { emitEvent: false });
     this.boatCategory.set('club');
     this.step.set('details');
   }
 
   startVisitor(): void {
+    this.startedFromRecent.set(false);
+    this.selectedBoat.set(null);
+    this.boatSearchControl.setValue('', { emitEvent: false });
     this.boatCategory.set('visitor');
     this.resetVisitorForm();
     this.step.set('details');
@@ -678,13 +799,29 @@ export class EntryPage {
 
   goBack(): void {
     if (this.step() === 'races') {
+      if (this.hasRecentBoats() && this.startedFromRecent()) {
+        this.step.set('recent');
+        return;
+      }
       this.step.set('details');
       return;
+    }
+    if (this.step() === 'details') {
+      this.selectedBoat.set(null);
+      this.boatSearchControl.setValue('', { emitEvent: false });
+      this.resetVisitorForm();
+      this.step.set('category');
+      return;
+    }
+    if (this.step() === 'category') {
+      if (this.hasRecentBoats()) {
+        this.step.set('recent');
+        return;
+      }
     }
     this.selectedBoat.set(null);
     this.boatSearchControl.setValue('', { emitEvent: false });
     this.resetVisitorForm();
-    this.step.set('category');
   }
 
   goNext(): void {
@@ -863,12 +1000,25 @@ export class EntryPage {
       this.busy.set(false);
     }
 
+    if (!this.auth.isRaceOfficer()) {
+      try {
+        const boatToSave: Boat = {
+          ...selected,
+          helm: candidate.helm,
+          crew: candidate.crew ?? '',
+        };
+        await this.userData.recordRecentBoat(boatToSave);
+      } catch (err) {
+        console.warn('EntryPage: Error saving recent boat: ', err);
+      }
+    }
+
     this.raceSelectionGroup.reset();
     this.competitorDetailsGroup.reset();
     this.selectedBoat.set(null);
     this.boatSearchControl.setValue('', { emitEvent: false });
     this.resetVisitorForm();
-    this.step.set('category');
+    this.step.set(this.hasRecentBoats() ? 'recent' : 'category');
 
     if (this.returnTo === 'results-input' && this.scopedRaceId) {
       this.router.navigate(['results-input', 'manual'], {

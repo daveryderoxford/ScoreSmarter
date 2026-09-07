@@ -21,6 +21,7 @@ import {
   isCompletedRace,
   isCanceledRace,
   isRaceVisibleForPeriodChip,
+  isScheduledToday,
   periodChipNeededForRace,
   racePanelLabelLine1,
   racePanelLabelLine2,
@@ -187,7 +188,16 @@ export class RacesPanel {
 
   private readonly raceListContainer = viewChild<ElementRef<HTMLElement>>('raceListContainer');
 
-  protected readonly selectedPeriod = linkedSignal<RacesPanelPeriod>(() => this.initialPeriod());
+  protected readonly selectedPeriod = linkedSignal<RacesPanelPeriod>(() => {
+    const init = this.initialPeriod();
+    if (init !== null) return init;
+    if (this.showFutureChip() && !this.showPastChip()) {
+      const now = this.now();
+      const hasToday = this.races().some(r => isScheduledToday(r, now));
+      return hasToday ? null : 'future';
+    }
+    return null;
+  });
   protected readonly hideCompleted = signal(false);
   /** One-shot: align period/hide-completed with initial selection only. */
   private readonly startupFiltersSynced = signal(false);

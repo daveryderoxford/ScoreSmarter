@@ -7,6 +7,7 @@ import {
   isCanceledRace,
   isRaceVisibleForPeriodChip,
   isScheduledToday,
+  isWithinNextDays,
   periodChipNeededForRace,
   racePanelLabelLine1,
   racePanelLabelLine2,
@@ -160,6 +161,30 @@ describe('races-panel-utils', () => {
       expect(racePanelLabelLine2(race({ raceOfDay: 3 }))).toBe('3rd race of day');
       expect(racePanelLabelLine2(race({ raceOfDay: 4 }))).toBe('4th race of day');
       expect(racePanelLabelLine2(race({ raceOfDay: 11 }))).toBe('11th race of day');
+    });
+  });
+
+  describe('isWithinNextDays', () => {
+    it('returns true for races scheduled today', () => {
+      const today = race({ scheduledStart: new Date(2026, 3, 29, 14, 0) });
+      expect(isWithinNextDays(today, now, 7)).toBe(true);
+    });
+
+    it('returns true for races within the next 7 days', () => {
+      const day3 = race({ scheduledStart: new Date(2026, 4, 2, 10, 0) });
+      const day7 = race({ scheduledStart: new Date(2026, 4, 6, 18, 0) });
+      expect(isWithinNextDays(day3, now, 7)).toBe(true);
+      expect(isWithinNextDays(day7, now, 7)).toBe(true);
+    });
+
+    it('returns false for past races before today', () => {
+      const yesterday = race({ scheduledStart: new Date(2026, 3, 28, 23, 59) });
+      expect(isWithinNextDays(yesterday, now, 7)).toBe(false);
+    });
+
+    it('returns false for races beyond 7 days', () => {
+      const day8 = race({ scheduledStart: new Date(2026, 4, 7, 10, 0) });
+      expect(isWithinNextDays(day8, now, 7)).toBe(false);
     });
   });
 

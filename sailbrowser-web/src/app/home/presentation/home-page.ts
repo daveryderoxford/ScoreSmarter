@@ -12,6 +12,7 @@ import { Title } from '@angular/platform-browser';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { HomeRacesSection } from './home-races-section';
 import { HomeDutiesSection } from './home-duties-section';
+import { AuthService } from 'app/auth';
 
 @Component({
   selector: 'app-home',
@@ -33,6 +34,7 @@ import { HomeDutiesSection } from './home-duties-section';
 export class HomePage {
   protected readonly clubStore = inject(ClubStore);
   private readonly clubTenant = inject(ClubTenant);
+  protected readonly auth = inject(AuthService);
   private readonly pageTitle = inject(Title);
   private readonly breakpoints = inject(AppBreakpoints);
 
