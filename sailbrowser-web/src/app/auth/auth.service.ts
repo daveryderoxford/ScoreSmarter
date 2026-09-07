@@ -60,7 +60,6 @@ export class AuthService {
   });
 
   isRaceOfficer = computed<boolean>(() => {
-    return false;
     if (this.isClubAdmin()) return true;
     const clubs = this.idTokenResult()?.claims['clubs'] as Record<string, string> | undefined;
     return clubs?.[this.clubId] === 'race-officer';
