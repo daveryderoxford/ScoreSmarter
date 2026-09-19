@@ -2,21 +2,19 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal, vi
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { BoatForm } from './boat-form/boat-form';
-import { Toolbar } from 'app/shared/components/toolbar';
 import { BoatsStore } from '../services/boats.store';
 import { DuplicateBoatCheck } from './duplicate-boat-check/duplicate-check-service';
 import { Boat } from '../model/boat';
+import { DetailHeading } from 'app/shared/layout/detail-heading';
 
 @Component({
   selector: 'app-boat-edit',
-  imports: [BoatForm, Toolbar],
+  imports: [BoatForm, DetailHeading],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-   <app-toolbar [title]="'Edit Boat - ' + boat().boatClass + '  ' + boat().sailNumber" showBack/>
-
+    <app-detail-heading>Edit Boat - {{ boat().boatClass }}  {{ boat().sailNumber }}</app-detail-heading>
     <app-boat-form [boat]="boat()" (submitted)="submitted($event)"></app-boat-form>
   `,
-  styles: [],
 })
 export class BoatEdit {
   private bs = inject(BoatsStore);

@@ -7,32 +7,12 @@
       // The container must be larger than the icon
 ));
 
-.page-container {
-   display: grid;
-   grid-template-areas:
-      "toolbar toolbar"
-      "sidebar content";
-   grid-template-columns: 300px 1fr;
-   /* Desktop default */
-   grid-template-rows: auto 1fr;
-   height: 100vh;
-   transition: grid-template-columns 0.3s ease-in-out;
-}
-
-.page-container.panel-collapsed {
-   grid-template-columns: 0px 1fr;
-}
-
-.page-container.mobile-mode {
-   grid-template-areas:
-      "toolbar"
-      "content";
-   grid-template-columns: 1fr;
-   /* Sidebar is hidden, content takes all */
-}
-
-.toolbar-area {
-   grid-area: toolbar;
+.page-host,
+:host {
+   display: block;
+   height: 100%;
+   width: 100%;
+   overflow: hidden;
 }
 
 .toolbar-selected-series {
@@ -44,31 +24,8 @@
    font-weight: 500;
 }
 
-.sidebar {
-   grid-area: sidebar;
-   border-right: 1px solid #eee;
-   overflow-y: auto;
-   overflow-x: hidden;
-   /* Hide content as it collapses */
-}
-
-.content-area {
-   grid-area: content;
-   display: flex;
-   flex-direction: column;
-   min-height: 0;
-   min-width: 0;
-   overflow: hidden;
-}
-
 .panel-toggle-bar {
-   position: sticky;
-   top: 0;
-   z-index: 10;
    flex-shrink: 0;
-   align-self: flex-start;
-   display: block;
-   width: fit-content;
    padding: 4px 0 0 8px;
 }
 

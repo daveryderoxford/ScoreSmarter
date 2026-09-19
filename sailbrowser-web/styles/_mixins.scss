@@ -1,3 +1,7 @@
+// Deprecated for boats, fleets, and published results. Use
+// app-page-layout, app-list-detail-layout, app-list-pane, and app-detail-pane
+// (app/shared/layout) instead. Remaining call sites still use these mixins
+// until those screens are migrated.
 @mixin centered-column-page($column-element, $maxwidth) {
    :host {
       overflow: hidden;

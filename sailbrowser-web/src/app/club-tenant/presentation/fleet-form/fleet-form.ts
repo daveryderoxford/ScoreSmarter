@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, output } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,9 +15,19 @@ import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-sch
   selector: 'app-fleet-form',
   templateUrl: './fleet-form.html',
   styles: `
-    @use "mixins" as mix;
+    :host {
+      display: block;
+    }
 
-    @include mix.form-page("form", 350px);
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    mat-form-field {
+      width: 100%;
+      margin-bottom: 8px;
+    }
 
     .form-group-section {
       display: contents;

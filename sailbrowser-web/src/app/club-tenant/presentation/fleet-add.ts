@@ -1,18 +1,18 @@
 import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { Toolbar } from 'app/shared/components/toolbar';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { Fleet, getFleetName } from '../model/fleet';
 import { ClubStore } from '../services/club-store';
 import { FleetForm } from './fleet-form/fleet-form';
+import { DetailHeading } from 'app/shared/layout/detail-heading';
 
 @Component({
   selector: 'app-fleet-add',
-  imports: [FleetForm, Toolbar],
+  imports: [FleetForm, DetailHeading],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-   <app-toolbar title="Add Fleet" showBack/>
+    <app-detail-heading>Add Fleet</app-detail-heading>
     <app-fleet-form (submitted)="submitted($event)" [busy]="busy()"/>
   `,
 })
@@ -30,12 +30,12 @@ export class FleetAdd {
     try {
       this.busy.set(true);
 
-      // Create Id with 
+      // Create Id with
       const id = generateSecureID( 100, getFleetName(f));
 
       const newFleet = { ...fleet, id } as Fleet;
       await this.store.addFleet(newFleet);
-      this.router.navigate(["/club/fleets"]); 
+      this.router.navigate(["/club/fleets"]);
     } catch (error: any) {
       this.snackbar.open("Error encountered adding Fleet", "Dismiss", { duration: 3000 });
       console.error('AddFleet: Error adding Fleet: ', error);

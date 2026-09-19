@@ -4,15 +4,22 @@ import { RouterLink } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { SeasonList } from "../season-list/season-list";
 import { PublishedResultsReader } from 'app/published-results/services/published-results-store';
+import { PageLayout } from 'app/shared/layout/page-layout';
+import { ListPane } from 'app/shared/layout/list-pane';
 
-/** Routed component using on mobile that displays a list of seasons 
- * and allows selection of seaon results
- */
+/** Compact-layout series list. On wide screens, series selection lives in the results viewer sidebar. */
 @Component({
   selector: 'app-season-page',
-  imports: [Toolbar, SeasonList, MatButtonModule, RouterLink],
+  imports: [Toolbar, SeasonList, MatButtonModule, RouterLink, PageLayout, ListPane],
   templateUrl: './season-page.html',
-  styles: ``,
+  styles: `
+    :host {
+      display: block;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+  `,
 })
 export class SeasonPage {
   protected prs = inject(PublishedResultsReader);

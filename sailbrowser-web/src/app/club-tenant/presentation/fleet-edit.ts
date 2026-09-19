@@ -2,17 +2,17 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal, vi
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { FleetForm } from './fleet-form/fleet-form';
-import { Toolbar } from 'app/shared/components/toolbar';
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 import { ClubStore } from '../services/club-store';
+import { DetailHeading } from 'app/shared/layout/detail-heading';
 
 @Component({
   selector: 'app-fleet-edit',
   standalone: true,
-  imports: [FleetForm, Toolbar],
+  imports: [FleetForm, DetailHeading],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-   <app-toolbar [title]="'Edit Fleet - ' + getFleetName(fleet())" showBack/>
+    <app-detail-heading>Edit Fleet - {{ getFleetName(fleet()) }}</app-detail-heading>
     @if (fleet()) {
       <app-fleet-form [fleet]="fleet()" (submitted)="submitted($event)"></app-fleet-form>
     }
@@ -30,7 +30,7 @@ export class FleetEdit {
 
   busy = signal(false);
 
-  readonly form = viewChild.required(FleetForm);
+  readonly form = viewChild(FleetForm);
 
   async submitted(data: Partial<Fleet>) {
     try {
@@ -40,7 +40,7 @@ export class FleetEdit {
 
       const update = { id: currentFleet.id, ...data  } as Fleet;
       await this.store.updateFleet(update);
-      
+
       this.router.navigate(["/club/fleets"]);
     } catch (error: any) {
       this.snackbar.open("Error encountered updating fleet details", "Dismiss", { duration: 3000 });
@@ -51,6 +51,6 @@ export class FleetEdit {
   }
 
   canDeactivate(): boolean {
-    return this.form().canDeactivate();
+    return this.form()?.canDeactivate() ?? true;
   }
 }

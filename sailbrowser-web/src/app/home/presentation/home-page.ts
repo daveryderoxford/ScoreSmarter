@@ -41,7 +41,7 @@ export class HomePage {
   protected readonly showDuties = computed(() => this.clubTenant.clubId === DUTY_REGISTER_CLUB_ID);
 
   protected readonly seriesResultsLink = computed(() =>
-    this.breakpoints.isMobile() ? '/results/mobile-results-list' : '/results/viewer',
+    this.breakpoints.isWideLayout() ? '/results/viewer' : '/results/mobile-results-list',
   );
 
   title = computed(() => {

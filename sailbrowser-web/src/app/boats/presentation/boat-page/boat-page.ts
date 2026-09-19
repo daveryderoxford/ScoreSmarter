@@ -5,13 +5,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
+import { debounceTime, distinctUntilChanged, filter, map, startWith } from 'rxjs';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { boatFilter, BoatsStore } from '../../services/boats.store';
 import { LoadingCentered } from "app/shared/components/loading-centered";
@@ -23,27 +23,35 @@ import { BoatsCsvService } from '../../services/boats-csv.service';
 import { ClubStore } from 'app/club-tenant';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getSchemesForTarget } from 'app/scoring/model/handicap-scheme-metadata';
+import { AppBreakpoints } from 'app/shared/services/breakpoints';
+import { PageLayout } from 'app/shared/layout/page-layout';
+import { ListDetailLayout } from 'app/shared/layout/list-detail-layout';
+import { ListPane } from 'app/shared/layout/list-pane';
+import { DetailPane } from 'app/shared/layout/detail-pane';
 
 import { ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
 
 @Component({
   selector: 'app-boat-page',
-  imports: [Toolbar, MatListModule, MatMenuModule, 
-    MatButtonModule, MatIconModule, RouterModule, MatDividerModule, 
-    MatTooltipModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, LoadingCentered, 
-    MatDividerModule, ImportExportMenuComponent],
+  imports: [Toolbar, MatListModule, MatMenuModule,
+    MatButtonModule, MatIconModule, RouterModule, MatDividerModule,
+    MatTooltipModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, LoadingCentered,
+    MatDividerModule, ImportExportMenuComponent, PageLayout, ListDetailLayout, ListPane, DetailPane],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './boat-page.html',
   styles: `
-    @use "mixins" as mix;
-
-    @include mix.centered-column-page(".content", 450px);
+    :host {
+      display: block;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
 
     .search-bar {
       display: flex;
       align-items: baseline;
       gap: 8px;
-      margin: 12px 0px;
+      margin: 12px 12px 8px;
     }
 
     .search {
@@ -69,6 +77,47 @@ export class BoatsPage {
   private ds = inject(DialogsService);
   private snackbar = inject(MatSnackBar);
   private boatsCsv = inject(BoatsCsvService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly breakpoints = inject(AppBreakpoints);
+
+  private readonly navUrl = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(() => this.router.url),
+      startWith(this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
+
+  private readonly detailChild = computed(() => {
+    this.navUrl();
+    const child = this.route.firstChild;
+    if (!child) return undefined;
+    const path = child.snapshot.url[0]?.path;
+    if (path === 'add') return { kind: 'add' as const };
+    if (path === 'edit') {
+      return { kind: 'edit' as const, id: child.snapshot.paramMap.get('id') ?? '' };
+    }
+    return undefined;
+  });
+
+  readonly detailOpen = computed(() => !!this.detailChild());
+  readonly selectedBoatId = computed(() => {
+    const child = this.detailChild();
+    return child?.kind === 'edit' ? child.id : null;
+  });
+  readonly showBack = computed(() => !this.breakpoints.isWideLayout() && this.detailOpen());
+  readonly toolbarTitle = computed(() => {
+    if (this.breakpoints.isWideLayout()) return 'Boats';
+    const child = this.detailChild();
+    if (child?.kind === 'add') return 'Add Boat';
+    if (child?.kind === 'edit') {
+      const boat = this.bs.boats().find(b => b.id === child.id);
+      return boat ? `Edit Boat - ${boat.boatClass}  ${boat.sailNumber}` : 'Edit Boat';
+    }
+    return 'Boats';
+  });
 
   searchControl = new FormControl('');
   groupByControl = new FormControl<'helm' | 'boatClass'>('helm', { nonNullable: true });
@@ -140,6 +189,9 @@ export class BoatsPage {
     if (await this.ds.confirm('Delete Boat', `Are you sure you want to delete ${boat.boatClass} ${this.boatSailLabel(boat)}?`)) {
       try {
         await this.bs.delete(boat.id);
+        if (this.selectedBoatId() === boat.id) {
+          await this.router.navigate(['/boats']);
+        }
         this.snackbar.open("Boat deleted", "Dismiss", { duration: 3000 });
       } catch (error: any) {
         this.snackbar.open("Error deleting boat", "Dismiss", { duration: 3000 });

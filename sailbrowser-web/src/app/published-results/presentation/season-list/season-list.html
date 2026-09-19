@@ -7,7 +7,7 @@
       [includeAllOption]="true"
       allOptionLabel="All fleets" />
 
-    @if (!breakpoints.isMobile()) {
+    @if (showCollapseButton()) {
     <button class="align-right" mat-icon-button (click)="this.hide.emit()" title="Hide panel">
       <mat-icon>close</mat-icon>
     </button>
