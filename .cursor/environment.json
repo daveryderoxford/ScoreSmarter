@@ -4,7 +4,7 @@
   "terminals": [
     {
       "name": "web-dev-server",
-      "command": "export NVM_DIR=\"$HOME/.nvm\"; . \"$NVM_DIR/nvm.sh\"; nvm use default >/dev/null; cd sailbrowser-web && npm run dev -- --host 0.0.0.0"
+      "command": "cd sailbrowser-web && npm run dev -- --host 0.0.0.0"
     }
   ],
   "ports": [3000]
