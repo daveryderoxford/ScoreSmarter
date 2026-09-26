@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
 import { TestBed } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ClubStore } from 'app/club-tenant';
 import type { Fleet } from 'app/club-tenant/model/fleet';
@@ -38,7 +38,6 @@ describe('FleetForm discard and rebind', () => {
     TestBed.configureTestingModule({
       imports: [HostComponent],
       providers: [
-        provideNoopAnimations(),
         {
           provide: ClubStore,
           useValue: {
@@ -49,6 +48,11 @@ describe('FleetForm discard and rebind', () => {
           },
         },
       ],
+    }).overrideComponent(FleetForm, {
+      set: {
+        template: '<form [formGroup]="form"></form>',
+        imports: [ReactiveFormsModule],
+      },
     });
   });
 
@@ -62,11 +66,13 @@ describe('FleetForm discard and rebind', () => {
     const form = formOf(fixture);
 
     form.form.controls.name.setValue('Edited');
+    form.form.markAsDirty();
     expect(form.canDeactivate()).toBe(false);
 
     form.discardChanges();
 
     expect(form.form.controls.name.value).toBe('Fast');
+    expect(form.form.dirty).toBe(false);
     expect(form.canDeactivate()).toBe(true);
   });
 
@@ -77,6 +83,7 @@ describe('FleetForm discard and rebind', () => {
 
     form.form.controls.name.setValue('Edited leftover');
     form.form.controls.min.setValue(1);
+    form.form.markAsDirty();
     expect(form.canDeactivate()).toBe(false);
 
     fixture.componentInstance.fleet.set(fleetB);
@@ -85,6 +92,7 @@ describe('FleetForm discard and rebind', () => {
     expect(form.form.controls.name.value).toBe('Slow');
     expect(form.form.controls.min.value).toBe(1000);
     expect(form.form.controls.max.value).toBe(1400);
+    expect(form.form.dirty).toBe(false);
     expect(form.canDeactivate()).toBe(true);
   });
 });

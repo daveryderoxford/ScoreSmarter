@@ -1,9 +1,8 @@
 import { Component, signal } from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
 import { TestBed } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Boat } from 'app/boats';
-import { BoatsStore } from 'app/boats/services/boats.store';
 import { ClubStore } from 'app/club-tenant';
 import { BoatForm } from './boat-form';
 
@@ -41,7 +40,6 @@ describe('BoatForm discard and rebind', () => {
     TestBed.configureTestingModule({
       imports: [HostComponent],
       providers: [
-        provideNoopAnimations(),
         {
           provide: ClubStore,
           useValue: {
@@ -54,14 +52,12 @@ describe('BoatForm discard and rebind', () => {
             }),
           },
         },
-        {
-          provide: BoatsStore,
-          useValue: {
-            boats: signal([boatA, boatB]),
-            uniqueHelmNames: signal(['Alice', 'Bob']),
-          },
-        },
       ],
+    }).overrideComponent(BoatForm, {
+      set: {
+        template: '<form [formGroup]="form"></form>',
+        imports: [ReactiveFormsModule],
+      },
     });
   });
 
@@ -75,11 +71,13 @@ describe('BoatForm discard and rebind', () => {
     const form = formOf(fixture);
 
     form.form.controls['helm'].setValue('Edited');
+    form.form.markAsDirty();
     expect(form.canDeactivate()).toBe(false);
 
     form.discardChanges();
 
     expect(form.form.controls['helm'].value).toBe('Alice');
+    expect(form.form.dirty).toBe(false);
     expect(form.canDeactivate()).toBe(true);
   });
 
@@ -90,6 +88,7 @@ describe('BoatForm discard and rebind', () => {
 
     form.form.controls['helm'].setValue('Edited');
     form.form.controls['name'].setValue('Kept leftover');
+    form.form.markAsDirty();
     expect(form.canDeactivate()).toBe(false);
 
     fixture.componentInstance.boat.set(boatB);
@@ -98,6 +97,7 @@ describe('BoatForm discard and rebind', () => {
     expect(form.form.controls['helm'].value).toBe('Bob');
     expect(form.form.controls['name'].value).toBe('Breeze');
     expect(form.form.controls['sailNumber'].value).toBe('222');
+    expect(form.form.dirty).toBe(false);
     expect(form.canDeactivate()).toBe(true);
   });
 });

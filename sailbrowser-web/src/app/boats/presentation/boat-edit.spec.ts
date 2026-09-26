@@ -62,6 +62,7 @@ describe('BoatEdit form reuse', () => {
 
     const firstForm = fixture.componentInstance.form();
     firstForm.form.controls['helm'].setValue('Changed');
+    firstForm.form.markAsDirty();
     expect(firstForm.form.dirty).toBe(true);
 
     firstForm.discardChanges();

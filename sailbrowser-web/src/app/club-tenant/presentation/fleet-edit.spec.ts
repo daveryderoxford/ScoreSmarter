@@ -60,6 +60,7 @@ describe('FleetEdit form reuse', () => {
     const firstForm = fixture.componentInstance.form();
     expect(firstForm).toBeTruthy();
     firstForm!.form.controls.name.setValue('Changed');
+    firstForm!.form.markAsDirty();
     expect(firstForm!.form.dirty).toBe(true);
 
     firstForm!.discardChanges();
