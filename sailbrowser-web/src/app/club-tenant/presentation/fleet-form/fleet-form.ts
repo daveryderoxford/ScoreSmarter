@@ -77,15 +77,10 @@ export class FleetForm {
 
     effect(() => {
       const f = this.fleet();
-      if (f && f.type !== 'GeneralHandicap') {
-        this.form.patchValue({
-          type: f.type,
-          name: 'name' in f ? f.name : '',
-          boatClassId: f.type === 'BoatClass' ? f.boatClassId : '',
-          min: f.type === 'HandicapRange' ? f.min : null,
-          max: f.type === 'HandicapRange' ? f.max : null,
-          scheme: f.type === 'HandicapRange' ? f.scheme : null,
-        });
+      const id = f?.id;
+      if (id !== this.boundFleetId) {
+        this.boundFleetId = id;
+        this.applyFleet(f);
       }
     });
   }
@@ -148,5 +143,40 @@ export class FleetForm {
 
   public canDeactivate(): boolean {
     return !this.form.dirty;
+  }
+
+  public discardChanges(): void {
+    this.applyFleet(this.fleet());
+  }
+
+  private boundFleetId: string | undefined = undefined;
+
+  private applyFleet(f: Fleet | undefined): void {
+    if (!f || f.type === 'GeneralHandicap') {
+      this.form.reset({
+        name: '',
+        type: 'HandicapRange',
+        boatClassId: '',
+        min: null,
+        max: null,
+        scheme: null,
+      }, { emitEvent: false });
+      this.updateValidators(this.form.controls.type.value);
+      this.form.markAsPristine();
+      this.form.markAsUntouched();
+      return;
+    }
+
+    this.form.reset({
+      type: f.type,
+      name: 'name' in f ? f.name : '',
+      boatClassId: f.type === 'BoatClass' ? f.boatClassId : '',
+      min: f.type === 'HandicapRange' ? f.min : null,
+      max: f.type === 'HandicapRange' ? f.max : null,
+      scheme: f.type === 'HandicapRange' ? f.scheme : null,
+    }, { emitEvent: false });
+    this.updateValidators(f.type);
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
   }
 }

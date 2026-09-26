@@ -94,17 +94,11 @@ export class BoatForm {
     });
 
     effect(() => {
-      if (this.boat()) {
-        const b = this.boat()!;
-        const patch: Record<string, unknown> = { ...b };
-        patch['personalHandicapBand'] = b.personalHandicapBand ?? 'unknown';
-        for (const scheme of HANDICAP_SCHEMES) {
-          if (HANDICAP_SCHEME_METADATA[scheme].appliesTo !== 'boat') continue;
-          const meta = getHandicapSchemeMetadata(scheme);
-          patch[handicapControlName(scheme)] =
-            getHandicapValue(b.handicaps, scheme) ?? meta.defaultValue;
-        }
-        this.form.patchValue(patch as object);
+      const b = this.boat();
+      const id = b?.id;
+      if (id !== this.boundBoatId) {
+        this.boundBoatId = id;
+        this.applyBoat(b);
       }
     });
 
@@ -155,6 +149,36 @@ export class BoatForm {
 
   public canDeactivate(): boolean {
     return !this.form.dirty;
+  }
+
+  /** Re-apply the bound boat (or empty add state) and clear dirty. */
+  public discardChanges(): void {
+    this.applyBoat(this.boat());
+  }
+
+  private boundBoatId: string | undefined = undefined;
+
+  private applyBoat(b: Boat | undefined): void {
+    const values: Record<string, unknown> = {
+      boatClass: b?.boatClass ?? '',
+      sailNumber: b?.sailNumber ?? '',
+      name: b?.name ?? '',
+      helm: b?.helm ?? '',
+      crew: b?.crew ?? '',
+      isClub: !!b?.isClub,
+      personalHandicapBand: b?.personalHandicapBand ?? 'unknown',
+    };
+    for (const scheme of HANDICAP_SCHEMES) {
+      if (HANDICAP_SCHEME_METADATA[scheme].appliesTo !== 'boat') continue;
+      const meta = getHandicapSchemeMetadata(scheme);
+      values[handicapControlName(scheme)] = b
+        ? (getHandicapValue(b.handicaps, scheme) ?? meta.defaultValue)
+        : meta.defaultValue;
+    }
+    this.form.reset(values, { emitEvent: false });
+    this.applyClubBoatState(!!b?.isClub);
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
   }
 
   private applyClubBoatState(isClub: boolean): void {

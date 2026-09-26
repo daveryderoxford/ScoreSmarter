@@ -13,7 +13,9 @@ import { DetailHeading } from 'app/shared/layout/detail-heading';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-detail-heading>Edit Boat - {{ boat().boatClass }}  {{ boat().sailNumber }}</app-detail-heading>
-    <app-boat-form [boat]="boat()" (submitted)="submitted($event)"></app-boat-form>
+    @for (currentId of [id()]; track currentId) {
+      <app-boat-form [boat]="boat()" (submitted)="submitted($event)"></app-boat-form>
+    }
   `,
 })
 export class BoatEdit {
@@ -48,5 +50,9 @@ export class BoatEdit {
 
   canDeactivate(): boolean {
     return this.form().canDeactivate();
+  }
+
+  discardChanges(): void {
+    this.form().discardChanges();
   }
 }

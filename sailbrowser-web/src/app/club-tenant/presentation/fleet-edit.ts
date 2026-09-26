@@ -13,8 +13,10 @@ import { DetailHeading } from 'app/shared/layout/detail-heading';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-detail-heading>Edit Fleet - {{ getFleetName(fleet()) }}</app-detail-heading>
-    @if (fleet()) {
-      <app-fleet-form [fleet]="fleet()" (submitted)="submitted($event)"></app-fleet-form>
+    @for (currentId of [id()]; track currentId) {
+      @if (fleet()) {
+        <app-fleet-form [fleet]="fleet()" (submitted)="submitted($event)"></app-fleet-form>
+      }
     }
   `,
 })
@@ -52,5 +54,9 @@ export class FleetEdit {
 
   canDeactivate(): boolean {
     return this.form()?.canDeactivate() ?? true;
+  }
+
+  discardChanges(): void {
+    this.form()?.discardChanges();
   }
 }

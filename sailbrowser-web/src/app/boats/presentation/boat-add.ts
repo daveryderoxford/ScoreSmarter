@@ -47,4 +47,8 @@ export class BoatAdd {
   canDeactivate(): boolean {
     return this.form().canDeactivate();
   }
+
+  discardChanges(): void {
+    this.form().discardChanges();
+  }
 }
