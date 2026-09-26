@@ -2,21 +2,21 @@
   <app-toolbar title="Seasons"></app-toolbar>
 
   <app-list-pane maxWidth="600px">
+    <div listHeader class="search-bar">
+      <mat-form-field class="search">
+        <mat-label>Search Seasons</mat-label>
+        <input matInput [formControl]="searchControl" placeholder="Search by name">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <a matButton="tonal" class="right-justify" routerLink="add">
+        New
+      </a>
+    </div>
+
     @if (cs.isLoading()) {
       <app-loading-centered />
     } @else {
-      <div listHeader class="search-bar">
-        <mat-form-field class="search">
-          <mat-label>Search Seasons</mat-label>
-          <input matInput [formControl]="searchControl" placeholder="Search by name">
-          <mat-icon matSuffix>search</mat-icon>
-        </mat-form-field>
-
-        <a matButton="tonal" class="right-justify" routerLink="add">
-          New
-        </a>
-      </div>
-
       <mat-list>
         @for (season of filteredSeasons(); track season.id) {
         <mat-list-item [routerLink]="['edit', season.id]">
