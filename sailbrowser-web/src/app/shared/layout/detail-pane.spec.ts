@@ -27,6 +27,7 @@ describe('DetailPane', () => {
 
   beforeEach(() => {
     isWideLayout.set(true);
+    document.documentElement.style.setProperty('--mat-sys-surface', '#ffffff');
     TestBed.configureTestingModule({
       imports: [HostComponent],
       providers: [{ provide: AppBreakpoints, useValue: { isWideLayout } }],
@@ -68,6 +69,8 @@ describe('DetailPane', () => {
     const fixture = TestBed.createComponent(HostComponent);
     fixture.componentInstance.frameContent.set(false);
     fixture.detectChanges();
-    expect(pane(fixture).classList.contains('framed')).toBe(false);
+    const el = pane(fixture);
+    expect(el.classList.contains('framed')).toBe(false);
+    expect(getComputedStyle(el).backgroundColor).toBe('rgb(255, 255, 255)');
   });
 });

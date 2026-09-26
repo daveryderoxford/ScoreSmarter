@@ -39,6 +39,10 @@ import { AppBreakpoints } from 'app/shared/services/breakpoints';
       overflow: hidden;
     }
 
+    :host:not(.framed) {
+      background-color: var(--mat-sys-surface);
+    }
+
     .header:empty {
       display: none;
     }
