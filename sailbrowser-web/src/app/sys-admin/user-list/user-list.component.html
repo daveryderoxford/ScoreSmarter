@@ -1,4 +1,5 @@
-<app-toolbar title="User Admin" style="grid-area: toolbar">
+<app-page-layout>
+<app-toolbar title="User Admin">
    <div center>
       @if (auth.isSysAdmin()) {
       <mat-form-field subscriptSizing="dynamic" class="role-filter">
@@ -18,6 +19,7 @@
    </div>
 </app-toolbar>
 
+<app-list-pane maxWidth="500px">
 @switch (uas.status()) {
 @case ('loading') {
 <app-loading-centered />
@@ -66,3 +68,5 @@
 </div>
 }
 }
+</app-list-pane>
+</app-page-layout>

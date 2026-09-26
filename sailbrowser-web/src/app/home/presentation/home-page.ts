@@ -8,6 +8,7 @@ import { RouterLink } from '@angular/router';
 import { ClubStore, ClubTenant } from 'app/club-tenant';
 import { DUTY_REGISTER_CLUB_ID } from 'app/duties';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { Title } from '@angular/platform-browser';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { HomeRacesSection } from './home-races-section';
@@ -20,6 +21,7 @@ import { AuthService } from 'app/auth';
   styleUrls: ['./home-page.scss'],
   imports: [
     Toolbar,
+    PageLayout,
     MatButtonModule,
     RouterLink,
     MatIconModule,

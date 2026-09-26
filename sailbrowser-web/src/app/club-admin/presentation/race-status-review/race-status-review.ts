@@ -10,6 +10,7 @@ import { isBefore, startOfDay } from 'date-fns';
 import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
 import { Race } from 'app/race-calender/model/race';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { RouterModule } from '@angular/router';
 
 @Component({
@@ -23,6 +24,7 @@ import { RouterModule } from '@angular/router';
     MatMenuModule,
     MatDividerModule,
     Toolbar,
+    PageLayout,
     RouterModule
   ],
   templateUrl: './race-status-review.html',

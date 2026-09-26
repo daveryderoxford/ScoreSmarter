@@ -7,6 +7,7 @@ import { DuplicateBoatCheck } from './duplicate-boat-check/duplicate-check-servi
 import { Boat } from '../model/boat';
 import { DetailHeading } from 'app/shared/layout/detail-heading';
 
+/** Detail fragment inside `BoatsPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-boat-add',
   imports: [BoatForm, DetailHeading],

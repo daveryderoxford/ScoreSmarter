@@ -1,7 +1,3 @@
-@use "mixins" as mix;
-
-@include mix.centered-column-page(".main-container", 500px);
-
 .error-banner {
   background-color: var(--mat-sys-error);
   color: var(--mat-sys-on-error);

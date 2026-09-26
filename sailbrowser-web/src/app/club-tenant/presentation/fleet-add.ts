@@ -7,6 +7,7 @@ import { ClubStore } from '../services/club-store';
 import { FleetForm } from './fleet-form/fleet-form';
 import { DetailHeading } from 'app/shared/layout/detail-heading';
 
+/** Detail fragment inside `FleetPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-fleet-add',
   imports: [FleetForm, DetailHeading],

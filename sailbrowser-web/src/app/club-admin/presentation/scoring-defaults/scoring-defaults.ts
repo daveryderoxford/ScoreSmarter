@@ -10,6 +10,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { ClubStore } from 'app/club-tenant/services/club-store';
 import { DncCalculation, OODScoring, ScoringDefaults } from 'app/club-tenant/model/club';
 import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-scheme';
@@ -38,7 +39,8 @@ const WORLD_SAILING_PRESET_DNC = {
     MatListModule,
     MatTabsModule,
     MatIconModule,
-    Toolbar
+    Toolbar,
+    PageLayout,
   ],
   templateUrl: './scoring-defaults.html',
   styleUrl: './scoring-defaults.scss',

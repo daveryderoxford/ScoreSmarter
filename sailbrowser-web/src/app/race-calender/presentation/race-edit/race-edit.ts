@@ -6,6 +6,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Toolbar } from "app/shared/components/toolbar";
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { SubmitButton } from "app/shared/components/submit-button";
@@ -15,8 +17,10 @@ import { Race, RaceCalendarStore } from 'app/race-calender';
   selector: 'app-race-edit',
   templateUrl: 'race-edit.html',
   styles: [`
-    @use "mixins" as mix;
-    @include mix.form-page("form", 350px);
+    form {
+      display: flex;
+      flex-direction: column;
+    }
 
     mat-form-field, mat-checkbox {
       display: block;
@@ -30,7 +34,7 @@ import { Race, RaceCalendarStore } from 'app/race-calender';
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule,
-    MatCheckboxModule, MatButtonModule, MatSelectModule, Toolbar, SubmitButton],
+    MatCheckboxModule, MatButtonModule, MatSelectModule, Toolbar, SubmitButton, PageLayout, DetailPane],
 })
 export class RaceEdit {
   private readonly fb = inject(FormBuilder);

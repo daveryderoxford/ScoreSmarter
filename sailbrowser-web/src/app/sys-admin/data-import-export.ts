@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { collection, getDocs, writeBatch, doc, Firestore } from '@angular/fire/firestore';
 import { ScoreSmarterError } from '../shared/utils/scoresmarter-error';
 
@@ -15,9 +16,11 @@ import { ScoreSmarterError } from '../shared/utils/scoresmarter-error';
       MatFormFieldModule,
       MatInputModule,
       FormsModule,
-      Toolbar
+      Toolbar,
+      PageLayout,
    ],
    template: `
+    <app-page-layout>
     <app-toolbar title="System Data Utility"/>
     <div class="container">
       <p class="description">
@@ -45,6 +48,7 @@ import { ScoreSmarterError } from '../shared/utils/scoresmarter-error';
         <div class="message">{{ msg() }}</div>
       }
     </div>
+    </app-page-layout>
   `,
    styles: `
     .container {

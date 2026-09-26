@@ -1,4 +1,6 @@
+<app-page-layout>
 <app-toolbar title="Edit race details" showBack />
+<app-detail-pane maxWidth="350px">
 <form (ngSubmit)="submit()" [formGroup]="form" novalidate>
   <div class="type-display">Race type: <strong>{{ derivedRaceTypeLabel() }}</strong></div>
 
@@ -16,3 +18,5 @@
   </div>
 
 </form>
+</app-detail-pane>
+</app-page-layout>

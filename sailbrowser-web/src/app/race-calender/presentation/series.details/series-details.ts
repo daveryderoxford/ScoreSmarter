@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal, Si
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { Toolbar } from "app/shared/components/toolbar";
+import { ListPane } from 'app/shared/layout/list-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { MatCardModule } from "@angular/material/card";
 import { MatListModule } from "@angular/material/list";
 import { MatIconModule } from '@angular/material/icon';
@@ -22,11 +24,9 @@ import { formatDiscardScheduleSummary } from 'app/scoring/model/discard-profile'
  */
 @Component({
    selector: 'app-series-details',
-   imports: [DatePipe, Toolbar, MatListModule, MatCardModule, MatIconModule, MatButtonModule, LoadingCentered, RaceListItem],
+   imports: [DatePipe, Toolbar, MatListModule, MatCardModule, MatIconModule, MatButtonModule, LoadingCentered, RaceListItem, PageLayout, ListPane],
    templateUrl: 'series-details.html',
    styles: [`
-      @use "mixins" as mix;
-      @include mix.centered-column-page(".content", 400px);
 
     .race-header  {
        display: flex; 

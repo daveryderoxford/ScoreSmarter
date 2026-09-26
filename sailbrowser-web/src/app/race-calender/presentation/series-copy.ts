@@ -6,6 +6,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RaceCalendarStore } from '../services/full-race-calander';
@@ -22,11 +24,15 @@ import { SubmitButton } from 'app/shared/components/submit-button';
     MatInputModule, 
     MatSelectModule, 
     ReactiveFormsModule,
-    SubmitButton
+    SubmitButton,
+    PageLayout,
+    DetailPane,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-toolbar [title]="'Copy Series ' + series()?.name" showBack/>
+    <app-page-layout>
+      <app-toolbar [title]="'Copy Series ' + series()?.name" showBack/>
+      <app-detail-pane maxWidth="350px">
     <form (ngSubmit)="submit()" [formGroup]="form" novalidate>
 
        <p class=header>
@@ -56,11 +62,14 @@ import { SubmitButton } from 'app/shared/components/submit-button';
         </app-submit-button>
       </div>
    </form>
+      </app-detail-pane>
+    </app-page-layout>
   `,
   styles: `
-    @use "mixins" as mix;
-
-    @include mix.form-page("form", 350px);
+    form {
+      display: flex;
+      flex-direction: column;
+    }
 
     .header {
       font: var(--mat-sys-title-medium);

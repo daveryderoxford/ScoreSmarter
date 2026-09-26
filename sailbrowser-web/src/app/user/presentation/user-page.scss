@@ -1,8 +1,6 @@
-@use 'mixins' as mix;
-
-@include mix.form-page('.user-form', 400px);
-
 .user-form {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
 }
 

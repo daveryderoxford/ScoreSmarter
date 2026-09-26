@@ -1,8 +1,13 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
- * Full-height page shell: toolbar on top, remaining space for list/detail
- * (or any other body). Replaces the :host grid from the old layout mixins.
+ * Default chrome for every routed screen that already has `app-toolbar`.
+ *
+ * Recipe 1 (single column): `PageLayout` + `ListPane` or `DetailPane`.
+ * Recipe 2 (master-detail): `PageLayout` + `ListDetailLayout`.
+ *
+ * Do not wrap the entry kiosk, phone capture, or nested boat/fleet detail children.
+ * See `LAYOUT.md` in this folder.
  */
 @Component({
   selector: 'app-page-layout',

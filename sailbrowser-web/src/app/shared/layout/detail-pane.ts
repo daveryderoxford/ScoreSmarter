@@ -2,8 +2,11 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, inject, input } f
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 
 /**
- * Detail panel. On wide screens, form content is centred at `maxWidth`.
- * On compact screens, form content is 100% width. Scrolling is optional.
+ * Form or detail column. Replaces the `form-page` mixin when used inside
+ * `PageLayout` (recipe 1) or `ListDetailLayout` (recipe 2).
+ *
+ * On wide screens, framed content is centred at `maxWidth`.
+ * On compact screens, framed content is 100% width. Scrolling is optional.
  */
 @Component({
   selector: 'app-detail-pane',

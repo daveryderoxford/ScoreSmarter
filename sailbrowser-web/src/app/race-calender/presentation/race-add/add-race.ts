@@ -9,6 +9,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatStepperModule } from '@angular/material/stepper';
 import { Toolbar } from "app/shared/components/toolbar";
+import { ListPane } from 'app/shared/layout/list-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { Router } from '@angular/router';
 import { addDays, isAfter, startOfDay } from 'date-fns';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -22,10 +24,6 @@ const DEFAULT_START_SECONDS = 10 * 3600 + 30 * 60; // 10:30:00
   templateUrl: 'add-race.html',
   providers: [provideNativeDateAdapter()],
   styles: [`
-    @use "mixins" as mix;
-
-    @include mix.centered-column-page(".content", 480px);
-
   .actions {
       margin-top: 5px;
       margin-right: 10px;
@@ -55,7 +53,9 @@ const DEFAULT_START_SECONDS = 10 * 3600 + 30 * 60; // 10:30:00
     MatOption,
     MatSelectModule,
     Toolbar,
-    TimeInput
+    TimeInput,
+    PageLayout,
+    ListPane,
   ],
 })
 export class RaceAdd {

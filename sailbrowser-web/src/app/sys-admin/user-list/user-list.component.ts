@@ -5,6 +5,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { Toolbar } from "app/shared/components/toolbar";
+import { ListPane } from 'app/shared/layout/list-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { LoadingCentered } from "app/shared/components/loading-centered";
 import { MatDividerModule } from '@angular/material/divider';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -16,7 +18,7 @@ import { CenteredText } from "app/shared/components/centered-text";
 @Component({
   selector: 'app-user-list',
   styleUrl: './user-list.component.scss',
-  imports: [MatListModule, MatProgressSpinnerModule, Toolbar, LoadingCentered, MatSelectModule, MatOptionModule, MatFormFieldModule, MatDividerModule, MatSlideToggleModule, CenteredText],
+  imports: [MatListModule, MatProgressSpinnerModule, Toolbar, LoadingCentered, MatSelectModule, MatOptionModule, MatFormFieldModule, MatDividerModule, MatSlideToggleModule, CenteredText, PageLayout, ListPane],
   templateUrl: './user-list.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

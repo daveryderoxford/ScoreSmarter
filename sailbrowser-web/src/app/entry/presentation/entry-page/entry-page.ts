@@ -58,6 +58,8 @@ import {
 import { BusyButton } from 'app/shared/components/busy-button';
 import { CenteredText } from 'app/shared/components/centered-text';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { ListPane } from 'app/shared/layout/list-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dialog';
 import { groupBy } from 'app/shared/utils/group-by';
@@ -102,6 +104,8 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     MatAutocompleteModule,
     MatCardModule,
     Toolbar,
+    PageLayout,
+    ListPane,
     MatIcon,
     BusyButton,
     CenteredText,
@@ -112,10 +116,7 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
   templateUrl: 'entry-page.html',
   styles: [
     `
-    @use "mixins" as mix;
     @use '@angular/material' as mat;
-
-    @include mix.centered-column-page(".content", 480px);
 
     .content {
       padding: 16px 20px 24px;

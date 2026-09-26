@@ -2,12 +2,14 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { PageLayout } from 'app/shared/layout/page-layout';
 
 
 @Component({
   selector: 'app-sys-admin-switchboard',
-  imports: [MatButtonModule, Toolbar, RouterLink],
+  imports: [MatButtonModule, Toolbar, RouterLink, PageLayout],
   template: `
+    <app-page-layout>
     <app-toolbar title="System admin"/>
     <div class=container>
       <div class=buttons>
@@ -26,11 +28,12 @@ import { Toolbar } from 'app/shared/components/toolbar';
          {{msgText()}}
       </span>
     </div>
+    </app-page-layout>
   `,
   styles: `
     :host {
       width: 100%;
-      height: 100vh;
+      height: 100%;
       display: flex;
       flex-direction: column;
     }

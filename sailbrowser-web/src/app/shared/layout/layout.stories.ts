@@ -24,6 +24,35 @@ function layoutProviders(wide: boolean) {
   });
 }
 
+const listRecipeTemplate = `
+  <div style="height: 560px; border: 1px solid #ccc;">
+    <app-page-layout>
+      <app-toolbar title="Classes" />
+      <app-list-pane maxWidth="450px">
+        <div listHeader style="padding: 12px; border-bottom: 1px solid #eee;">Search / New</div>
+        <div style="padding: 12px;">
+          <p>ILCA 7</p>
+          <p>RS Aero</p>
+        </div>
+      </app-list-pane>
+    </app-page-layout>
+  </div>
+`;
+
+const formRecipeTemplate = `
+  <div style="height: 560px; border: 1px solid #ccc;">
+    <app-page-layout>
+      <app-toolbar title="Add Class" [showBack]="true" />
+      <app-detail-pane maxWidth="350px">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <label>Name <input style="width: 100%; box-sizing: border-box;" value="ILCA 7" /></label>
+          <button type="button">Save</button>
+        </div>
+      </app-detail-pane>
+    </app-page-layout>
+  </div>
+`;
+
 const demoTemplate = `
   <div style="height: 560px; border: 1px solid #ccc;">
     <app-page-layout>
@@ -111,4 +140,24 @@ export const CompactDetail: Story = {
     listCollapsed: false,
     showForm: true,
   },
+};
+
+export const SingleColumnList: Story = {
+  decorators: [layoutProviders(true)],
+  render: () => ({
+    template: listRecipeTemplate,
+    moduleMetadata: {
+      imports: [PageLayout, Toolbar, ListPane],
+    },
+  }),
+};
+
+export const SingleColumnForm: Story = {
+  decorators: [layoutProviders(true)],
+  render: () => ({
+    template: formRecipeTemplate,
+    moduleMetadata: {
+      imports: [PageLayout, Toolbar, DetailPane],
+    },
+  }),
 };

@@ -8,6 +8,8 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { Router, RouterLink } from '@angular/router';
 import { FlexModule } from '@ngbracket/ngx-layout/flex';
 import { Toolbar } from "app/shared/components/toolbar";
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { FirebaseError } from '@angular/fire/app';
 import { getFirebaseErrorMessage } from '../firebase-error-messages';
@@ -16,7 +18,7 @@ import { getFirebaseErrorMessage } from '../firebase-error-messages';
    selector: 'app-signup',
    templateUrl: './signup.html',
    styleUrls: ['./signup.scss'],
-   imports: [MatToolbarModule, FlexModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, RouterLink, Toolbar],
+   imports: [MatToolbarModule, FlexModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, RouterLink, Toolbar, PageLayout, DetailPane],
    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Signup {

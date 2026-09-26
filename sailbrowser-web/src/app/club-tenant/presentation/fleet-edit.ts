@@ -6,6 +6,7 @@ import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 import { ClubStore } from '../services/club-store';
 import { DetailHeading } from 'app/shared/layout/detail-heading';
 
+/** Detail fragment inside `FleetPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-fleet-edit',
   standalone: true,

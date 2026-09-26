@@ -11,6 +11,7 @@ import { CaptureSessionUploadService } from './capture-session-upload.service';
 
 type CapturePhase = 'idle' | 'uploading' | 'success' | 'error';
 
+/** Phone upload session. No toolbar — do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-mobile-capture-page',
   imports: [MatButtonModule, MatCardModule, MatIconModule, MatProgressBarModule, MobilePhotoPicker],

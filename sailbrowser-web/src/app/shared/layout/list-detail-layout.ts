@@ -2,7 +2,9 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, inject, input } f
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 
 /**
- * Responsive list/detail shell.
+ * Recipe 2: responsive list/detail shell. Use only for true master-detail
+ * screens (boats, fleets, results viewer). Do not wrap single forms,
+ * home, login, or settings in this component.
  *
  * Wide (desktop and tablet landscape): left navigation panel + detail panel.
  * Compact (phone and tablet portrait): shows either the list or the detail,

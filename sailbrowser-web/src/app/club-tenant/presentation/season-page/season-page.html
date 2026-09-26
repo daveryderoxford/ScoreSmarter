@@ -1,42 +1,43 @@
-<app-toolbar title="Seasons"></app-toolbar>
+<app-page-layout>
+  <app-toolbar title="Seasons"></app-toolbar>
 
-<div class="content">
+  <app-list-pane maxWidth="600px">
+    @if (cs.isLoading()) {
+      <app-loading-centered />
+    } @else {
+      <div listHeader class="search-bar">
+        <mat-form-field class="search">
+          <mat-label>Search Seasons</mat-label>
+          <input matInput [formControl]="searchControl" placeholder="Search by name">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
 
-  @if (cs.isLoading()) {
-  <app-loading-centered />
-  } @else {
-  <div class="search-bar">
-    <mat-form-field class="search">
-      <mat-label>Search Seasons</mat-label>
-      <input matInput [formControl]="searchControl" placeholder="Search by name">
-      <mat-icon matSuffix>search</mat-icon>
-    </mat-form-field>
+        <a matButton="tonal" class="right-justify" routerLink="add">
+          New
+        </a>
+      </div>
 
-    <a matButton="tonal" class="right-justify" routerLink="add">
-      New
-    </a>
-  </div>
-
-  <mat-list>
-    @for (season of filteredSeasons(); track season.id) {
-    <mat-list-item [routerLink]="['edit', season.id]">
-      <span matListItemTitle>{{ season.name }}</span>
-      <span matListItemLine>{{ season.status === 'archived' ? 'Archived' : 'Current' }}</span>
-      <span matListItemMeta>
-        <button matIconButton [routerLink]="['edit', season.id]" (click)="$event.stopPropagation()">
-          <mat-icon class="green">edit</mat-icon>
-        </button>
-        <button matIconButton (click)="deleteSeason(season); $event.stopPropagation()">
-          <mat-icon class="warning">delete</mat-icon>
-        </button>
-      </span>
-    </mat-list-item>
-    <mat-divider></mat-divider>
-    } @empty {
-    <mat-list-item>
-      <span matListItemTitle>No seasons found</span>
-    </mat-list-item>
+      <mat-list>
+        @for (season of filteredSeasons(); track season.id) {
+        <mat-list-item [routerLink]="['edit', season.id]">
+          <span matListItemTitle>{{ season.name }}</span>
+          <span matListItemLine>{{ season.status === 'archived' ? 'Archived' : 'Current' }}</span>
+          <span matListItemMeta>
+            <button matIconButton [routerLink]="['edit', season.id]" (click)="$event.stopPropagation()">
+              <mat-icon class="green">edit</mat-icon>
+            </button>
+            <button matIconButton (click)="deleteSeason(season); $event.stopPropagation()">
+              <mat-icon class="warning">delete</mat-icon>
+            </button>
+          </span>
+        </mat-list-item>
+        <mat-divider></mat-divider>
+        } @empty {
+        <mat-list-item>
+          <span matListItemTitle>No seasons found</span>
+        </mat-list-item>
+        }
+      </mat-list>
     }
-  </mat-list>
-  }
-</div>
+  </app-list-pane>
+</app-page-layout>

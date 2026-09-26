@@ -11,6 +11,8 @@ import { MatInputModule } from '@angular/material/input';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { ListPane } from 'app/shared/layout/list-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { ClubStore } from '../../services/club-store';
 import { LoadingCentered } from "app/shared/components/loading-centered";
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
@@ -31,14 +33,26 @@ import {
   imports: [Toolbar, MatListModule,
     MatButtonModule, MatIconModule, RouterModule, MatDividerModule,
     ReactiveFormsModule, MatFormFieldModule, MatInputModule, LoadingCentered,
-    MatDividerModule, ImportExportMenuComponent],
+    MatDividerModule, ImportExportMenuComponent, PageLayout, ListPane],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './class-page.html',
   styles: `
-    @use "mixins" as mix;
+    /* Recipe 1: list then full-page form. Not boats-style ListDetailLayout. */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 12px 8px;
+    }
 
-    @include mix.centered-column-page(".content", 450px);
+    .search {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
 
+    .right-justify {
+      flex: 0 0 auto;
+    }
   `
 })
 export class ClassPage {

@@ -2,17 +2,23 @@ import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { ClubStore } from '../services/club-store';
 import { ClassForm } from './class-form/class-form';
 import { BoatClass } from '../model/boat-class';
 
 @Component({
   selector: 'app-class-add',
-  imports: [ClassForm, Toolbar],
+  imports: [ClassForm, Toolbar, PageLayout, DetailPane],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-toolbar title="Add Class" showBack/>
-    <app-class-form (submitted)="submitted($event)" [busy]="busy()"></app-class-form>
+    <app-page-layout>
+      <app-toolbar title="Add Class" showBack/>
+      <app-detail-pane maxWidth="350px">
+        <app-class-form (submitted)="submitted($event)" [busy]="busy()"></app-class-form>
+      </app-detail-pane>
+    </app-page-layout>
   `,
   styles: [],
 })

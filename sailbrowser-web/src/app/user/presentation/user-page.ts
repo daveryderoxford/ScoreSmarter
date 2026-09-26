@@ -7,6 +7,8 @@ import { Router } from '@angular/router';
 import { AuthService } from 'app/auth/auth.service';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import type { UserData } from '../model/user';
 import { UserDataService } from '../services/user-data.service';
 
@@ -17,6 +19,8 @@ import { UserDataService } from '../services/user-data.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     Toolbar,
+    PageLayout,
+    DetailPane,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,

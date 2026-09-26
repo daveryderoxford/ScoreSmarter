@@ -201,9 +201,14 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
     </form>
   `,
   styles: `
-    @use "mixins" as mix;
+    :host {
+      display: block;
+    }
 
-    @include mix.form-page("form", 430px);
+    form {
+      display: flex;
+      flex-direction: column;
+    }
 
     .flex-row {
       display: flex;

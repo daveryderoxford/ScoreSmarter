@@ -118,6 +118,7 @@ export function helmGridLayout(
   return { columns, rows };
 }
 
+/** Custom full-viewport chrome. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-kiosk-entry',
   templateUrl: './kiosk-entry-page.html',
