@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, effect, inject, input, signal, view
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { RaceCalendarStore } from '../services/full-race-calander';
 import { Series } from '../model/series';
 import { SeriesForm } from './series-form';
@@ -9,13 +11,17 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 
 @Component({
   selector: 'app-series-edit',
-  imports: [SeriesForm, Toolbar],
+  imports: [SeriesForm, Toolbar, PageLayout, DetailPane],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-toolbar [title]="'Edit Series - ' + series()?.name" showBack/>
-    @if (series()) {
-      <app-series-form [series]="series()" [busy]="busy()" (save)="submitted($event)"></app-series-form>
-    }
+    <app-page-layout>
+      <app-toolbar [title]="'Edit Series - ' + series()?.name" showBack/>
+      <app-detail-pane maxWidth="430px">
+        @if (series()) {
+          <app-series-form [series]="series()" [busy]="busy()" (save)="submitted($event)"></app-series-form>
+        }
+      </app-detail-pane>
+    </app-page-layout>
   `
 })
 export class SeriesEdit {

@@ -11,9 +11,14 @@ import { Season, SeasonStatus } from 'app/race-calender/model/season';
   selector: 'app-season-form',
   templateUrl: './season-form.html',
   styles: `
-    @use "mixins" as mix;
+    :host {
+      display: block;
+    }
 
-    @include mix.form-page("form", 350px);
+    form {
+      display: flex;
+      flex-direction: column;
+    }
 
     .button-row {
       display: flex;

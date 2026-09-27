@@ -13,6 +13,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router, RouterLink } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { getFirebaseErrorMessage } from '../firebase-error-messages';
 import { FlexModule } from '@ngbracket/ngx-layout/flex';
@@ -27,7 +28,7 @@ const googleAuthProvider = new GoogleAuthProvider();
   selector: 'app-login',
   templateUrl: 'login.html',
   styleUrls: ['login.scss'],
-  imports: [MatCardModule, Toolbar, FlexModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, RouterLink, MatProgressSpinnerModule],
+  imports: [MatCardModule, Toolbar, FlexModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, RouterLink, MatProgressSpinnerModule, PageLayout],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LoginComponent {

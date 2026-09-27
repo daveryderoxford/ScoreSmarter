@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { AuthorizedKiosk } from '../../model/authorized-kiosk';
 import { KioskDevicesService } from '../../services/kiosk-devices.service';
 
@@ -14,6 +15,7 @@ import { KioskDevicesService } from '../../services/kiosk-devices.service';
   selector: 'app-kiosk-devices',
   imports: [
     Toolbar,
+    PageLayout,
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,

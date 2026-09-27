@@ -1,87 +1,88 @@
-@if (rc.isLoading()) {
-  <app-loading-centered/>
-} @else if (rc.error()) {
-  <app-loading-centered message="Error encountered"/>
-} @else if (!series()) {
-  Series not found
-} @else {
-  @let s = series();
-
+<app-page-layout>
   <app-toolbar showBack title="Series Details">
-    <button matIconButton (click)="copySeries(series())">
-      <mat-icon>content_copy</mat-icon>
-    </button>
+    @if (series()) {
+      <button matIconButton (click)="copySeries(series())">
+        <mat-icon>content_copy</mat-icon>
+      </button>
+    }
   </app-toolbar>
 
-  <div class="content">
-
-    <mat-card appearance="outlined">
-      <mat-card-header>
-        <mat-card-title>
-          <span>{{ series().name }}</span>
-        </mat-card-title>
-        <mat-card-subtitle>
-          @if (fleet()) {
-            <span>{{getFleetName(fleet()!)}}</span>
-          }
-          @if (s.startDate && s.endDate) {
-            <span>{{ s.startDate| date:'MMM d, y' }} to {{ s.endDate | date:'MMM d, y' }}</span>
-          }
-        </mat-card-subtitle>
-      </mat-card-header>
-
-      <mat-card-content>
-        <div class="scoring-details">
-          <div class="detail-item">
-            <span class="detail-label">Scoring Scheme:</span>
-            <span class="detail-value">{{ scoringSchemeName() }}</span>
-          </div>
-
-          <div class="detail-item">
-            <span class="detail-label">Discards:</span>
-            <span class="detail-value">{{ discardSummary() }}</span>
-          </div>
-
-          <div class="detail-item">
-            <span class="detail-label">Entry Grouping:</span>
-            <span class="detail-value">{{ entryAlgorithmName() }}</span>
-          </div>
-        </div>
-
-      </mat-card-content>
-      <mat-card-actions align="end">
-        <button matButton (click)="editSeries(s.id)" title="Edit Series">
-          Edit Details
-        </button>
-
-        <button matButton color="warn" (click)="deleteSeries(s.id)" title="Delete Series" [disabled]="!canDeleteSeries()">
-          Delete Series
-        </button>
-      </mat-card-actions>
-    </mat-card>
-
-    <!-- Races Header -->
-    <div class="race-header">
-      <h2>Races</h2>
-      <span class="spacer"></span>
-      <button matIconButton (click)="addRace(s.id)">
-        <mat-icon>add_circle_outline</mat-icon>
-      </button>
-    </div>
-
-    <!-- Races List -->
-    @if (this.rc.racesLoading()) {
-    <app-loading-centered />
-    }
-    @if (this.races().length === 0) {
-    <span>Add races to the series</span>
+  <app-list-pane maxWidth="400px">
+    @if (rc.isLoading()) {
+      <app-loading-centered/>
+    } @else if (rc.error()) {
+      <app-loading-centered message="Error encountered"/>
+    } @else if (!series()) {
+      Series not found
     } @else {
-      <mat-list>
-        @for (race of races(); track race.id) {
-        <app-race-list-item [race]="race" (edit)="editRace(race)" (delete)="deleteRace(race)" [disableDelete]="isRacePublished(race)" />
-        }
+      @let s = series();
 
-      </mat-list>
+      <mat-card appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>
+            <span>{{ series().name }}</span>
+          </mat-card-title>
+          <mat-card-subtitle>
+            @if (fleet()) {
+              <span>{{getFleetName(fleet()!)}}</span>
+            }
+            @if (s.startDate && s.endDate) {
+              <span>{{ s.startDate| date:'MMM d, y' }} to {{ s.endDate | date:'MMM d, y' }}</span>
+            }
+          </mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="scoring-details">
+            <div class="detail-item">
+              <span class="detail-label">Scoring Scheme:</span>
+              <span class="detail-value">{{ scoringSchemeName() }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">Discards:</span>
+              <span class="detail-value">{{ discardSummary() }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">Entry Grouping:</span>
+              <span class="detail-value">{{ entryAlgorithmName() }}</span>
+            </div>
+          </div>
+
+        </mat-card-content>
+        <mat-card-actions align="end">
+          <button matButton (click)="editSeries(s.id)" title="Edit Series">
+            Edit Details
+          </button>
+
+          <button matButton color="warn" (click)="deleteSeries(s.id)" title="Delete Series" [disabled]="!canDeleteSeries()">
+            Delete Series
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
+      <div class="race-header">
+        <h2>Races</h2>
+        <span class="spacer"></span>
+        <button matIconButton (click)="addRace(s.id)">
+          <mat-icon>add_circle_outline</mat-icon>
+        </button>
+      </div>
+
+      @if (this.rc.racesLoading()) {
+      <app-loading-centered />
+      }
+      @if (this.races().length === 0) {
+      <span>Add races to the series</span>
+      } @else {
+        <mat-list>
+          @for (race of races(); track race.id) {
+          <app-race-list-item [race]="race" (edit)="editRace(race)" (delete)="deleteRace(race)" [disableDelete]="isRacePublished(race)" />
+          }
+
+        </mat-list>
+      }
     }
-  </div>
-}
+  </app-list-pane>
+</app-page-layout>

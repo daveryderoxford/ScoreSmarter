@@ -2,17 +2,23 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal, vi
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { ClubStore } from '../services/club-store';
 import { ClassForm } from './class-form/class-form';
 import { BoatClass } from '../model/boat-class';
 
 @Component({
   selector: 'app-class-edit',
-  imports: [ClassForm, Toolbar],
+  imports: [ClassForm, Toolbar, PageLayout, DetailPane],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-toolbar [title]="'Edit Class - ' + boatClass()?.name" showBack/>
-    <app-class-form [boatClass]="boatClass()" (submitted)="submitted($event)" [busy]="busy()"></app-class-form>
+    <app-page-layout>
+      <app-toolbar [title]="'Edit Class - ' + boatClass()?.name" showBack/>
+      <app-detail-pane maxWidth="350px">
+        <app-class-form [boatClass]="boatClass()" (submitted)="submitted($event)" [busy]="busy()"></app-class-form>
+      </app-detail-pane>
+    </app-page-layout>
   `,
   styles: [],
 })

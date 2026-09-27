@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
 import { differenceInDays, isFuture } from 'date-fns';
 import { ImportExportContext, ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
@@ -36,6 +37,7 @@ interface AdminAction {
     MatIconModule,
     RouterLink,
     Toolbar,
+    PageLayout,
     ImportExportMenuComponent
   ],
   templateUrl: './club-admin-switchboard.html',

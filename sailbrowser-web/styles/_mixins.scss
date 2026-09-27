@@ -1,3 +1,7 @@
+// Deprecated. Use app-page-layout with app-list-pane / app-detail-pane
+// (or app-list-detail-layout for master-detail). See
+// sailbrowser-web/src/app/shared/layout/LAYOUT.md. Kept only so leftover
+// local copies of these helpers do not break if re-introduced during review.
 @mixin centered-column-page($column-element, $maxwidth) {
    :host {
       overflow: hidden;

@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { SeriesForm } from './series-form';
 import { RaceCalendarStore } from '../services/full-race-calander';
 import { Series } from '../model/series';
@@ -9,11 +11,15 @@ import { Series } from '../model/series';
 
 @Component({
   selector: 'app-series-add',
-  imports: [SeriesForm, Toolbar],
+  imports: [SeriesForm, Toolbar, PageLayout, DetailPane],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-toolbar title="Add Series" showBack/>
-    <app-series-form [busy]="busy()" (save)="submitted($event)"></app-series-form>
+    <app-page-layout>
+      <app-toolbar title="Add Series" showBack/>
+      <app-detail-pane maxWidth="430px">
+        <app-series-form [busy]="busy()" (save)="submitted($event)"></app-series-form>
+      </app-detail-pane>
+    </app-page-layout>
   `
 })
 export class SeriesAdd {

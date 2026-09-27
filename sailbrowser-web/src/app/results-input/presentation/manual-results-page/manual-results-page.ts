@@ -17,6 +17,7 @@ import { CurrentRaces, RaceCompetitorReader, ResolvedRaceCompetitor } from 'app/
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { BusyButton } from 'app/shared/components/busy-button';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 import { firstValueFrom, map } from 'rxjs';
@@ -38,6 +39,7 @@ const SHEET_POPUP_FEATURES = 'popup,width=720,height=900';
   styleUrls: ['./manual-results-page.scss'],
   imports: [
     Toolbar,
+    PageLayout,
     MatButtonModule,
     MatChipsModule,
     MatIconModule,

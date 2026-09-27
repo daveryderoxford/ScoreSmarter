@@ -1,7 +1,3 @@
-@use "mixins" as mix;
-
-@include mix.centered-column-page(".content", 400px);
-
 .entry-button {
   margin-top: 20px;
   margin-bottom: 20px;

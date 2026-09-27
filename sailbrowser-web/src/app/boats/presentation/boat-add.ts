@@ -2,20 +2,20 @@ import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { BoatForm } from './boat-form/boat-form';
-import { Toolbar } from 'app/shared/components/toolbar';
 import { BoatsStore } from '../services/boats.store';
 import { DuplicateBoatCheck } from './duplicate-boat-check/duplicate-check-service';
 import { Boat } from '../model/boat';
+import { DetailHeading } from 'app/shared/layout/detail-heading';
 
+/** Detail fragment inside `BoatsPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-boat-add',
-  imports: [BoatForm, Toolbar],
+  imports: [BoatForm, DetailHeading],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-   <app-toolbar title="Add Boat" showBack/>
+    <app-detail-heading>Add Boat</app-detail-heading>
     <app-boat-form (submitted)="submitted($event)" [busy]="busy()"/>
   `,
-  styles: [],
 })
 export class BoatAdd {
   private bs = inject(BoatsStore);
@@ -43,11 +43,13 @@ export class BoatAdd {
     } finally {
       this.busy.set(false);
     }
-  
-
   }
-  
+
   canDeactivate(): boolean {
     return this.form().canDeactivate();
+  }
+
+  discardChanges(): void {
+    this.form().discardChanges();
   }
 }

@@ -1,5 +1,7 @@
+<app-page-layout>
 <app-toolbar title="ScoreSmarter Signup"></app-toolbar>
 
+<app-detail-pane maxWidth="400px">
 <form [formGroup]="signupForm" (ngSubmit)="signup()">
 
    <mat-form-field>
@@ -29,3 +31,5 @@
    </div>
 
 </form>
+</app-detail-pane>
+</app-page-layout>

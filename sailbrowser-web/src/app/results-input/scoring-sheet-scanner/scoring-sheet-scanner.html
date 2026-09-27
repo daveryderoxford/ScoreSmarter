@@ -1,5 +1,7 @@
+<app-page-layout>
 <app-toolbar title="Scan Results Sheet"></app-toolbar>
 
+<app-list-pane maxWidth="1120px">
 <mat-stepper
   class="stepper"
   [class.review-wide]="stepper.selectedIndex === reviewStepIndex"
@@ -69,3 +71,5 @@
     </div>
   </mat-step>
 </mat-stepper>
+</app-list-pane>
+</app-page-layout>

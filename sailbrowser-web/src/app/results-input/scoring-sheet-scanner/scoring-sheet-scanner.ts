@@ -3,6 +3,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
 import { CaptureStep, CaptureStepViewModel } from '../capture/capture-step/capture-step';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { ListPane } from 'app/shared/layout/list-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { SheetCaptureStore } from './capture-image/sheet-capture.store';
 import { ScanExecutionService } from './run-scan/scan-execution.service';
@@ -20,7 +22,7 @@ const REVIEW_STEP_INDEX = 3;
 
 @Component({
   selector: 'app-scoring-sheet-scanner',
-  imports: [MatStepperModule, MatButtonModule, Toolbar, RaceStep, CaptureStep, SetupStep, ReviewStep],
+  imports: [MatStepperModule, MatButtonModule, Toolbar, RaceStep, CaptureStep, SetupStep, ReviewStep, PageLayout, ListPane],
   templateUrl: './scoring-sheet-scanner.html',
   styleUrl: './scoring-sheet-scanner.scss',
   providers: [

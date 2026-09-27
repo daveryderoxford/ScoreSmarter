@@ -20,9 +20,14 @@ import { ClubStore } from 'app/club-tenant';
   selector: 'app-class-form',
   templateUrl: './class-form.html',
   styles: `
-    @use "mixins" as mix;
+    :host {
+      display: block;
+    }
 
-    @include mix.form-page("form", 350px);
+    form {
+      display: flex;
+      flex-direction: column;
+    }
 
     .button-row {
       display: flex;

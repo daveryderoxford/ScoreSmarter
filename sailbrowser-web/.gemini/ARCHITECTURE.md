@@ -31,7 +31,7 @@
 ## Technical Standards
 - **Testing:** `vitest` + Angular Testing Framework mocks. Files: `.spec.ts` next to source.
 - **UI:** Angular Material 3. Use Design Tokens (`--mat-sys-...`) and `mat-overrides`.
-- **Layout:** Use `app-toolbar`. Apply `@include mix.centered-column-page` for desktop centering.
+- **Layout:** Use `app-page-layout` with `app-toolbar`. Single-column pages use `app-list-pane` or `app-detail-pane`. Master-detail (boats, fleets, results viewer) uses `app-list-detail-layout`. See `src/app/shared/layout/LAYOUT.md`.
 - **Dates:** Use `date-fns` for math.
 
 

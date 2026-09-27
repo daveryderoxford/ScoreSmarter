@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { afterRenderEffect, Component, computed, effect, ElementRef, inject, input, Signal, signal, ChangeDetectionStrategy } from '@angular/core';
+import { afterRenderEffect, Component, computed, effect, ElementRef, inject, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
@@ -21,10 +21,14 @@ import { getFleetName } from 'app/club-tenant/model/fleet';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { AuthService } from 'app/auth/auth.service';
 import { CurrentRaces } from 'app/results-input';
+import { PageLayout } from 'app/shared/layout/page-layout';
+import { ListDetailLayout } from 'app/shared/layout/list-detail-layout';
+import { ListPane } from 'app/shared/layout/list-pane';
+import { DetailPane } from 'app/shared/layout/detail-pane';
 
 @Component({
   selector: 'app-results-viewer',
-  imports: [Toolbar, SeasonList, SeriesResultsTable, LoadingCentered, RaceResultsTable, MatIconModule, MatButtonModule, DatePipe, CenteredText, RouterLink, MatSelectModule, MatFormFieldModule, MatChipsModule],
+  imports: [Toolbar, SeasonList, SeriesResultsTable, LoadingCentered, RaceResultsTable, MatIconModule, MatButtonModule, DatePipe, CenteredText, RouterLink, MatSelectModule, MatFormFieldModule, MatChipsModule, PageLayout, ListDetailLayout, ListPane, DetailPane],
   templateUrl: './results-viewer.html',
   styleUrl: './results-viewer.scss',
 })
@@ -43,7 +47,7 @@ export class ResultsViewer {
   id = input<string>('');  // Route parameter
   raceId = input<string>(''); // Query parameter
 
-  isMobile = this.breakpoints.isMobile;
+  isWide = this.breakpoints.isWideLayout;
 
   series = this.store.series;
   races = this.store.races;

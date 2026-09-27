@@ -13,6 +13,8 @@ import { RouterModule } from '@angular/router';
 import { ClubStore } from '../../club-tenant';
 import { LoadingCentered } from "app/shared/components/loading-centered";
 import { Toolbar } from 'app/shared/components/toolbar';
+import { ListPane } from 'app/shared/layout/list-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
 import { Series } from '../model/series';
 import { RaceCalendarStore } from '../services/full-race-calander';
@@ -23,61 +25,73 @@ import { getFleetName } from 'app/club-tenant/model/fleet';
   selector: 'app-series-list',
   imports: [Toolbar, MatListModule, MatButtonModule, MatIconModule, RouterModule,
     MatDividerModule, MatTooltipModule, ReactiveFormsModule, MatFormFieldModule,
-    MatInputModule, DatePipe, LoadingCentered, MatDividerModule],
+    MatInputModule, DatePipe, LoadingCentered, MatDividerModule, PageLayout, ListPane],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-toolbar title="Series"></app-toolbar>
+    <app-page-layout>
+      <app-toolbar title="Series"></app-toolbar>
 
-    <div class="content">
-      <div class="search-bar">
-        <mat-form-field class="search">
-            <mat-label>Search</mat-label>
-            <input matInput [formControl]="searchControl" placeholder="Search">
-            @if(searchControl.value) {
-            <button mat-icon-button matSuffix (click)="searchControl.setValue('')" aria-label="Clear search">
-              <mat-icon>close</mat-icon>
-            </button>
-            }
-        </mat-form-field>
+      <app-list-pane maxWidth="500px">
+        <div listHeader class="search-bar">
+          <mat-form-field class="search">
+              <mat-label>Search</mat-label>
+              <input matInput [formControl]="searchControl" placeholder="Search">
+              @if(searchControl.value) {
+              <button mat-icon-button matSuffix (click)="searchControl.setValue('')" aria-label="Clear search">
+                <mat-icon>close</mat-icon>
+              </button>
+              }
+          </mat-form-field>
 
-        <a matButton="tonal" class="right-justify" [routerLink]="['/race-calender/add']">
-          New
-        </a>
-      </div>
+          <a matButton="tonal" class="right-justify" [routerLink]="['/race-calender/add']">
+            New
+          </a>
+        </div>
 
-      <mat-divider />
-
-      @if (rcs.isLoading()) {
-        <app-loading-centered/>
-      } @else {
-        <mat-list class="dense-list">
-            @for (series of filteredSeries(); track series.id) {
-            <mat-list-item>
-              <span matListItemTitle>{{series.name}} ({{this.getSeasonName(series.seasonId)}})</span>
-              <span matListItemLine>
-                  {{getFleetName(series.primaryScoringConfiguration.fleet.id)}}
-                  @if(series.startDate) { - {{series.startDate | date}} }
-              </span>
-              <span matListItemMeta>
-                  <button matIconButton aria-label="Edit" [routerLink]="['/race-calender/series-details/'+series.id]">
-                    <mat-icon>edit</mat-icon>
-                  </button>
-              </span>
-            </mat-list-item>
-            <mat-divider />
-            } @empty {
-            <mat-list-item>
-              <span matListItemTitle>No Series found</span>
-            </mat-list-item>
-            }
-        </mat-list>
-      }
-    </div>
+        @if (rcs.isLoading()) {
+          <app-loading-centered/>
+        } @else {
+          <mat-list class="dense-list">
+              @for (series of filteredSeries(); track series.id) {
+              <mat-list-item>
+                <span matListItemTitle>{{series.name}} ({{this.getSeasonName(series.seasonId)}})</span>
+                <span matListItemLine>
+                    {{getFleetName(series.primaryScoringConfiguration.fleet.id)}}
+                    @if(series.startDate) { - {{series.startDate | date}} }
+                </span>
+                <span matListItemMeta>
+                    <button matIconButton aria-label="Edit" [routerLink]="['/race-calender/series-details/'+series.id]">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                </span>
+              </mat-list-item>
+              <mat-divider />
+              } @empty {
+              <mat-list-item>
+                <span matListItemTitle>No Series found</span>
+              </mat-list-item>
+              }
+          </mat-list>
+        }
+      </app-list-pane>
+    </app-page-layout>
   `,
   styles: `
-    @use "mixins" as mix;
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 12px 8px;
+    }
 
-    @include mix.centered-column-page(".content", 500px);
+    .search {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .right-justify {
+      flex: 0 0 auto;
+    }
   `
 })
 export class SeriesList {

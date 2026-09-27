@@ -1,5 +1,7 @@
+<app-page-layout>
 <app-toolbar title="Account" />
 
+<app-detail-pane maxWidth="400px">
 <form class="user-form" [formGroup]="userForm" (ngSubmit)="save()" novalidate>
   <div class="detail-field">
     <span class="detail-label">Email</span>
@@ -36,3 +38,5 @@
     </app-submit-button>
   </div>
 </form>
+</app-detail-pane>
+</app-page-layout>

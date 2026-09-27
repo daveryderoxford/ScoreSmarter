@@ -8,11 +8,13 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from 'app/auth/auth.service';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { ListPane } from 'app/shared/layout/list-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { EntriesListPanel } from './entries-list-panel';
 
 @Component({
   selector: 'app-entries-list-page',
-  imports: [Toolbar, RouterLink, MatButtonModule, MatIconModule, MatMenuModule, EntriesListPanel],
+  imports: [Toolbar, RouterLink, MatButtonModule, MatIconModule, MatMenuModule, EntriesListPanel, PageLayout, ListPane],
   templateUrl: './entries-list.page.html',
   styleUrl: './entries-list.page.scss',
 })

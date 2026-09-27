@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { MatIconButton } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -7,7 +7,6 @@ import { MatListModule } from '@angular/material/list';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { PublishedSeason } from 'app/published-results';
 import { FleetSelect } from 'app/shared/components/fleet-select';
-import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { startOfDay, subDays } from 'date-fns';
 
 type SeriesInfo = PublishedSeason['series'][number];
@@ -74,11 +73,11 @@ type SeriesInfo = PublishedSeason['series'][number];
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SeasonList {
-  protected breakpoints = inject(AppBreakpoints);
-
   /** Input for the seasons and their series to be displayed. */
   seasons = input.required<PublishedSeason[]>();
   hide = output();
+  /** Shown in the wide split view so the list pane can be collapsed. */
+  showCollapseButton = input(false);
 
   /** Fleet filter for published series list. Empty means "all fleets". */
   protected fleetFilter = signal('');

@@ -1,5 +1,9 @@
-<app-toolbar title="Series selection">
-  <a matButton routerLink="/results/today">Recent races</a>
-</app-toolbar>
+<app-page-layout>
+  <app-toolbar title="Series selection">
+    <a matButton routerLink="/results/today">Recent races</a>
+  </app-toolbar>
 
-<app-season-list [seasons]="seasons()"> </app-season-list>
+  <app-list-pane>
+    <app-season-list [seasons]="seasons()" />
+  </app-list-pane>
+</app-page-layout>

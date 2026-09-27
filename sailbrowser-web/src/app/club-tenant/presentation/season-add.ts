@@ -2,17 +2,23 @@ import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { ClubStore } from '../services/club-store';
 import { SeasonForm } from './season-form/season-form';
 import { Season } from 'app/race-calender/model/season';
 
 @Component({
   selector: 'app-season-add',
-  imports: [SeasonForm, Toolbar],
+  imports: [SeasonForm, Toolbar, PageLayout, DetailPane],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-toolbar title="Add Season" showBack/>
-    <app-season-form (submitted)="submitted($event)" [busy]="busy()"></app-season-form>
+    <app-page-layout>
+      <app-toolbar title="Add Season" showBack/>
+      <app-detail-pane maxWidth="350px">
+        <app-season-form (submitted)="submitted($event)" [busy]="busy()"></app-season-form>
+      </app-detail-pane>
+    </app-page-layout>
   `,
   styles: [],
 })

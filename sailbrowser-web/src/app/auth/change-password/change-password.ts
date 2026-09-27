@@ -8,6 +8,8 @@ import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
 import { FlexModule } from '@ngbracket/ngx-layout/flex';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { FirebaseError } from '@angular/fire/app';
 import { getFirebaseErrorMessage } from '../firebase-error-messages';
@@ -16,7 +18,7 @@ import { getFirebaseErrorMessage } from '../firebase-error-messages';
   selector: 'app-change-password',
   templateUrl: './change-password.html',
   styleUrls: ['./change-password.scss'],
-  imports: [FlexModule, MatCardModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, Toolbar],
+  imports: [FlexModule, MatCardModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, Toolbar, PageLayout, DetailPane],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChangePassword {

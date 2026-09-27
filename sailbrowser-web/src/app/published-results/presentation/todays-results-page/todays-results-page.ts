@@ -23,6 +23,7 @@ import { CenteredText } from 'app/shared/components/centered-text';
 import { LoadingCentered } from 'app/shared/components/loading-centered';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { PublishedRacesMode, TodaysPublishedRacesService } from '../../services/todays-published-races.service';
 import { RaceResultsTable } from '../results-tables/race-results-table/race-results-table';
 
@@ -68,6 +69,7 @@ function prefersReducedMotion(): boolean {
   providers: [TodaysPublishedRacesService],
   imports: [
     Toolbar,
+    PageLayout,
     MatButtonModule,
     MatButtonToggleModule,
     MatCheckboxModule,
@@ -97,7 +99,7 @@ export class TodaysResultsPage {
   protected readonly isTodayMode = computed(() => this.mode() === 'today');
 
   protected readonly seriesResultsLink = computed(() =>
-    this.isMobile() ? '/results/mobile-results-list' : '/results/viewer',
+    this.breakpoints.isWideLayout() ? '/results/viewer' : '/results/mobile-results-list',
   );
 
   protected readonly loading = this.publishedRaces.loading;

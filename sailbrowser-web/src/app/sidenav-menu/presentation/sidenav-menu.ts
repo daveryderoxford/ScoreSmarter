@@ -126,7 +126,7 @@ export class SidenavMenu {
   );
 
   protected readonly seriesResultsLink = computed(() =>
-    this.breakpoints.isMobile() ? '/results/mobile-results-list' : '/results/viewer',
+    this.breakpoints.isWideLayout() ? '/results/viewer' : '/results/mobile-results-list',
   );
 
   protected readonly isSeriesResultsActive = computed(() => {

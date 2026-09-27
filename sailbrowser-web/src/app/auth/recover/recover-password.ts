@@ -8,12 +8,14 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { FlexModule } from '@ngbracket/ngx-layout/flex';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { PageLayout } from 'app/shared/layout/page-layout';
 
 @Component({
   selector: 'app-recover',
   templateUrl: './recover-password.html',
   styleUrls: ['./recover-password.scss'],
-  imports: [FlexModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, RouterLink, Toolbar],
+  imports: [FlexModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, RouterLink, Toolbar, PageLayout, DetailPane],
  changeDetection:  ChangeDetectionStrategy.OnPush,
 
 })

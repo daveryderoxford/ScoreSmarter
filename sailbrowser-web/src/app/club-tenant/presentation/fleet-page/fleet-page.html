@@ -1,48 +1,59 @@
-<app-toolbar title="Fleets">
-  <app-import-export-menu context="fleets" (exportCsv)="exportCsv()" (importFile)="importCsv($event)" />
-</app-toolbar>
+<app-page-layout>
+  <app-toolbar [title]="toolbarTitle()" [showBack]="showBack()">
+    @if (!showBack()) {
+      <app-import-export-menu context="fleets" (exportCsv)="exportCsv()" (importFile)="importCsv($event)" />
+    }
+  </app-toolbar>
 
-<div class="content">
+  <app-list-detail-layout [detailOpen]="detailOpen()">
+    <app-list-pane list>
+      <div listHeader class="search-bar">
+        <mat-form-field class="search">
+          <mat-label>Search Fleets</mat-label>
+          <input matInput [formControl]="searchControl" placeholder="Search by name or short name">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
 
-  @if (cs.isLoading()) {
-  <app-loading-centered />
-  } @else {
-    <div class="search-bar">
-      <mat-form-field class="search">
-        <mat-label>Search Fleets</mat-label>
-        <input matInput [formControl]="searchControl" placeholder="Search by name or short name">
-        <mat-icon matSuffix>search</mat-icon>
-      </mat-form-field>
+        <a matButton="tonal" class="right-justify" routerLink="add">
+          New
+        </a>
+      </div>
 
-      <a matButton="tonal" class="right-justify" routerLink="add">
-        New
-      </a>
-    </div>
-
-    <mat-list class="dense-list">
-      @for (fleet of filteredFleets(); track fleet.id) {
-      <mat-list-item [routerLink]="['edit', fleet.id]">
-        <span matListItemTitle>{{ getFleetName(fleet) }}</span>
-        @if (fleet.type === 'BoatClass') {
-          <span matListItemLine>Class: {{ fleet.boatClassId }}</span>
-        } @else if (fleet.type === 'HandicapRange') {
-          <span matListItemLine>Handicap range: {{ fleet.min }} to {{ fleet.max }} ({{ fleet.scheme }})</span>
-        }
-        <span matListItemMeta>
-          <button matIconButton [routerLink]="['edit', fleet.id]" (click)="$event.stopPropagation()">
-            <mat-icon class="green">edit</mat-icon>
-          </button>
-          <button matIconButton (click)="deleteFleet(fleet); $event.stopPropagation()">
-            <mat-icon class="warning">delete</mat-icon>
-          </button>
-        </span>
-      </mat-list-item>
-      <mat-divider></mat-divider>
-      } @empty {
-        <mat-list-item>
-          <span matListItemTitle>No fleets found</span>
-        </mat-list-item>
+      @if (cs.isLoading()) {
+        <app-loading-centered />
+      } @else {
+        <mat-list class="dense-list">
+          @for (fleet of filteredFleets(); track fleet.id) {
+          <mat-list-item
+            [routerLink]="['edit', fleet.id]"
+            [activated]="selectedFleetId() === fleet.id">
+            <span matListItemTitle>{{ getFleetName(fleet) }}</span>
+            @if (fleet.type === 'BoatClass') {
+              <span matListItemLine>Class: {{ fleet.boatClassId }}</span>
+            } @else if (fleet.type === 'HandicapRange') {
+              <span matListItemLine>Handicap range: {{ fleet.min }} to {{ fleet.max }} ({{ fleet.scheme }})</span>
+            }
+            <span matListItemMeta>
+              <button matIconButton [routerLink]="['edit', fleet.id]" (click)="$event.stopPropagation()">
+                <mat-icon class="green">edit</mat-icon>
+              </button>
+              <button matIconButton (click)="deleteFleet(fleet); $event.stopPropagation()">
+                <mat-icon class="warning">delete</mat-icon>
+              </button>
+            </span>
+          </mat-list-item>
+          <mat-divider></mat-divider>
+          } @empty {
+            <mat-list-item>
+              <span matListItemTitle>No fleets found</span>
+            </mat-list-item>
+          }
+        </mat-list>
       }
-    </mat-list>
-  }
-</div>
+    </app-list-pane>
+
+    <app-detail-pane detail maxWidth="350px">
+      <router-outlet />
+    </app-detail-pane>
+  </app-list-detail-layout>
+</app-page-layout>

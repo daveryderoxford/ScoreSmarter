@@ -8,6 +8,7 @@ import { RouterLink } from '@angular/router';
 import { CenteredText } from 'app/shared/components/centered-text';
 import { LoadingCentered } from 'app/shared/components/loading-centered';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { PageLayout } from 'app/shared/layout/page-layout';
 import { ScanHistoryRecord, ScanHistoryService } from './scan-history.service';
 
 @Component({
@@ -19,6 +20,7 @@ import { ScanHistoryRecord, ScanHistoryService } from './scan-history.service';
     MatTableModule,
     RouterLink,
     Toolbar,
+    PageLayout,
     LoadingCentered,
     CenteredText,
   ],
