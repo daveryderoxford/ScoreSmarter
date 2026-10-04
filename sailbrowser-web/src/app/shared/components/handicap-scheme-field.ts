@@ -14,11 +14,12 @@ import { getHandicapSchemeMetadata } from 'app/scoring/model/handicap-scheme-met
       <mat-label>{{ meta().label }}</mat-label>
       <input
         matInput
-        type="number"
+        type="text"
+        [attr.inputmode]="inputMode()"
+        [attr.pattern]="inputPattern()"
         [formControl]="control()"
         [attr.min]="meta().min"
         [attr.max]="meta().max"
-        [attr.step]="meta().step"
       />
       @if (control().invalid) {
         <mat-error>
@@ -39,4 +40,10 @@ export class HandicapSchemeField {
   control = input.required<FormControl<number | null>>();
 
   readonly meta = computed(() => getHandicapSchemeMetadata(this.scheme()));
+  readonly inputMode = computed<'numeric' | 'decimal'>(() =>
+    Number.isInteger(this.meta().step) ? 'numeric' : 'decimal',
+  );
+  readonly inputPattern = computed(() =>
+    Number.isInteger(this.meta().step) ? '[0-9]*' : '[0-9]*[.]?[0-9]*',
+  );
 }

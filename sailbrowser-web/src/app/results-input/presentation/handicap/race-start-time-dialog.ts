@@ -34,7 +34,7 @@ export interface RaceStartTimeResult {
 
         <mat-form-field>
           <mat-label>Number of starts</mat-label>
-          <input matInput type="number" min="1" formControlName="startCount">
+          <input matInput type="text" inputmode="numeric" pattern="[0-9]*" formControlName="startCount">
         </mat-form-field>
 
         <div formArrayName="starts" class="starts-list">

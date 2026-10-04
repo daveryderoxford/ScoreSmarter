@@ -67,10 +67,9 @@ function ordinalEn(n: number): string {
             <th mat-header-cell *matHeaderCellDef>After race number</th>
             <td mat-cell *matCellDef="let ri">
               <input
-                type="number"
-                step="1"
-                [attr.min]="minAfterRaceAt(ri)"
+                type="text"
                 inputmode="numeric"
+                pattern="[0-9]*"
                 class="bp-input bp-input-num"
                 [formControl]="triggerControlAt(ri)"
                 [attr.aria-label]="'After race number for ' + ordinalAt(ri) + ' discard'"

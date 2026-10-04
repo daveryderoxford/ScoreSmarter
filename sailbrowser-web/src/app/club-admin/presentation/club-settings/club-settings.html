@@ -62,13 +62,13 @@
       <div class="form-row">
         <mat-form-field class="flex-1" >
           <mat-label>Latitude</mat-label>
-          <input matInput type="number" formControlName="latitude" step="any">
+          <input matInput type="text" inputmode="decimal" pattern="-?[0-9]*[.]?[0-9]*" formControlName="latitude">
           <mat-hint>Decimal WGS84 lat (-90 to 90)</mat-hint>
           <mat-error>Lat between -90 and 90</mat-error>
         </mat-form-field>
         <mat-form-field class="flex-1">
           <mat-label>Longitude</mat-label>
-          <input matInput type="number" formControlName="longitude" step="any">
+          <input matInput type="text" inputmode="decimal" pattern="-?[0-9]*[.]?[0-9]*" formControlName="longitude">
           <mat-hint>Decimal WGS84 lat (-180 to 180)</mat-hint>
           <mat-error>Long between -180 and 180</mat-error>
         </mat-form-field>

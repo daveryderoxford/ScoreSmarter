@@ -23,7 +23,7 @@
         <div [hidden]="!isMultilapRace()">
           <mat-form-field>
             <mat-label>Default laps (if not specified)</mat-label>
-            <input matInput type="number" formControlName="defaultLaps" min="1">
+            <input matInput type="text" inputmode="numeric" pattern="[0-9]*" formControlName="defaultLaps">
             <mat-error>Must be between 1 and 20</mat-error>
           </mat-form-field>
         </div>
