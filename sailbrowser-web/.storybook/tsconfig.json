@@ -7,5 +7,5 @@
   },
   "exclude": ["../src/test.ts", "../src/**/*.spec.ts"],
   "include": ["../src/**/*.stories.*", "./preview.ts"],
-  "files": ["./typings.d.ts"]
+  "files": ["./typings.d.ts", "../src/app/shared/types/fully-kiosk.d.ts"]
 }
