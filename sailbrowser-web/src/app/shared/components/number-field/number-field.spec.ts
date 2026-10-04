@@ -93,12 +93,10 @@ describe('NumberField', () => {
     const { input, control } = render('signedDecimal');
     input.value = '';
     input.setSelectionRange(0, 0);
-    const event = new ClipboardEvent('paste', {
-      bubbles: true,
-      cancelable: true,
-      clipboardData: new DataTransfer(),
+    const event = new Event('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'clipboardData', {
+      value: { getData: () => 'lat -51.50N extra' },
     });
-    event.clipboardData!.setData('text', 'lat -51.50N extra');
     input.dispatchEvent(event);
     expect(input.value).toBe('-51.50');
     expect(control.value).toBe('-51.50');
