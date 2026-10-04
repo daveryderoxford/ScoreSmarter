@@ -15,6 +15,7 @@ import { Router } from '@angular/router';
 import { addDays, isAfter, startOfDay } from 'date-fns';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Race, RaceCalendarStore } from 'app/race-calender';
+import { NumberField } from 'app/shared/components/number-field/number-field';
 import { TimeInput } from 'app/shared/components/time-input/time-input';
 import { dateAtSecondsOfDay } from 'app/shared/utils/time-utils';
 
@@ -54,6 +55,7 @@ const DEFAULT_START_SECONDS = 10 * 3600 + 30 * 60; // 10:30:00
     MatSelectModule,
     Toolbar,
     TimeInput,
+    NumberField,
     PageLayout,
     ListPane,
   ],

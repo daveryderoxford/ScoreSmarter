@@ -25,6 +25,7 @@ import { RaceResultDraft } from 'app/results-input/model/race-result-draft';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { RaceResultDataCommand } from '../../services/race-competitor-edit.service';
+import { NumberField } from 'app/shared/components/number-field/number-field';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { ResultCodeSelect } from '../result-code-select';
 import { RaceTimeInput } from '../handicap/race-time-input';
@@ -40,6 +41,7 @@ import { startWith } from 'rxjs';
     MatFormFieldModule,
     MatInputModule,
     SubmitButton,
+    NumberField,
     ResultCodeSelect,
     RaceTimeInput,
     TimeInput,

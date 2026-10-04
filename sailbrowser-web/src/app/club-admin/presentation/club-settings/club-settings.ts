@@ -9,6 +9,7 @@ import { ClubStore } from 'app/club-tenant';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { PageLayout } from 'app/shared/layout/page-layout';
+import { NumberField } from 'app/shared/components/number-field/number-field';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { ClubLogoService } from '../../services/club-logo.service';
 import { ClubLogo } from 'app/shared/components/club-logo/club-logo';
@@ -32,6 +33,7 @@ const ALLOWED_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
     MatButtonModule,
     SubmitButton,
     ClubLogo,
+    NumberField,
   ],
   templateUrl: './club-settings.html',
   styleUrl: './club-settings.scss',

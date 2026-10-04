@@ -31,12 +31,12 @@
 
     <mat-form-field class="field-full">
       <mat-label>Laps</mat-label>
-      <input matInput type="text" inputmode="numeric" pattern="[0-9]*" formControlName="manualLaps" />
+      <input matInput appNumberField formControlName="manualLaps" />
     </mat-form-field>
   } @else {
     <mat-form-field class="field-full">
       <mat-label>Position</mat-label>
-      <input matInput type="text" inputmode="numeric" pattern="[0-9]*" formControlName="manualPosition" />
+      <input matInput appNumberField formControlName="manualPosition" />
     </mat-form-field>
   }
 

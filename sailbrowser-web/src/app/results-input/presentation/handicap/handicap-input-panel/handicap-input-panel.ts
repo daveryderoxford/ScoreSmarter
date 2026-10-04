@@ -30,6 +30,7 @@ import { Race } from 'app/race-calender';
 import { ResolvedRaceCompetitor } from 'app/results-input';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { requiresTime } from 'app/scoring/model/result-code-scoring';
+import { NumberField } from 'app/shared/components/number-field/number-field';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { formatEntrySearchLabel, entrySearchHaystack } from 'app/boats/model/boat-display';
@@ -64,7 +65,8 @@ import { MatDividerModule } from '@angular/material/divider';
     ResultCodeSelect,
     DurationPipe,
     CompetitorEditMenuComponent,
-    MatDividerModule
+    MatDividerModule,
+    NumberField,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
