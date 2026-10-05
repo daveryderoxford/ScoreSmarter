@@ -5,6 +5,16 @@ import {
   DEFAULT_SCAN_COST_OPTIONS,
 } from "./api-cost-estimation.js";
 
+test("calculateRealizedApiCost applies gemini-3.8-flash pricing with UK billing defaults", () => {
+  const cost = calculateRealizedApiCost(
+    "gemini-3.8-flash",
+    1_000_000,
+    1_000_000,
+    DEFAULT_SCAN_COST_OPTIONS,
+  );
+  assert.equal(cost, (1.5 + 7.5) * 0.76 * 1.20);
+});
+
 test("calculateRealizedApiCost applies gemini-3.5-flash pricing with UK billing defaults", () => {
   const cost = calculateRealizedApiCost(
     "gemini-3.5-flash",
