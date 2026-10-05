@@ -14,7 +14,7 @@ import type { TimeInputFormat } from './time-input-segments';
   template: `
     <mat-form-field style="width: 280px">
       <mat-label>{{ label() }}</mat-label>
-      <app-time-input [formControl]="control" [format]="format()" />
+      <input matInput [formControl]="control" [appTimeInput]="format()" />
     </mat-form-field>
     <p>Seconds: {{ control.value ?? '(empty)' }}</p>
   `,
@@ -49,7 +49,7 @@ const meta: Meta<TimeInputDemoHost> = {
     docs: {
       description: {
         component:
-          'Chrome-style single-field time entry. Formats: hms (HH:mm:ss clock) and mss (mmm:ss elapsed minutes).',
+          'Directive on a native matInput. Formats: hms (HH:mm:ss clock, numeric keypad) and mss (mmm:ss elapsed, decimal keypad with minus). Invalid characters are filtered.',
       },
     },
   },
@@ -152,5 +152,14 @@ export const RejectLetters: Story = {
     const input = within(canvasElement).getByRole('textbox') as HTMLInputElement;
     await userEvent.type(input, 'abc');
     expect(input.value).toBe('');
+  },
+};
+
+export const MssRejectLetters: Story = {
+  ...MssEmpty,
+  play: async ({ canvasElement }) => {
+    const input = within(canvasElement).getByRole('textbox') as HTMLInputElement;
+    await userEvent.type(input, '12ab3');
+    expect(input.value).toBe('1:23');
   },
 };
