@@ -174,7 +174,7 @@ describe('TimeSignToggle', () => {
   it('defaults to plus', () => {
     const { button, time } = renderToggle();
     expect(time.negative()).toBe(false);
-    expect(button.textContent?.trim()).toBe('+');
+    expect(button.textContent?.replace(/\s/g, '')).toBe('+');
     expect(button.getAttribute('aria-pressed')).toBe('false');
   });
 
@@ -185,12 +185,14 @@ describe('TimeSignToggle', () => {
     button.click();
     fixture.detectChanges();
     expect(time.negative()).toBe(true);
-    expect(button.textContent?.trim()).toBe('−');
+    expect(button.textContent?.replace(/\s/g, '')).toBe('−');
+    expect(button.getAttribute('aria-pressed')).toBe('true');
     expect(control.value).toBe(-90);
     button.click();
     fixture.detectChanges();
     expect(time.negative()).toBe(false);
-    expect(button.textContent?.trim()).toBe('+');
+    expect(button.textContent?.replace(/\s/g, '')).toBe('+');
+    expect(button.getAttribute('aria-pressed')).toBe('false');
     expect(control.value).toBe(90);
   });
 });

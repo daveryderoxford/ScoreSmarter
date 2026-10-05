@@ -1,7 +1,6 @@
 import { Component, input, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
-import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { applicationConfig, Meta, StoryObj } from '@storybook/angular';
@@ -12,7 +11,7 @@ import type { TimeInputFormat } from './time-input-segments';
 
 @Component({
   selector: 'time-input-demo',
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, TimeInput, TimeSignToggle],
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, TimeInput, TimeSignToggle],
   template: `
     <mat-form-field style="width: 280px">
       <mat-label>{{ label() }}</mat-label>
