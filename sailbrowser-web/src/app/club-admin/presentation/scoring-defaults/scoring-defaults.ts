@@ -9,6 +9,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatListModule } from '@angular/material/list';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatIconModule } from '@angular/material/icon';
+import { NumberField } from 'app/shared/components/number-field/number-field';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { ClubStore } from 'app/club-tenant/services/club-store';
@@ -41,6 +42,7 @@ const WORLD_SAILING_PRESET_DNC = {
     MatIconModule,
     Toolbar,
     PageLayout,
+    NumberField,
   ],
   templateUrl: './scoring-defaults.html',
   styleUrl: './scoring-defaults.scss',

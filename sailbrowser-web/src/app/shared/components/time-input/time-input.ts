@@ -1,19 +1,5 @@
-import {
-  Component,
-  computed,
-  DestroyRef,
-  ElementRef,
-  forwardRef,
-  inject,
-  input,
-  OnInit,
-  viewChild,
-} from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
-import { MatFormField, MatFormFieldControl } from '@angular/material/form-field';
-import { FormFieldBase } from 'app/shared/components/form-field.base';
-import { merge, of } from 'rxjs';
+import { computed, Directive, effect, ElementRef, forwardRef, inject, input, signal, untracked } from '@angular/core';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import {
   adjustSegment,
   applyBackspace,
@@ -25,240 +11,215 @@ import {
   normalizePastedText,
   placeholderForFormat,
   secondsToDisplay,
-  toggleMssSign,
   type TimeInputFormat,
 } from './time-input-segments';
 
-/**
- * Single-field, Chrome-style time entry that plugs into `<mat-form-field>` as a custom
- * `MatFormFieldControl` (see the Angular Material custom form field control guide).
- *
- * It is date-agnostic: the value is a plain `number` of seconds, so consumers compose the
- * `Date` themselves (e.g. via `shared/utils/time-utils`). Two layouts are supported via
- * `format`: `hms` (HH:mm:ss clock, seconds-of-day) and `mss` (mmm:ss elapsed, total seconds).
- */
-@Component({
-  selector: 'app-time-input',
-  standalone: true,
-  imports: [ReactiveFormsModule],
-  providers: [
-    { provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => TimeInput), multi: true },
-    { provide: MatFormFieldControl, useExisting: forwardRef(() => TimeInput) },
-  ],
-  template: `
-    <input
-      #nativeInput
-      type="text"
-      [attr.inputmode]="inputMode()"
-      [attr.pattern]="inputPattern()"
-      autocomplete="off"
-      [formControl]="textControl"
-      [placeholder]="shouldLabelFloat ? placeholderText() : ''"
-      [attr.aria-labelledby]="parentFormField?.getLabelId()"
-      (keydown)="onKeydown($event)"
-      (input)="onInput()"
-    />
-  `,
-  styles: [
-    `
-      :host {
-        display: block;
-      }
+export function coerceTimeInputFormat(
+  value: TimeInputFormat | '' | boolean | null | undefined,
+): TimeInputFormat {
+  return value === 'mss' ? 'mss' : 'hms';
+}
 
-      input {
-        width: 100%;
-        border: none;
-        outline: none;
-        padding: 0;
-        background: none;
-        color: currentColor;
-        font: inherit;
-        letter-spacing: inherit;
-      }
-    `,
-  ],
+/**
+ * Attribute mask on a native `<input>` (typically with `matInput`). Keeps Material
+ * owning the form-field chrome; this directive is only the value accessor plus
+ * keystroke/paste filter. The bound FormControl is seconds (`hms` seconds-of-day,
+ * `mss` elapsed seconds, signed).
+ *
+ * Elapsed (`mss`) values can be negative (watch started after the gun). The sign is
+ * flipped with {@link toggleSign} (a `+`/`−` prefix) rather than a keyboard minus,
+ * because iOS decimal pads have no `-`. Default sign is plus.
+ *
+ * ```html
+ * <input matInput appTimeInput formControlName="start">
+ * <input #t="appTimeInput" matInput appTimeInput="mss" formControlName="elapsed">
+ * <app-time-sign-toggle matPrefix [timeInput]="t" />
+ * ```
+ */
+@Directive({
+  selector: 'input[appTimeInput]',
+  exportAs: 'appTimeInput',
+  providers: [{ provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => TimeInput), multi: true }],
   host: {
-    '[class.floating]': 'shouldLabelFloat',
-    '[id]': 'id',
-    '(focusin)': 'onFocusIn()',
-    '(focusout)': 'onFocusOut($event)',
+    type: 'text',
+    autocomplete: 'off',
+    '[attr.inputmode]': 'inputMode()',
+    '[attr.pattern]': 'pattern()',
+    '[attr.placeholder]': 'placeholderText()',
+    '(keydown)': 'onKeydown($event)',
+    '(beforeinput)': 'onBeforeInput($event)',
+    '(paste)': 'onPaste($event)',
+    '(drop)': 'onDrop($event)',
+    '(input)': 'onInput()',
+    '(blur)': 'onBlur()',
+    '(compositionend)': 'onInput()',
   },
 })
-export class TimeInput extends FormFieldBase<number> implements OnInit {
-  private readonly destroyRef = inject(DestroyRef);
-  protected readonly parentFormField = inject(MatFormField, { optional: true });
+export class TimeInput implements ControlValueAccessor {
+  private readonly elementRef = inject<ElementRef<HTMLInputElement>>(ElementRef);
 
-  readonly format = input<TimeInputFormat>('hms');
+  readonly format = input(coerceTimeInputFormat(undefined), {
+    alias: 'appTimeInput',
+    transform: coerceTimeInputFormat,
+  });
 
-  // `mss` allows negative elapsed values, so the keyboard must expose '-'. `inputmode="numeric"`
-  // with a digit-only pattern hides the minus key on many mobile keyboards, so widen both for mss.
-  readonly inputMode = computed<'numeric' | 'text'>(() => (this.format() === 'mss' ? 'text' : 'numeric'));
-  readonly inputPattern = computed(() => (this.format() === 'mss' ? '-?[0-9]*' : '[0-9]*'));
+  /**
+   * Clock (`hms`) uses a digit pad. Elapsed (`mss`) uses `decimal` for digits; sign is
+   * the plus/minus control because mobile decimal pads often omit `-`.
+   */
+  readonly inputMode = computed<'numeric' | 'decimal'>(() =>
+    this.format() === 'mss' ? 'decimal' : 'numeric',
+  );
+  readonly pattern = computed(() => '[0-9]*');
 
-  readonly textControl = new FormControl<string>('', { nonNullable: true });
-
-  override controlType = 'app-time-input';
-
-  private readonly nativeInput = viewChild<ElementRef<HTMLInputElement>>('nativeInput');
+  /** True when elapsed time is negative. Empty/clock defaults to plus (`false`). */
+  readonly negative = signal(false);
+  readonly isDisabled = signal(false);
 
   private committedSeconds: number | null = null;
+  private onChange: (value: number | null) => void = () => {};
+  private onTouched: () => void = () => {};
 
   constructor() {
-    super(inject(ElementRef));
+    effect(() => {
+      const fmt = this.format();
+      untracked(() => this.renderCommitted(fmt));
+    });
   }
 
   placeholderText(): string {
-    return this.placeholder || placeholderForFormat(this.format());
+    return placeholderForFormat(this.format());
   }
 
-  /** Mirror the bound control's disabled state so the form field outline greys out. */
-  override get disabled(): boolean {
-    const c = this.ngControl?.control;
-    return c ? c.disabled : super.disabled;
-  }
-
-  override set disabled(value: boolean) {
-    this.applyDisabled(value);
-  }
-
-  override get empty(): boolean {
-    return !this.textControl.value;
-  }
-
-  override ngOnInit(): void {
-    super.ngOnInit();
-    const ctrl = this.ngControl?.control;
-    if (!ctrl) return;
-
-    // Parent FormControl.disable({ emitEvent: false }) does not notify the CVA; keep the inner
-    // input and MatFormFieldControl.disabled aligned with the real control state.
-    merge(of(undefined), ctrl.statusChanges)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        if (ctrl.disabled !== this.textControl.disabled) {
-          this.applyDisabled(ctrl.disabled);
-        }
-      });
-  }
-
-  /** Move focus to the time field (e.g. when tabbing in from a sibling control). */
   focusInput(): void {
-    if (this.disabled) return;
-    this.nativeInput()?.nativeElement.focus();
+    if (this.isDisabled()) return;
+    this.elementRef.nativeElement.focus();
   }
 
-  override onContainerClick(): void {
-    this.focusInput();
+  /** Flip elapsed sign. No-op for clock times. Empty fields stay empty (default plus until this is used). */
+  toggleSign(): void {
+    if (this.isDisabled() || this.format() !== 'mss') return;
+    this.negative.update(v => !v);
+    const unsigned = this.unsignedDisplay();
+    this.maybeCommitComplete(unsigned);
   }
 
-  onFocusIn(): void {
-    this.onFocus();
-  }
-
-  onFocusOut(event: FocusEvent): void {
-    if (!this._elementRef.nativeElement.contains(event.relatedTarget as Node | null)) {
-      this.commitOnBlur();
-    }
-  }
-
-  override writeValue(value: number | null): void {
-    super.writeValue(value);
+  writeValue(value: number | null): void {
     this.committedSeconds = value;
-    if (value == null) {
-      this.textControl.setValue('', { emitEvent: false });
-      return;
-    }
-    this.textControl.setValue(secondsToDisplay(value, this.format()), { emitEvent: false });
+    this.renderCommitted(this.format());
+  }
+
+  registerOnChange(fn: (value: number | null) => void): void {
+    this.onChange = fn;
+  }
+
+  registerOnTouched(fn: () => void): void {
+    this.onTouched = fn;
+  }
+
+  setDisabledState(isDisabled: boolean): void {
+    this.isDisabled.set(isDisabled);
+    this.elementRef.nativeElement.disabled = isDisabled;
   }
 
   onKeydown(event: KeyboardEvent): void {
-    if (this.disabled) return;
+    if (this.isDisabled() || event.isComposing) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
 
-    const input = this.nativeInput()?.nativeElement;
-    if (!input) return;
-
+    const input = this.elementRef.nativeElement;
     const { selectionStart, selectionEnd } = input;
     if (selectionStart === null || selectionEnd === null) return;
 
-    const fmt = this.format();
-    let result: { text: string; selection: number } | null = null;
-
     if (event.key >= '0' && event.key <= '9') {
-      result = applyDigitInput(this.textControl.value, selectionStart, selectionEnd, event.key, fmt);
-    } else if (event.key === 'Backspace') {
       event.preventDefault();
-      result = applyBackspace(this.textControl.value, selectionStart, selectionEnd, fmt);
-    } else if (event.key === 'Delete') {
-      event.preventDefault();
-      result = applyDelete(this.textControl.value, selectionStart, selectionEnd, fmt);
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      result = adjustSegment(this.textControl.value, selectionStart, 1, fmt);
-    } else if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      result = adjustSegment(this.textControl.value, selectionStart, -1, fmt);
-    } else if (fmt === 'mss' && event.key === '-') {
-      // Elapsed times can be negative (stopwatch started after the gun); '-' toggles sign.
-      event.preventDefault();
-      result = toggleMssSign(this.textControl.value, selectionStart);
-    } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      // Ignore any other printable character (letters, separators, symbols) rather than
-      // letting it land in the field and invalidate the time.
-      event.preventDefault();
+      this.applyDigit(event.key, selectionStart, selectionEnd);
       return;
-    } else {
-      // Allow navigation/editing shortcuts: Tab, Home, End, ArrowLeft/Right, Ctrl/Cmd+A/C/V, etc.
+    }
+    if (event.key === 'Backspace') {
+      event.preventDefault();
+      this.applyEdit(applyBackspace(input.value, selectionStart, selectionEnd, this.format()));
+      return;
+    }
+    if (event.key === 'Delete') {
+      event.preventDefault();
+      this.applyEdit(applyDelete(input.value, selectionStart, selectionEnd, this.format()));
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.applyEdit(adjustSegment(input.value, selectionStart, 1, this.format()));
+      return;
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.applyEdit(adjustSegment(input.value, selectionStart, -1, this.format()));
+      return;
+    }
+    if (this.format() === 'mss' && event.key === '-') {
+      event.preventDefault();
+      this.toggleSign();
+      return;
+    }
+    if (event.key.length === 1) {
+      event.preventDefault();
+    }
+  }
+
+  onBeforeInput(event: InputEvent): void {
+    if (this.isDisabled() || event.isComposing) return;
+
+    const type = event.inputType;
+    if (
+      type.startsWith('delete') ||
+      type === 'historyUndo' ||
+      type === 'historyRedo' ||
+      type.startsWith('insertComposition') ||
+      type === 'insertFromPaste' ||
+      type === 'insertFromDrop'
+    ) {
       return;
     }
 
-    if (!result) return;
+    const data = event.data ?? '';
+    const input = this.elementRef.nativeElement;
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+
+    if (/^\d$/.test(data)) {
+      event.preventDefault();
+      this.applyDigit(data, start, end);
+      return;
+    }
+    if (this.format() === 'mss' && data === '-') {
+      event.preventDefault();
+      this.toggleSign();
+      return;
+    }
+
     event.preventDefault();
-    this.textControl.setValue(result.text, { emitEvent: false });
-    this.queueCaret(result.selection);
-
-    if (isCompleteDisplay(result.text, fmt)) {
-      const parsed = displayToSeconds(result.text, fmt);
-      if (parsed != null) {
-        this.commitValue(parsed, result.text);
-      }
-    }
   }
 
-  /**
-   * Handle text changes that bypass {@link onKeydown}: paste (keyboard or context menu), mobile
-   * autofill/autocorrect, IME composition, and drag-and-drop. The keydown path `preventDefault`s
-   * physical key edits, so this fires only for these out-of-band changes. We re-mask the raw text
-   * and commit immediately when it forms a complete value, keeping the outer FormControl in sync
-   * (e.g. so `Validators.required` clears) rather than waiting for blur.
-   */
+  onPaste(event: ClipboardEvent): void {
+    event.preventDefault();
+    this.applyPasted(event.clipboardData?.getData('text') ?? '');
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.applyPasted(event.dataTransfer?.getData('text') ?? '');
+  }
+
   onInput(): void {
-    if (this.disabled) return;
-
-    const input = this.nativeInput()?.nativeElement;
-    if (!input) return;
-
-    const fmt = this.format();
-    const normalized = normalizePastedText(input.value, fmt);
-
-    // Re-mask the field in place; setting `value` directly does not re-trigger `input`.
-    if (normalized !== input.value) {
-      input.value = normalized;
-    }
-    this.textControl.setValue(normalized, { emitEvent: false });
-
-    if (isCompleteDisplay(normalized, fmt)) {
-      const parsed = displayToSeconds(normalized, fmt);
-      if (parsed != null) {
-        this.commitValue(parsed, normalized);
-      }
-    }
+    if (this.isDisabled()) return;
+    this.remaskFromNative();
   }
 
-  private commitOnBlur(): void {
-    this.onBlur();
+  onBlur(): void {
+    this.onTouched();
     const fmt = this.format();
-    const raw = this.textControl.value.trim();
+    const raw = this.unsignedDisplay().trim();
     if (!raw) {
+      this.negative.set(false);
       this.commitValue(null, '');
       return;
     }
@@ -266,38 +227,104 @@ export class TimeInput extends FormFieldBase<number> implements OnInit {
     const normalized = normalizeOnBlur(raw, fmt);
     const parsed = displayToSeconds(normalized, fmt);
     if (parsed != null) {
-      this.textControl.setValue(secondsToDisplay(parsed, fmt), { emitEvent: false });
-      this.commitValue(parsed, this.textControl.value);
+      const signed = this.signedSeconds(parsed);
+      this.commitValue(signed, signed == null ? '' : this.unsignedFromSeconds(signed));
     } else if (this.committedSeconds != null) {
-      this.textControl.setValue(secondsToDisplay(this.committedSeconds, fmt), { emitEvent: false });
+      this.renderCommitted(fmt);
     } else {
-      this.textControl.setValue('', { emitEvent: false });
+      this.negative.set(false);
+      this.commitValue(null, '');
     }
   }
 
-  private commitValue(seconds: number | null, display: string): void {
+  private applyDigit(digit: string, start: number, end: number): void {
+    const result = applyDigitInput(this.elementRef.nativeElement.value, start, end, digit, this.format());
+    if (result) this.applyEdit(result);
+  }
+
+  private applyPasted(raw: string): void {
+    const fmt = this.format();
+    if (fmt === 'mss') {
+      this.negative.set(raw.trim().startsWith('-'));
+    }
+    const normalized = normalizePastedText(raw, fmt);
+    const unsigned = this.stripLeadingMinus(normalized);
+    this.applyEdit({ text: unsigned, selection: unsigned.length });
+  }
+
+  private remaskFromNative(): void {
+    const input = this.elementRef.nativeElement;
+    const fmt = this.format();
+    let normalized = normalizePastedText(input.value, fmt);
+    if (fmt === 'mss' && normalized.startsWith('-')) {
+      this.negative.set(true);
+      normalized = normalized.slice(1);
+    }
+    if (normalized !== input.value) {
+      input.value = normalized;
+    }
+    this.maybeCommitComplete(normalized);
+  }
+
+  private applyEdit(result: { text: string; selection: number }): void {
+    const unsigned = this.stripLeadingMinus(result.text);
+    const input = this.elementRef.nativeElement;
+    input.value = unsigned;
+    this.queueCaret(Math.min(result.selection, unsigned.length));
+    this.maybeCommitComplete(unsigned);
+  }
+
+  private maybeCommitComplete(display: string): void {
+    const fmt = this.format();
+    const unsigned = this.stripLeadingMinus(display);
+    if (!isCompleteDisplay(unsigned, fmt)) return;
+    const parsed = displayToSeconds(unsigned, fmt);
+    if (parsed != null) {
+      this.commitValue(this.signedSeconds(parsed), unsigned, false);
+    }
+  }
+
+  private commitValue(seconds: number | null, display: string, writeDisplay = true): void {
     this.committedSeconds = seconds;
-    this.value = seconds;
-    this._onChange(seconds);
-    if (display !== this.textControl.value) {
-      this.textControl.setValue(display, { emitEvent: false });
+    if (this.format() === 'mss') {
+      this.negative.set(seconds != null && seconds < 0);
     }
-    this.stateChanges.next();
+    if (writeDisplay) {
+      this.elementRef.nativeElement.value = display;
+    }
+    this.onChange(seconds);
   }
 
-  private applyDisabled(disabled: boolean): void {
-    super.disabled = disabled;
-    if (disabled) {
-      this.textControl.disable({ emitEvent: false });
-    } else {
-      this.textControl.enable({ emitEvent: false });
+  private renderCommitted(fmt: TimeInputFormat): void {
+    const input = this.elementRef.nativeElement;
+    if (this.committedSeconds == null) {
+      this.negative.set(false);
+      input.value = '';
+      return;
     }
-    this.stateChanges.next();
+    this.negative.set(fmt === 'mss' && this.committedSeconds < 0);
+    input.value = this.unsignedFromSeconds(this.committedSeconds);
+  }
+
+  private signedSeconds(magnitude: number): number {
+    return this.format() === 'mss' && this.negative() ? -Math.abs(magnitude) : magnitude;
+  }
+
+  private unsignedFromSeconds(seconds: number): string {
+    const fmt = this.format();
+    return secondsToDisplay(fmt === 'mss' ? Math.abs(seconds) : seconds, fmt);
+  }
+
+  private unsignedDisplay(): string {
+    return this.stripLeadingMinus(this.elementRef.nativeElement.value);
+  }
+
+  private stripLeadingMinus(text: string): string {
+    return text.startsWith('-') ? text.slice(1) : text;
   }
 
   private queueCaret(position: number): void {
-    const input = this.nativeInput()?.nativeElement;
-    if (!input) return;
+    const input = this.elementRef.nativeElement;
     queueMicrotask(() => input.setSelectionRange(position, position));
   }
 }

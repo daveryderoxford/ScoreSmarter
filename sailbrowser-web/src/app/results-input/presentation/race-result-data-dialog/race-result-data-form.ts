@@ -25,10 +25,12 @@ import { RaceResultDraft } from 'app/results-input/model/race-result-draft';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { RaceResultDataCommand } from '../../services/race-competitor-edit.service';
+import { NumberField } from 'app/shared/components/number-field/number-field';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { ResultCodeSelect } from '../result-code-select';
 import { RaceTimeInput } from '../handicap/race-time-input';
 import { TimeInput } from 'app/shared/components/time-input/time-input';
+import { TimeSignToggle } from 'app/shared/components/time-input/time-sign-toggle';
 import { dateAtSecondsOfDay, secondsSinceStartOfDay } from 'app/shared/utils/time-utils';
 import { startWith } from 'rxjs';
 
@@ -40,9 +42,11 @@ import { startWith } from 'rxjs';
     MatFormFieldModule,
     MatInputModule,
     SubmitButton,
+    NumberField,
     ResultCodeSelect,
     RaceTimeInput,
     TimeInput,
+    TimeSignToggle,
   ],
   templateUrl: './race-result-data-form.html',
   styleUrls: ['../_competitor-edit-form.scss'],

@@ -10,6 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { ScanSelectedRace } from '../select-race/race-selection.store';
 import { ScanRunStore } from '../run-scan/scan-run.store';
 import { AuthService } from 'app/auth';
+import { NumberField } from 'app/shared/components/number-field/number-field';
 
 @Component({
   selector: 'app-setup-step',
@@ -22,6 +23,7 @@ import { AuthService } from 'app/auth';
     MatOptionModule,
     MatRadioModule,
     MatSelectModule,
+    NumberField,
   ],
   templateUrl: './setup-step.html',
   styleUrl: './setup-step.scss',

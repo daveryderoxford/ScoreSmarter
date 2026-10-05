@@ -12,6 +12,8 @@ import { Race } from 'app/race-calender';
 import { ClubStore } from 'app/club-tenant';
 import type { RaceStart } from 'app/race-calender/model/race-start';
 import { getFleetName } from 'app/club-tenant/model/fleet';
+import { NumberField } from 'app/shared/components/number-field/number-field';
+import { TimeSignToggle } from 'app/shared/components/time-input/time-sign-toggle';
 import { TimeInput } from 'app/shared/components/time-input/time-input';
 import { dateAtSecondsOfDay, secondsSinceStartOfDay } from 'app/shared/utils/time-utils';
 
@@ -34,7 +36,7 @@ export interface RaceStartTimeResult {
 
         <mat-form-field>
           <mat-label>Number of starts</mat-label>
-          <input matInput type="number" min="1" formControlName="startCount">
+          <input matInput appNumberField formControlName="startCount">
         </mat-form-field>
 
         <div formArrayName="starts" class="starts-list">
@@ -42,9 +44,12 @@ export interface RaceStartTimeResult {
             <div [formGroupName]="i" class="start-row">
               <mat-form-field>
                 <mat-label>{{ form.value.mode === 'elapsed' ? 'Stopwatch reading (mmm:ss)' : 'Start Time (HH:mm:ss)' }}</mat-label>
-                <app-time-input formControlName="time" [format]="form.value.mode === 'elapsed' ? 'mss' : 'hms'" />
+                <input #startTime="appTimeInput" matInput [appTimeInput]="form.value.mode === 'elapsed' ? 'mss' : 'hms'" formControlName="time">
                 @if (form.value.mode === 'elapsed') {
-                  <mat-hint>Reading at start time. Use '-' if the watch was started after the gun.</mat-hint>
+                  <app-time-sign-toggle matPrefix [timeInput]="startTime" />
+                }
+                @if (form.value.mode === 'elapsed') {
+                  <mat-hint>Reading at start time. Use +/− if the watch was started after the gun.</mat-hint>
                 }
               </mat-form-field>
               <mat-form-field>
@@ -78,7 +83,7 @@ export interface RaceStartTimeResult {
     .start-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .error { color: var(--mat-sys-error); font-size: 12px; margin-top: -8px; }
   `],
-  imports: [MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatRadioModule, MatSelectModule, ReactiveFormsModule, TimeInput],
+  imports: [MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatRadioModule, MatSelectModule, ReactiveFormsModule, TimeInput, TimeSignToggle, NumberField],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RaceStartTimeDialog {

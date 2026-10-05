@@ -6,6 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NumberField } from 'app/shared/components/number-field/number-field';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { Fleet } from 'app/club-tenant/model/fleet';
 import { ClubStore } from 'app/club-tenant';
@@ -45,7 +46,7 @@ import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-sch
     }
   `,
   imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatButtonModule, MatIconModule, SubmitButton],
+    MatSelectModule, MatButtonModule, MatIconModule, SubmitButton, NumberField],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FleetForm {

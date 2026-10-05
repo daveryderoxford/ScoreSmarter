@@ -13,6 +13,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { formatDiscardScheduleSummary, validateDiscardRaceSequence } from 'app/scoring/model/discard-profile';
+import { NumberField } from 'app/shared/components/number-field/number-field';
 
 /** `discards` are milestone race numbers; returned value is the same shape (triggers). */
 export interface DiscardProfileDialogData {
@@ -42,6 +43,7 @@ function ordinalEn(n: number): string {
     MatIconModule,
     MatDividerModule,
     MatTableModule,
+    NumberField,
   ],
   template: `
     <h2 mat-dialog-title>{{ data.title }}</h2>
@@ -67,10 +69,7 @@ function ordinalEn(n: number): string {
             <th mat-header-cell *matHeaderCellDef>After race number</th>
             <td mat-cell *matCellDef="let ri">
               <input
-                type="number"
-                step="1"
-                [attr.min]="minAfterRaceAt(ri)"
-                inputmode="numeric"
+                appNumberField
                 class="bp-input bp-input-num"
                 [formControl]="triggerControlAt(ri)"
                 [attr.aria-label]="'After race number for ' + ordinalAt(ri) + ' discard'"
