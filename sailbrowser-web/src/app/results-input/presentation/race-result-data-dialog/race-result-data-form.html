@@ -4,9 +4,10 @@
   @if (isHandicapRace()) {
     <mat-form-field class="field-full">
       <mat-label>{{ timeInputMode() === 'elapsed' ? 'Stopwatch reading (mmm:ss)' : 'Start time' }}</mat-label>
-      <app-time-input
+      <input
+        matInput
+        [appTimeInput]="timeInputMode() === 'elapsed' ? 'mss' : 'hms'"
         formControlName="startTimeInput"
-        [format]="timeInputMode() === 'elapsed' ? 'mss' : 'hms'"
       />
       <mat-hint>
         Leave blank to use fleet start time.{{ timeInputMode() === 'elapsed' ? " Use '-' if the watch was started after the gun." : '' }}

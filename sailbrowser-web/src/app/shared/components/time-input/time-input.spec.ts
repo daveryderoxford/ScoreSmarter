@@ -7,12 +7,7 @@ import { TimeInput } from './time-input';
 @Component({
   standalone: true,
   imports: [ReactiveFormsModule, TimeInput],
-  template: `
-    <app-time-input
-      [formControl]="control"
-      [format]="format()"
-    />
-  `,
+  template: `<input [formControl]="control" [appTimeInput]="format()" />`,
 })
 class HostComponent implements OnInit {
   readonly format = input<'hms' | 'mss'>('hms');
@@ -31,46 +26,67 @@ describe('TimeInput', () => {
     TestBed.configureTestingModule({ imports: [HostComponent] });
   });
 
-  it('renders numeric inputmode', () => {
+  function render(format: 'hms' | 'mss' = 'hms') {
     const fixture = TestBed.createComponent(HostComponent);
+    fixture.componentRef.setInput('format', format);
     fixture.detectChanges();
     const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+    return { fixture, input, control: fixture.componentInstance.control };
+  }
+
+  it('renders numeric inputmode for clock times', () => {
+    const { input } = render('hms');
     expect(input.getAttribute('inputmode')).toBe('numeric');
     expect(input.getAttribute('type')).toBe('text');
+    expect(input.getAttribute('pattern')).toBe('[0-9]*');
+  });
+
+  it('renders a decimal keypad for elapsed times so minus is available without a full keyboard', () => {
+    const { input } = render('mss');
+    expect(input.getAttribute('inputmode')).toBe('decimal');
+    expect(input.getAttribute('pattern')).toBe('-?[0-9]*');
   });
 
   it('writeValue displays hms', () => {
-    const fixture = TestBed.createComponent(HostComponent);
+    const { fixture, input } = render();
     fixture.componentInstance.control.setValue(14 * 3600 + 32 * 60 + 5);
     fixture.detectChanges();
-    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
     expect(input.value).toBe('14:32:05');
   });
 
   it('writeValue displays mss', () => {
-    const fixture = TestBed.createComponent(HostComponent);
-    fixture.componentRef.setInput('format', 'mss');
+    const { fixture, input } = render('mss');
     fixture.componentInstance.control.setValue(123 * 60 + 45);
     fixture.detectChanges();
-    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
     expect(input.value).toBe('123:45');
   });
 
   it('writeValue displays negative mss with a leading minus', () => {
-    const fixture = TestBed.createComponent(HostComponent);
-    fixture.componentRef.setInput('format', 'mss');
+    const { fixture, input } = render('mss');
     fixture.componentInstance.control.setValue(-90);
     fixture.detectChanges();
-    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
     expect(input.value).toBe('-1:30');
   });
 
-  it('disables inner input when parent control disabled', () => {
-    const fixture = TestBed.createComponent(HostComponent);
-    fixture.detectChanges();
+  it('disables the host input when the parent control is disabled', () => {
+    const { fixture, input } = render();
     fixture.componentInstance.control.disable();
     fixture.detectChanges();
-    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
     expect(input.disabled).toBe(true);
+  });
+
+  it('blocks letters on keydown', () => {
+    const { input } = render();
+    const event = new KeyboardEvent('keydown', { key: 'a', bubbles: true, cancelable: true });
+    expect(input.dispatchEvent(event)).toBe(false);
+    expect(input.value).toBe('');
+  });
+
+  it('blocks letters on elapsed fields as well', () => {
+    const { input } = render('mss');
+    expect(input.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', bubbles: true, cancelable: true }))).toBe(
+      false,
+    );
+    expect(input.value).toBe('');
   });
 });

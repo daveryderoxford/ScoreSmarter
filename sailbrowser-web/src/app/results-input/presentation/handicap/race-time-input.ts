@@ -9,7 +9,7 @@ import { merge, of } from 'rxjs';
 
 /**
  * Outer `MatFormFieldControl` that validates handicap finish/start times against a reference
- * time while delegating entry to the date-agnostic `app-time-input` (which emits seconds).
+ * time while delegating entry to `appTimeInput` (which emits seconds).
  *
  * It still exposes a `Date` to consumers. Seconds are composed into a `Date` relative to the
  * relevant day: `baseTime` for clock (`tod`) entry, `scheduledStart` for elapsed entry.
@@ -35,10 +35,20 @@ import { merge, of } from 'rxjs';
     }
   ],
   template: `
-    <app-time-input #inner [formControl]="inputControl" [format]="innerFormat()" />
+    <input [formControl]="inputControl" [appTimeInput]="innerFormat()" />
   `,
   styles: [`
     :host { display: block; }
+    input {
+      width: 100%;
+      border: none;
+      outline: none;
+      padding: 0;
+      background: none;
+      color: currentColor;
+      font: inherit;
+      letter-spacing: inherit;
+    }
   `],
   host: {
     '[class.floating]': 'shouldLabelFloat',
@@ -60,7 +70,7 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
   readonly innerFormat = computed(() => (this.mode() === 'elapsed' ? 'mss' : 'hms'));
   inputControl = new FormControl<number | null>(null);
 
-  private readonly inner = viewChild<TimeInput>('inner');
+  private readonly inner = viewChild(TimeInput);
 
   /** Move focus to the time field (e.g. Tab from competitor search). */
   focusInput(): void {

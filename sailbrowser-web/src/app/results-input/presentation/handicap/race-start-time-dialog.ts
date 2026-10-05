@@ -43,7 +43,7 @@ export interface RaceStartTimeResult {
             <div [formGroupName]="i" class="start-row">
               <mat-form-field>
                 <mat-label>{{ form.value.mode === 'elapsed' ? 'Stopwatch reading (mmm:ss)' : 'Start Time (HH:mm:ss)' }}</mat-label>
-                <app-time-input formControlName="time" [format]="form.value.mode === 'elapsed' ? 'mss' : 'hms'" />
+                <input matInput [appTimeInput]="form.value.mode === 'elapsed' ? 'mss' : 'hms'" formControlName="time">
                 @if (form.value.mode === 'elapsed') {
                   <mat-hint>Reading at start time. Use '-' if the watch was started after the gun.</mat-hint>
                 }
