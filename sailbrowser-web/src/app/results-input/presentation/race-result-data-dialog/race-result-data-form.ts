@@ -30,6 +30,7 @@ import { SubmitButton } from 'app/shared/components/submit-button';
 import { ResultCodeSelect } from '../result-code-select';
 import { RaceTimeInput } from '../handicap/race-time-input';
 import { TimeInput } from 'app/shared/components/time-input/time-input';
+import { TimeSignToggle } from 'app/shared/components/time-input/time-sign-toggle';
 import { dateAtSecondsOfDay, secondsSinceStartOfDay } from 'app/shared/utils/time-utils';
 import { startWith } from 'rxjs';
 
@@ -45,6 +46,7 @@ import { startWith } from 'rxjs';
     ResultCodeSelect,
     RaceTimeInput,
     TimeInput,
+    TimeSignToggle,
   ],
   templateUrl: './race-result-data-form.html',
   styleUrls: ['../_competitor-edit-form.scss'],

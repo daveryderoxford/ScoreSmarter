@@ -5,12 +5,16 @@
     <mat-form-field class="field-full">
       <mat-label>{{ timeInputMode() === 'elapsed' ? 'Stopwatch reading (mmm:ss)' : 'Start time' }}</mat-label>
       <input
+        #startTime="appTimeInput"
         matInput
         [appTimeInput]="timeInputMode() === 'elapsed' ? 'mss' : 'hms'"
         formControlName="startTimeInput"
       />
+      @if (timeInputMode() === 'elapsed') {
+        <app-time-sign-toggle matPrefix [timeInput]="startTime" />
+      }
       <mat-hint>
-        Leave blank to use fleet start time.{{ timeInputMode() === 'elapsed' ? " Use '-' if the watch was started after the gun." : '' }}
+        Leave blank to use fleet start time.{{ timeInputMode() === 'elapsed' ? ' Use +/− if the watch was started after the gun.' : '' }}
       </mat-hint>
     </mat-form-field>
 

@@ -1,22 +1,27 @@
 import { Component, input, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
+import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { applicationConfig, Meta, StoryObj } from '@storybook/angular';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { TimeInput } from './time-input';
+import { TimeSignToggle } from './time-sign-toggle';
 import type { TimeInputFormat } from './time-input-segments';
 
 @Component({
   selector: 'time-input-demo',
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, TimeInput],
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, TimeInput, TimeSignToggle],
   template: `
     <mat-form-field style="width: 280px">
       <mat-label>{{ label() }}</mat-label>
-      <input matInput [formControl]="control" [appTimeInput]="format()" />
+      <input #t="appTimeInput" matInput [formControl]="control" [appTimeInput]="format()" />
+      @if (format() === 'mss') {
+        <app-time-sign-toggle matPrefix [timeInput]="t" />
+      }
     </mat-form-field>
-    <p>Seconds: {{ control.value ?? '(empty)' }}</p>
+    <p>Seconds: {{ control.value ?? '(empty)' }} sign={{ t.negative() ? '−' : '+' }}</p>
   `,
 })
 class TimeInputDemoHost implements OnInit {
@@ -49,7 +54,7 @@ const meta: Meta<TimeInputDemoHost> = {
     docs: {
       description: {
         component:
-          'Directive on a native matInput. Formats: hms (HH:mm:ss clock, numeric keypad) and mss (mmm:ss elapsed, decimal keypad with minus). Invalid characters are filtered.',
+          'Directive on a native matInput. Clock (hms) uses a numeric keypad. Elapsed (mss) uses a decimal keypad plus a +/− prefix (default plus) for a negative stopwatch start.',
       },
     },
   },
@@ -99,6 +104,28 @@ export const MobileViewport: Story = {
   ...HmsEmpty,
   parameters: {
     viewport: { defaultViewport: 'iphone14' },
+  },
+};
+
+export const MssNegativeStart: Story = {
+  args: {
+    label: 'Elapsed start',
+    format: 'mss',
+    initial: -90,
+  },
+};
+
+export const MssToggleSign: Story = {
+  ...MssEmpty,
+  play: async ({ canvasElement }) => {
+    const root = within(canvasElement);
+    const input = root.getByRole('textbox') as HTMLInputElement;
+    await userEvent.type(input, '130');
+    await waitFor(() => expect(input.value).toBe('1:30'));
+    await userEvent.click(root.getByRole('button', { name: /Positive elapsed/ }));
+    await waitFor(() => {
+      expect(root.getByText(/Seconds:/)).toHaveTextContent('-90');
+    });
   },
 };
 
