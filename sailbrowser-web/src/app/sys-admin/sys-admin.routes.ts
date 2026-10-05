@@ -3,6 +3,7 @@ import { SysAdminSwitchboard } from './sys-admin-switchboard';
 import { UserListComponent } from './user-list/user-list.component';
 import { SystemDataComponent as FirestoreImportExport } from './data-import-export';
 import { ScanHistoryViewer } from './scan-history/scan-history-viewer';
+import { ScanAiConfigPage } from './scan-ai/scan-ai-config';
 
 export const SYS_ADMIN_ROUTES: Routes = [
    { path: '', redirectTo: 'switchboard', pathMatch: 'full' },
@@ -25,5 +26,10 @@ export const SYS_ADMIN_ROUTES: Routes = [
       path: 'scans',
       component: ScanHistoryViewer,
       title: 'Scan History',
+   },
+   {
+      path: 'scan-ai',
+      component: ScanAiConfigPage,
+      title: 'Scan AI',
    },
 ];

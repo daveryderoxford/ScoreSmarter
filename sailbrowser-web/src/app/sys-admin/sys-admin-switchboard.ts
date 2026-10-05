@@ -22,6 +22,9 @@ import { PageLayout } from 'app/shared/layout/page-layout';
         <a matButton='tonal' routerLink="/sys-admin/scans">
             Scan history
         </a>
+        <a matButton='tonal' routerLink="/sys-admin/scan-ai">
+            Scan AI model
+        </a>
 
       </div>
       <span class="message">
