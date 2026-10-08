@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_LONG_DISCARDS,
+  DEFAULT_SHORT_DISCARDS,
+  defaultDiscardsForNewSeries,
   discardsForRaceIndex,
   formatDiscardScheduleSummary,
   generateDiscardArray,
@@ -7,6 +10,40 @@ import {
 } from './discard-profile';
 
 describe('discard-profile', () => {
+  describe('default schedules', () => {
+    it('uses one discard at each odd race from 3 through 101 for long series', () => {
+      expect(DEFAULT_LONG_DISCARDS[0]).toBe(3);
+      expect(DEFAULT_LONG_DISCARDS.at(-1)).toBe(101);
+      expect(DEFAULT_LONG_DISCARDS).toEqual(
+        Array.from({ length: 50 }, (_, index) => 3 + index * 2),
+      );
+    });
+
+    it('uses a single discard after 3 races for short series', () => {
+      expect(DEFAULT_SHORT_DISCARDS).toEqual([3]);
+    });
+
+    it('uses the club long or short profile when creating a series', () => {
+      const club = {
+        longSeriesDefaults: { discards: [4, 8] },
+        shortSeriesDefaults: { discards: [3, 6] },
+      };
+      expect(defaultDiscardsForNewSeries('long', club)).toEqual([4, 8]);
+      expect(defaultDiscardsForNewSeries('short', club)).toEqual([3, 6]);
+    });
+
+    it('keeps an explicit empty club profile', () => {
+      expect(defaultDiscardsForNewSeries('short', {
+        shortSeriesDefaults: { discards: [] },
+      })).toEqual([]);
+    });
+
+    it('falls back to app defaults when the club profile is missing', () => {
+      expect(defaultDiscardsForNewSeries('long', {})).toEqual([...DEFAULT_LONG_DISCARDS]);
+      expect(defaultDiscardsForNewSeries('short')).toEqual([3]);
+    });
+  });
+
   describe('generateDiscardArray', () => {
     it('counts triggers at or before each race', () => {
       expect(generateDiscardArray([4], 7)).toEqual([0, 0, 0, 1, 1, 1, 1]);

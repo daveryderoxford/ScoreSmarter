@@ -22,10 +22,11 @@ import { dataObjectConverter } from 'app/shared/firebase/firestore-helper';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 import { firestoreWrite } from 'app/shared/utils/with-timeout';
 import { DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES } from 'app/results-input/services/suspect-time-rules';
+import { DEFAULT_LONG_DISCARDS, DEFAULT_SHORT_DISCARDS } from 'app/scoring/model/discard-profile';
 
 
 const DEFAULT_LONG_SERIES_DEFAULTS: ScoringDefaults = {
-  discards: [3, 5, 7, 9, 11, 13, 15],
+  discards: [...DEFAULT_LONG_DISCARDS],
   dncCalculation: {
     basis: 'SeriesEntries',
     offset: 1,
@@ -34,7 +35,7 @@ const DEFAULT_LONG_SERIES_DEFAULTS: ScoringDefaults = {
 };
 
 const DEFAULT_SHORT_SERIES_DEFAULTS: ScoringDefaults = {
-  discards: [3, 5, 7, 9, 11, 13, 15],
+  discards: [...DEFAULT_SHORT_DISCARDS],
   dncCalculation: {
     basis: 'SeriesEntries',
     offset: 1,
