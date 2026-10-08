@@ -8,8 +8,14 @@ export type { ScannerContext, ScannerThinkingLevel, ScannerTimeFormat };
 
 export const LOG = "resultsSheetScanner";
 
-/** Default Gemini model when the client omits `scannerContext.model`. */
+/** Firestore doc holding the system default model and thinking level. */
+export const SCAN_AI_CONFIG_PATH = "system/private/settings/scanAi";
+
+/** Fallback when `system/private/settings/scanAi` is missing or invalid. */
 export const DEFAULT_SCAN_MODEL = "gemini-3.7-flash";
+
+/** Fallback thinking level when the system doc omits a valid level. */
+export const DEFAULT_SCAN_THINKING_LEVEL: ScannerThinkingLevel = "medium";
 
 /** Vertex location for all AI scan calls. */
 export const DEFAULT_SCAN_LOCATION = "global";
@@ -24,8 +30,12 @@ const SCAN_THINKING_LEVELS = new Set<ScannerThinkingLevel>([
 export interface ScanModelParams {
   model: string;
   location: string;
-  /** Set only when the client explicitly chose a thinking level. */
-  thinkingLevel?: ScannerThinkingLevel;
+  thinkingLevel: ScannerThinkingLevel;
+}
+
+export interface SystemScanAiConfig {
+  model: string;
+  thinkingLevel: ScannerThinkingLevel;
 }
 
 /** Normalise client-provided model id; empty/missing falls back to the default. */
@@ -39,7 +49,7 @@ export function normalizeScanModel(value: unknown): string {
 
 /**
  * Accept lowercase or UPPERCASE thinking levels from the client.
- * Empty/missing/invalid → undefined (model default).
+ * Empty/missing/invalid → undefined.
  */
 export function normalizeScanThinkingLevel(value: unknown): ScannerThinkingLevel | undefined {
   if (typeof value !== "string") return undefined;
@@ -50,15 +60,40 @@ export function normalizeScanThinkingLevel(value: unknown): ScannerThinkingLevel
   return undefined;
 }
 
-export function resolveScanModelParams(
-  model: unknown,
-  thinkingLevel?: unknown,
-): ScanModelParams {
-  const normalizedThinking = normalizeScanThinkingLevel(thinkingLevel);
+/** Map a Firestore snapshot (or missing doc) to usable scan defaults. */
+export function parseSystemScanAiConfig(data: unknown): SystemScanAiConfig {
+  const rec = data && typeof data === "object" ? (data as Record<string, unknown>) : {};
   return {
-    model: normalizeScanModel(model),
+    model: normalizeScanModel(rec["model"]),
+    thinkingLevel: normalizeScanThinkingLevel(rec["thinkingLevel"]) ?? DEFAULT_SCAN_THINKING_LEVEL,
+  };
+}
+
+/**
+ * System defaults apply to every scan. A sys-admin may override model/thinking
+ * on a single request; other callers' client values are ignored.
+ */
+export function resolveScanModelParams(
+  system: SystemScanAiConfig,
+  clientModel: unknown,
+  clientThinking: unknown,
+  allowClientOverride: boolean,
+): ScanModelParams {
+  if (allowClientOverride) {
+    const overrideModel =
+      typeof clientModel === "string" && clientModel.trim().length > 0
+        ? clientModel.trim()
+        : system.model;
+    return {
+      model: overrideModel,
+      location: DEFAULT_SCAN_LOCATION,
+      thinkingLevel: normalizeScanThinkingLevel(clientThinking) ?? system.thinkingLevel,
+    };
+  }
+  return {
+    model: system.model,
     location: DEFAULT_SCAN_LOCATION,
-    ...(normalizedThinking ? { thinkingLevel: normalizedThinking } : {}),
+    thinkingLevel: system.thinkingLevel,
   };
 }
 

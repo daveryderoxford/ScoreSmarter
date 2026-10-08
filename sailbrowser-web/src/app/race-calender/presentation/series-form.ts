@@ -22,8 +22,8 @@ import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-sch
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import {
-  DEFAULT_LONG_DISCARDS,
   DEFAULT_SHORT_DISCARDS,
+  defaultDiscardsForNewSeries,
   formatDiscardScheduleSummary,
   validateDiscardRaceSequence,
 } from 'app/scoring/model/discard-profile';
@@ -272,9 +272,13 @@ export class SeriesForm {
   save = output<Series>();
 
   /**
-   * Stored milestone race numbers (same as `Series.discards`). New series seeds short default triggers; editing loads from series (may be empty).
+   * Stored milestone race numbers (same as `Series.discards`).
+   * New series copies the club long/short profile; editing loads the series schedule.
    */
   readonly seriesDiscards = signal<number[]>([...DEFAULT_SHORT_DISCARDS]);
+
+  /** True after the user edits the schedule, so a later club refresh does not overwrite it. */
+  private discardScheduleEdited = false;
 
   discardScheduleBlurb = computed(() => formatDiscardScheduleSummary(this.seriesDiscards()));
 
@@ -331,12 +335,20 @@ export class SeriesForm {
       this.patchFromSeries(s);
     });
 
+    effect(() => {
+      const club = this.clubStore.club();
+      if (this.series() || this.discardScheduleEdited) return;
+      const algo = this.form.controls.scoringAlgorithm.value;
+      this.seriesDiscards.set(defaultDiscardsForNewSeries(algo, club));
+    });
+
     this.form
       .get('scoringAlgorithm')!
-      .valueChanges.pipe(startWith(this.form.get('scoringAlgorithm')!.value), takeUntilDestroyed())
+      .valueChanges.pipe(takeUntilDestroyed())
       .subscribe(algo => {
         if (this.series()) return;
-        this.applyClubDefaultDiscards(algo as SeriesScoringScheme);
+        this.discardScheduleEdited = false;
+        this.seriesDiscards.set(defaultDiscardsForNewSeries(algo as SeriesScoringScheme, this.clubStore.club()));
       });
 
     this.form.get('fleetId')?.valueChanges.subscribe(fleetId => {
@@ -348,13 +360,6 @@ export class SeriesForm {
         this.form.get('primaryHandicapScheme')?.setValue(available[0], { emitEvent: false });
       }
     });
-  }
-
-  /** Until a club admin switchboard persists per-club schedules, apps use fixed defaults from `discard-profile`. */
-  private applyClubDefaultDiscards(alg: SeriesScoringScheme) {
-    this.seriesDiscards.set([
-      ...(alg === 'long' ? DEFAULT_LONG_DISCARDS : DEFAULT_SHORT_DISCARDS),
-    ]);
   }
 
   private patchFromSeries(series: Series) {
@@ -397,6 +402,7 @@ export class SeriesForm {
       if (validateDiscardRaceSequence(next).length > 0) {
         return;
       }
+      this.discardScheduleEdited = true;
       this.seriesDiscards.set(next);
       this.form.markAsDirty();
     }

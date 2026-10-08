@@ -26,6 +26,18 @@ service cloud.firestore {
       return isSysAdmin() || (isAuthenticated() && getClubRole(clubId) == 'club-admin');
     }
 
+    function isValidScanAiConfig() {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['model', 'thinkingLevel', 'updatedAt', 'updatedBy'])
+        && data.model is string
+        && data.model.size() > 0
+        && data.model.size() < 128
+        && data.thinkingLevel in ['minimal', 'low', 'medium', 'high']
+        && data.updatedAt is timestamp
+        && data.updatedBy is string
+        && data.updatedBy == request.auth.uid;
+    }
+
     function isRO(clubId) {
       return isClubAdmin(clubId) || (isAuthenticated() && getClubRole(clubId) == 'race-officer');
     }
@@ -249,6 +261,14 @@ service cloud.firestore {
     match /system/private/scans/{scanId} {
       allow read: if isSysAdmin();
       allow write: if false;
+    }
+
+    // System scan AI defaults (model + thinking level). Read on every scan by
+    // the Admin SDK; clients (sys-admin UI) read/write this document.
+    match /system/private/settings/{docId} {
+      allow read: if isSysAdmin();
+      allow create, update: if isSysAdmin() && docId == 'scanAi' && isValidScanAiConfig();
+      allow delete: if false;
     }
   }
 }

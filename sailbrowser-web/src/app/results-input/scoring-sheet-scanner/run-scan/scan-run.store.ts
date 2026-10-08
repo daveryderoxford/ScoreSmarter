@@ -2,6 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
 import type { ScannerThinkingLevel, ScannerTimeFormat } from '@shared/scanner-context';
+import { AuthService } from 'app/auth';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { from, of } from 'rxjs';
 import { ScanSelectedRace } from '../select-race/race-selection.store';
@@ -9,6 +10,7 @@ import { SheetCaptureStore } from '../capture-image/sheet-capture.store';
 import { ScanPersistenceService } from '../shared/scan-persistence.service';
 import { ScanExecutionService } from './scan-execution.service';
 import { ScannerContext, ScanResponse } from '../model/scan-model';
+import { ScanAiConfigService } from '../model/scan-ai-config.service';
 import {
   promoteRowAlternative,
   type ScannedValueField,
@@ -25,6 +27,21 @@ function asThinkingLevel(value: string): ScannerThinkingLevel | undefined {
   return SCAN_THINKING_LEVELS.has(value as ScannerThinkingLevel)
     ? (value as ScannerThinkingLevel)
     : undefined;
+}
+
+/** Sys-admin per-scan override; other callers omit these so the function uses the system doc. */
+export function scannerContextAiFields(
+  isSysAdmin: boolean,
+  model: string,
+  thinkingLevel: string,
+): Pick<ScannerContext, 'model' | 'thinkingLevel'> {
+  if (!isSysAdmin) return {};
+  const trimmedModel = model.trim();
+  const thinking = asThinkingLevel(thinkingLevel);
+  return {
+    ...(trimmedModel ? { model: trimmedModel } : {}),
+    ...(thinking ? { thinkingLevel: thinking } : {}),
+  };
 }
 
 /** Formats elapsed scan time as m:ss (or mm:ss once past 10 minutes). */
@@ -50,13 +67,15 @@ export class ScanRunStore {
   private readonly sheetCapture = inject(SheetCaptureStore);
   private readonly scanExecution = inject(ScanExecutionService);
   private readonly scanPersistence = inject(ScanPersistenceService);
+  private readonly auth = inject(AuthService);
+  private readonly scanAiConfig = inject(ScanAiConfigService);
 
   readonly contextForm = this.fb.nonNullable.group({
     listOrder: ['chronological', Validators.required],
     timeFormat: this.fb.nonNullable.control<ScannerTimeFormat>('clock_hms', Validators.required),
     defaultLaps: [1, [Validators.min(1), Validators.max(20)]],
-    model: this.fb.nonNullable.control('gemini-3.7-flash', Validators.required),
-    thinkingLevel: this.fb.nonNullable.control('medium'),
+    model: this.fb.nonNullable.control(''),
+    thinkingLevel: this.fb.nonNullable.control(''),
     specialInstructions: ['', [Validators.maxLength(500)]],
     debug: [false],
   });
@@ -82,6 +101,20 @@ export class ScanRunStore {
   private readonly _elapsedSec = signal(0);
   readonly elapsedLabel = computed(() => formatScanElapsed(this._elapsedSec()));
   private elapsedTimer: ReturnType<typeof setInterval> | null = null;
+
+  constructor() {
+    if (!this.auth.isSysAdmin()) return;
+    void this.scanAiConfig
+      .load()
+      .then(cfg => {
+        if (!this.contextForm.pristine) return;
+        this.contextForm.patchValue({
+          model: cfg.model,
+          thinkingLevel: cfg.thinkingLevel,
+        });
+      })
+      .catch(() => undefined);
+  }
 
   /** Seed the working copy from the stored scan (after applying auto-accept). */
   useStoredScan(): void {
@@ -218,7 +251,11 @@ export class ScanRunStore {
   private buildScannerContext(): ScannerContext {
     const formData = this.contextForm.getRawValue();
     const specialInstructions = formData.specialInstructions.trim();
-    const thinkingLevel = asThinkingLevel(formData.thinkingLevel.trim());
+    const ai = scannerContextAiFields(
+      this.auth.isSysAdmin(),
+      formData.model,
+      formData.thinkingLevel,
+    );
     const races = this.raceSelection.selectedRaceIds().map((id) => ({
       id,
       entries: [] as { id: string; class: string; sailNumber: string; name?: string }[],
@@ -230,8 +267,7 @@ export class ScanRunStore {
         races,
         listOrder: 'unsorted',
         scanMode: 'levelRating',
-        model: formData.model,
-        ...(thinkingLevel ? { thinkingLevel } : {}),
+        ...ai,
         ...(specialInstructions ? { specialInstructions } : {}),
         ...(formData.debug ? { debug: true } : {}),
       };
@@ -246,8 +282,7 @@ export class ScanRunStore {
       lapsPresentOnSheet: isMultilap,
       timeFormat: formData.timeFormat,
       scanMode: 'handicap',
-      model: formData.model,
-      ...(thinkingLevel ? { thinkingLevel } : {}),
+      ...ai,
       ...(specialInstructions ? { specialInstructions } : {}),
       ...(formData.debug ? { debug: true } : {}),
     };

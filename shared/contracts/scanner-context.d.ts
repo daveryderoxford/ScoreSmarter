@@ -43,9 +43,9 @@ export interface ScannerContext {
   /** When false, the sheet has no lap column; use defaultLaps per row. Defaults to true if omitted. */
   lapsPresentOnSheet?: boolean;
   timeFormat?: ScannerTimeFormat;
-  /** Gemini model id; server defaults when missing/empty. */
+  /** Gemini model id. Sys-admin per-scan override; omitted callers use the system default. */
   model?: string;
-  /** Gemini thinkingConfig.thinkingLevel; omit for the model default. */
+  /** Gemini thinkingConfig.thinkingLevel. Sys-admin per-scan override; omitted callers use the system default. */
   thinkingLevel?: ScannerThinkingLevel;
   /** Free-text sheet-specific instructions appended to the AI prompt when non-empty. */
   specialInstructions?: string;

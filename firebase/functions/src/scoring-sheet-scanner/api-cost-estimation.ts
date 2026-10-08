@@ -19,6 +19,12 @@ export const DYNAMIC_MODEL_PRICING: Record<string, ModelTierConfig> = {
     hasContextThreshold: true,
   },
   /* Figures for full price from Jan 2027 - currently half price */
+  "gemini-3.8-flash": {
+    inputUnder200k: 1.5, outputUnder200k: 7.5,
+    inputOver200k: 1.5, outputOver200k: 7.5,
+    hasContextThreshold: false,
+  },
+  /* Figures for full price from Jan 2027 - currently half price */
   "gemini-3.7-flash": {
     inputUnder200k: 1.5, outputUnder200k: 7.5,
     inputOver200k: 1.5, outputOver200k: 7.5,

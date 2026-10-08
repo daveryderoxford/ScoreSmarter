@@ -4,17 +4,37 @@
  */
 
 /**
- * App default: short-series schedule — no discard milestones until configured.
+ * App default: short-series schedule — one discard after 3 races.
  */
-export const DEFAULT_SHORT_DISCARDS: readonly number[] = [];
+export const DEFAULT_SHORT_DISCARDS: readonly number[] = [3];
 
 /**
- * App default: long-series schedule — milestones 3, 5, 9, 12, … (product default list).
+ * App default: long-series schedule — one discard at each odd race from 3 through 101.
  */
-export const DEFAULT_LONG_DISCARDS: readonly number[] = [
-  3, 5, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90,
-  93, 96, 99, 102,
-];
+export const DEFAULT_LONG_DISCARDS: readonly number[] = Array.from(
+  { length: (101 - 3) / 2 + 1 },
+  (_, index) => 3 + index * 2,
+);
+
+export interface SeriesDiscardDefaultsSource {
+  longSeriesDefaults?: { discards?: readonly number[] | null } | null;
+  shortSeriesDefaults?: { discards?: readonly number[] | null } | null;
+}
+
+/**
+ * Discard milestones for a new series. Club long/short profiles win when present
+ * (including an explicit empty list). Missing profiles use the app defaults.
+ */
+export function defaultDiscardsForNewSeries(
+  algorithm: 'long' | 'short',
+  club?: SeriesDiscardDefaultsSource | null,
+): number[] {
+  const fromClub = algorithm === 'long'
+    ? club?.longSeriesDefaults?.discards
+    : club?.shortSeriesDefaults?.discards;
+  if (fromClub != null) return [...fromClub];
+  return [...(algorithm === 'long' ? DEFAULT_LONG_DISCARDS : DEFAULT_SHORT_DISCARDS)];
+}
 
 /** Positive integer race count, or 0 if missing / non-finite / not positive. */
 function normaliseRaceCountLength(raceCount: number): number {

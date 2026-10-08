@@ -9,7 +9,9 @@ import {
   SeriesEntryDoc,
   logScan,
   logScanError,
+  parseSystemScanAiConfig,
   resolveScanModelParams,
+  SCAN_AI_CONFIG_PATH,
 } from "../ai-scan-model.js";
 import { mergeClassAliases } from "./class-aliases.js";
 import { fleetNameMapFromClubData } from "./fleet-class-name.js";
@@ -174,6 +176,27 @@ async function loadClubFleetNames(clubId: string): Promise<Map<string, string>> 
   }
 }
 
+async function loadSystemScanAiConfig(requestId: string) {
+  try {
+    const snap = await db().doc(SCAN_AI_CONFIG_PATH).get();
+    const config = parseSystemScanAiConfig(snap.exists ? snap.data() : undefined);
+    logScan(requestId, "merge_scanner_context", "Loaded system scan AI config", {
+      path: SCAN_AI_CONFIG_PATH,
+      exists: snap.exists,
+      model: config.model,
+      thinkingLevel: config.thinkingLevel,
+    });
+    return config;
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logScanError(requestId, "merge_scanner_context", `Failed to load system scan AI config: ${msg}`, {
+      path: SCAN_AI_CONFIG_PATH,
+      cause: "scan_ai_config_read_failed",
+    });
+    return parseSystemScanAiConfig(undefined);
+  }
+}
+
 async function persistScanMetrics(
   requestId: string,
   doc: ReturnType<typeof buildScanMetricsDocument>,
@@ -304,12 +327,16 @@ async function parseFromStoredImage(
   uid?: string,
   /** Persist full AI prompt on metrics doc (sys-admin debug only). */
   debugPrompt = false,
+  allowClientModelOverride = false,
 ) {
   const parseStartMs = Date.now();
   const storagePath = resultsSheetStoragePath(clubId, raceId);
+  const systemConfig = await loadSystemScanAiConfig(requestId);
   const modelParams = resolveScanModelParams(
+    systemConfig,
     scannerContext.model,
     scannerContext.thinkingLevel,
+    allowClientModelOverride,
   );
   const raceSummary = await loadRaceSummary(clubId, raceId);
   const tokenCapture = emptyTokenCapture();
@@ -389,8 +416,9 @@ async function parseFromStoredImage(
 
     logScan(requestId, "merge_scanner_context", "Resolved AI model for parser", {
       model: modelParams.model,
-      thinkingLevel: modelParams.thinkingLevel ?? null,
+      thinkingLevel: modelParams.thinkingLevel,
       location: modelParams.location,
+      source: allowClientModelOverride && scannerContext.model ? "sys_admin_override" : "system_config",
     });
 
     parsed = await AIParser(
@@ -502,5 +530,6 @@ export const parseStoredResultsSheet = onCall({
     scannerContext,
     request.auth.uid,
     debugPrompt,
+    isSysAdmin(callerClaims(request.auth)),
   );
 });
