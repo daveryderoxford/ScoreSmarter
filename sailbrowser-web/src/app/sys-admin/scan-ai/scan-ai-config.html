@@ -1,0 +1,54 @@
+<app-page-layout>
+  <app-toolbar title="Scan AI">
+    <a matButton="text" routerLink="/sys-admin/switchboard">Back</a>
+  </app-toolbar>
+
+  <mat-card appearance="outlined" class="form-card">
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <p>
+        Default Gemini model and thinking level for every results-sheet scan.
+        Changing this does not require a deploy; the next scan reads it from the server.
+      </p>
+
+      @if (loadError(); as err) {
+        <p class="meta">{{ err }}</p>
+      }
+
+      <mat-form-field>
+        <mat-label>Known models</mat-label>
+        <mat-select (valueChange)="applyKnownModel($event)" [value]="form.controls.model.value">
+          @for (m of knownModels; track m.id) {
+            <mat-option [value]="m.id">{{ m.label }} ({{ m.id }})</mat-option>
+          }
+        </mat-select>
+        <mat-hint>Pick a known id, or type a new Vertex model id below.</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Model id</mat-label>
+        <input matInput formControlName="model" autocomplete="off" />
+        <mat-hint>Vertex Gemini model id, e.g. gemini-3.7-flash</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Thinking level</mat-label>
+        <mat-select formControlName="thinkingLevel">
+          @for (level of thinkingLevels; track level) {
+            <mat-option [value]="level">{{ level }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @if (lastSaved(); as saved) {
+        @if (saved.at) {
+          <p class="meta">Last saved {{ saved.at | date: 'medium' }}</p>
+        }
+      }
+
+      <div class="actions">
+        <app-submit-button [busy]="saving()" [disabled]="form.invalid || loading()">Save</app-submit-button>
+        <button matButton type="button" (click)="reload()" [disabled]="loading() || saving()">Reload</button>
+      </div>
+    </form>
+  </mat-card>
+</app-page-layout>
