@@ -1,8 +1,10 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { BoatsStore } from 'app/boats';
+import { Boat } from 'app/boats/model/boat';
+import { EntryDetails, EntryService } from 'app/entry/services/entry.service';
 import { normalizeSailNumber, sailNumbersEqual } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
 import { RaceCalendarStore } from 'app/race-calender';
@@ -10,8 +12,11 @@ import { Race } from 'app/race-calender/model/race';
 import { firstValueFrom } from 'rxjs';
 import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 import { ManualResultsService } from '../../services/manual-results.service';
+import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
+import { SeriesEntry } from '../../model/series-entry';
 import { RaceCompetitorReader } from '../../services/race-competitor-reader';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
+import { SeriesEntryStore } from '../../services/series-entry-store';
 import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
 import {
   LinkScanRowDialog,
@@ -25,6 +30,12 @@ import { ScanSelectedRace } from '../select-race/race-selection.store';
 import { ScanRunStore } from '../run-scan/scan-run.store';
 import { ScanPersistenceService } from '../shared/scan-persistence.service';
 import { boatClassesMatch, ScanRowMatchingService } from './scan-row-matching.service';
+import {
+  canAutoApplyScanIdentity,
+  classifyScanRow,
+  scanRowIdentityKey,
+  ScanRowIdentityPlan,
+} from './scan-row-provision';
 import {
   AcceptanceChangedEvent,
   MatchedRowVm,
@@ -51,6 +62,8 @@ export class ScanReviewStore {
   private readonly manualResults = inject(ManualResultsService);
   private readonly scanPersistence = inject(ScanPersistenceService);
   private readonly boatsStore = inject(BoatsStore);
+  private readonly seriesEntries = inject(SeriesEntryStore);
+  private readonly entryService = inject(EntryService);
   private readonly clubStore = inject(ClubStore);
   private readonly raceCalendar = inject(RaceCalendarStore);
   private readonly dialog = inject(MatDialog);
@@ -70,6 +83,27 @@ export class ScanReviewStore {
       : ['rowIndex', 'sailNumber', 'boatClass', 'time', 'status', 'laps', 'helms', 'enter'],
   );
 
+  private readonly attemptedIdentityKeys = new Set<string>();
+  private provisionQueue: Promise<void> = Promise.resolve();
+
+  constructor() {
+    effect(() => {
+      const result = this.scanRun.scanResult();
+      const entries = this.seriesEntries.selectedEntries();
+      const boats = this.boatsStore.boats();
+      const competitors = this.competitorReader.selectedResolvedCompetitors();
+      const loading = this.seriesEntries.loading() || this.boatsStore.isLoading();
+      const races = this.raceCalendar.allRaces();
+      if (!result || loading) return;
+      const rows = result.scannedResults;
+      untracked(() => {
+        this.provisionQueue = this.provisionQueue
+          .then(() => this.provisionAutomatic(rows, entries, boats, competitors, races))
+          .catch((err: unknown) => console.error('ScanReviewStore: automatic sign-on failed', err));
+      });
+    });
+  }
+
   private readonly _saving = signal(false);
   readonly saving = this._saving.asReadonly();
   private readonly _error = signal<string | null>(null);
@@ -86,12 +120,23 @@ export class ScanReviewStore {
     ),
   );
 
-  readonly unmatchedRows = computed<UnmatchedRowVm[]>(() =>
-    this.rowMatching.buildUnmatchedRows(this.scanRun.scanResult()?.scannedResults ?? [], {
+  readonly unmatchedRows = computed<UnmatchedRowVm[]>(() => {
+    const rows = this.rowMatching.buildUnmatchedRows(this.scanRun.scanResult()?.scannedResults ?? [], {
       boats: this.boatsStore.boats(),
       classes: this.clubStore.club().classes,
-    }),
-  );
+    });
+    const entries = this.seriesEntries.selectedEntries();
+    const boats = this.boatsStore.boats();
+    const competitors = this.competitorReader.selectedResolvedCompetitors();
+    return rows.map(vm => {
+      const plan = this.planForRow(vm.row, entries, boats, competitors);
+      return {
+        ...vm,
+        planKind: plan.kind,
+        possibleHelms: helmLabels(plan, vm.possibleHelms),
+      };
+    });
+  });
 
   /** Race competitors not already linked to a scan row — candidates for Link. */
   readonly linkableCompetitors = computed(() => {
@@ -135,6 +180,137 @@ export class ScanReviewStore {
 
   private raceIdForRow(row: ScannedResultRow): string | null {
     return row.raceId?.trim() || this.raceSelection.selectedRaceId();
+  }
+
+  /** Sign on a unique match, or open the helm / new-entry dialog when the user asks. */
+  async resolveUnmatched(row: ScannedResultRow): Promise<void> {
+    if (this.attemptedIdentityKeys.has(scanRowIdentityKey(row))) return;
+    const plan = this.planForRow(row);
+    if (plan.kind === 'link') {
+      this.scanRun.applyRowMatch(row.rowIndex, plan.competitorId);
+      return;
+    }
+    if (plan.kind === 'sign-on-entry') {
+      await this.signOn(row, entryDetailsFromSeriesEntry(plan.entry), plan.entry.helm);
+      return;
+    }
+    if (plan.kind === 'choose-entry') {
+      const picked = await this.pickHelm(row, plan.entries.map(seriesEntryAsBoat), true);
+      const entry = plan.entries.find(e => e.id === picked?.id);
+      if (entry) await this.signOn(row, entryDetailsFromSeriesEntry(entry), entry.helm);
+      return;
+    }
+    if (plan.kind === 'sign-on-boat') {
+      await this.signOn(row, entryDetailsFromBoat(plan.boat), plan.boat.helm);
+      return;
+    }
+    if (plan.kind === 'choose-boat') {
+      await this.enterKnownBoat(row);
+      return;
+    }
+    await this.enterUnmatched(row);
+  }
+
+  private async provisionAutomatic(
+    rows: ScannedResultRow[],
+    entries: SeriesEntry[],
+    boats: Boat[],
+    competitors: ResolvedRaceCompetitor[],
+    races: Race[],
+  ): Promise<void> {
+    let signedOn = 0;
+    for (const row of rows) {
+      if (row.matchedCompetitorId) continue;
+      const key = scanRowIdentityKey(row);
+      if (this.attemptedIdentityKeys.has(key)) continue;
+      const plan = classifyScanRow(row, {
+        race: this.raceRefFor(row, races),
+        competitors,
+        seriesEntries: entries,
+        boats,
+      });
+      if (!canAutoApplyScanIdentity(row, plan)) continue;
+      this.attemptedIdentityKeys.add(key);
+      try {
+        if (plan.kind === 'link') {
+          this.scanRun.applyRowMatch(row.rowIndex, plan.competitorId);
+        } else if (plan.kind === 'sign-on-entry') {
+          await this.signOn(row, entryDetailsFromSeriesEntry(plan.entry), plan.entry.helm);
+          signedOn++;
+        } else if (plan.kind === 'sign-on-boat') {
+          await this.signOn(row, entryDetailsFromBoat(plan.boat), plan.boat.helm);
+          signedOn++;
+        }
+      } catch (err: unknown) {
+        this.attemptedIdentityKeys.delete(key);
+        console.error('ScanReviewStore: could not sign on scanned row', row.rowIndex, err);
+        this.snackbar.open('Could not sign on a scanned boat automatically. Use Enter to add it.', 'Dismiss', {
+          duration: 5000,
+        });
+      }
+    }
+    if (signedOn > 0) {
+      this.snackbar.open(
+        `Signed on ${signedOn} competitor${signedOn === 1 ? '' : 's'} from series entries and the boat register.`,
+        'Dismiss',
+        { duration: 4000 },
+      );
+    }
+  }
+
+  private planForRow(
+    row: ScannedResultRow,
+    entries = this.seriesEntries.selectedEntries(),
+    boats = this.boatsStore.boats(),
+    competitors = this.competitorReader.selectedResolvedCompetitors(),
+  ): ScanRowIdentityPlan {
+    return classifyScanRow(row, {
+      race: this.raceRefFor(row, this.raceCalendar.allRaces()),
+      competitors,
+      seriesEntries: entries,
+      boats,
+    });
+  }
+
+  private raceRefFor(row: ScannedResultRow, races: readonly Race[]): { id: string; seriesId: string } | null {
+    const raceId = this.raceIdForRow(row);
+    const race = races.find(r => r.id === raceId);
+    if (!race) return null;
+    return { id: race.id, seriesId: race.seriesId };
+  }
+
+  private async pickHelm(row: ScannedResultRow, boats: Boat[], selectOnly = false): Promise<Boat | undefined> {
+    const raceId = this.raceIdForRow(row);
+    const boatClass = row.boatClass?.value?.trim();
+    const sailNumber = normalizeSailNumber(row.sailNumber?.value);
+    if (!raceId || !boatClass || !sailNumber || boats.length === 0) return undefined;
+    const dialogRef = this.dialog.open(KnownBoatEntryDialog, {
+      width: '520px',
+      data: { raceId, boatClass, sailNumber, boats, selectOnly },
+    });
+    const result = (await firstValueFrom(dialogRef.afterClosed())) as
+      | KnownBoatEntryDialogResult
+      | undefined;
+    if (!result?.created || !result.selectedBoatId) return undefined;
+    return boats.find(b => b.id === result.selectedBoatId);
+  }
+
+  private async signOn(
+    row: ScannedResultRow,
+    details: Omit<EntryDetails, 'races'>,
+    helm: string,
+  ): Promise<void> {
+    const raceId = this.raceIdForRow(row);
+    const race = this.raceCalendar.allRaces().find(r => r.id === raceId);
+    const boatClass = row.boatClass?.value?.trim();
+    const sailNumber = normalizeSailNumber(row.sailNumber?.value);
+    if (!race || !boatClass || !sailNumber) return;
+    await withTimeout(
+      this.entryService.enterRaces({ ...details, races: [race] }),
+      FIRESTORE_BULK_WRITE_TIMEOUT_MS,
+      'Creating entry',
+    );
+    await this.refreshScanRowMatch(row, details.boatClass || boatClass, details.sailNumber || sailNumber, helm);
   }
 
   async enterKnownBoat(row: ScannedResultRow): Promise<void> {
@@ -324,7 +500,7 @@ export class ScanReviewStore {
     sailNumber: string,
     helm?: string,
   ): Promise<void> {
-    const raceId = this.raceSelection.selectedRaceId();
+    const raceId = this.raceIdForRow(row);
     if (!raceId) return;
 
     for (let attempt = 0; attempt < REMATCH_ATTEMPTS; attempt++) {
@@ -347,4 +523,52 @@ export class ScanReviewStore {
       { duration: 6000 },
     );
   }
+}
+
+function helmLabels(plan: ScanRowIdentityPlan, fallback: string[]): string[] {
+  if (plan.kind === 'choose-entry') return plan.entries.map(e => e.helm);
+  if (plan.kind === 'choose-boat') return plan.boats.map(b => b.helm);
+  if (plan.kind === 'sign-on-entry') return [plan.entry.helm];
+  if (plan.kind === 'sign-on-boat') return [plan.boat.helm];
+  return fallback;
+}
+
+function entryDetailsFromSeriesEntry(entry: SeriesEntry): Omit<EntryDetails, 'races'> {
+  return {
+    helm: entry.helm,
+    crew: entry.crew,
+    club: entry.club,
+    boatName: entry.boatName,
+    boatClass: entry.boatClass,
+    sailNumber: entry.sailNumber,
+    handicaps: entry.handicaps,
+    personalHandicapBand: entry.personalHandicapBand,
+    divisions: entry.divisions,
+  };
+}
+
+function entryDetailsFromBoat(boat: Boat): Omit<EntryDetails, 'races'> {
+  return {
+    helm: boat.helm,
+    crew: boat.crew,
+    boatName: boat.name,
+    boatClass: boat.boatClass,
+    sailNumber: boat.sailNumber,
+    handicaps: boat.handicaps,
+    personalHandicapBand: boat.personalHandicapBand,
+  };
+}
+
+function seriesEntryAsBoat(entry: SeriesEntry): Boat {
+  return {
+    id: entry.id,
+    helm: entry.helm,
+    crew: entry.crew ?? '',
+    name: entry.boatName ?? '',
+    boatClass: entry.boatClass,
+    sailNumber: entry.sailNumber,
+    isClub: false,
+    handicaps: entry.handicaps,
+    personalHandicapBand: entry.personalHandicapBand,
+  };
 }

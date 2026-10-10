@@ -15,6 +15,7 @@ import type { ScannedValueField } from '../run-scan/promote-scanned-alternative'
 import { ScanRunStore } from '../run-scan/scan-run.store';
 import { ScanAlternatePicker } from './scan-alternate-picker';
 import { ScanReviewStore } from './scan-review.store';
+import type { ScanRowIdentityPlan } from './scan-row-provision';
 
 export interface MatchedRowVm {
   row: ScannedResultRow;
@@ -57,6 +58,8 @@ export interface UnmatchedRowVm {
   /** True when Create is safe to offer (class + sail present and class known or boat matched). */
   canCreate: boolean;
   possibleHelms: string[];
+  /** How an unmatched row should be resolved. Absent in story fixtures. */
+  planKind?: ScanRowIdentityPlan['kind'];
 }
 
 export interface AcceptanceChangedEvent {

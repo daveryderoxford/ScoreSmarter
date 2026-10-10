@@ -7,6 +7,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BoatsStore } from 'app/boats';
+import { EntryService } from 'app/entry/services/entry.service';
 import { ClubStore } from 'app/club-tenant';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
@@ -16,6 +17,7 @@ import { SeriesEntry } from '../../model/series-entry';
 import { ManualResultsService } from '../../services/manual-results.service';
 import { RaceCompetitorReader } from '../../services/race-competitor-reader';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
+import { SeriesEntryStore } from '../../services/series-entry-store';
 import type { ScannerTimeFormat } from '@shared/scanner-context';
 import { ScanResponse, ScannedResultRow } from '../model/scan-model';
 import { ScanSelectedRace } from '../select-race/race-selection.store';
@@ -174,7 +176,9 @@ describe('ScanReviewStore.save', () => {
         { provide: RaceCompetitorStore, useClass: FakeRaceCompetitorStore },
         { provide: ManualResultsService, useValue: { recordResult } },
         { provide: ScanPersistenceService, useValue: { clearScanResponse } },
-        { provide: BoatsStore, useValue: { boats: signal([]).asReadonly() } },
+        { provide: BoatsStore, useValue: { boats: signal([]).asReadonly(), isLoading: signal(false).asReadonly() } },
+        { provide: SeriesEntryStore, useValue: { selectedEntries: signal([]).asReadonly(), loading: signal(false).asReadonly() } },
+        { provide: EntryService, useValue: { enterRaces: vi.fn().mockResolvedValue(undefined) } },
         { provide: ClubStore, useValue: { club: signal({ classes: [] }).asReadonly() } },
         { provide: RaceCalendarStore, useValue: { allRaces: () => [race] } },
         { provide: MatDialog, useValue: { open: dialogOpen } },

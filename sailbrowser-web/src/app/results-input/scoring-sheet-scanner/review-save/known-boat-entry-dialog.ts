@@ -14,6 +14,8 @@ export interface KnownBoatEntryDialogData {
   boatClass: string;
   sailNumber: string;
   boats: Boat[];
+  /** Return the selected helm without writing. The caller creates the entry. */
+  selectOnly?: boolean;
 }
 
 export interface KnownBoatEntryDialogResult {
@@ -59,6 +61,11 @@ export class KnownBoatEntryDialog {
     const boat = this.selectedBoat();
     const race = this.raceCalendarStore.allRaces().find(r => r.id === this.data.raceId);
     if (!boat || !race) return;
+
+    if (this.data.selectOnly) {
+      this.dialogRef.close({ created: true, selectedBoatId: boat.id } satisfies KnownBoatEntryDialogResult);
+      return;
+    }
 
     this.saving.set(true);
     try {
