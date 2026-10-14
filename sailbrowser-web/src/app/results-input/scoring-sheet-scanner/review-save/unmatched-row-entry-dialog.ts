@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   MAT_DIALOG_DATA,
@@ -10,30 +10,20 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
 import { MatInputModule } from '@angular/material/input';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import {
-  EntryConflict,
-  EntryService,
-} from 'app/entry/services/entry.service';
-import { RaceCalendarStore } from 'app/race-calender';
-import { CurrentRaces } from '../../services/current-races-store';
-import { DialogsService } from 'app/shared/dialogs/dialogs.service';
-import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dialog';
 import { ClubStore } from 'app/club-tenant';
 import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
-import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 
 export interface UnmatchedRowEntryDialogData {
-  raceId: string;
   boatClass: string;
   sailNumber: string;
 }
 
 export interface UnmatchedRowEntryDialogResult {
-  created: boolean;
-  helm?: string;
+  helm: string;
+  crew?: string;
 }
 
+/** Collects helm/crew for a new entry. The entry is created when the scan is saved. */
 @Component({
   selector: 'app-unmatched-row-entry-dialog',
   standalone: true,
@@ -50,10 +40,10 @@ export interface UnmatchedRowEntryDialogResult {
     <h2 mat-dialog-title>Add race entry</h2>
     <mat-dialog-content>
       <p class="hint">
-        Creating an entry for <strong>{{ data.boatClass }} #{{ data.sailNumber }}</strong>
-        from the scanned row.
+        New entry for <strong>{{ data.boatClass }} #{{ data.sailNumber }}</strong>
+        from the scanned row. It is created when you save the scan.
       </p>
-      <form [formGroup]="form" class="entry-form" (ngSubmit)="createEntry()">
+      <form [formGroup]="form" class="entry-form" (ngSubmit)="addEntry()">
         <mat-form-field class="field">
           <mat-label>Helm</mat-label>
           <input
@@ -75,15 +65,15 @@ export interface UnmatchedRowEntryDialogResult {
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button matButton type="button" (click)="dialogRef.close()" [disabled]="saving()">
+      <button matButton type="button" (click)="dialogRef.close()">
         Cancel
       </button>
       <button
         matButton="filled"
         type="button"
-        (click)="createEntry()"
-        [disabled]="form.invalid || saving()">
-        {{ saving() ? 'Adding…' : 'Add entry' }}
+        (click)="addEntry()"
+        [disabled]="form.invalid">
+        Add entry
       </button>
     </mat-dialog-actions>
   `,
@@ -110,87 +100,24 @@ export class UnmatchedRowEntryDialog {
   protected readonly data = inject<UnmatchedRowEntryDialogData>(MAT_DIALOG_DATA);
   protected readonly dialogRef = inject(MatDialogRef<UnmatchedRowEntryDialog, UnmatchedRowEntryDialogResult | undefined>);
   private readonly fb = inject(FormBuilder);
-  private readonly entryService = inject(EntryService);
-  private readonly raceCalendarStore = inject(RaceCalendarStore);
-  private readonly currentRaces = inject(CurrentRaces);
-  private readonly dialogs = inject(DialogsService);
-  private readonly snackbar = inject(MatSnackBar);
   private readonly clubStore = inject(ClubStore);
 
   protected readonly isSinglehander = computed(() =>
     isSinglehanderClass(this.data.boatClass, this.clubStore.club().classes),
   );
 
-  protected readonly saving = signal(false);
-
   protected readonly form = this.fb.nonNullable.group({
     helm: ['', Validators.required],
     crew: [''],
   });
 
-  protected async createEntry(): Promise<void> {
-    if (this.form.invalid || this.saving()) return;
-
-    const race = this.raceCalendarStore.allRaces().find(r => r.id === this.data.raceId);
-    if (!race) {
-      this.snackbar.open('Race not found.', 'Dismiss', { duration: 4000 });
-      return;
-    }
-
+  protected addEntry(): void {
+    if (this.form.invalid) return;
     const helm = this.form.controls.helm.value.trim();
+    if (!helm) return;
     const crew = this.isSinglehander()
       ? undefined
       : (this.form.controls.crew.value.trim() || undefined);
-
-    const entryData = {
-      races: [race],
-      helm,
-      crew,
-      boatClass: this.data.boatClass,
-      sailNumber: this.data.sailNumber,
-      divisions: [] as string[],
-    };
-
-    const conflicts = this.entryService.findEntryConflicts(entryData);
-    if (conflicts.length > 0) {
-      const choice = await this.dialogs.promptEntryConflict(
-        conflicts.map(c => summariseConflict(c)),
-      );
-      if (choice === 'cancel') return;
-    }
-
-    this.saving.set(true);
-    try {
-      this.currentRaces.addRaceId(this.data.raceId);
-      const write =
-        conflicts.length > 0
-          ? this.entryService.swapAndEnter(entryData, conflicts)
-          : this.entryService.enterRaces(entryData);
-      await withTimeout(write, FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Creating entry');
-      this.dialogRef.close({ created: true, helm } satisfies UnmatchedRowEntryDialogResult);
-    } catch (err: unknown) {
-      console.error('UnmatchedRowEntryDialog: create entry failed', err);
-      const message = err instanceof Error ? err.message : 'Could not add entry.';
-      this.snackbar.open(message, 'Dismiss', { duration: 5000 });
-    } finally {
-      this.saving.set(false);
-    }
+    this.dialogRef.close({ helm, crew });
   }
-}
-
-function summariseConflict(c: EntryConflict): EntryConflictSummary {
-  const e = c.existingEntry;
-  const existingLabel = `${e.helm} – ${e.boatClass} #${e.sailNumber}`;
-  const raceLabel = `${c.race.seriesName} race ${c.race.index}`;
-  const reasonLabel = (() => {
-    switch (c.reason) {
-      case 'sameEntry':
-        return 'Exact same boat is already entered.';
-      case 'sameHelmDifferentHull':
-        return 'This series merges by helm, so a sailor can only enter one boat per race.';
-      case 'sameHullDifferentHelm':
-        return 'This series merges by boat, so a hull can only be entered once per race.';
-    }
-  })();
-  return { raceLabel, existingLabel, reasonLabel };
 }

@@ -21,6 +21,10 @@ export interface MatchedRowVm {
   row: ScannedResultRow;
   helm?: string;
   competitor?: ResolvedRaceCompetitor;
+  /** Identity shown in the grid: the linked competitor, or the staged entry. */
+  identity?: { helm: string; boatClass: string; sailNumber: string };
+  /** The entry is staged and is created when the scan is saved. */
+  pending?: boolean;
 }
 
 interface MatchedIdentityOpts {

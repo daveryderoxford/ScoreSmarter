@@ -137,4 +137,12 @@ describe('classifyScanRow', () => {
     );
     expect(plan).toEqual({ kind: 'skip' });
   });
+
+  it('skips a row that already has a staged entry', () => {
+    const plan = classifyScanRow(
+      scanRow({ pendingEntry: { helm: 'Alex', boatClass: 'ILCA 7', sailNumber: '12345' } }),
+      { race, competitors: [], seriesEntries: [entry({ id: 'e1', helm: 'Alex' })], boats: [] },
+    );
+    expect(plan).toEqual({ kind: 'skip' });
+  });
 });

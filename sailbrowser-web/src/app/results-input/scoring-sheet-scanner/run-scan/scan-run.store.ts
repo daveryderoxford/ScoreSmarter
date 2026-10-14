@@ -9,7 +9,7 @@ import { ScanSelectedRace } from '../select-race/race-selection.store';
 import { SheetCaptureStore } from '../capture-image/sheet-capture.store';
 import { ScanPersistenceService } from '../shared/scan-persistence.service';
 import { ScanExecutionService } from './scan-execution.service';
-import { ScannerContext, ScanResponse } from '../model/scan-model';
+import { PendingScanEntry, ScannedResultRow, ScannerContext, ScanResponse } from '../model/scan-model';
 import { ScanAiConfigService } from '../model/scan-ai-config.service';
 import {
   promoteRowAlternative,
@@ -188,16 +188,36 @@ export class ScanRunStore {
     );
   }
 
-  /** Attach a competitor match to a row (after manual entry) and accept it. */
+  /** Attach a competitor match to a row and accept it. Replaces any staged entry. */
   applyRowMatch(rowIndex: number, competitorId: string): void {
+    this.updateRow(rowIndex, row => ({
+      ...withoutPendingEntry(row),
+      matchedCompetitorId: competitorId,
+      accepted: true,
+    }));
+  }
+
+  /** Stage a sign-on for a row and accept it. Nothing is written until save. */
+  stageRowEntry(rowIndex: number, pendingEntry: PendingScanEntry): void {
+    this.updateRow(rowIndex, row => ({ ...row, pendingEntry, accepted: true }));
+  }
+
+  /** Remove a staged sign-on so the row is unmatched again, and stop it being matched automatically. */
+  clearRowEntry(rowIndex: number): void {
+    this.updateRow(rowIndex, row => ({
+      ...withoutPendingEntry(row),
+      autoMatchDismissed: true,
+      accepted: false,
+    }));
+  }
+
+  private updateRow(rowIndex: number, fn: (row: ScannedResultRow) => ScannedResultRow): void {
     this._scanResult.update((current) =>
       current
         ? {
             ...current,
             scannedResults: current.scannedResults.map((row) =>
-              row.rowIndex === rowIndex
-                ? { ...row, matchedCompetitorId: competitorId, accepted: true }
-                : row,
+              row.rowIndex === rowIndex ? fn(row) : row,
             ),
           }
         : null,
@@ -287,4 +307,10 @@ export class ScanRunStore {
       ...(formData.debug ? { debug: true } : {}),
     };
   }
+}
+
+function withoutPendingEntry(row: ScannedResultRow): ScannedResultRow {
+  const next = { ...row };
+  delete next.pendingEntry;
+  return next;
 }

@@ -105,7 +105,7 @@ export class EntryService {
    * call `findEntryConflicts` first and, if appropriate, `swapAndEnter`. This
    * method is a strict guard for any caller that doesn't.
    */
-  async enterRaces(details: EntryDetails): Promise<void> {
+  async enterRaces(details: EntryDetails): Promise<RaceCompetitor[]> {
 
     const conflicts = this.findEntryConflicts(details);
     if (conflicts.length > 0) {
@@ -118,6 +118,7 @@ export class EntryService {
       );
     }
 
+    const created: RaceCompetitor[] = [];
     for (const race of details.races) {
       const series = this.raceCalanderStore.allSeries().find(s => s.id === race.seriesId);
       if (!series) {
@@ -143,8 +144,10 @@ export class EntryService {
         resultCode: details.resultCode ?? 'NOT FINISHED',
       };
 
-      await this.raceResultsStore.addResult(competitor);
+      const id = await this.raceResultsStore.addResult(competitor);
+      created.push(new RaceCompetitor({ ...competitor, id }));
     }
+    return created;
   }
 
   /**
@@ -200,7 +203,7 @@ export class EntryService {
    * Orphaned `SeriesEntry` documents are removed atomically by the mutator's
    * batched `deleteRaceCompetitor` (per-conflict authoritative orphan check).
    */
-  async swapAndEnter(details: EntryDetails, conflicts: EntryConflict[]): Promise<void> {
+  async swapAndEnter(details: EntryDetails, conflicts: EntryConflict[]): Promise<RaceCompetitor[]> {
     for (const conflict of conflicts) {
       await this.mutator.deleteRaceCompetitor(conflict.existingCompetitor);
     }
@@ -217,7 +220,7 @@ export class EntryService {
       );
     }
 
-    await this.enterRaces(details);
+    return this.enterRaces(details);
   }
 
   /**

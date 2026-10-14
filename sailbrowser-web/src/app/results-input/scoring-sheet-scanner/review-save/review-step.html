@@ -60,8 +60,8 @@
           label="Choose alternate sail number"
           (selected)="promoteAlternative(vm.row.rowIndex, 'sailNumber', $event)">
           <span class="confidence-marker matched-identity" [class]="vm.row.sailNumber?.confidence">
-            {{ matchedEntryText(vm.competitor?.sailNumber) }}
-            @if (matchedScanText(vm.competitor?.sailNumber, vm.row.sailNumber?.value, { compareSail: true }); as scanText) {
+            {{ matchedEntryText(vm.identity?.sailNumber) }}
+            @if (matchedScanText(vm.identity?.sailNumber, vm.row.sailNumber?.value, { compareSail: true }); as scanText) {
               <span class="matched-scan"> / {{ scanText }}</span>
             }
           </span>
@@ -77,8 +77,8 @@
           label="Choose alternate class"
           (selected)="promoteAlternative(vm.row.rowIndex, 'boatClass', $event)">
           <span class="confidence-marker matched-identity" [class]="vm.row.boatClass?.confidence">
-            {{ matchedEntryText(vm.competitor?.boatClass) }}
-            @if (matchedScanText(vm.competitor?.boatClass, vm.row.boatClass?.value); as scanText) {
+            {{ matchedEntryText(vm.identity?.boatClass) }}
+            @if (matchedScanText(vm.identity?.boatClass, vm.row.boatClass?.value); as scanText) {
               <span class="matched-scan"> / {{ scanText }}</span>
             }
           </span>
@@ -94,12 +94,26 @@
           label="Choose alternate helm name"
           (selected)="promoteAlternative(vm.row.rowIndex, 'competitorName', $event)">
           <span class="matched-identity">
-            {{ matchedEntryText(vm.competitor?.helm) }}
-            @if (matchedScanText(vm.competitor?.helm, vm.row.competitorName?.value); as scanText) {
+            {{ matchedEntryText(vm.identity?.helm) }}
+            @if (matchedScanText(vm.identity?.helm, vm.row.competitorName?.value); as scanText) {
               <span class="matched-scan"> / {{ scanText }}</span>
             }
           </span>
         </app-scan-alternate-picker>
+        @if (vm.pending) {
+          <span class="pending-entry">
+            <span class="pending-chip" matTooltip="Entry is created when you save the scan">New entry</span>
+            <button
+              matIconButton
+              class="undo-button"
+              type="button"
+              aria-label="Undo entry selection"
+              matTooltip="Undo entry selection"
+              (click)="review.unstageRow(vm.row)">
+              <mat-icon>undo</mat-icon>
+            </button>
+          </span>
+        }
       </td>
     </ng-container>
 
@@ -167,8 +181,9 @@
 <h3 class="section-title" style="margin-top: 2.5rem;">No Entry Identified</h3>
 <p class="section-hint">Add entry for boats</p>
 <p class="section-hint muted">
-  A single series entry or boat match is signed on automatically.
-  Select helm when more than one person matches. Enter creates a new series entry.
+  A single series entry or boat match is selected automatically.
+  Select helm when more than one person matches. Enter adds a new entry.
+  Entries are only created when you save the scan.
   Link uses an existing race entry’s details with this row’s
   {{ review.isLevelRatingScan() ? 'position' : 'time/laps' }}.
 </p>

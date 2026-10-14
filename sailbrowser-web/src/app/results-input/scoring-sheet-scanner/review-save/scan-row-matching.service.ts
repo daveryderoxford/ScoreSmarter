@@ -42,10 +42,14 @@ export class ScanRowMatchingService {
     resolvedById: Map<string, ResolvedRaceCompetitor>,
   ): MatchedRowVm[] {
     return rows
-      .filter(row => !!row.matchedCompetitorId)
+      .filter(row => !!row.matchedCompetitorId || !!row.pendingEntry)
       .map(row => {
+        if (row.pendingEntry) {
+          const { helm, boatClass, sailNumber } = row.pendingEntry;
+          return { row, helm, identity: { helm, boatClass, sailNumber }, pending: true };
+        }
         const competitor = row.matchedCompetitorId ? resolvedById.get(row.matchedCompetitorId) : undefined;
-        return { row, helm: competitor?.helm, competitor };
+        return { row, helm: competitor?.helm, competitor, identity: competitor };
       });
   }
 
@@ -54,7 +58,7 @@ export class ScanRowMatchingService {
     ctx: { boats: Boat[]; classes: BoatClass[] },
   ): UnmatchedRowVm[] {
     return rows
-      .filter(row => !row.matchedCompetitorId)
+      .filter(row => !row.matchedCompetitorId && !row.pendingEntry)
       .map(row => {
         const boatClass = row.boatClass?.value?.trim() ?? '';
         const sailNumber = normalizeSailNumber(row.sailNumber?.value);

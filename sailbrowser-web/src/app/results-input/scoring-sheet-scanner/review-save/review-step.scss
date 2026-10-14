@@ -137,6 +137,26 @@
   color: var(--mat-sys-primary);
 }
 
+.pending-entry {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.35rem;
+}
+
+.pending-chip {
+  padding: 0.1rem 0.45rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--mat-sys-tertiary-container);
+  color: var(--mat-sys-on-tertiary-container);
+}
+
+.undo-button {
+  --mat-icon-button-state-layer-size: 32px;
+  padding: 4px;
+}
+
 .dense-button {
   min-height: 32px;
   padding-inline: 0.65rem;

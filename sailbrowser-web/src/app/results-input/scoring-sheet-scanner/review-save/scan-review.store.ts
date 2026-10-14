@@ -1,22 +1,26 @@
-import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { BoatsStore } from 'app/boats';
 import { Boat } from 'app/boats/model/boat';
-import { EntryDetails, EntryService } from 'app/entry/services/entry.service';
-import { normalizeSailNumber, sailNumbersEqual } from 'app/boats/model/sail-number';
+import { EntryConflict, EntryDetails, EntryService } from 'app/entry/services/entry.service';
+import { normalizeSailNumber } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
 import { firstValueFrom } from 'rxjs';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dialog';
+import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
 import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 import { ManualResultsService } from '../../services/manual-results.service';
-import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
+import { RaceCompetitor } from '../../model/race-competitor';
 import { SeriesEntry } from '../../model/series-entry';
 import { RaceCompetitorReader } from '../../services/race-competitor-reader';
 import { RaceCompetitorStore } from '../../services/race-competitor-store';
 import { SeriesEntryStore } from '../../services/series-entry-store';
+import { describeIdentity } from '../../services/series-entry-identity';
 import { KnownBoatEntryDialog, KnownBoatEntryDialogResult } from './known-boat-entry-dialog';
 import {
   LinkScanRowDialog,
@@ -29,11 +33,13 @@ import {
 import { ScanSelectedRace } from '../select-race/race-selection.store';
 import { ScanRunStore } from '../run-scan/scan-run.store';
 import { ScanPersistenceService } from '../shared/scan-persistence.service';
-import { boatClassesMatch, ScanRowMatchingService } from './scan-row-matching.service';
+import { ScanRowMatchingService } from './scan-row-matching.service';
 import {
-  canAutoApplyScanIdentity,
+  applyAutomaticMatches,
   classifyScanRow,
-  scanRowIdentityKey,
+  entryDetailsFromBoat,
+  entryDetailsFromSeriesEntry,
+  sameStagedIdentity,
   ScanRowIdentityPlan,
 } from './scan-row-provision';
 import {
@@ -41,11 +47,8 @@ import {
   MatchedRowVm,
   UnmatchedRowVm,
 } from './review-step';
-import { ScannedResultRow } from '../model/scan-model';
+import { PendingScanEntry, ScannedResultRow } from '../model/scan-model';
 import type { ScannedValueField } from '../run-scan/promote-scanned-alternative';
-
-const REMATCH_ATTEMPTS = 8;
-const REMATCH_DELAY_MS = 75;
 
 /**
  * Area 4 — owns the matched/unmatched view models, manual-entry dialogs, and the
@@ -67,6 +70,7 @@ export class ScanReviewStore {
   private readonly clubStore = inject(ClubStore);
   private readonly raceCalendar = inject(RaceCalendarStore);
   private readonly dialog = inject(MatDialog);
+  private readonly dialogs = inject(DialogsService);
   private readonly snackbar = inject(MatSnackBar);
   private readonly router = inject(Router);
 
@@ -83,26 +87,25 @@ export class ScanReviewStore {
       : ['rowIndex', 'sailNumber', 'boatClass', 'time', 'status', 'laps', 'helms', 'enter'],
   );
 
-  private readonly attemptedIdentityKeys = new Set<string>();
-  private provisionQueue: Promise<void> = Promise.resolve();
-
-  constructor() {
-    effect(() => {
-      const result = this.scanRun.scanResult();
-      const entries = this.seriesEntries.selectedEntries();
-      const boats = this.boatsStore.boats();
-      const competitors = this.competitorReader.selectedResolvedCompetitors();
-      const loading = this.seriesEntries.loading() || this.boatsStore.isLoading();
-      const races = this.raceCalendar.allRaces();
-      if (!result || loading) return;
-      const rows = result.scannedResults;
-      untracked(() => {
-        this.provisionQueue = this.provisionQueue
-          .then(() => this.provisionAutomatic(rows, entries, boats, competitors, races))
-          .catch((err: unknown) => console.error('ScanReviewStore: automatic sign-on failed', err));
-      });
+  /**
+   * Working-copy rows with automatic matches applied. The working copy holds
+   * only the user's explicit choices; unique confident matches are derived here
+   * so they follow edits such as choosing an alternative sail number.
+   */
+  readonly reviewRows = computed<ScannedResultRow[]>(() => {
+    const rows = this.scanRun.scanResult()?.scannedResults ?? [];
+    const races = this.raceCalendar.allRaces();
+    return applyAutomaticMatches(rows, {
+      raceFor: row => this.raceRefFor(row, races),
+      competitors: this.competitorReader.selectedResolvedCompetitors(),
+      seriesEntries: this.seriesEntries.selectedEntries(),
+      boats: this.boatsStore.boats(),
+      conflictsInRace: (entry, raceId) => {
+        const race = races.find(r => r.id === raceId);
+        return !!race && this.entryService.findEntryConflicts({ ...entry, races: [race] }).length > 0;
+      },
     });
-  }
+  });
 
   private readonly _saving = signal(false);
   readonly saving = this._saving.asReadonly();
@@ -114,14 +117,11 @@ export class ScanReviewStore {
   );
 
   readonly matchedRows = computed<MatchedRowVm[]>(() =>
-    this.rowMatching.buildMatchedRows(
-      this.scanRun.scanResult()?.scannedResults ?? [],
-      this.resolvedByCompetitorId(),
-    ),
+    this.rowMatching.buildMatchedRows(this.reviewRows(), this.resolvedByCompetitorId()),
   );
 
   readonly unmatchedRows = computed<UnmatchedRowVm[]>(() => {
-    const rows = this.rowMatching.buildUnmatchedRows(this.scanRun.scanResult()?.scannedResults ?? [], {
+    const rows = this.rowMatching.buildUnmatchedRows(this.reviewRows(), {
       boats: this.boatsStore.boats(),
       classes: this.clubStore.club().classes,
     });
@@ -142,7 +142,7 @@ export class ScanReviewStore {
   readonly linkableCompetitors = computed(() => {
     const raceIds = this.raceSelection.selectedRaceIds();
     if (raceIds.length === 0) return [];
-    const rows = this.scanRun.scanResult()?.scannedResults ?? [];
+    const rows = this.reviewRows();
     return raceIds.flatMap((raceId) =>
       this.rowMatching.unmatchedRaceCompetitors(
         this.competitorReader.resolvedForRace(raceId),
@@ -182,26 +182,25 @@ export class ScanReviewStore {
     return row.raceId?.trim() || this.raceSelection.selectedRaceId();
   }
 
-  /** Sign on a unique match, or open the helm / new-entry dialog when the user asks. */
+  /** Select a unique match, or open the helm / new-entry dialog when the user asks. */
   async resolveUnmatched(row: ScannedResultRow): Promise<void> {
-    if (this.attemptedIdentityKeys.has(scanRowIdentityKey(row))) return;
     const plan = this.planForRow(row);
     if (plan.kind === 'link') {
       this.scanRun.applyRowMatch(row.rowIndex, plan.competitorId);
       return;
     }
     if (plan.kind === 'sign-on-entry') {
-      await this.signOn(row, entryDetailsFromSeriesEntry(plan.entry), plan.entry.helm);
+      await this.stageEntry(row, entryDetailsFromSeriesEntry(plan.entry));
       return;
     }
     if (plan.kind === 'choose-entry') {
-      const picked = await this.pickHelm(row, plan.entries.map(seriesEntryAsBoat), true);
+      const picked = await this.pickHelm(row, plan.entries.map(seriesEntryAsBoat));
       const entry = plan.entries.find(e => e.id === picked?.id);
-      if (entry) await this.signOn(row, entryDetailsFromSeriesEntry(entry), entry.helm);
+      if (entry) await this.stageEntry(row, entryDetailsFromSeriesEntry(entry));
       return;
     }
     if (plan.kind === 'sign-on-boat') {
-      await this.signOn(row, entryDetailsFromBoat(plan.boat), plan.boat.helm);
+      await this.stageEntry(row, entryDetailsFromBoat(plan.boat));
       return;
     }
     if (plan.kind === 'choose-boat') {
@@ -211,51 +210,50 @@ export class ScanReviewStore {
     await this.enterUnmatched(row);
   }
 
-  private async provisionAutomatic(
-    rows: ScannedResultRow[],
-    entries: SeriesEntry[],
-    boats: Boat[],
-    competitors: ResolvedRaceCompetitor[],
-    races: Race[],
-  ): Promise<void> {
-    let signedOn = 0;
-    for (const row of rows) {
-      if (row.matchedCompetitorId) continue;
-      const key = scanRowIdentityKey(row);
-      if (this.attemptedIdentityKeys.has(key)) continue;
-      const plan = classifyScanRow(row, {
-        race: this.raceRefFor(row, races),
-        competitors,
-        seriesEntries: entries,
-        boats,
-      });
-      if (!canAutoApplyScanIdentity(row, plan)) continue;
-      this.attemptedIdentityKeys.add(key);
-      try {
-        if (plan.kind === 'link') {
-          this.scanRun.applyRowMatch(row.rowIndex, plan.competitorId);
-        } else if (plan.kind === 'sign-on-entry') {
-          await this.signOn(row, entryDetailsFromSeriesEntry(plan.entry), plan.entry.helm);
-          signedOn++;
-        } else if (plan.kind === 'sign-on-boat') {
-          await this.signOn(row, entryDetailsFromBoat(plan.boat), plan.boat.helm);
-          signedOn++;
-        }
-      } catch (err: unknown) {
-        this.attemptedIdentityKeys.delete(key);
-        console.error('ScanReviewStore: could not sign on scanned row', row.rowIndex, err);
-        this.snackbar.open('Could not sign on a scanned boat automatically. Use Enter to add it.', 'Dismiss', {
-          duration: 5000,
-        });
-      }
-    }
-    if (signedOn > 0) {
+  /** Undo a staged entry so the row goes back to the unmatched table. */
+  unstageRow(row: ScannedResultRow): void {
+    this.scanRun.clearRowEntry(row.rowIndex);
+  }
+
+  /**
+   * Stage a sign-on chosen by the user. Prompts when the entry conflicts with
+   * an existing race entry; the swap itself happens on save.
+   */
+  private async stageEntry(row: ScannedResultRow, details: PendingScanEntry): Promise<void> {
+    const race = this.raceCalendar.allRaces().find(r => r.id === this.raceIdForRow(row));
+    if (!race) return;
+    const duplicate = this.duplicateStagedRow(row, details, race);
+    if (duplicate) {
       this.snackbar.open(
-        `Signed on ${signedOn} competitor${signedOn === 1 ? '' : 's'} from series entries and the boat register.`,
+        `Row ${duplicate.rowIndex} already uses ${describeIdentity(details)}.`,
         'Dismiss',
-        { duration: 4000 },
+        { duration: 5000 },
       );
+      return;
     }
+    const conflicts = this.entryService.findEntryConflicts({ ...details, races: [race] });
+    if (conflicts.length > 0) {
+      const choice = await this.dialogs.promptEntryConflict(conflicts.map(summariseConflict));
+      if (choice === 'cancel') return;
+    }
+    this.scanRun.stageRowEntry(row.rowIndex, {
+      ...details,
+      ...(conflicts.length > 0 ? { swapConflicts: true } : {}),
+    });
+  }
+
+  /** Another row in the same race already staged, by the user or automatically, for the same boat and helm. */
+  private duplicateStagedRow(
+    row: ScannedResultRow,
+    details: PendingScanEntry,
+    race: Race,
+  ): ScannedResultRow | undefined {
+    return this.reviewRows().find(other =>
+      other.rowIndex !== row.rowIndex &&
+      !!other.pendingEntry &&
+      this.raceIdForRow(other) === race.id &&
+      sameStagedIdentity(other.pendingEntry, details),
+    );
   }
 
   private planForRow(
@@ -279,89 +277,63 @@ export class ScanReviewStore {
     return { id: race.id, seriesId: race.seriesId };
   }
 
-  private async pickHelm(row: ScannedResultRow, boats: Boat[], selectOnly = false): Promise<Boat | undefined> {
-    const raceId = this.raceIdForRow(row);
+  private async pickHelm(row: ScannedResultRow, boats: Boat[]): Promise<Boat | undefined> {
     const boatClass = row.boatClass?.value?.trim();
     const sailNumber = normalizeSailNumber(row.sailNumber?.value);
-    if (!raceId || !boatClass || !sailNumber || boats.length === 0) return undefined;
+    if (!boatClass || !sailNumber || boats.length === 0) return undefined;
     const dialogRef = this.dialog.open(KnownBoatEntryDialog, {
       width: '520px',
-      data: { raceId, boatClass, sailNumber, boats, selectOnly },
+      data: { boatClass, sailNumber, boats },
     });
     const result = (await firstValueFrom(dialogRef.afterClosed())) as
       | KnownBoatEntryDialogResult
       | undefined;
-    if (!result?.created || !result.selectedBoatId) return undefined;
+    if (!result?.selectedBoatId) return undefined;
     return boats.find(b => b.id === result.selectedBoatId);
   }
 
-  private async signOn(
-    row: ScannedResultRow,
-    details: Omit<EntryDetails, 'races'>,
-    helm: string,
-  ): Promise<void> {
-    const raceId = this.raceIdForRow(row);
-    const race = this.raceCalendar.allRaces().find(r => r.id === raceId);
-    const boatClass = row.boatClass?.value?.trim();
-    const sailNumber = normalizeSailNumber(row.sailNumber?.value);
-    if (!race || !boatClass || !sailNumber) return;
-    await withTimeout(
-      this.entryService.enterRaces({ ...details, races: [race] }),
-      FIRESTORE_BULK_WRITE_TIMEOUT_MS,
-      'Creating entry',
-    );
-    await this.refreshScanRowMatch(row, details.boatClass || boatClass, details.sailNumber || sailNumber, helm);
-  }
-
   async enterKnownBoat(row: ScannedResultRow): Promise<void> {
-    const raceId = this.raceIdForRow(row);
-    const boatClass = row.boatClass?.value?.trim();
-    const sailNumber = normalizeSailNumber(row.sailNumber?.value);
-    if (!raceId || !boatClass || !sailNumber) {
-      this.snackbar.open('Class and sail number are required to create an entry.', 'Dismiss', {
-        duration: 4000,
-      });
-      return;
-    }
-
+    if (!this.hasEntryIdentity(row)) return;
     const matches = this.rowMatching.findBoatMatches(row, this.boatsStore.boats());
     if (matches.length === 0) {
       await this.enterUnmatched(row);
       return;
     }
-
-    const dialogRef = this.dialog.open(KnownBoatEntryDialog, {
-      width: '520px',
-      data: { raceId, boatClass, sailNumber, boats: matches },
-    });
-    const result = (await firstValueFrom(dialogRef.afterClosed())) as
-      | KnownBoatEntryDialogResult
-      | undefined;
-    if (!result?.created) return;
-    const selectedBoat = matches.find(b => b.id === result.selectedBoatId);
-    await this.refreshScanRowMatch(row, boatClass, sailNumber, selectedBoat?.helm);
+    const boat = await this.pickHelm(row, matches);
+    if (boat) await this.stageEntry(row, entryDetailsFromBoat(boat));
   }
 
   async enterUnmatched(row: ScannedResultRow): Promise<void> {
-    const raceId = this.raceIdForRow(row);
-    const boatClass = row.boatClass?.value?.trim();
-    const sailNumber = normalizeSailNumber(row.sailNumber?.value);
-    if (!raceId || !boatClass || !sailNumber) {
-      this.snackbar.open('Class and sail number are required to create an entry.', 'Dismiss', {
-        duration: 4000,
-      });
-      return;
-    }
+    if (!this.hasEntryIdentity(row)) return;
+    const boatClass = row.boatClass!.value.trim();
+    const sailNumber = normalizeSailNumber(row.sailNumber!.value);
 
     const dialogRef = this.dialog.open(UnmatchedRowEntryDialog, {
       width: '420px',
-      data: { raceId, boatClass, sailNumber },
+      data: { boatClass, sailNumber },
     });
     const result = (await firstValueFrom(dialogRef.afterClosed())) as
       | UnmatchedRowEntryDialogResult
       | undefined;
-    if (!result?.created) return;
-    await this.refreshScanRowMatch(row, boatClass, sailNumber, result.helm);
+    if (!result) return;
+    await this.stageEntry(row, {
+      helm: result.helm,
+      crew: result.crew,
+      boatClass,
+      sailNumber,
+      divisions: [],
+    });
+  }
+
+  private hasEntryIdentity(row: ScannedResultRow): boolean {
+    const raceId = this.raceIdForRow(row);
+    const boatClass = row.boatClass?.value?.trim();
+    const sailNumber = normalizeSailNumber(row.sailNumber?.value);
+    if (raceId && boatClass && sailNumber) return true;
+    this.snackbar.open('Class and sail number are required to create an entry.', 'Dismiss', {
+      duration: 4000,
+    });
+    return false;
   }
 
   async linkScanRow(row: ScannedResultRow): Promise<void> {
@@ -408,7 +380,7 @@ export class ScanReviewStore {
       this.competitorStore.selectedCompetitors().map(c => [c.id, c] as const),
     );
     const acceptedMatchedItems = this.matchedRows().filter(
-      vm => vm.row.accepted && !!vm.row.matchedCompetitorId,
+      vm => vm.row.accepted && (!!vm.row.matchedCompetitorId || !!vm.row.pendingEntry),
     );
     if (acceptedMatchedItems.length === 0) {
       this._error.set('No accepted matched rows to save.');
@@ -417,10 +389,11 @@ export class ScanReviewStore {
     this._error.set(null);
     this._saving.set(true);
     try {
-      const acceptedMatchedIds = acceptedMatchedItems
+      const linkedItems = acceptedMatchedItems.filter(vm => !vm.row.pendingEntry);
+      const acceptedMatchedIds = linkedItems
         .map(vm => vm.row.matchedCompetitorId!)
         .filter(Boolean);
-      const missingMatchedIds = acceptedMatchedItems
+      const missingMatchedIds = linkedItems
         .filter(vm => {
           const competitorId = vm.row.matchedCompetitorId;
           return !competitorId || !this.resolvedByCompetitorId().has(competitorId);
@@ -443,20 +416,31 @@ export class ScanReviewStore {
       const timeFormat = this.scanRun.contextForm.controls.timeFormat.value;
       const defaultHour = this.scanRun.defaultHourForParsing();
       const racesById = new Map(this.raceCalendar.allRaces().map((r) => [r.id, r] as const));
+      const raceForRow = (row: ScannedResultRow): Race =>
+        racesById.get(this.raceIdForRow(row) ?? sessionRaceId) ?? sessionRace;
+      const hasResult = (row: ScannedResultRow): boolean => {
+        if (!isLevelRating) return true;
+        const position = row.position?.value;
+        return position != null && Number.isFinite(position);
+      };
       await withTimeout(
         (async () => {
+          const createdByRow = new Map<number, RaceCompetitor>();
           for (const vm of acceptedMatchedItems) {
-            const competitor = this.resolvedByCompetitorId().get(vm.row.matchedCompetitorId!);
+            if (!vm.row.pendingEntry || !hasResult(vm.row)) continue;
+            const competitor = await this.createStagedEntry(vm.row, vm.row.pendingEntry, raceForRow(vm.row));
+            createdByRow.set(vm.row.rowIndex, competitor);
+          }
+
+          for (const vm of acceptedMatchedItems) {
+            if (!hasResult(vm.row)) continue;
+            const competitor = createdByRow.get(vm.row.rowIndex) ??
+              this.resolvedByCompetitorId().get(vm.row.matchedCompetitorId ?? '');
             if (!competitor) continue;
-            const rowRaceId = this.raceIdForRow(vm.row) ?? sessionRaceId;
-            const race: Race | undefined = racesById.get(rowRaceId) ?? sessionRace;
-            if (!race) continue;
+            const race = raceForRow(vm.row);
 
             if (isLevelRating) {
-              const position = vm.row.position?.value;
-              if (position == null || !Number.isFinite(position)) {
-                continue;
-              }
+              const position = vm.row.position!.value;
               await this.manualResults.recordResult(competitor, race, {
                 finishTime: null,
                 laps: 1,
@@ -494,35 +478,50 @@ export class ScanReviewStore {
     return err instanceof Error ? err.message : 'Could not save scan results.';
   }
 
-  private async refreshScanRowMatch(
+  /**
+   * Creates the series entry and race competitor for a staged row, then links
+   * the row so a retry after a later failure does not create it twice.
+   */
+  private async createStagedEntry(
     row: ScannedResultRow,
-    boatClass: string,
-    sailNumber: string,
-    helm?: string,
-  ): Promise<void> {
-    const raceId = this.raceIdForRow(row);
-    if (!raceId) return;
-
-    for (let attempt = 0; attempt < REMATCH_ATTEMPTS; attempt++) {
-      const match = this.competitorReader.resolvedForRace(raceId).find(r => {
-        const classMatch = boatClassesMatch(r.boatClass, boatClass);
-        const sailMatch = sailNumbersEqual(r.sailNumber, sailNumber);
-        const helmMatch = !helm || r.helm.toLowerCase() === helm.toLowerCase();
-        return classMatch && sailMatch && helmMatch;
-      });
-      if (match) {
-        this.scanRun.applyRowMatch(row.rowIndex, match.id);
-        return;
-      }
-      await new Promise(resolve => setTimeout(resolve, REMATCH_DELAY_MS));
+    pending: PendingScanEntry,
+    race: Race,
+  ): Promise<RaceCompetitor> {
+    const { swapConflicts, ...entry } = pending;
+    const details: EntryDetails = { ...entry, races: [race] };
+    const conflicts = this.entryService.findEntryConflicts(details);
+    if (conflicts.length > 0 && !swapConflicts) {
+      throw new ScoreSmarterError(
+        `Row ${row.rowIndex}: ${describeIdentity(entry)} is already entered in this race. ` +
+        'Undo the entry selection or use Link.',
+      );
     }
-
-    this.snackbar.open(
-      'Entry was created, but the scan row could not be linked automatically. Use Link to attach it.',
-      'Dismiss',
-      { duration: 6000 },
-    );
+    const [competitor] = conflicts.length > 0
+      ? await this.entryService.swapAndEnter(details, conflicts)
+      : await this.entryService.enterRaces(details);
+    if (!competitor) {
+      throw new ScoreSmarterError(`Row ${row.rowIndex}: entry for ${describeIdentity(entry)} was not created.`);
+    }
+    this.scanRun.applyRowMatch(row.rowIndex, competitor.id);
+    return competitor;
   }
+}
+
+function summariseConflict(c: EntryConflict): EntryConflictSummary {
+  const e = c.existingEntry;
+  const existingLabel = `${e.helm} – ${e.boatClass} #${e.sailNumber}`;
+  const raceLabel = `${c.race.seriesName} race ${c.race.index}`;
+  const reasonLabel = (() => {
+    switch (c.reason) {
+      case 'sameEntry':
+        return 'Exact same boat is already entered.';
+      case 'sameHelmDifferentHull':
+        return 'This series merges by helm, so a sailor can only enter one boat per race.';
+      case 'sameHullDifferentHelm':
+        return 'This series merges by boat, so a hull can only be entered once per race.';
+    }
+  })();
+  return { raceLabel, existingLabel, reasonLabel };
 }
 
 function helmLabels(plan: ScanRowIdentityPlan, fallback: string[]): string[] {
@@ -531,32 +530,6 @@ function helmLabels(plan: ScanRowIdentityPlan, fallback: string[]): string[] {
   if (plan.kind === 'sign-on-entry') return [plan.entry.helm];
   if (plan.kind === 'sign-on-boat') return [plan.boat.helm];
   return fallback;
-}
-
-function entryDetailsFromSeriesEntry(entry: SeriesEntry): Omit<EntryDetails, 'races'> {
-  return {
-    helm: entry.helm,
-    crew: entry.crew,
-    club: entry.club,
-    boatName: entry.boatName,
-    boatClass: entry.boatClass,
-    sailNumber: entry.sailNumber,
-    handicaps: entry.handicaps,
-    personalHandicapBand: entry.personalHandicapBand,
-    divisions: entry.divisions,
-  };
-}
-
-function entryDetailsFromBoat(boat: Boat): Omit<EntryDetails, 'races'> {
-  return {
-    helm: boat.helm,
-    crew: boat.crew,
-    boatName: boat.name,
-    boatClass: boat.boatClass,
-    sailNumber: boat.sailNumber,
-    handicaps: boat.handicaps,
-    personalHandicapBand: boat.personalHandicapBand,
-  };
 }
 
 function seriesEntryAsBoat(entry: SeriesEntry): Boat {

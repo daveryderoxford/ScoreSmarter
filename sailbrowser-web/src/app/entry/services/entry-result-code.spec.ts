@@ -107,4 +107,21 @@ describe('EntryService.enterRaces resultCode', () => {
     });
     expect(added[0]?.resultCode).toBe('OOD');
   });
+
+  it('returns the race competitors it created', async () => {
+    const race = makeRace();
+    const created = await service.enterRaces({
+      races: [race],
+      helm: 'Sam',
+      boatClass: 'ILCA 7',
+      sailNumber: '100',
+    });
+    expect(created).toHaveLength(1);
+    expect(created[0]).toEqual(expect.objectContaining({
+      id: 'rc-1',
+      raceId: race.id,
+      seriesEntryId: 'e1',
+      resultCode: 'NOT FINISHED',
+    }));
+  });
 });

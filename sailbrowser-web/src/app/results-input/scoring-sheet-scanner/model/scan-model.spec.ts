@@ -67,7 +67,7 @@ describe('assignLevelRatingPositions', () => {
 });
 
 describe('applyAutoAccept', () => {
-  it('auto-accepts level-rating rows on overall + sail HIGH with raceId', () => {
+  it('auto-accepts level-rating rows on overall confidence HIGH', () => {
     const result = applyAutoAccept({
       scannedResults: [
         row({ rowIndex: 1, raceId: 'a' }),
@@ -81,11 +81,15 @@ describe('applyAutoAccept', () => {
     expect(result.scannedResults[1].position?.value).toBe(2);
   });
 
-  it('still requires time HIGH for handicap rows', () => {
+  it('accepts handicap rows on overall confidence alone', () => {
     const result = applyAutoAccept({
       scannedResults: [
-        row({ rowIndex: 1, time: { value: '12:00:00', confidence: 'HIGH' } }),
-        row({ rowIndex: 2, time: { value: '12:01:00', confidence: 'MANUAL_CHECK' } }),
+        row({ rowIndex: 1, time: { value: '12:01:00', confidence: 'MANUAL_CHECK' } }),
+        row({
+          rowIndex: 2,
+          overallRowConfidence: 'MANUAL_CHECK',
+          time: { value: '12:00:00', confidence: 'HIGH' },
+        }),
       ],
       unreadableRowsCount: 0,
     });
