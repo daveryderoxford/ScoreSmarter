@@ -4,6 +4,7 @@ import type {
   ScannerTimeFormat,
 } from '@shared/scanner-context';
 import type { ScanExecutionMetrics as SharedScanExecutionMetrics } from '@shared/scan-metrics';
+import type { EntryDetails } from 'app/entry/services/entry.service';
 import { resolveClassAlias } from './class-aliases';
 
 export type ScanExecutionMetrics = SharedScanExecutionMetrics;
@@ -41,8 +42,15 @@ export interface ScannedResultRow {
   status?: string;
   overallRowConfidence: string;
   matchedCompetitorId?: string;
+  /** Sign-on chosen during review. Not written to Firestore until the scan is saved. */
+  pendingEntry?: PendingScanEntry;
   accepted?: boolean;
 }
+
+export type PendingScanEntry = Omit<EntryDetails, 'races' | 'resultCode'> & {
+  /** The user agreed to replace conflicting race entries. */
+  swapConflicts?: boolean;
+};
 
 export interface ScanResponse {
   scannedResults: ScannedResultRow[];
@@ -167,9 +175,9 @@ export function assignLevelRatingPositions(rows: ScannedResultRow[]): ScannedRes
 }
 
 /**
- * Applies the auto-accept rules shared by the live scan run and the stored-scan
- * read. Handicap: overall + sail + time HIGH. Level-rating: overall + sail HIGH
- * with a raceId (position is assigned in code). Pure; safe to reuse across services.
+ * Applies the auto-accept rule shared by the live scan run and the stored-scan
+ * read: a row is accepted when its overall confidence is HIGH. Level-rating
+ * positions are assigned in code. Pure; safe to reuse across services.
  *
  * Missing per-field confidence is treated as HIGH (Gemini often sets overall HIGH
  * but omits field confidence). Explicit MANUAL_CHECK / FAILED / AMBIGUOUS are kept.
@@ -179,16 +187,7 @@ export function applyAutoAccept(response: ScanResponse): ScanResponse {
   const withAliases = scanPayload.scannedResults.map(applyClassAliasesToRow);
   const scannedResults = assignLevelRatingPositions(withAliases).map(row => {
     const normalized = withDefaultFieldConfidence(row);
-    const isLevelRating = !!normalized.raceId;
-    const resultFieldOk = isLevelRating
-      ? true
-      : normalized.time?.confidence === 'HIGH';
-    return {
-      ...normalized,
-      accepted: normalized.overallRowConfidence === 'HIGH' &&
-        normalized.sailNumber?.confidence === 'HIGH' &&
-        resultFieldOk,
-    };
+    return { ...normalized, accepted: normalized.overallRowConfidence === 'HIGH' };
   });
   return { ...scanPayload, scannedResults, ...(metrics ? { metrics } : {}) };
 }

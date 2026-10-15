@@ -29,6 +29,13 @@ test("resolveClassAlias maps Radial and Laser R case-insensitively", () => {
   assert.equal(resolveClassAlias("ILCA 6"), "ILCA 6");
 });
 
+test("resolveClassAlias maps Vareo misspellings to RS Vareo", () => {
+  assert.equal(resolveClassAlias("Vario"), "RS Vareo");
+  assert.equal(resolveClassAlias("RS Vario"), "RS Vareo");
+  assert.equal(resolveClassAlias("rsvario"), "RS Vareo");
+  assert.equal(resolveClassAlias("Vareo"), "RS Vareo");
+});
+
 test("normalizeBoatClasses rewrites value and keeps sheet text in alternatives", () => {
   const parsed = {
     scannedResults: [{

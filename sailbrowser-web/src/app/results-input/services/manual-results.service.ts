@@ -344,6 +344,8 @@ export class ManualResultsService {
 
     const raceCompetitors = this.competitorStore.selectedCompetitors().filter(c => c.raceId === race.id);
     const nextCodes = raceCompetitors.map(c => c.id === competitor.id ? resultCode : c.resultCode);
+    // A competitor created moments ago may not be in the store snapshot yet.
+    if (!raceCompetitors.some(c => c.id === competitor.id)) nextCodes.push(resultCode);
     const nextStatus = this.statusFromResultCodes(nextCodes);
     if (nextStatus && race.status !== nextStatus) {
       await this.raceStore.updateRace(race.id, { status: nextStatus });

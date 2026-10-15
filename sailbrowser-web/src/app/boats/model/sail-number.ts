@@ -1,4 +1,5 @@
 import type { AbstractControl, ValidationErrors } from '@angular/forms';
+import { editDistance } from 'app/shared/utils/string-utils';
 
 /** Stored sail / boat identifier (free-form string; club racing uses many formats). */
 export type SailNumber = string;
@@ -51,6 +52,14 @@ export function sailNumbersEqual(a: unknown, b: unknown): boolean {
 /** Sort comparator: locale-aware with numeric segments (`2` before `10`). */
 export function compareSailNumbers(a: unknown, b: unknown): number {
   return normalizeSailNumber(a).localeCompare(normalizeSailNumber(b), undefined, { numeric: true });
+}
+
+/**
+ * Number of single-character edits (insert, delete, replace, or swap of neighbours)
+ * between two normalized sail numbers. Used to spot likely misreads.
+ */
+export function sailNumberDistance(a: unknown, b: unknown): number {
+  return editDistance(normalizeSailNumber(a), normalizeSailNumber(b));
 }
 
 /** Whether a value is present after normalization (required non-empty string). */

@@ -20,6 +20,9 @@ export const defaultClassAliases = [
   '400', 'RS400',
   '500', 'RS500',
   '600', 'RS600',
+  'Vareo', 'RS Vareo',
+  'Vario', 'RS Vareo',
+  'RS Vario', 'RS Vareo',
   'Top', 'Topper',
   'T', 'Topper',
 ];

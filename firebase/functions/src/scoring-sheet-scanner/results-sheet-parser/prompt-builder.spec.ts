@@ -45,6 +45,21 @@ test("buildPrompt requires boatClass.value to be the club class from aliases", (
   assert.match(prompt, /Laser \/ L → ILCA 7/i);
 });
 
+test("buildPrompt adds club classes as a spelling guide for unmatched rows", () => {
+  const prompt = buildPrompt({ ...baseContext, clubClasses: ["ILCA 7", "RS Vareo"] }, "race-1");
+  assert.match(prompt, /## Class \/ sail number[\s\S]*CLUB_CLASSES \(spelling guide\): \["ILCA 7","RS Vareo"\]/);
+  assert.match(prompt, /ONLY for rows with no ENTRY_LIST match and no CLASS_ALIASES match/);
+  assert.match(prompt, /boatClass\.confidence to MANUAL_CHECK/);
+  assert.match(prompt, /sheet text in boatClass\.alternatives/);
+  assert.match(prompt, /Otherwise keep the sheet text as written/);
+  assert.match(prompt, /never force a match/i);
+});
+
+test("buildPrompt omits the club class guide when there are no club classes", () => {
+  assert.doesNotMatch(buildPrompt(baseContext, "race-1"), /CLUB_CLASSES/);
+  assert.doesNotMatch(buildPrompt({ ...baseContext, clubClasses: [] }, "race-1"), /CLUB_CLASSES/);
+});
+
 test("buildPrompt requires row integrity and typewritten row index", () => {
   const prompt = buildPrompt(baseContext, "race-1");
   assert.match(prompt, /Row integrity:/i);
@@ -195,6 +210,13 @@ test("buildLevelRatingPrompt uses single-race wording when only one target race"
   assert.match(prompt, /Assign matchedCompetitorId first/i);
   assert.match(prompt, /set raceId to "race-a"/i);
   assert.doesNotMatch(prompt, /position\.value/i);
+});
+
+test("buildLevelRatingPrompt adds club classes as a spelling guide", () => {
+  const prompt = buildLevelRatingPrompt({ ...levelRatingContext, clubClasses: ["RS Vareo"] });
+  assert.match(prompt, /## Class \/ sail number[\s\S]*CLUB_CLASSES \(spelling guide\): \["RS Vareo"\]/);
+  assert.match(prompt, /Otherwise keep the sheet text as written/);
+  assert.doesNotMatch(buildLevelRatingPrompt(levelRatingContext), /CLUB_CLASSES/);
 });
 
 test("buildLevelRatingPrompt appends SPECIAL INSTRUCTIONS as section 5", () => {

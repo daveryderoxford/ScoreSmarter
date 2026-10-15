@@ -1,7 +1,4 @@
 import { Injectable } from '@angular/core';
-import { Boat } from 'app/boats/model/boat';
-import { normalizeSailNumber, sailNumbersEqual } from 'app/boats/model/sail-number';
-import { BoatClass } from 'app/club-tenant/model/boat-class';
 import { Race } from 'app/race-calender/model/race';
 import { RESULT_CODES, ResultCode } from 'app/scoring/model/result-code-scoring';
 import type { ScannerTimeFormat } from '@shared/scanner-context';
@@ -9,7 +6,13 @@ import { normaliseString } from 'app/shared/utils/string-utils';
 import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
 import { resolveClassAlias } from '../model/class-aliases';
 import { ScannedResultRow } from '../model/scan-model';
-import { MatchedRowVm, UnmatchedRowVm } from './review-step';
+import type { HelmOption, ScanGridRowVm } from './review-step';
+import {
+  sameStagedIdentity,
+  type HelmCandidate,
+  type ScanRowIdentityPlan,
+  type UnmatchedReason,
+} from './scan-row-provision';
 
 /** True when class names match after normalisation and class-alias resolution. */
 export function boatClassesMatch(a: string | undefined | null, b: string | undefined | null): boolean {
@@ -17,76 +20,18 @@ export function boatClassesMatch(a: string | undefined | null, b: string | undef
 }
 
 /**
- * Pure matching/parsing logic for scanned result rows. Takes its inputs
- * (boats, classes, resolved competitors, race) as arguments so it stays free of
- * store/signal dependencies and is easy to unit test.
+ * Pure view-model and parsing logic for scanned result rows. Takes its inputs
+ * as arguments so it stays free of store/signal dependencies and is easy to unit test.
  */
 @Injectable()
 export class ScanRowMatchingService {
   private readonly allowedResultCodes = new Set<string>(RESULT_CODES as readonly string[]);
 
-  findBoatMatches(row: ScannedResultRow, boats: Boat[]): Boat[] {
-    const boatClass = row.boatClass?.value;
-    const sailNumber = normalizeSailNumber(row.sailNumber?.value);
-    if (!boatClass?.trim() || !sailNumber) return [];
-    const scannedClass = normaliseString(resolveClassAlias(boatClass));
-    return boats.filter(
-      b =>
-        normaliseString(resolveClassAlias(b.boatClass)) === scannedClass &&
-        sailNumbersEqual(b.sailNumber, sailNumber),
-    );
-  }
-
-  buildMatchedRows(
-    rows: ScannedResultRow[],
-    resolvedById: Map<string, ResolvedRaceCompetitor>,
-  ): MatchedRowVm[] {
-    return rows
-      .filter(row => !!row.matchedCompetitorId)
-      .map(row => {
-        const competitor = row.matchedCompetitorId ? resolvedById.get(row.matchedCompetitorId) : undefined;
-        return { row, helm: competitor?.helm, competitor };
-      });
-  }
-
-  buildUnmatchedRows(
-    rows: ScannedResultRow[],
-    ctx: { boats: Boat[]; classes: BoatClass[] },
-  ): UnmatchedRowVm[] {
-    return rows
-      .filter(row => !row.matchedCompetitorId)
-      .map(row => {
-        const boatClass = row.boatClass?.value?.trim() ?? '';
-        const sailNumber = normalizeSailNumber(row.sailNumber?.value);
-        const matchedClass =
-          !!boatClass && ctx.classes.some(c => boatClassesMatch(c.name, boatClass));
-        const boatMatches = this.findBoatMatches(row, ctx.boats);
-        const matchedBoat = boatMatches.length > 0;
-        const possibleHelms = Array.from(
-          new Set(boatMatches.map(m => m.helm).filter((h): h is string => !!h && h.trim().length > 0)),
-        );
-        return {
-          row,
-          matchedBoat,
-          matchedClass,
-          canCreate: !!boatClass && !!sailNumber && (matchedBoat || matchedClass),
-          possibleHelms,
-        };
-      });
-  }
-
-  /**
-   * Race competitors that are not already linked to any scanned row.
-   * Used by the Link action for unreadble class/sail merges.
-   */
-  unmatchedRaceCompetitors(
-    competitors: ResolvedRaceCompetitor[],
-    scannedRows: ScannedResultRow[],
-  ): ResolvedRaceCompetitor[] {
-    const matchedIds = new Set(
-      scannedRows.map(r => r.matchedCompetitorId).filter((id): id is string => !!id),
-    );
-    return competitors.filter(c => !matchedIds.has(c.id));
+  /** One view model per scanned row, in sheet order. `rows` already carry automatic matches. */
+  buildGridRows(rows: readonly ScannedResultRow[], ctx: GridRowContext): ScanGridRowVm[] {
+    return [...rows]
+      .sort((a, b) => a.rowIndex - b.rowIndex)
+      .map(row => buildGridRow(row, ctx));
   }
 
   parseScannedTime(
@@ -118,4 +63,98 @@ export class ScanRowMatchingService {
     if (!status) return 'OK';
     return this.allowedResultCodes.has(status) ? (status as ResultCode) : 'OK';
   }
+}
+
+/** Why an accepted row cannot be saved as it stands. */
+export interface RowConflict {
+  reason: string;
+  /** The staged entry clashes with an existing race entry that can be replaced. */
+  canReplaceExisting: boolean;
+}
+
+export interface GridRowContext {
+  plans: ReadonlyMap<number, ScanRowIdentityPlan>;
+  conflicts: ReadonlyMap<number, RowConflict>;
+  resolvedById: ReadonlyMap<string, ResolvedRaceCompetitor>;
+  nearMissRows: ReadonlySet<number>;
+}
+
+const UNMATCHED_PROBLEMS: Record<UnmatchedReason, NonNullable<ScanGridRowVm['problem']>> = {
+  'unreadable-class': { field: 'boatClass', message: 'Class unreadable' },
+  'unreadable-sail': { field: 'sailNumber', message: 'Sail number unreadable' },
+  'unknown-class': { field: 'boatClass', message: 'Class not found in the club classes' },
+  'not-found': { field: 'sailNumber', message: 'No entry or boat found with this sail number' },
+};
+
+function buildGridRow(row: ScannedResultRow, ctx: GridRowContext): ScanGridRowVm {
+  const plan = ctx.plans.get(row.rowIndex) ?? { kind: 'skip' };
+  const conflict = ctx.conflicts.get(row.rowIndex);
+  const base = {
+    row,
+    lowConfidence: !row.accepted && row.overallRowConfidence !== 'HIGH',
+    nearMissSail: ctx.nearMissRows.has(row.rowIndex),
+    canReplaceExisting: !!conflict?.canReplaceExisting,
+  };
+
+  if (row.matchedCompetitorId) {
+    const competitor = ctx.resolvedById.get(row.matchedCompetitorId);
+    return {
+      ...base,
+      status: conflict ? 'conflict' : 'matched',
+      reason: conflict?.reason,
+      competitor,
+      identity: competitor,
+      helmOptions: [],
+      canAccept: true,
+    };
+  }
+
+  const candidates = plan.kind === 'sign-on' || plan.kind === 'choose-helm' ? plan.candidates : [];
+
+  if (row.pendingEntry) {
+    const { helm, boatClass, sailNumber } = row.pendingEntry;
+    const candidate = candidates.find(c => sameStagedIdentity(c.entry, row.pendingEntry!));
+    const onlyCandidateChosen = candidates.length === 1 && !!candidate;
+    return {
+      ...base,
+      status: conflict ? 'conflict' : 'new-entry',
+      reason: conflict?.reason,
+      identity: { helm, boatClass, sailNumber },
+      pendingSource: candidate?.source ?? 'new',
+      helmOptions: candidates.length > 0 && !onlyCandidateChosen
+        ? helmOptions(candidates, candidate ? undefined : helm)
+        : [],
+      selectedHelm: candidate ? `candidate:${candidate.helm}` : `new:${helm}`,
+      canAccept: true,
+    };
+  }
+
+  if (plan.kind === 'choose-helm') {
+    return {
+      ...base,
+      status: 'choose-helm',
+      reason: plan.helmDiffers
+        ? `Scanned helm "${plan.scannedHelm}" is not entered for this boat`
+        : 'Several helms sail this boat',
+      helmOptions: helmOptions(plan.candidates, plan.scannedHelm),
+      canAccept: false,
+    };
+  }
+
+  const problem = plan.kind === 'unmatched' ? UNMATCHED_PROBLEMS[plan.reason] : undefined;
+  return {
+    ...base,
+    status: 'no-match',
+    reason: problem?.message ?? 'Race not found',
+    problem,
+    helmOptions: [],
+    canAccept: false,
+  };
+}
+
+function helmOptions(candidates: readonly HelmCandidate[], newHelm?: string): HelmOption[] {
+  const options: HelmOption[] = candidates.map(c => ({ value: `candidate:${c.helm}`, label: c.helm }));
+  if (newHelm?.trim()) options.push({ value: `new:${newHelm}`, label: `New helm: ${newHelm}` });
+  options.push({ value: 'edit', label: 'New helm...' });
+  return options;
 }

@@ -9,10 +9,11 @@ import { ScanSelectedRace } from '../select-race/race-selection.store';
 import { SheetCaptureStore } from '../capture-image/sheet-capture.store';
 import { ScanPersistenceService } from '../shared/scan-persistence.service';
 import { ScanExecutionService } from './scan-execution.service';
-import { ScannerContext, ScanResponse } from '../model/scan-model';
+import { PendingScanEntry, ScannedResultRow, ScannerContext, ScanResponse } from '../model/scan-model';
 import { ScanAiConfigService } from '../model/scan-ai-config.service';
 import {
   promoteRowAlternative,
+  replaceRowIdentity,
   type ScannedValueField,
 } from './promote-scanned-alternative';
 
@@ -188,34 +189,47 @@ export class ScanRunStore {
     );
   }
 
-  /** Attach a competitor match to a row (after manual entry) and accept it. */
+  /** Attach a competitor match to a row and accept it. Replaces any staged entry. */
   applyRowMatch(rowIndex: number, competitorId: string): void {
+    this.updateRow(rowIndex, row => ({
+      ...withoutPendingEntry(row),
+      matchedCompetitorId: competitorId,
+      accepted: true,
+    }));
+  }
+
+  /** Stage a sign-on for a row and accept it. Nothing is written until save. */
+  stageRowEntry(rowIndex: number, pendingEntry: PendingScanEntry): void {
+    this.updateRow(rowIndex, row => ({ ...row, pendingEntry, accepted: true }));
+  }
+
+  /**
+   * Replace the row's class and sail number with values the user typed. The scanned
+   * values stay as alternatives, and any earlier link or staged entry is cleared.
+   */
+  editRowIdentity(rowIndex: number, identity: { boatClass: string; sailNumber: string }): void {
+    this.updateRow(rowIndex, row => replaceRowIdentity(row, identity));
+  }
+
+  private updateRow(rowIndex: number, fn: (row: ScannedResultRow) => ScannedResultRow): void {
     this._scanResult.update((current) =>
       current
         ? {
             ...current,
             scannedResults: current.scannedResults.map((row) =>
-              row.rowIndex === rowIndex
-                ? { ...row, matchedCompetitorId: competitorId, accepted: true }
-                : row,
+              row.rowIndex === rowIndex ? fn(row) : row,
             ),
           }
         : null,
     );
   }
 
-  /** Promote an alternative value to the primary field value on the working copy. */
+  /**
+   * Promote an alternative value to the primary field value on the working copy.
+   * Changing the class or sail number clears an earlier link or staged entry.
+   */
   promoteAlternative(rowIndex: number, field: ScannedValueField, chosen: string | number): void {
-    this._scanResult.update((current) =>
-      current
-        ? {
-            ...current,
-            scannedResults: current.scannedResults.map((row) =>
-              row.rowIndex === rowIndex ? promoteRowAlternative(row, field, chosen) : row,
-            ),
-          }
-        : null,
-    );
+    this.updateRow(rowIndex, row => promoteRowAlternative(row, field, chosen));
   }
 
   reset(): void {
@@ -287,4 +301,10 @@ export class ScanRunStore {
       ...(formData.debug ? { debug: true } : {}),
     };
   }
+}
+
+function withoutPendingEntry(row: ScannedResultRow): ScannedResultRow {
+  const next = { ...row };
+  delete next.pendingEntry;
+  return next;
 }

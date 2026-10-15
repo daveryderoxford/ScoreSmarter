@@ -24,26 +24,49 @@
 <p class="error-text" style="margin-bottom: 1rem;">{{ review.error() }}</p>
 }
 
-@if (review.matchedRows().length > 0) {
+@if (review.gridRows().length > 0) {
 
-<h3 class="section-title">Matched Entries</h3>
+<div class="grid-toolbar">
+  <p class="summary" aria-live="polite">{{ summaryText() }}</p>
+  <mat-slide-toggle
+    [checked]="review.needsAttentionOnly()"
+    (change)="review.setNeedsAttentionOnly($event.checked)">
+    Needs attention only
+  </mat-slide-toggle>
+</div>
+<p class="section-hint muted">
+  Rows are in sheet order. New entries are created only when you save the scan;
+  untick a row to leave it out.
+</p>
+
 <div class="table-container">
-  <table mat-table [dataSource]="review.matchedRows()" class="mat-elevation-z1">
+  <table mat-table [dataSource]="review.visibleRows()" class="mat-elevation-z1">
 
     <ng-container matColumnDef="accept">
       <th mat-header-cell *matHeaderCellDef>Accept</th>
       <td mat-cell *matCellDef="let vm">
-        <mat-checkbox
-          [checked]="!!vm.row.accepted"
-          (change)="onAcceptanceChanged(vm.row.rowIndex, $event)"
-        />
+        <span [matTooltip]="acceptTooltip(vm)">
+          <mat-checkbox
+            [checked]="!!vm.row.accepted && vm.canAccept"
+            [disabled]="!vm.canAccept"
+            [attr.aria-label]="'Accept row ' + vm.row.rowIndex"
+            (change)="onAcceptanceChanged(vm.row.rowIndex, $event)"
+          />
+        </span>
       </td>
     </ng-container>
 
     <ng-container matColumnDef="rowIndex">
       <th mat-header-cell *matHeaderCellDef>Row</th>
       <td mat-cell *matCellDef="let vm">
-        {{ vm.row.rowIndex }}
+        <span class="row-status">
+          {{ vm.row.rowIndex }}
+          <mat-icon
+            class="status-icon"
+            [class]="statusTone(vm)"
+            [matTooltip]="statusTooltip(vm)"
+            [attr.aria-label]="statusTooltip(vm)">{{ statusIcon(vm) }}</mat-icon>
+        </span>
         @if (vm.row.swappedRowIndex != null) {
           <span class="swap-marker" [attr.title]="'Arrow swap to row ' + vm.row.swappedRowIndex">
             → {{ vm.row.swappedRowIndex }}
@@ -60,12 +83,26 @@
           label="Choose alternate sail number"
           (selected)="promoteAlternative(vm.row.rowIndex, 'sailNumber', $event)">
           <span class="confidence-marker matched-identity" [class]="vm.row.sailNumber?.confidence">
-            {{ matchedEntryText(vm.competitor?.sailNumber) }}
-            @if (matchedScanText(vm.competitor?.sailNumber, vm.row.sailNumber?.value, { compareSail: true }); as scanText) {
-              <span class="matched-scan"> / {{ scanText }}</span>
+            @if (vm.identity) {
+              {{ matchedEntryText(vm.identity.sailNumber) }}
+              @if (matchedScanText(vm.identity.sailNumber, vm.row.sailNumber?.value, { compareSail: true }); as scanText) {
+                <span class="matched-scan"> / {{ scanText }}</span>
+              }
+            } @else {
+              {{ vm.row.sailNumber?.value || '-' }}
             }
           </span>
         </app-scan-alternate-picker>
+        @if (vm.problem?.field === 'sailNumber') {
+          <button
+            class="field-problem"
+            type="button"
+            [matTooltip]="vm.problem.message + '. Click to edit the row.'"
+            [attr.aria-label]="vm.problem.message + ', edit row ' + vm.row.rowIndex"
+            (click)="review.editRow(vm.row)">
+            <mat-icon>error</mat-icon>
+          </button>
+        }
       </td>
     </ng-container>
 
@@ -77,29 +114,65 @@
           label="Choose alternate class"
           (selected)="promoteAlternative(vm.row.rowIndex, 'boatClass', $event)">
           <span class="confidence-marker matched-identity" [class]="vm.row.boatClass?.confidence">
-            {{ matchedEntryText(vm.competitor?.boatClass) }}
-            @if (matchedScanText(vm.competitor?.boatClass, vm.row.boatClass?.value); as scanText) {
-              <span class="matched-scan"> / {{ scanText }}</span>
+            @if (vm.identity) {
+              {{ matchedEntryText(vm.identity.boatClass) }}
+              @if (matchedScanText(vm.identity.boatClass, vm.row.boatClass?.value); as scanText) {
+                <span class="matched-scan"> / {{ scanText }}</span>
+              }
+            } @else {
+              {{ vm.row.boatClass?.value || '-' }}
             }
           </span>
         </app-scan-alternate-picker>
+        @if (vm.problem?.field === 'boatClass') {
+          <button
+            class="field-problem"
+            type="button"
+            [matTooltip]="vm.problem.message + '. Click to edit the row.'"
+            [attr.aria-label]="vm.problem.message + ', edit row ' + vm.row.rowIndex"
+            (click)="review.editRow(vm.row)">
+            <mat-icon>error</mat-icon>
+          </button>
+        }
       </td>
     </ng-container>
 
     <ng-container matColumnDef="helm">
       <th mat-header-cell *matHeaderCellDef>Helm</th>
       <td mat-cell *matCellDef="let vm">
-        <app-scan-alternate-picker
-          [scanned]="vm.row.competitorName"
-          label="Choose alternate helm name"
-          (selected)="promoteAlternative(vm.row.rowIndex, 'competitorName', $event)">
-          <span class="matched-identity">
-            {{ matchedEntryText(vm.competitor?.helm) }}
-            @if (matchedScanText(vm.competitor?.helm, vm.row.competitorName?.value); as scanText) {
-              <span class="matched-scan"> / {{ scanText }}</span>
-            }
-          </span>
-        </app-scan-alternate-picker>
+        @if (vm.helmOptions.length > 0) {
+          <mat-form-field class="helm-select" appearance="outline" subscriptSizing="dynamic">
+            <mat-select
+              #helmSelect
+              [value]="vm.selectedHelm"
+              placeholder="Choose helm"
+              [attr.aria-label]="'Helm for row ' + vm.row.rowIndex"
+              (selectionChange)="onHelmSelected(helmSelect, vm, $event.value)">
+              @for (option of vm.helmOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          @if (vm.row.competitorName?.value; as scanned) {
+            <div class="matched-scan">Sheet: {{ scanned }}</div>
+          }
+        } @else {
+          <app-scan-alternate-picker
+            [scanned]="vm.row.competitorName"
+            label="Choose alternate helm name"
+            (selected)="promoteAlternative(vm.row.rowIndex, 'competitorName', $event)">
+            <span class="matched-identity">
+              @if (vm.identity) {
+                {{ matchedEntryText(vm.identity.helm) }}
+              } @else {
+                {{ vm.row.competitorName?.value || '-' }}
+              }
+            </span>
+          </app-scan-alternate-picker>
+          @if (vm.identity && matchedScanText(vm.identity.helm, vm.row.competitorName?.value); as scanText) {
+            <div class="matched-scan">Sheet: {{ scanText }}</div>
+          }
+        }
       </td>
     </ng-container>
 
@@ -152,154 +225,93 @@
     <ng-container matColumnDef="overall">
       <th mat-header-cell *matHeaderCellDef>Confidence</th>
       <td mat-cell *matCellDef="let vm">
-        <span class="confidence-chip" [class]="vm.row.overallRowConfidence">{{ vm.row.overallRowConfidence }}</span>
+        <span class="confidence-chip" [class]="vm.row.overallRowConfidence">{{ confidenceLabel(vm.row.overallRowConfidence) }}</span>
       </td>
     </ng-container>
 
-    <tr mat-header-row *matHeaderRowDef="review.displayedColumns()"></tr>
-    <tr mat-row *matRowDef="let vm; columns: review.displayedColumns();" [class.row-accepted]="vm.row.accepted"></tr>
-
-  </table>
-</div>
-}
-
-@if (review.unmatchedRows().length > 0) {
-<h3 class="section-title" style="margin-top: 2.5rem;">No Entry Identified</h3>
-<p class="section-hint">Add entry for boats</p>
-<p class="section-hint muted">
-  Enter = new race entry. Link icon = use an existing entry’s details with this row’s
-  {{ review.isLevelRatingScan() ? 'position' : 'time/laps' }}.
-</p>
-<div class="table-container">
-  <table mat-table [dataSource]="review.unmatchedRows()" class="mat-elevation-z1">
-
-    <ng-container matColumnDef="rowIndex">
-      <th mat-header-cell *matHeaderCellDef>Row</th>
-      <td mat-cell *matCellDef="let vm">
-        {{ vm.row.rowIndex }}
-        @if (vm.row.swappedRowIndex != null) {
-          <span class="swap-marker" [attr.title]="'Arrow swap to row ' + vm.row.swappedRowIndex">
-            → {{ vm.row.swappedRowIndex }}
-          </span>
-        }
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="sailNumber">
-      <th mat-header-cell *matHeaderCellDef>Sail #</th>
-      <td mat-cell *matCellDef="let vm">
-        <app-scan-alternate-picker
-          [scanned]="vm.row.sailNumber"
-          label="Choose alternate sail number"
-          (selected)="promoteAlternative(vm.row.rowIndex, 'sailNumber', $event)">
-          <span>{{ vm.row.sailNumber?.value || '-' }}</span>
-        </app-scan-alternate-picker>
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="boatClass">
-      <th mat-header-cell *matHeaderCellDef>Class</th>
-      <td mat-cell *matCellDef="let vm">
-        <app-scan-alternate-picker
-          [scanned]="vm.row.boatClass"
-          label="Choose alternate class"
-          (selected)="promoteAlternative(vm.row.rowIndex, 'boatClass', $event)">
-          <span>{{ vm.row.boatClass?.value || '-' }}</span>
-        </app-scan-alternate-picker>
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="time">
-      <th mat-header-cell *matHeaderCellDef>Time</th>
-      <td mat-cell *matCellDef="let vm">
-        <app-scan-alternate-picker
-          [scanned]="vm.row.time"
-          label="Choose alternate time"
-          (selected)="promoteAlternative(vm.row.rowIndex, 'time', $event)">
-          <span>{{ vm.row.time?.value || '-' }}</span>
-        </app-scan-alternate-picker>
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="race">
-      <th mat-header-cell *matHeaderCellDef>Race</th>
-      <td mat-cell *matCellDef="let vm">{{ review.raceLabel(vm.row.raceId) }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="position">
-      <th mat-header-cell *matHeaderCellDef>Pos</th>
-      <td mat-cell *matCellDef="let vm">
-        <app-scan-alternate-picker
-          [scanned]="vm.row.position"
-          label="Choose alternate position"
-          (selected)="promoteAlternative(vm.row.rowIndex, 'position', $event)">
-          <span>{{ vm.row.position?.value ?? '-' }}</span>
-        </app-scan-alternate-picker>
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="status">
-      <th mat-header-cell *matHeaderCellDef>Status</th>
-      <td mat-cell *matCellDef="let vm">{{ vm.row.status || 'OK' }}</td>
-    </ng-container>
-
-    <ng-container matColumnDef="laps">
-      <th mat-header-cell *matHeaderCellDef>Laps</th>
-      <td mat-cell *matCellDef="let vm">
-        <app-scan-alternate-picker
-          [scanned]="vm.row.laps"
-          label="Choose alternate laps"
-          (selected)="promoteAlternative(vm.row.rowIndex, 'laps', $event)">
-          <span>{{ vm.row.laps?.value }}</span>
-        </app-scan-alternate-picker>
-      </td>
-    </ng-container>
-
-      <ng-container matColumnDef="helms">
-        <th mat-header-cell *matHeaderCellDef>Helms<br>found</th>
-        <td mat-cell class="possible-helms" *matCellDef="let vm">
-          @for (helm of vm.possibleHelms; track helm) {
-            {{helm}}<br>
-          }
-        </td>
-      </ng-container>
-
-    <ng-container matColumnDef="enter">
-      <th mat-header-cell *matHeaderCellDef>Actions</th>
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
       <td mat-cell *matCellDef="let vm">
         <div class="row-actions">
-          @if (vm.canCreate) {
-            @if (vm.matchedBoat) {
-              <button matButton="tonal" class="dense-button" (click)="review.enterKnownBoat(vm.row)">Enter</button>
-            } @else {
-              <button matButton="tonal" class="dense-button" (click)="review.enterUnmatched(vm.row)">Enter</button>
-            }
-          }
-          @if (review.canLink()) {
-            <button
-              matIconButton
-              class="link-button"
-              type="button"
-              aria-label="Link to existing race entry"
-              matTooltip="Link to existing race entry"
-              (click)="review.linkScanRow(vm.row)">
-              <mat-icon>link</mat-icon>
+          <button
+            matIconButton
+            type="button"
+            [attr.aria-label]="'Edit row ' + vm.row.rowIndex"
+            matTooltip="Edit class, sail number and helm"
+            (click)="review.editRow(vm.row)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          @if (vm.canReplaceExisting) {
+            <button matButton="tonal" class="dense-button" type="button" (click)="review.replaceExisting(vm.row)">
+              Replace existing
             </button>
           }
         </div>
       </td>
     </ng-container>
 
-    <tr mat-header-row *matHeaderRowDef="review.unmatchedColumns()"></tr>
-    <tr mat-row *matRowDef="let row; columns: review.unmatchedColumns();"></tr>
+    <tr mat-header-row *matHeaderRowDef="review.displayedColumns()"></tr>
+    <tr
+      mat-row
+      *matRowDef="let vm; columns: review.displayedColumns();"
+      [class.row-accepted]="vm.row.accepted && vm.canAccept"
+      [class.row-warn]="statusTone(vm) === 'warn'"
+      [class.row-error]="statusTone(vm) === 'error'"></tr>
 
   </table>
 </div>
 }
 
+@if (review.notOnSheet().length > 0) {
+<h3 class="section-title">Race entries not on the sheet</h3>
+<p class="section-hint muted">
+  Leave unchanged if part of the sheet was not scanned. Choose Link when a row was misread.
+  Changes are applied when you save.
+</p>
+<div class="not-on-sheet-actions">
+  <button matButton="tonal" class="dense-button" type="button" (click)="review.markAllNotOnSheetDnc()">
+    Mark all DNC
+  </button>
+</div>
+<ul class="not-on-sheet-list">
+  @for (competitor of review.notOnSheet(); track competitor.id) {
+    <li class="not-on-sheet-row">
+      <span class="entry-label">
+        {{ competitor.helm }} – {{ competitor.boatClass }} #{{ competitor.sailNumber }}
+        @if (review.isLevelRatingScan()) {
+          <span class="matched-scan">{{ review.raceLabel(competitor.raceId) }}</span>
+        }
+      </span>
+      <mat-form-field class="action-select" appearance="outline" subscriptSizing="dynamic">
+        <mat-select
+          [value]="review.notOnSheetAction(competitor.id)"
+          [attr.aria-label]="'Action for ' + competitor.helm"
+          (selectionChange)="onNotOnSheetAction(competitor.id, $event.value)">
+          <mat-option value="none">No change</mat-option>
+          <mat-option value="DNC">DNC</mat-option>
+          <mat-option value="DNS">DNS</mat-option>
+          <mat-option value="delete" matTooltip="Removes the race entry, and the series entry if this was its only race">
+            Delete entry
+          </mat-option>
+          @if (review.linkSuggestionsById().get(competitor.id); as suggestions) {
+            @if (suggestions.length > 0) {
+              <mat-optgroup label="Link to row">
+                @for (suggestion of suggestions; track suggestion.rowIndex) {
+                  <mat-option [value]="'link:' + suggestion.rowIndex">{{ suggestion.label }}</mat-option>
+                }
+              </mat-optgroup>
+            }
+          }
+        </mat-select>
+      </mat-form-field>
+    </li>
+  }
+</ul>
+}
+
 <div class="review-actions" style="margin-top: 3rem; padding-bottom: 3rem;">
   <button matButton (click)="backRequested.emit()" [disabled]="scanRun.running() || review.saving()">Previous</button>
-  <button matButton="filled" (click)="review.save()" [disabled]="scanRun.running() || review.saving() || review.acceptedMatchedCount() === 0">
+  <button matButton="filled" (click)="review.save()" [disabled]="scanRun.running() || review.saving() || !review.canSave()">
     {{ review.saving() ? 'Saving...' : 'Save Accepted Results' }}
   </button>
 </div>

@@ -109,12 +109,6 @@
   color: #92400e;
 }
 
-.possible-helms {
-  margin-top: 0.35rem;
-  font-size: 0.8rem;
-  color: var(--mat-sys-on-surface-variant);
-}
-
 .section-hint {
   margin: 0 0 0.75rem;
   font-size: 0.875rem;
@@ -133,8 +127,103 @@
   align-items: center;
 }
 
-.link-button {
-  color: var(--mat-sys-primary);
+.field-problem {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 0.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--mat-sys-error);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.grid-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+
+  .summary {
+    margin: 0;
+    font-weight: 500;
+  }
+}
+
+.row-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.status-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+
+  &.ok { color: var(--mat-sys-primary); }
+  &.warn { color: #d97706; }
+  &.error { color: var(--mat-sys-error); }
+}
+
+tr.row-warn td:first-child {
+  box-shadow: inset 4px 0 0 #d97706;
+}
+
+tr.row-error td:first-child {
+  box-shadow: inset 4px 0 0 var(--mat-sys-error);
+}
+
+.helm-select {
+  width: 11rem;
+  font-size: 0.85rem;
+  --mat-form-field-container-height: 36px;
+  --mat-form-field-container-vertical-padding: 6px;
+}
+
+.not-on-sheet-actions {
+  margin-bottom: 0.5rem;
+}
+
+.not-on-sheet-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+}
+
+.not-on-sheet-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
+
+  & + & {
+    border-top: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  .entry-label {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .action-select {
+    width: 16rem;
+    --mat-form-field-container-height: 36px;
+    --mat-form-field-container-vertical-padding: 6px;
+  }
 }
 
 .dense-button {

@@ -12,6 +12,17 @@ function entriesForRace(ctx: ScannerContext, raceId: string): string {
   return entries.length > 0 ? JSON.stringify(entries) : "No entry list provided";
 }
 
+/** Spelling guide for class names on rows the entry list and aliases do not resolve. */
+function clubClassRules(ctx: ScannerContext): string {
+  const classes = ctx.clubClasses ?? [];
+  if (classes.length === 0) return "";
+  return `
+- CLUB_CLASSES (spelling guide): ${JSON.stringify(classes)}
+-- Use ONLY for rows with no ENTRY_LIST match and no CLASS_ALIASES match.
+-- If the sheet class is clearly a misspelling or abbreviation of exactly ONE CLUB_CLASSES name (e.g. "Vario" → "RS Vareo"), set boatClass.value to that name, boatClass.confidence to MANUAL_CHECK, and put the sheet text in boatClass.alternatives.
+-- Otherwise keep the sheet text as written. Classes not in CLUB_CLASSES are allowed (visiting boats); never force a match.`;
+}
+
 function raceDisplayName(r: ScannerRace): string {
   if (r.seriesName && typeof r.raceNumber === "number") return `${r.seriesName} R${r.raceNumber}`;
   if (r.seriesName) return r.seriesName;
@@ -115,7 +126,7 @@ Target race id: ${raceId}. Target races in this scan: ${targetRacesStr}.
 - Use the ENTRY_LIST to 
 -- determine matchedCompetitorId from class/sail number and 
 -- to correct messy handwriting (e.g. '1234S' → '12345'); when corrected from ENTRY LIST, use HIGH confidence and set matchedCompetitorId to that entry's id. 
--- ENTRY_LIST: ${entryList}
+-- ENTRY_LIST: ${entryList}${clubClassRules(ctx)}
 
 ## Time
 ${timeColumnRules}
@@ -203,7 +214,7 @@ ${racesSection}
 -- Examples: Radial / Laser R / LR → ILCA 6; Laser / L → ILCA 7.
 - Sail numbers on the sheet may be the FULL sail number OR only the last N trailing digits. 
 --- Infer N from how the race officer wrote sails on this sheet (consistency across rows) and from uniqueness against ENTRY_LIST sails. 
---- Match to ENTRY_LIST based on last N digits of sail number.
+--- Match to ENTRY_LIST based on last N digits of sail number.${clubClassRules(ctx)}
 
 ## matchedCompetitorId and raceId assignment
 Assign fields in this order:

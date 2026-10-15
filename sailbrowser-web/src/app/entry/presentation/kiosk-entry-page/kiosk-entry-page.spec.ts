@@ -266,7 +266,7 @@ describe('KioskEntryPage', () => {
     const dialogs = TestBed.inject(DialogsService);
     vi.mocked(dialogs.confirm).mockResolvedValue(true);
     const entry = TestBed.inject(EntryService);
-    vi.mocked(entry.enterRaces).mockResolvedValue(undefined);
+    vi.mocked(entry.enterRaces).mockResolvedValue([]);
 
     const page = createPage();
     await page.onDutyConfirmed({
@@ -311,7 +311,7 @@ describe('KioskEntryPage', () => {
 
   it('passes visitor club through to enterRaces', async () => {
     const entry = TestBed.inject(EntryService);
-    vi.mocked(entry.enterRaces).mockResolvedValue(undefined);
+    vi.mocked(entry.enterRaces).mockResolvedValue([]);
 
     const page = createPage();
     page.startVisitor();
@@ -331,7 +331,7 @@ describe('KioskEntryPage', () => {
 
   it('passes host short club name for member boat entries', async () => {
     const entry = TestBed.inject(EntryService);
-    vi.mocked(entry.enterRaces).mockResolvedValue(undefined);
+    vi.mocked(entry.enterRaces).mockResolvedValue([]);
 
     const page = createPage();
     const boat = TestBed.inject(BoatsStore).boats()[0];
@@ -347,7 +347,7 @@ describe('KioskEntryPage', () => {
 
   it('passes host short club name for club boat entries', async () => {
     const entry = TestBed.inject(EntryService);
-    vi.mocked(entry.enterRaces).mockResolvedValue(undefined);
+    vi.mocked(entry.enterRaces).mockResolvedValue([]);
 
     const page = createPage();
     const clubBoat = TestBed.inject(BoatsStore).boats()[1];
