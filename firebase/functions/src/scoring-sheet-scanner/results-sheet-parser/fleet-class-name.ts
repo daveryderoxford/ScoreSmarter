@@ -31,3 +31,14 @@ export function fleetNameMapFromClubData(fleets: unknown): Map<string, string> {
   }
   return map;
 }
+
+/** Trimmed, de-duplicated class names from the club `classes` array. */
+export function classNamesFromClubData(classes: unknown): string[] {
+  if (!Array.isArray(classes)) return [];
+  const names = new Set<string>();
+  for (const raw of classes) {
+    const name = (raw as { name?: unknown } | null)?.name;
+    if (typeof name === "string" && name.trim()) names.add(name.trim());
+  }
+  return [...names];
+}

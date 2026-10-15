@@ -14,7 +14,7 @@ import {
   SCAN_AI_CONFIG_PATH,
 } from "../ai-scan-model.js";
 import { mergeClassAliases } from "./class-aliases.js";
-import { fleetNameMapFromClubData } from "./fleet-class-name.js";
+import { classNamesFromClubData, fleetNameMapFromClubData } from "./fleet-class-name.js";
 import { AIParser, type ScanPromptCapture } from "./ai-parser.js";
 import { resultsSheetStoragePath } from "../image-upload/image-storage.js";
 import { detailedHttpsError } from "../../shared/https-error.js";
@@ -167,12 +167,20 @@ async function loadRaceSummary(clubId: string, raceId: string): Promise<RaceScan
   return summary;
 }
 
-async function loadClubFleetNames(clubId: string): Promise<Map<string, string>> {
+interface ClubScanData {
+  fleetNames: Map<string, string>;
+  classNames: string[];
+}
+
+async function loadClubScanData(clubId: string): Promise<ClubScanData> {
   try {
-    const snap = await db().doc(`clubs/${clubId}`).get();
-    return fleetNameMapFromClubData(snap.data()?.["fleets"]);
+    const data = (await db().doc(`clubs/${clubId}`).get()).data();
+    return {
+      fleetNames: fleetNameMapFromClubData(data?.["fleets"]),
+      classNames: classNamesFromClubData(data?.["classes"]),
+    };
   } catch {
-    return new Map();
+    return { fleetNames: new Map(), classNames: [] };
   }
 }
 
@@ -353,7 +361,7 @@ async function parseFromStoredImage(
       (id, i, arr) => arr.indexOf(id) === i,
     );
     const scanMode = scannerContext.scanMode === "levelRating" ? "levelRating" : "handicap";
-    const fleetNames = await loadClubFleetNames(clubId);
+    const { fleetNames, classNames } = await loadClubScanData(clubId);
 
     const races = await Promise.all(
       targetRaceIds.map(async (id) => {
@@ -399,12 +407,14 @@ async function parseFromStoredImage(
       scanMode,
       timeFormat: normalizeScannerTimeFormat(scannerContext.timeFormat),
       classAliases: mergeClassAliases(scannerContext.classAliases),
+      clubClasses: classNames,
       races,
     };
     logScan(requestId, "merge_scanner_context", "Merged Firestore races into scanner context", {
       raceIds: races.map((r) => r.id),
       entryCounts: Object.fromEntries(races.map((r) => [r.id, r.entries.length])),
       fleetClassNames: Object.fromEntries(races.map((r) => [r.id, r.fleetClassName ?? ""])),
+      clubClassCount: classNames.length,
       scanMode,
       listOrder: mergedContext.listOrder,
       defaultHour: mergedContext.defaultHour,

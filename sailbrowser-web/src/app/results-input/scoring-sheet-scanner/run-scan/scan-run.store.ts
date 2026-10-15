@@ -13,6 +13,7 @@ import { PendingScanEntry, ScannedResultRow, ScannerContext, ScanResponse } from
 import { ScanAiConfigService } from '../model/scan-ai-config.service';
 import {
   promoteRowAlternative,
+  replaceRowIdentity,
   type ScannedValueField,
 } from './promote-scanned-alternative';
 
@@ -202,13 +203,12 @@ export class ScanRunStore {
     this.updateRow(rowIndex, row => ({ ...row, pendingEntry, accepted: true }));
   }
 
-  /** Remove a staged sign-on so the row is unmatched again, and stop it being matched automatically. */
-  clearRowEntry(rowIndex: number): void {
-    this.updateRow(rowIndex, row => ({
-      ...withoutPendingEntry(row),
-      autoMatchDismissed: true,
-      accepted: false,
-    }));
+  /**
+   * Replace the row's class and sail number with values the user typed. The scanned
+   * values stay as alternatives, and any earlier link or staged entry is cleared.
+   */
+  editRowIdentity(rowIndex: number, identity: { boatClass: string; sailNumber: string }): void {
+    this.updateRow(rowIndex, row => replaceRowIdentity(row, identity));
   }
 
   private updateRow(rowIndex: number, fn: (row: ScannedResultRow) => ScannedResultRow): void {
@@ -224,18 +224,12 @@ export class ScanRunStore {
     );
   }
 
-  /** Promote an alternative value to the primary field value on the working copy. */
+  /**
+   * Promote an alternative value to the primary field value on the working copy.
+   * Changing the class or sail number clears an earlier link or staged entry.
+   */
   promoteAlternative(rowIndex: number, field: ScannedValueField, chosen: string | number): void {
-    this._scanResult.update((current) =>
-      current
-        ? {
-            ...current,
-            scannedResults: current.scannedResults.map((row) =>
-              row.rowIndex === rowIndex ? promoteRowAlternative(row, field, chosen) : row,
-            ),
-          }
-        : null,
-    );
+    this.updateRow(rowIndex, row => promoteRowAlternative(row, field, chosen));
   }
 
   reset(): void {

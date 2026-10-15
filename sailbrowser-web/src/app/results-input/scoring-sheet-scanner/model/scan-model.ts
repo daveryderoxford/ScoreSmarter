@@ -44,8 +44,6 @@ export interface ScannedResultRow {
   matchedCompetitorId?: string;
   /** Sign-on chosen during review. Not written to Firestore until the scan is saved. */
   pendingEntry?: PendingScanEntry;
-  /** The user undid the automatic match, so the row is not matched automatically again. */
-  autoMatchDismissed?: boolean;
   accepted?: boolean;
 }
 

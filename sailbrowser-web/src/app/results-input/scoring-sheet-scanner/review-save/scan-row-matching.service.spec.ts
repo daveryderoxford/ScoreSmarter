@@ -1,4 +1,5 @@
-import { boatClassesMatch, ScanRowMatchingService } from './scan-row-matching.service';
+import { boatClassesMatch, GridRowContext, ScanRowMatchingService } from './scan-row-matching.service';
+import type { HelmCandidate, ScanRowIdentityPlan } from './scan-row-provision';
 import { ScannedResultRow } from '../model/scan-model';
 import { Race } from 'app/race-calender/model/race';
 import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
@@ -20,6 +21,8 @@ describe('boatClassesMatch', () => {
     expect(boatClassesMatch('Laser R', 'ILCA 6')).toBe(true);
     expect(boatClassesMatch('Laser', 'ILCA 7')).toBe(true);
     expect(boatClassesMatch('Radial', 'ILCA 7')).toBe(false);
+    expect(boatClassesMatch('Vario', 'RS Vareo')).toBe(true);
+    expect(boatClassesMatch('RS Vario', 'RS Vareo')).toBe(true);
   });
 });
 
@@ -65,128 +68,122 @@ describe('ScanRowMatchingService', () => {
     });
   });
 
-  describe('findBoatMatches', () => {
-    it('matches on class + sail number', () => {
-      const boats = [
-        { id: 'b1', boatClass: 'ILCA 7', sailNumber: '12345', helm: 'A', name: '', crew: '', isClub: false },
-        { id: 'b2', boatClass: 'RS Aero', sailNumber: '12345', helm: 'B', name: '', crew: '', isClub: false },
-      ];
-      const matches = service.findBoatMatches(
-        row({ boatClass: { value: 'ilca 7', confidence: 'HIGH' }, sailNumber: { value: '12345', confidence: 'HIGH' } }),
-        boats,
-      );
-      expect(matches.map(m => m.id)).toEqual(['b1']);
+  describe('buildGridRows', () => {
+    const candidate = (helm: string, source: HelmCandidate['source'] = 'boat'): HelmCandidate => ({
+      helm,
+      source,
+      entry: { helm, boatClass: 'ILCA 7', sailNumber: '12345' },
+    });
+    const emptyContext = (plans: [number, ScanRowIdentityPlan][]): GridRowContext => ({
+      plans: new Map(plans),
+      conflicts: new Map(),
+      resolvedById: new Map(),
+      nearMissRows: new Set(),
     });
 
-    it('matches boats when scan reports an aliased class name', () => {
-      const boats = [
-        { id: 'b1', boatClass: 'ILCA 6', sailNumber: '211111', helm: 'Sam', name: '', crew: '', isClub: false },
-      ];
-      const matches = service.findBoatMatches(
-        row({ boatClass: { value: 'Radial', confidence: 'HIGH' }, sailNumber: { value: '211111', confidence: 'HIGH' } }),
-        boats,
+    it('keeps sheet order', () => {
+      const vms = service.buildGridRows(
+        [row({ rowIndex: 3 }), row({ rowIndex: 1 }), row({ rowIndex: 2 })],
+        emptyContext([]),
       );
-      expect(matches.map(m => m.id)).toEqual(['b1']);
+      expect(vms.map(vm => vm.row.rowIndex)).toEqual([1, 2, 3]);
     });
-  });
 
-  describe('buildMatchedRows', () => {
-    it('attaches resolved competitor for matched rows', () => {
-      const scanRow = row({
-        rowIndex: 1,
-        matchedCompetitorId: 'c1',
-        boatClass: { value: 'Laser R', confidence: 'HIGH' },
-        sailNumber: { value: '1234S', confidence: 'HIGH' },
-        competitorName: { value: 'Sam S', confidence: 'MANUAL_CHECK' },
-      });
+    it('shows the linked competitor identity for a matched row', () => {
       const competitor = new ResolvedRaceCompetitor(
         { id: 'c1', raceId: 'r1', seriesEntryId: 'e1', resultCode: 'NOT FINISHED' } as RaceCompetitor,
-        {
-          id: 'e1',
-          seriesId: 's1',
-          helm: 'Sam Smith',
-          boatClass: 'ILCA 6',
-          sailNumber: '12345',
-        } as SeriesEntry,
+        { id: 'e1', seriesId: 's1', helm: 'Sam Smith', boatClass: 'ILCA 6', sailNumber: '12345' } as SeriesEntry,
       );
-      const [vm] = service.buildMatchedRows([scanRow], new Map([['c1', competitor]]));
-      expect(vm.competitor?.boatClass).toBe('ILCA 6');
-      expect(vm.competitor?.sailNumber).toBe('12345');
-      expect(vm.competitor?.helm).toBe('Sam Smith');
+      const [vm] = service.buildGridRows(
+        [row({ rowIndex: 1, matchedCompetitorId: 'c1', boatClass: { value: 'Laser R', confidence: 'HIGH' } })],
+        { ...emptyContext([]), resolvedById: new Map([['c1', competitor]]) },
+      );
+      expect(vm).toMatchObject({ status: 'matched', canAccept: true });
+      expect(vm.identity?.helm).toBe('Sam Smith');
       expect(vm.row.boatClass?.value).toBe('Laser R');
     });
-  });
 
-  describe('buildUnmatchedRows', () => {
-    const classes = [{ name: 'ILCA 7' }, { name: 'ILCA 6' }] as { name: string }[];
+    it('offers the other helms on a staged row', () => {
+      const casey = candidate('Casey');
+      const [vm] = service.buildGridRows(
+        [row({ rowIndex: 1, pendingEntry: casey.entry })],
+        emptyContext([[1, { kind: 'sign-on', candidate: casey, candidates: [casey, candidate('Drew')] }]]),
+      );
+      expect(vm).toMatchObject({ status: 'new-entry', pendingSource: 'boat', selectedHelm: 'candidate:Casey' });
+      expect(vm.helmOptions.map(o => o.value)).toEqual(['candidate:Casey', 'candidate:Drew', 'edit']);
+    });
 
-    it('sets canCreate only when class and sail are present and class is known', () => {
-      const [creatable] = service.buildUnmatchedRows(
+    it('hides the helm choice when the only helm for the boat is staged', () => {
+      const casey = candidate('Casey');
+      const [vm] = service.buildGridRows(
+        [row({ rowIndex: 1, pendingEntry: casey.entry })],
+        emptyContext([[1, { kind: 'sign-on', candidate: casey, candidates: [casey] }]]),
+      );
+      expect(vm).toMatchObject({ status: 'new-entry', pendingSource: 'boat', helmOptions: [] });
+      expect(vm.identity?.helm).toBe('Casey');
+    });
+
+    it('marks a staged new helm as a new entry', () => {
+      const [vm] = service.buildGridRows(
+        [row({ rowIndex: 1, pendingEntry: { helm: 'Bob', boatClass: 'ILCA 7', sailNumber: '12345' } })],
+        emptyContext([[1, { kind: 'choose-helm', candidates: [candidate('Jane')], scannedHelm: 'Bob', helmDiffers: true }]]),
+      );
+      expect(vm).toMatchObject({ pendingSource: 'new', selectedHelm: 'new:Bob' });
+      expect(vm.helmOptions.map(o => o.value)).toEqual(['candidate:Jane', 'new:Bob', 'edit']);
+    });
+
+    it('asks for a helm and offers the scanned name as a new helm', () => {
+      const [vm] = service.buildGridRows(
+        [row({ rowIndex: 1, accepted: true })],
+        emptyContext([[1, { kind: 'choose-helm', candidates: [candidate('Jane')], scannedHelm: 'Bob', helmDiffers: true }]]),
+      );
+      expect(vm).toMatchObject({ status: 'choose-helm', canAccept: false });
+      expect(vm.reason).toContain('Bob');
+      expect(vm.helmOptions.map(o => o.label)).toEqual(['Jane', 'New helm: Bob', 'New helm...']);
+    });
+
+    it('marks the class cell when the class is not a club class', () => {
+      const [vm] = service.buildGridRows(
+        [row({ rowIndex: 1 })],
+        emptyContext([[1, { kind: 'unmatched', reason: 'unknown-class' }]]),
+      );
+      expect(vm).toMatchObject({
+        status: 'no-match',
+        reason: 'Class not found in the club classes',
+        problem: { field: 'boatClass' },
+        canAccept: false,
+      });
+    });
+
+    it('marks the sail number cell when no entry or boat has the sail number', () => {
+      const [vm] = service.buildGridRows(
+        [row({ rowIndex: 1 })],
+        emptyContext([[1, { kind: 'unmatched', reason: 'not-found' }]]),
+      );
+      expect(vm.problem).toEqual({ field: 'sailNumber', message: 'No entry or boat found with this sail number' });
+    });
+
+    it('shows a conflict on an accepted row', () => {
+      const [vm] = service.buildGridRows(
+        [row({ rowIndex: 1, accepted: true, pendingEntry: { helm: 'Bob', boatClass: 'ILCA 7', sailNumber: '1' } })],
+        {
+          ...emptyContext([[1, { kind: 'unmatched', reason: 'not-found' }]]),
+          conflicts: new Map([[1, { reason: 'Same boat as row 2', canReplaceExisting: false }]]),
+        },
+      );
+      expect(vm).toMatchObject({ status: 'conflict', reason: 'Same boat as row 2', canAccept: true });
+    });
+
+    it('flags low confidence only until the row is accepted', () => {
+      const [unaccepted, accepted] = service.buildGridRows(
         [
-          row({
-            boatClass: { value: 'ILCA 7', confidence: 'HIGH' },
-            sailNumber: { value: '12345', confidence: 'HIGH' },
-          }),
+          row({ rowIndex: 1, overallRowConfidence: 'MANUAL_CHECK' }),
+          row({ rowIndex: 2, overallRowConfidence: 'MANUAL_CHECK', accepted: true }),
         ],
-        { boats: [], classes: classes as never[] },
+        emptyContext([]),
       );
-      expect(creatable.matchedClass).toBe(true);
-      expect(creatable.canCreate).toBe(true);
-    });
-
-    it('does not treat empty class as matchedClass or canCreate', () => {
-      const [emptyClass] = service.buildUnmatchedRows(
-        [row({ sailNumber: { value: '12345', confidence: 'HIGH' } })],
-        { boats: [], classes: classes as never[] },
-      );
-      expect(emptyClass.matchedClass).toBe(false);
-      expect(emptyClass.canCreate).toBe(false);
-    });
-
-    it('does not offer Create when sail is missing', () => {
-      const [noSail] = service.buildUnmatchedRows(
-        [row({ boatClass: { value: 'ILCA 7', confidence: 'HIGH' } })],
-        { boats: [], classes: classes as never[] },
-      );
-      expect(noSail.matchedClass).toBe(true);
-      expect(noSail.canCreate).toBe(false);
-    });
-
-    it('offers Enter when scan class is an alias of a known club class', () => {
-      const boats = [
-        { id: 'b1', boatClass: 'ILCA 6', sailNumber: '211111', helm: 'Sam', name: '', crew: '', isClub: false },
-      ];
-      const [vm] = service.buildUnmatchedRows(
-        [
-          row({
-            boatClass: { value: 'Radial', confidence: 'HIGH' },
-            sailNumber: { value: '211111', confidence: 'HIGH' },
-          }),
-        ],
-        { boats: boats as never[], classes: classes as never[] },
-      );
-      expect(vm.matchedClass).toBe(true);
-      expect(vm.matchedBoat).toBe(true);
-      expect(vm.canCreate).toBe(true);
-      expect(vm.possibleHelms).toEqual(['Sam']);
-    });
-  });
-
-  describe('unmatchedRaceCompetitors', () => {
-    it('excludes competitors already matched to a scan row', () => {
-      const c1 = new ResolvedRaceCompetitor(
-        { id: 'c1', raceId: 'r1', seriesEntryId: 'e1', resultCode: 'NOT FINISHED' } as RaceCompetitor,
-        { id: 'e1', seriesId: 's1', helm: 'A', boatClass: 'ILCA 7', sailNumber: '1' } as SeriesEntry,
-      );
-      const c2 = new ResolvedRaceCompetitor(
-        { id: 'c2', raceId: 'r1', seriesEntryId: 'e2', resultCode: 'NOT FINISHED' } as RaceCompetitor,
-        { id: 'e2', seriesId: 's1', helm: 'B', boatClass: 'ILCA 6', sailNumber: '2' } as SeriesEntry,
-      );
-      const result = service.unmatchedRaceCompetitors(
-        [c1, c2],
-        [row({ matchedCompetitorId: 'c1' })],
-      );
-      expect(result.map(c => c.id)).toEqual(['c2']);
+      expect(unaccepted.lowConfidence).toBe(true);
+      expect(accepted.lowConfidence).toBe(false);
     });
   });
 });

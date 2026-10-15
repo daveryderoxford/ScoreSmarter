@@ -1,3 +1,7 @@
+import { surnameOf } from 'app/boats/model/helm-name';
+
+export { surnameOf };
+
 /** Letter-range buckets for kiosk helm surname filter (10 ranges across A–Z). */
 export const HELM_LETTER_RANGES = [
   { id: 'A-B', label: 'A–B' },
@@ -13,14 +17,6 @@ export const HELM_LETTER_RANGES = [
 ] as const;
 
 export type HelmLetterRangeId = (typeof HELM_LETTER_RANGES)[number]['id'];
-
-/** Last word of the helm name, or the whole string when single-token. */
-export function surnameOf(helm: string): string {
-  const trimmed = helm.trim();
-  if (!trimmed) return '';
-  const parts = trimmed.split(/\s+/);
-  return parts[parts.length - 1] ?? trimmed;
-}
 
 /** Bucket id for a surname's first letter (A–Z); non-letters → U–Z. */
 export function letterRangeForSurname(surname: string): HelmLetterRangeId {

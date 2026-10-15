@@ -1,6 +1,14 @@
 import test from "node:test";
 import * as assert from "node:assert/strict";
-import { fleetClassName, fleetNameMapFromClubData } from "./fleet-class-name.js";
+import { classNamesFromClubData, fleetClassName, fleetNameMapFromClubData } from "./fleet-class-name.js";
+
+test("classNamesFromClubData trims, skips blanks and de-duplicates", () => {
+  assert.deepEqual(
+    classNamesFromClubData([{ name: " RS Vareo " }, { name: "ILCA 7" }, { name: "" }, null, { name: "RS Vareo" }]),
+    ["RS Vareo", "ILCA 7"],
+  );
+  assert.deepEqual(classNamesFromClubData(undefined), []);
+});
 
 test("fleetClassName uses boatClassId for BoatClass fleets", () => {
   assert.equal(fleetClassName({ type: "BoatClass", boatClassId: "ILCA 7", name: "Laser" }), "ILCA 7");

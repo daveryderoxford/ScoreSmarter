@@ -40,6 +40,8 @@ export interface ScannerContext {
   defaultHour?: number;
   listOrder: ScannerListOrder;
   classAliases?: Record<string, string>;
+  /** Club class names (server-populated; client values are ignored). Spelling guide for unmatched rows. */
+  clubClasses?: string[];
   /** When false, the sheet has no lap column; use defaultLaps per row. Defaults to true if omitted. */
   lapsPresentOnSheet?: boolean;
   timeFormat?: ScannerTimeFormat;

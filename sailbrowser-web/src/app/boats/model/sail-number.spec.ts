@@ -3,6 +3,7 @@ import {
   compareSailNumbers,
   isValidSailNumber,
   normalizeSailNumber,
+  sailNumberDistance,
   sailNumberMatchesSearch,
   sailNumbersEqual,
 } from './sail-number';
@@ -66,6 +67,20 @@ describe('sail-number', () => {
     it('matches suffix digits for partial entry', () => {
       expect(sailNumberMatchesSearch('12345', '345')).toBe(true);
       expect(sailNumberMatchesSearch('GBR12345', '345')).toBe(true);
+    });
+  });
+
+  describe('sailNumberDistance', () => {
+    it('counts single-character misreads', () => {
+      expect(sailNumberDistance('2134', '2134')).toBe(0);
+      expect(sailNumberDistance('2134', '2184')).toBe(1);
+      expect(sailNumberDistance('2134', '2143')).toBe(1);
+      expect(sailNumberDistance('2134', '213')).toBe(1);
+      expect(sailNumberDistance('2134', '9999')).toBe(4);
+    });
+
+    it('ignores case and spacing', () => {
+      expect(sailNumberDistance('gbr 123', 'GBR123')).toBe(0);
     });
   });
 });
