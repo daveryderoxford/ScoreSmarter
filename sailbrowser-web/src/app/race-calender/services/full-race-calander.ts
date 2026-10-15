@@ -1,5 +1,5 @@
 import { computed, Injectable, Signal } from '@angular/core';
-import { collectionData, getDoc, getDocs, query, where, writeBatch } from '@angular/fire/firestore';
+import { collectionData, getDoc, getDocs, PartialWithFieldValue, query, where, writeBatch } from '@angular/fire/firestore';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, firestoreWrite, withTimeout } from 'app/shared/utils/with-timeout';
@@ -211,6 +211,16 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
       }
 
       await withTimeout(batch.commit(), FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Deleting race');
+   }
+
+   /** Merges each update into its race in one batch. Not for scheduledStart changes (series dates are not recalculated). */
+   async updateRaces(updates: readonly { id: string; data: PartialWithFieldValue<Race> }[]): Promise<void> {
+      if (updates.length === 0) return;
+      const batch = writeBatch(this.firestore);
+      for (const { id, data } of updates) {
+         batch.set(this.raceRef(id), data, { merge: true });
+      }
+      await withTimeout(batch.commit(), FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Updating races');
    }
 
    /** Update a race and recalculate series dates if scheduledStart changed */

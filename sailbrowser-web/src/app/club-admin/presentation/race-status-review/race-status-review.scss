@@ -87,6 +87,12 @@
   }
 }
 
+.cancellation-reason {
+  margin-top: 4px;
+  font-size: 0.875rem;
+  color: var(--mat-sys-error);
+}
+
 .race-meta {
   display: flex;
   align-items: center;

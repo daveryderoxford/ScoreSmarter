@@ -50,6 +50,30 @@
             <div class="series-header">
                <div class="series-title-row">
                   <h3> {{series()?.name}} - {{currentFleetName()}}</h3>
+                  @if (seriesInfo(); as info) {
+                  <app-info-popover label="Series information">
+                     <dl class="info-list">
+                        @if (info.scoring) {
+                           <dt>Scoring</dt>
+                           <dd>{{ info.scoring }}</dd>
+                        }
+                        <dt>Races sailed</dt>
+                        <dd>{{ info.racesSailed }}</dd>
+                        @if (info.discards !== undefined) {
+                           <dt>Discards</dt>
+                           <dd>{{ info.discards }}</dd>
+                        }
+                        @if (info.cancelledRaces.length > 0) {
+                           <dt>Cancelled races</dt>
+                           <dd>
+                              @for (c of info.cancelledRaces; track c.raceId) {
+                                 <div>Race {{ c.index }}, {{ c.scheduledStart | date:'d MMM yy' }}</div>
+                              }
+                           </dd>
+                        }
+                     </dl>
+                  </app-info-popover>
+                  }
                </div>
                @if (alternativeConfigurations().length > 1) {
                   <div class="config-selector-row">
@@ -71,6 +95,25 @@
                <div class="race-title">
                   <h3>Race {{race.index}} - {{race.scheduledStart| date:'dd MMM yy'}} @if (selectedScoringAlgorithmLabel()) { - {{selectedScoringAlgorithmLabel()}} } {{race.results.length === 0 ? ' - No
                      competitors' : '' }}</h3>
+                  <app-info-popover label="Race information" (opened)="loadDutyRaceOfficer(race)">
+                     @let officer = race.raceOfficer || dutyRaceOfficers().get(race.id);
+                     @let lookingUp = !race.raceOfficer && !dutyRaceOfficers().has(race.id);
+                     <dl class="info-list">
+                        @if (officer) {
+                           <dt>Race officer</dt>
+                           <dd>{{ officer }}</dd>
+                        }
+                        @if (race.wind) {
+                           <dt>Wind</dt>
+                           <dd>{{ race.wind }}</dd>
+                        }
+                     </dl>
+                     @if (lookingUp) {
+                        <span class="info-note">Looking up race officer…</span>
+                     } @else if (!officer && !race.wind) {
+                        <span class="info-note">No details recorded</span>
+                     }
+                  </app-info-popover>
                   <div class="race-nav">
                      @if (auth.isRaceOfficer()) {
                      <button mat-icon-button (click)="editRace(race.id)" title="Edit race results" class="nav-button">

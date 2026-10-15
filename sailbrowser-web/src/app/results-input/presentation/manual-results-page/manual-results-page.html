@@ -45,6 +45,21 @@
         <mat-icon>scoreboard</mat-icon>
         <span>Results</span>
       </button>
+      <button mat-menu-item type="button" (click)="raceDayActions.editDayDetails(sr)">
+        <mat-icon>edit_note</mat-icon>
+        <span>Race day details</span>
+      </button>
+      @if (sr.status === 'Canceled') {
+        <button mat-menu-item type="button" (click)="raceDayActions.reinstateRace(sr)">
+          <mat-icon>restore</mat-icon>
+          <span>Reinstate race</span>
+        </button>
+      } @else {
+        <button mat-menu-item type="button" (click)="raceDayActions.cancelRaces(sr)">
+          <mat-icon>event_busy</mat-icon>
+          <span>Cancel race</span>
+        </button>
+      }
     </mat-menu>
   } @else {
       @if (sr.type === 'Handicap') {
@@ -64,6 +79,26 @@
       <button matButton="text" type="button" matTooltip="Results" (click)="viewResultsForSelectedRace()">
         Results
       </button>
+      <button mat-icon-button type="button" [matMenuTriggerFor]="raceDayMenu" aria-label="Race day actions" matTooltip="Race day">
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #raceDayMenu="matMenu">
+        <button mat-menu-item type="button" (click)="raceDayActions.editDayDetails(sr)">
+          <mat-icon>edit_note</mat-icon>
+          <span>Race day details</span>
+        </button>
+        @if (sr.status === 'Canceled') {
+          <button mat-menu-item type="button" (click)="raceDayActions.reinstateRace(sr)">
+            <mat-icon>restore</mat-icon>
+            <span>Reinstate race</span>
+          </button>
+        } @else {
+          <button mat-menu-item type="button" (click)="raceDayActions.cancelRaces(sr)">
+            <mat-icon>event_busy</mat-icon>
+            <span>Cancel race</span>
+          </button>
+        }
+      </mat-menu>
       }
   }
 
@@ -71,6 +106,13 @@
 
 @if (selectedRace()) {
 @let race = selectedRace()!;
+@if (race.status === 'Canceled') {
+<div class="cancelled-banner" role="status">
+  <mat-icon>event_busy</mat-icon>
+  <span>Race cancelled{{ race.cancellationReason ? ': ' + race.cancellationReason : '' }}. Results entered are kept but not scored.</span>
+  <button matButton="text" type="button" (click)="raceDayActions.reinstateRace(race)">Reinstate</button>
+</div>
+}
 @if (race.type === 'Handicap') {
 <div class="container-handicap">
   <div class="table-section">

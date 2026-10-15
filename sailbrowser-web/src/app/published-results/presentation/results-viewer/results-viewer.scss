@@ -53,14 +53,17 @@
 .race-title {
    display: flex;
    align-items: center;
-   gap: 0.5rem;
+   gap: 6px;
    padding-bottom: 0.5rem;
    border-bottom: 1px solid var(--mat-sys-color-outline-variant);
    margin-bottom: 0.5rem;
 
    h3 {
-      flex-grow: 1;
       margin: 0;
+   }
+
+   .race-nav {
+      margin-left: auto;
    }
 }
 
@@ -73,8 +76,31 @@
 .series-title-row {
    display: flex;
    align-items: center;
-   justify-content: space-between;
+   gap: 6px;
    margin-bottom: 0.5rem;
+
+   h3 {
+      margin: 0;
+   }
+}
+
+.info-list {
+   display: grid;
+   grid-template-columns: auto 1fr;
+   gap: 4px 12px;
+   margin: 0;
+
+   dt {
+      font-weight: 500;
+   }
+
+   dd {
+      margin: 0;
+   }
+}
+
+.info-note {
+   color: var(--mat-sys-on-surface-variant);
 }
 
 .config-selector-row {

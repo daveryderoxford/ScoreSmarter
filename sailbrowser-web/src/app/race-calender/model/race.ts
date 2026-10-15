@@ -29,4 +29,10 @@ export interface Race {
   isAverageLap: boolean;
   resultsSheetImage: string;
   dirty: boolean;
+  /** Race officer for the day; set for every race on the day together. */
+  raceOfficer?: string;
+  /** Free-text wind description, e.g. "SW 8-12 kts". */
+  wind?: string;
+  /** Why the race was cancelled. Only meaningful when status is 'Canceled'. */
+  cancellationReason?: string;
 }

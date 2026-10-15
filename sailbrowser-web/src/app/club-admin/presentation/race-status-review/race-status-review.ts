@@ -8,7 +8,10 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { isBefore, startOfDay } from 'date-fns';
 import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
+import { deleteField } from '@angular/fire/firestore';
 import { Race } from 'app/race-calender/model/race';
+import { RaceStatus } from 'app/race-calender/model/race-status';
+import { RaceDayActions } from 'app/results-input/services/race-day-actions';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { RouterModule } from '@angular/router';
@@ -33,6 +36,7 @@ import { RouterModule } from '@angular/router';
 })
 export class RaceStatusReviewComponent {
   private readonly raceCalendarStore = inject(RaceCalendarStore);
+  protected readonly raceDayActions = inject(RaceDayActions);
 
   readonly pastUnverifiedRaces = computed(() => {
     const now = new Date();
@@ -45,10 +49,13 @@ export class RaceStatusReviewComponent {
     });
   });
 
-  async setStatus(race: Race, status: string) {
-    if (!status) return;
+  async setStatus(race: Race, status: RaceStatus) {
     try {
-      await this.raceCalendarStore.updateRace(race.id, { status: status as any });
+      const leavingCancelled = race.status === 'Canceled' && status !== 'Canceled';
+      await this.raceCalendarStore.updateRaces([{
+        id: race.id,
+        data: leavingCancelled ? { status, cancellationReason: deleteField() } : { status },
+      }]);
     } catch (e) {
       console.error('Failed to update race status:', e);
     }

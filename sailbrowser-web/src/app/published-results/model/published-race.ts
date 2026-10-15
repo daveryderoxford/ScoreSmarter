@@ -21,6 +21,8 @@ export interface PublishedRace {
     * at publish time. Default `[]`.
     */
    divisionDefinitions: Division[];
+   raceOfficer?: string;
+   wind?: string;
 }
 
 export interface RaceResult {

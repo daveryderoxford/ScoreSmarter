@@ -3,6 +3,7 @@ import type { Division } from 'app/race-calender/model/division';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import type { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
+import type { SeriesScoringScheme } from 'app/scoring/model/scoring-algotirhm';
 
 export interface PublishedSeriesResult {
    /**
@@ -57,4 +58,17 @@ export interface PublishedSeries {
     * at publish time. Default `[]`.
     */
    divisionDefinitions: Division[];
+   /** Absent on series published before these fields were added. */
+   scoringAlgorithm?: SeriesScoringScheme;
+   racesSailed?: number;
+   /** Discards allowed for the races sailed so far. */
+   discards?: number;
+   cancelledRaces?: PublishedCancelledRace[];
+}
+
+export interface PublishedCancelledRace {
+   raceId: string;
+   /** Race number within the series. */
+   index: number;
+   scheduledStart: Date;
 }

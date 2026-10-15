@@ -16,13 +16,23 @@ import type { Division } from 'app/race-calender/model/division';
 import { groupBy } from 'app/shared/utils/group-by';
 import { PublishedRace } from '../model/published-race';
 import { PublishedSeason, SeriesInfo } from '../model/published-season';
-import { PublishedSeries } from '../model/published-series';
+import { PublishedCancelledRace, PublishedSeries } from '../model/published-series';
 import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH } from './published-results-store';
 
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
 import { competitorsForConfigRace, isRaceScorable, seriesEntriesForConfig, type EntryMembership } from 'app/scoring/core/rules/eligibility';
 import { startOfDay, subDays } from 'date-fns';
 import { buildDncContext, DEFAULT_DNC_POLICY } from 'app/scoring/core/rules/dnc-context';
+type PublishedSeriesInfo = Required<Pick<PublishedSeries, 'racesSailed' | 'discards' | 'cancelledRaces'>> &
+  Pick<PublishedSeries, 'scoringAlgorithm'>;
+
+/** Cancelled races in start order, for display on the published series. */
+export function publishedCancelledRaces(races: readonly Race[]): PublishedCancelledRace[] {
+  return races
+    .filter(r => r.status === 'Canceled')
+    .sort((a, b) => a.scheduledStart.getTime() - b.scheduledStart.getTime())
+    .map(r => ({ raceId: r.id, index: r.index, scheduledStart: r.scheduledStart }));
+}
 
 const SCORING_CANDIDATE_STATUSES = new Set<Race['status']>([
   'In progress',
@@ -126,7 +136,9 @@ export class ScoringEngine {
       }
     }
 
-    if (candidateRaces.length === 0) {
+    const cancelledRaces = publishedCancelledRaces(racesForSeries);
+
+    if (candidateRaces.length === 0 && cancelledRaces.length === 0) {
       console.log(`ScoringEngine: No races to publish for series ${seriesId}`);
     } else {
       // 2. Sort races chronologically
@@ -153,7 +165,7 @@ export class ScoringEngine {
           isRaceScorable(race, config, allSeriesCompetitors, seriesEntries),
         );
 
-        await this.rescoreAllRacesForConfig(batch, seasonUpdates, series, config, publishedSeriesId, publishedSeriesName, scorableRaces, allSeriesCompetitors, seriesEntries);
+        await this.rescoreAllRacesForConfig(batch, seasonUpdates, series, config, publishedSeriesId, publishedSeriesName, scorableRaces, allSeriesCompetitors, seriesEntries, cancelledRaces);
       }
 
       const primary = series.primaryScoringConfiguration;
@@ -175,6 +187,7 @@ export class ScoringEngine {
           scorableRaces,
           allSeriesCompetitors,
           seriesEntries,
+          cancelledRaces,
           membership,
         );
       }
@@ -205,12 +218,19 @@ export class ScoringEngine {
     racesToScore: Race[],
     allSeriesCompetitors: RaceCompetitor[],
     seriesEntries: SeriesEntry[],
+    cancelledRaces: PublishedCancelledRace[],
     membership: EntryMembership = { kind: 'fleet' },
   ): Promise<void> {
     const catalog: Division[] = series.divisions ?? [];
+    const seriesInfo: PublishedSeriesInfo = {
+      scoringAlgorithm: series.scoringAlgorithm,
+      racesSailed: racesToScore.length,
+      discards: this.calculateDiscards(series, racesToScore.length),
+      cancelledRaces,
+    };
 
     if (racesToScore.length === 0) {
-      this.savePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, [], []);
+      this.savePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, [], [], seriesInfo);
       const existingRaces = await this.readPublishedRaces(publishedSeriesId);
       this.savePublishedRaces(batch, publishedSeriesId, [], existingRaces);
       await this.prepareSeasonUpdate(
@@ -296,6 +316,9 @@ export class ScoringEngine {
       }
       const ids = race.results.flatMap(r => r.divisions);
       race.divisionDefinitions = buildDivisionSnapshot(ids, catalog);
+      const source = racesToScore.find(r => r.id === race.id);
+      if (source?.raceOfficer) race.raceOfficer = source.raceOfficer;
+      if (source?.wind) race.wind = source.wind;
     }
     for (const competitor of currentSeriesResults) {
       competitor.divisions = rowDivisionIds(competitor);
@@ -310,6 +333,7 @@ export class ScoringEngine {
       config.fleet.id,
       currentSeriesResults,
       seriesDivisionDefinitions,
+      seriesInfo,
     );
     const existingRaces = await this.readPublishedRaces(publishedSeriesId);
     this.savePublishedRaces(batch, publishedSeriesId, existingPublishedRaces, existingRaces);
@@ -345,6 +369,7 @@ export class ScoringEngine {
     fleetId: string,
     results: PublishedSeries['competitors'],
     divisionDefinitions: Division[],
+    info: PublishedSeriesInfo,
   ): void {
     const seriesDoc = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, publishedSeriesId);
     const publishedSeries: PublishedSeries = {
@@ -353,6 +378,10 @@ export class ScoringEngine {
       fleetId: fleetId,
       competitors: results,
       divisionDefinitions,
+      racesSailed: info.racesSailed,
+      discards: info.discards,
+      cancelledRaces: info.cancelledRaces,
+      ...(info.scoringAlgorithm ? { scoringAlgorithm: info.scoringAlgorithm } : {}),
     };
     batch.set(seriesDoc, publishedSeries);
   }

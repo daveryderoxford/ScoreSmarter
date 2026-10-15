@@ -34,6 +34,21 @@
   white-space: nowrap;
 }
 
+.cancelled-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px;
+  padding: 4px 4px 4px 12px;
+  border-radius: 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+
+  span {
+    flex: 1;
+  }
+}
+
 .manual-results-empty {
   margin: 24px auto;
   max-width: 480px;

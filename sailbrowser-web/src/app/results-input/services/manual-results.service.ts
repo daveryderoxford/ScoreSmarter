@@ -239,6 +239,15 @@ export class ManualResultsService {
     return allCompleted ? 'Completed' : 'In progress';
   }
 
+  /** Moves the race to In progress / Completed from its result codes. A cancelled race stays cancelled. */
+  private async syncRaceStatus(race: Race, codes: ResultCode[]): Promise<void> {
+    if (race.status === 'Canceled') return;
+    const nextStatus = this.statusFromResultCodes(codes);
+    if (nextStatus && race.status !== nextStatus) {
+      await this.raceStore.updateRace(race.id, { status: nextStatus });
+    }
+  }
+
   /**
    * Calculates derived statistics for a result entry without persisting them.
    * This is useful for providing immediate feedback to the user in the UI.
@@ -346,10 +355,7 @@ export class ManualResultsService {
     const nextCodes = raceCompetitors.map(c => c.id === competitor.id ? resultCode : c.resultCode);
     // A competitor created moments ago may not be in the store snapshot yet.
     if (!raceCompetitors.some(c => c.id === competitor.id)) nextCodes.push(resultCode);
-    const nextStatus = this.statusFromResultCodes(nextCodes);
-    if (nextStatus && race.status !== nextStatus) {
-      await this.raceStore.updateRace(race.id, { status: nextStatus });
-    }
+    await this.syncRaceStatus(race, nextCodes);
   }
 
   /**
@@ -421,20 +427,10 @@ export class ManualResultsService {
       const row = rowState.get(comp.id);
       return inProcessed && row ? row.resultCode : 'NOT FINISHED';
     });
-    const nextStatus = this.statusFromResultCodes(nextCodes);
-
-    if (rows.length === 0) {
-      if (nextStatus && race.status !== nextStatus) {
-        await this.raceStore.updateRace(race.id, { status: nextStatus });
-      }
-      return;
+    if (rows.length > 0) {
+      await this.mutator.updateRaceCompetitorsBulk(race.id, rows);
     }
-
-    await this.mutator.updateRaceCompetitorsBulk(race.id, rows);
-
-    if (nextStatus && race.status !== nextStatus) {
-      await this.raceStore.updateRace(race.id, { status: nextStatus });
-    }
+    await this.syncRaceStatus(race, nextCodes);
   }
 }
 

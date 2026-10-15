@@ -25,10 +25,13 @@ import { PageLayout } from 'app/shared/layout/page-layout';
 import { ListDetailLayout } from 'app/shared/layout/list-detail-layout';
 import { ListPane } from 'app/shared/layout/list-pane';
 import { DetailPane } from 'app/shared/layout/detail-pane';
+import { InfoPopover } from 'app/shared/components/info-popover';
+import { DutyRaceOfficerLookup } from 'app/duties';
+import { seriesScoringSchemeDetails } from 'app/scoring/model/scoring-algotirhm';
 
 @Component({
   selector: 'app-results-viewer',
-  imports: [Toolbar, SeasonList, SeriesResultsTable, LoadingCentered, RaceResultsTable, MatIconModule, MatButtonModule, DatePipe, CenteredText, RouterLink, MatSelectModule, MatFormFieldModule, MatChipsModule, PageLayout, ListDetailLayout, ListPane, DetailPane],
+  imports: [Toolbar, SeasonList, SeriesResultsTable, LoadingCentered, RaceResultsTable, MatIconModule, MatButtonModule, DatePipe, CenteredText, RouterLink, MatSelectModule, MatFormFieldModule, MatChipsModule, PageLayout, ListDetailLayout, ListPane, DetailPane, InfoPopover],
   templateUrl: './results-viewer.html',
   styleUrl: './results-viewer.scss',
 })
@@ -42,6 +45,7 @@ export class ResultsViewer {
   protected auth = inject(AuthService);
   private router = inject(Router);
   private currentRacesStore = inject(CurrentRaces);
+  private dutyRaceOfficerLookup = inject(DutyRaceOfficerLookup);
   private readonly autoScrolledTarget = signal('');
 
   id = input<string>('');  // Route parameter
@@ -103,6 +107,21 @@ export class ResultsViewer {
     return (this.currentSeriesInfo()?.name || this.currentFleetName()).trim();
   });
 
+  readonly seriesInfo = computed(() => {
+    const s = this.series();
+    if (!s) return undefined;
+    const scheme = seriesScoringSchemeDetails.find(d => d.name === s.scoringAlgorithm);
+    return {
+      scoring: scheme?.displayName ?? s.scoringAlgorithm,
+      racesSailed: s.racesSailed ?? this.races().length,
+      discards: s.discards,
+      cancelledRaces: s.cancelledRaces ?? [],
+    };
+  });
+
+  /** Duty-roster race officer by race id, for races published without one; null when the roster has none. */
+  protected readonly dutyRaceOfficers = signal<ReadonlyMap<string, string | null>>(new Map());
+
   raceTitles = computed(() => this.races().map((({ id, index, scheduledStart, raceOfDay }) => ({
     id,
     index,
@@ -160,6 +179,12 @@ export class ResultsViewer {
 
   onConfigurationChange(newSeriesId: string) {
     this.router.navigate(['/results/viewer', newSeriesId]);
+  }
+
+  async loadDutyRaceOfficer(race: PublishedRace): Promise<void> {
+    if (race.raceOfficer || this.dutyRaceOfficers().has(race.id)) return;
+    const officer = await this.dutyRaceOfficerLookup.raceOfficerOn(race.scheduledStart);
+    this.dutyRaceOfficers.update(m => new Map(m).set(race.id, officer ?? null));
   }
 
   /** Division definitions snapshot stored on the race at publish time. */

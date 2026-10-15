@@ -23,6 +23,7 @@ import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/w
 import { firstValueFrom, map } from 'rxjs';
 import { RaceTitlePipe } from '../../../shared/pipes/race-title-pipe';
 import { manualRaceTableSort, ManualResultsService } from '../../services/manual-results.service';
+import { RaceDayActions } from '../../services/race-day-actions';
 import { ResultsSheetCaptureService } from '../../capture';
 import { HandicapInputPanel } from '../handicap/handicap-input-panel/handicap-input-panel';
 import { HandicapResultsTable } from '../handicap/handicap-results-table/handicap-results-table';
@@ -69,6 +70,7 @@ export class ManualResultsPage {
   private readonly snackbar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
   private message = inject(DialogsService);
+  protected readonly raceDayActions = inject(RaceDayActions);
 
   publishing = signal(false);
   loadingImage = signal(false);

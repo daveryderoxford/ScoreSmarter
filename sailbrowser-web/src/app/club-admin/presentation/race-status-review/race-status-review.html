@@ -33,6 +33,9 @@
               <mat-chip [class]="'status-' + race.status.toLowerCase().replace(' ', '-')">{{ race.status }}</mat-chip>
             </mat-chip-set>
           </div>
+          @if (race.status === 'Canceled' && race.cancellationReason) {
+            <div class="cancellation-reason">Reason: {{ race.cancellationReason }}</div>
+          }
         </div>
 
         <div class="race-actions">
@@ -47,7 +50,14 @@
             <button mat-menu-item (click)="setStatus(race, 'Archived')">Mark as Archived</button>
             <mat-divider></mat-divider>
             <button mat-menu-item (click)="setStatus(race, 'Postponed')">Mark as Postponed</button>
-            <button mat-menu-item class="danger-text" (click)="setStatus(race, 'Canceled')">Mark as Canceled</button>
+            @if (race.status === 'Canceled') {
+              <button mat-menu-item (click)="raceDayActions.reinstateRace(race)">Reinstate race</button>
+            } @else {
+              <button mat-menu-item class="danger-text" (click)="raceDayActions.cancelRaces(race)">Mark as Canceled</button>
+            }
+            <button mat-menu-item class="danger-text" (click)="raceDayActions.cancelRaces(race, true)">
+              Cancel all races on {{ race.scheduledStart | date:'mediumDate' }}
+            </button>
           </mat-menu>
           <a mat-stroked-button [routerLink]="['/race-calender']">View in Series</a>
         </div>
