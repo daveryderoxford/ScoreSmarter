@@ -67,6 +67,10 @@ export type ImportExportContext = 'race-calendar' | 'boats' | 'classes' | 'fleet
 
         @if (ctx === 'results') {
           <div mat-menu-item disabled class="menu-header">Results</div>
+          <button mat-menu-item (click)="exportResultsCsv.emit(ctx)">
+            <mat-icon>table_view</mat-icon>
+            <span>Export results (CSV)</span>
+          </button>
           <button mat-menu-item (click)="exportRya.emit(ctx)">
             <mat-icon>description</mat-icon>
             <span>Export RYA PY</span>
@@ -105,6 +109,7 @@ export class ImportExportMenuComponent {
   
   exportICal = output<ImportExportContext>();
   exportCsv = output<ImportExportContext>();
+  exportResultsCsv = output<ImportExportContext>();
   exportRya = output<ImportExportContext>();
   exportWsXml = output<ImportExportContext>();
   importFile = output<{ event: Event, context: ImportExportContext }>();

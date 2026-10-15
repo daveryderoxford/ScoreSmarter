@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { PageLayout } from 'app/shared/layout/page-layout';
@@ -15,6 +17,7 @@ import { FleetsCsvService } from 'app/club-tenant/services/fleets-csv.service';
 import { ClassesCsvService } from 'app/club-tenant/services/classes-csv.service';
 import { ClubStore } from 'app/club-tenant';
 import { BoatsStore } from 'app/boats/services/boats.store';
+import { ExportResultsDialog } from './export-results-dialog/export-results-dialog';
 
 interface AdminResource {
   label: string;
@@ -53,6 +56,8 @@ export class ClubAdminSwitchboard {
   private readonly classesCsv = inject(ClassesCsvService);
   private readonly clubStore = inject(ClubStore);
   private readonly boatsStore = inject(BoatsStore);
+  private readonly dialog = inject(MatDialog);
+  private readonly snackbar = inject(MatSnackBar);
 
   readonly seasonWarning = computed(() => {
     const allRaces = this.raceCalendarStore.allRaces();
@@ -138,6 +143,17 @@ export class ClubAdminSwitchboard {
 
   handleImport(event: { event: Event, context: ImportExportContext }) {
     alert(`Importing ${event.context}: Work in progress. This feature will use the ${event.context} import logic.`);
+  }
+
+  exportPublishedResultsCsv(): void {
+    this.dialog
+      .open(ExportResultsDialog, { width: '520px' })
+      .afterClosed()
+      .subscribe(result => {
+        if (!result) return;
+        this.downloadFile(result.csv, result.filename, 'text/csv');
+        this.snackbar.open('Results exported', undefined, { duration: 3000 });
+      });
   }
 
   handleExport(action: string, context?: ImportExportContext) {

@@ -1,5 +1,5 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { collectionData, docData, query, orderBy, getDoc } from '@angular/fire/firestore';
+import { collectionData, docData, query, orderBy, getDoc, getDocs } from '@angular/fire/firestore';
 import { of, combineLatest, map } from 'rxjs';
 import { PublishedSeason } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
@@ -74,8 +74,8 @@ export class PublishedResultsReader {
    readonly seriesLoading = this._seriesDataResource.isLoading;
    readonly seriesError = this._seriesDataResource.error;
 
-   // Fallback fetch for a specific series if not in cache
-   async getSeriesById(id: string): Promise<PublishedSeries | undefined> {
+  // Fallback fetch for a specific series if not in cache
+  async getSeriesById(id: string): Promise<PublishedSeries | undefined> {
       // Check if it's the currently loaded series
       const currentSeries = this.series();
       if (currentSeries && currentSeries.id === id) {
@@ -86,5 +86,29 @@ export class PublishedResultsReader {
       const seriesDocRef = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, id);
       const snapshot = await getDoc(seriesDocRef);
       return snapshot.exists() ? coercePublishedSeries(snapshot.data()) : undefined;
+   }
+
+   /** One-shot fetch of a published series and its races. Does not change `selectedSeriesId`. */
+   async getSeriesWithRaces(id: string): Promise<{ series: PublishedSeries; races: PublishedRace[] } | undefined> {
+      const current = this.series();
+      const currentRaces = this.races();
+      if (current?.id === id) {
+         return { series: current, races: currentRaces };
+      }
+
+      const seriesDocRef = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, id);
+      const racesCol = this.tenant.collectionRef<PublishedRace>(PUBLISHED_SERIES_PATH, id, 'races');
+      const [seriesSnap, racesSnap] = await Promise.all([
+         getDoc(seriesDocRef),
+         getDocs(query(racesCol, orderBy('index', 'asc'))),
+      ]);
+      if (!seriesSnap.exists()) return undefined;
+
+      const series = coercePublishedSeries(seriesSnap.data());
+      if (!series) return undefined;
+      return {
+         series,
+         races: racesSnap.docs.map(d => coercePublishedRace(d.data())),
+      };
    }
 }

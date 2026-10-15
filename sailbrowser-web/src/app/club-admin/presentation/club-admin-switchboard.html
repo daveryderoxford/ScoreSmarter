@@ -36,6 +36,7 @@
               [multiContext]="action.importExportContexts"
               (exportICal)="handleExport('iCal', $event)"
               (exportCsv)="handleExport('CSV', $event)"
+              (exportResultsCsv)="exportPublishedResultsCsv()"
               (exportRya)="handleExport('RYA', $event)"
               (exportWsXml)="handleExport('WS XML', $event)"
               (importFile)="handleImport($event)" />
