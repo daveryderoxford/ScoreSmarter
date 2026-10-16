@@ -1,8 +1,8 @@
+import { UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import { FirebaseError } from '@angular/fire/app';
 import {
   Auth,
-  FacebookAuthProvider, GoogleAuthProvider,
   signInWithEmailAndPassword, signInWithPopup
 } from '@angular/fire/auth';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -18,17 +18,20 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { getFirebaseErrorMessage } from '../firebase-error-messages';
 import { FlexModule } from '@ngbracket/ngx-layout/flex';
 import { AuthService } from '../auth.service';
+import {
+  enabledOAuthProviders,
+  isOAuthProviderEnabled,
+  oauthAuthProvider,
+  type OAuthProviderId,
+} from '../auth-providers';
 
-export type AuthType = "EmailAndPassword" | "Google" | "Facebook";
-
-const facebookAuthProvider = new FacebookAuthProvider();
-const googleAuthProvider = new GoogleAuthProvider();
+export type AuthType = 'EmailAndPassword' | OAuthProviderId;
 
 @Component({
   selector: 'app-login',
   templateUrl: 'login.html',
   styleUrls: ['login.scss'],
-  imports: [MatCardModule, Toolbar, FlexModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, RouterLink, MatProgressSpinnerModule, PageLayout],
+  imports: [MatCardModule, Toolbar, FlexModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, RouterLink, MatProgressSpinnerModule, PageLayout, UpperCasePipe],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LoginComponent {
@@ -37,6 +40,8 @@ export class LoginComponent {
   private afAuth = inject(Auth);
   private dialogs = inject(DialogsService);
   private authService = inject(AuthService);
+
+  protected readonly oauthProviders = enabledOAuthProviders;
 
   loginForm = this.formBuilder.group({
     email: ['', [Validators.required, Validators.email]],
@@ -51,7 +56,7 @@ export class LoginComponent {
 
   async loginFormSubmit() {
     if (this.loginForm.valid) {
-      await this.signInWith("EmailAndPassword", this.loginForm.getRawValue());
+      await this.signInWith('EmailAndPassword', this.loginForm.getRawValue());
     }
   }
 
@@ -69,7 +74,19 @@ export class LoginComponent {
       return this._signInWithEmail(credentials);
     }
 
-    const oauthProvider = provider === 'Google' ? googleAuthProvider : facebookAuthProvider;
+    if (!isOAuthProviderEnabled(provider)) {
+      this.loading.set(false);
+      this.errorMessage.set('That sign-in method is not available.');
+      return Promise.resolve();
+    }
+
+    const oauthProvider = oauthAuthProvider(provider);
+    if (!oauthProvider) {
+      this.loading.set(false);
+      this.errorMessage.set('That sign-in method is not available.');
+      return Promise.resolve();
+    }
+
     // Invoke popup immediately — do not await anything before this call.
     return signInWithPopup(this.afAuth, oauthProvider)
       .then((userDetails) => {
