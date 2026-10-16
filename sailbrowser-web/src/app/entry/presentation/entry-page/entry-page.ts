@@ -12,13 +12,14 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIcon } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatListModule, MatSelectionListChange } from '@angular/material/list';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from 'app/auth/auth.service';
@@ -63,8 +64,7 @@ import { PageLayout } from 'app/shared/layout/page-layout';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dialog';
 import { groupBy } from 'app/shared/utils/group-by';
-import { startOfDay } from 'date-fns';
-import { firstValueFrom, debounceTime, map, startWith } from 'rxjs';
+import { firstValueFrom, debounceTime, startWith } from 'rxjs';
 import { resolveHandicapsForSeries, entryClubForCategory, meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
 import { trimBoatName, formatBoatOptionLabel } from 'app/boats/model/boat-display';
 import { EntryConflict, EntryService } from '../../services/entry.service';
@@ -73,7 +73,7 @@ import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocompl
 import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, FIRESTORE_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 import { UserDataService } from 'app/user';
 
-interface BoatAutocompleteGroup {
+interface BoatListGroup {
   readonly key: string;
   readonly boats: Boat[];
 }
@@ -103,6 +103,7 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     MatButtonModule,
     MatAutocompleteModule,
     MatCardModule,
+    MatListModule,
     Toolbar,
     PageLayout,
     ListPane,
@@ -116,8 +117,6 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
   templateUrl: 'entry-page.html',
   styles: [
     `
-    @use '@angular/material' as mat;
-
     .content {
       padding: 16px 20px 24px;
       box-sizing: border-box;
@@ -133,45 +132,87 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
       display: block;
     }
 
-    .boat-details-panel {
-      min-height: 180px;
-      margin-top: 15px;
-      margin-bottom: 8px;
-      padding: 16px 20px;
-      box-sizing: border-box;
+    .boat-step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
     }
 
-    .boat-details-instructions {
+    .boat-step-header .step-instruction {
+      margin: 0;
+      flex: 0 1 auto;
+    }
+
+    .selected-boat-line {
+      margin: 0;
+      flex: 1 1 auto;
+      min-width: 0;
+      text-align: right;
+      font: var(--mat-sys-body-medium);
+      font-weight: 500;
+      color: var(--mat-sys-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .boat-picker-toolbar {
       display: flex;
-      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .boat-picker-toolbar .search-field {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .new-boat-btn {
+      flex: 0 0 auto;
+      margin-top: 4px;
+    }
+
+    .boat-picker-list {
+      height: 360px;
+      margin-top: 8px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      border: 1px solid var(--mat-sys-outline-variant);
+      border-radius: 8px;
+      background: var(--mat-sys-surface);
+      box-sizing: border-box;
+      padding-top: 4px;
+      padding-bottom: 4px;
+    }
+
+    .boat-picker-list--empty {
+      display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 148px;
-      text-align: center;
-      font: var(--mat-sys-body-large);
-      gap: 0.35rem;
     }
 
-    .boat-details-instructions p {
+    .boat-picker-helm {
+      position: static;
+      background: transparent;
+      padding: 10px 16px 2px;
+      font: var(--mat-sys-title-small);
+      color: var(--mat-sys-on-surface);
+      min-height: auto;
+    }
+
+    /* Indent via leading space (not margin) so 100%-wide options don't force horizontal scroll. */
+    .boat-picker-boat {
+      --mat-list-list-item-leading-space: 32px;
+    }
+
+    .boat-picker-empty {
       margin: 0;
+      padding: 24px 12px;
+      text-align: center;
       color: var(--mat-sys-on-surface-variant);
-    }
-
-    .boat-summary {
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .boat-summary-main {
-      font-weight: 600;
-      font-size: 1rem;
-    }
-
-    .boat-summary-sub {
-      font-size: 0.875rem;
-      color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-body-medium);
     }
 
     .actions {
@@ -187,18 +228,10 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     .details-step-actions .step-next {
       margin-left: auto;
     }
-    .new-boat-actions {
-      margin-bottom: 0;
-      justify-content: flex-start;
-    }
     .race-step-actions {
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-    }
-
-    .more-races-btn {
-      margin-left: 0;
     }
 
     .category-grid {
@@ -290,7 +323,7 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
       display: flex;
       gap: 12px;
       align-items: flex-start;
-      margin: 5px 0;
+      margin: 12px 0 8px;
     }
 
     .helm-crew-row mat-form-field {
@@ -299,30 +332,6 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
       margin-bottom: 0;
     }
 
-    .handicap-line {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: 6px 10px;
-      margin-top: 0;
-      margin-bottom: 16px;
-      font-size: 0.875rem;
-      line-height: 1.35;
-      color: var(--mat-sys-on-surface-variant);
-    }
-
-    .handicap-line-title {
-      font-weight: 500;
-      margin-right: 2px;
-      color: var(--mat-sys-on-surface-variant);
-    }
-    .handicap-chip {
-      color: var(--mat-sys-on-surface-variant);
-      font-weight: 400;
-    }
-    .handicap-chip--empty {
-      font-style: italic;
-    }
     .divisions-block {
       display: flex;
       flex-direction: column;
@@ -332,17 +341,6 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
     .divisions-block-title {
       font-weight: 500;
       color: var(--mat-sys-on-surface-variant);
-    }
-    .boat-selection {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      margin-top: 30px;
-            margin-bottom: 30px;
-    }
-    .search-field {
-      flex-grow: 1;
-      font-size: 16px;
     }
     .muted {
       color: var(--mat-sys-on-surface-variant);
@@ -475,16 +473,6 @@ export class EntryPage {
   });
 
   readonly boatHandicaps = computed<Handicap[]>(() => this.selectedBoat()?.handicaps ?? []);
-  readonly displayHandicaps = computed<Handicap[]>(() => {
-    const byScheme = new Map<HandicapScheme, number>();
-    for (const h of this.classHandicaps()) {
-      if (h.value > 0) byScheme.set(h.scheme, h.value);
-    }
-    for (const h of this.boatHandicaps()) {
-      if (h.value > 0) byScheme.set(h.scheme, h.value);
-    }
-    return [...byScheme.entries()].map(([scheme, value]) => ({ scheme, value }));
-  });
 
   readonly candidateBoat = computed(() => {
     const boat = this.selectedBoat();
@@ -571,26 +559,27 @@ export class EntryPage {
     return handicapSchemesRequiredForRaces(races, this.rc.allSeries());
   });
 
-  readonly boatSearchControl = new FormControl<string | Boat>('');
+  readonly boatSearchControl = new FormControl('', { nonNullable: true });
 
   private readonly searchTerm = toSignal(
     this.boatSearchControl.valueChanges.pipe(
-      startWith(''),
+      startWith(this.boatSearchControl.value),
       debounceTime(150),
-      map(value => (typeof value === 'string' ? value : ''))
     ),
     { initialValue: '' }
   );
 
-  readonly filteredBoats = computed(() =>
-    this.bs.boats().filter(boat => {
+  readonly filteredBoats = computed(() => {
+    const term = this.searchTerm().trim();
+    return this.bs.boats().filter(boat => {
       const isClub = this.boatCategory() === 'club';
       if (boat.isClub !== isClub) return false;
-      return boatFilter(boat, this.searchTerm());
-    })
-  );
+      return boatFilter(boat, term);
+    });
+  });
 
-  readonly filteredBoatsByHelm = computed((): BoatAutocompleteGroup[] => {
+  /** Member boats grouped by helm; club boats by class. */
+  readonly filteredBoatGroups = computed((): BoatListGroup[] => {
     const category = this.boatCategory();
     if (category === 'visitor') return [];
     const grouped = groupBy(this.filteredBoats(), boat => boatGroupKey(boat, category));
@@ -602,7 +591,28 @@ export class EntryPage {
       }));
   });
 
+  readonly selectedBoatLabel = computed(() => {
+    const boat = this.selectedBoat();
+    if (!boat) return '';
+    const option = formatBoatOptionLabel({
+      boatName: boat.name,
+      boatClass: boat.boatClass,
+      sailNumber: boat.sailNumber,
+    });
+    if (!boat.isClub && boat.helm?.trim()) {
+      return `${boat.helm.trim()} · ${option}`;
+    }
+    return option;
+  });
+
+  readonly showHelmCrewFields = computed(() => {
+    const boat = this.selectedBoat();
+    return !!boat && (boat.isClub || !this.isSinglehander());
+  });
+
   private readonly boatSearchInput = viewChild<ElementRef<HTMLInputElement>>('boatSearchInput');
+  /** Prevents re-focusing search after the user moves to helm/crew or the list. */
+  private boatSearchFocusedFor: string | null = null;
 
   constructor() {
     for (const scheme of this.visitorBoatSchemes()) {
@@ -631,11 +641,20 @@ export class EntryPage {
       this.boatSearchControl.setValue('', { emitEvent: false });
     });
 
+    // Focus search when the member/club picker is first shown for this visit.
     afterRenderEffect(() => {
-      if (this.step() !== 'details' || this.boatCategory() === 'visitor' || this.selectedBoat()) {
+      const step = this.step();
+      const category = this.boatCategory();
+      if (step !== 'details' || category === 'visitor') {
+        this.boatSearchFocusedFor = null;
         return;
       }
-      this.boatSearchInput()?.nativeElement.focus();
+      const input = this.boatSearchInput()?.nativeElement;
+      if (!input) return;
+      const focusKey = `${step}:${category}`;
+      if (this.boatSearchFocusedFor === focusKey) return;
+      this.boatSearchFocusedFor = focusKey;
+      input.focus();
     });
 
     if (this.scopedRaceId) {
@@ -698,7 +717,6 @@ export class EntryPage {
         );
         if (boat) {
           this.selectedBoat.set(boat);
-          this.boatSearchControl.setValue(boat, { emitEvent: false });
         } else {
           // If not found, at least set the search term to help them find it
           this.boatSearchControl.setValue(`${classVal} ${sailVal}`, { emitEvent: false });
@@ -714,7 +732,6 @@ export class EntryPage {
       );
       if (!persisted) return;
       this.selectedBoat.set(persisted);
-      this.boatSearchControl.setValue(persisted, { emitEvent: false });
     });
 
     effect(() => {
@@ -738,18 +755,17 @@ export class EntryPage {
     });
   }
 
-  displayBoatFn(boat: Boat | string | null): string {
-    if (!boat || typeof boat === 'string') {
-      return typeof boat === 'string' ? boat : '';
-    } else if (boat.isClub) {
-      return `${boat.boatClass} - ${boat.sailNumber} (Club)`;
-    } else {
-      return `${boat.helm} - ${boat.boatClass} ${boat.sailNumber}`;
+  onBoatListSelection(event: MatSelectionListChange): void {
+    const option = event.source.selectedOptions.selected[0];
+    if (!option) return;
+    const id = String(option.value);
+    const boat =
+      this.filteredBoats().find(b => b.id === id) ??
+      this.bs.boats().find(b => b.id === id) ??
+      (this.selectedBoat()?.id === id ? this.selectedBoat() : null);
+    if (boat) {
+      this.selectedBoat.set(boat);
     }
-  }
-
-  onBoatSelected(event: MatAutocompleteSelectedEvent) {
-    this.selectedBoat.set(event.option.value as Boat);
   }
 
   selectRecentBoat(boat: Boat): void {
@@ -928,7 +944,6 @@ export class EntryPage {
       );
       if (persisted) {
         this.selectedBoat.set(persisted);
-        this.boatSearchControl.setValue(persisted, { emitEvent: false });
         return;
       }
     }
@@ -945,7 +960,6 @@ export class EntryPage {
       personalHandicapBand: created.boat.personalHandicapBand,
     };
     this.selectedBoat.set(newBoat);
-    this.boatSearchControl.setValue(newBoat, { emitEvent: false });
   }
 
   async onSubmit() {

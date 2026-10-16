@@ -86,10 +86,16 @@
         </form>
       } @else {
         <form [formGroup]="competitorDetailsGroup">
-          <p class="step-instruction">
-            {{ boatCategory() === 'club' ? 'Select a club boat' : "Select a member's boat" }}
-          </p>
-          <div class="boat-selection">
+          <div class="boat-step-header">
+            <p class="step-instruction">
+              {{ boatCategory() === 'club' ? 'Select a club boat' : 'Select boat' }}
+            </p>
+            @if (selectedBoatLabel(); as label) {
+              <p class="selected-boat-line" aria-live="polite">{{ label }}</p>
+            }
+          </div>
+
+          <div class="boat-picker-toolbar">
             <mat-form-field subscriptSizing="dynamic" class="search-field">
               <mat-label>Search for boat</mat-label>
               <mat-icon matPrefix>search</mat-icon>
@@ -97,84 +103,74 @@
                 #boatSearchInput
                 matInput
                 [formControl]="boatSearchControl"
-                [matAutocomplete]="auto"
-                [placeholder]="boatCategory() === 'club' ? 'Class or Sail No' : 'Helm, Class or Sail No'">
-              <mat-autocomplete
-                #auto="matAutocomplete"
-                [displayWith]="displayBoatFn"
-                (optionSelected)="onBoatSelected($event)">
-                @for (group of filteredBoatsByHelm(); track group.key) {
-                  <mat-optgroup [label]="group.key">
-                    @for (boat of group.boats; track boat.id) {
-                      <mat-option [value]="boat">
-                        <span [classList]="boat.isClub ? 'muted' : ''">
-                          {{ formatBoatOptionLabel({ boatName: boat.name, boatClass: boat.boatClass, sailNumber: boat.sailNumber }) }}
-                        </span>
-                      </mat-option>
-                    }
-                  </mat-optgroup>
-                }
-              </mat-autocomplete>
+                [placeholder]="boatCategory() === 'club' ? 'Class or Sail No' : 'Helm, Class or Sail No'"
+                autocomplete="off">
               @if (boatSearchControl.value) {
-                <button mat-icon-button matSuffix (click)="boatSearchControl.setValue('')" aria-label="Clear search">
+                <button mat-icon-button matSuffix type="button" (click)="boatSearchControl.setValue('')" aria-label="Clear search">
                   <mat-icon>close</mat-icon>
                 </button>
               }
             </mat-form-field>
+            @if (boatCategory() === 'member') {
+              <button matButton="outlined" type="button" class="new-boat-btn" (click)="createNewBoat()">
+                <mat-icon>add</mat-icon>
+                New Boat
+              </button>
+            }
           </div>
 
-          <mat-card appearance="outlined" class="boat-details-panel">
-            @if (selectedBoat(); as boat) {
-              <div class="boat-summary">
-                <span class="boat-summary-main">{{ boat.boatClass }} · {{ boat.sailNumber }}</span>
-                @if (!boat.isClub && boat.helm) {
-                  <span class="boat-summary-sub">{{ boat.helm }}</span>
+          @if (filteredBoatGroups().length === 0) {
+            <div class="boat-picker-list boat-picker-list--empty">
+              <p class="boat-picker-empty">
+                {{ boatSearchControl.value.trim() ? 'No boats match this search.' : 'No boats available.' }}
+              </p>
+            </div>
+          } @else {
+            <mat-selection-list
+              class="boat-picker-list"
+              [multiple]="false"
+              [attr.aria-label]="boatCategory() === 'club' ? 'Club boats' : 'Member boats'"
+              (selectionChange)="onBoatListSelection($event)">
+              @for (group of filteredBoatGroups(); track group.key) {
+                <div mat-subheader class="boat-picker-helm">{{ group.key }}</div>
+                @for (boat of group.boats; track boat.id) {
+                  <mat-list-option
+                    class="boat-picker-boat"
+                    [value]="boat.id"
+                    [selected]="selectedBoat()?.id === boat.id"
+                    togglePosition="before">
+                    <span matListItemTitle [class.muted]="boat.isClub">
+                      {{ formatBoatOptionLabel({ boatName: boat.name, boatClass: boat.boatClass, sailNumber: boat.sailNumber }) }}
+                    </span>
+                  </mat-list-option>
                 }
-              </div>
-
-              @if (displayHandicaps().length > 0) {
-                <div class="handicap-line" role="group" aria-label="Handicaps">
-                  <span class="handicap-line-title">Handicaps</span>
-                  @for (h of displayHandicaps(); track h.scheme) {
-                    <span class="handicap-chip">{{ h.scheme }} {{ h.value }}</span>
-                  }
-                </div>
-              } @else {
-                <div class="handicap-line">
-                  <span class="handicap-line-title">Handicaps</span>
-                  <span class="handicap-chip handicap-chip--empty">No handicaps configured.</span>
-                </div>
               }
+            </mat-selection-list>
+          }
 
-              <div class="helm-crew-row">
-                @if (boat.isClub) {
-                  <mat-form-field>
-                    <mat-label>Helm</mat-label>
-                    <input
-                      matInput
-                      formControlName="helm"
-                      placeholder="Helm for this race entry"
-                      autocomplete="off"
-                      [matAutocomplete]="clubHelmAutocomplete.panel()" />
-                    <app-helm-name-autocomplete
-                      #clubHelmAutocomplete
-                      [control]="competitorDetailsGroup.controls['helm']" />
-                    <mat-error>Helm name required</mat-error>
-                  </mat-form-field>
-                }
-                @if (!isSinglehander()) {
-                  <mat-form-field>
-                    <mat-label>Crew (optional)</mat-label>
-                    <input matInput formControlName="crew" placeholder="Optional" autocomplete="off" />
-                  </mat-form-field>
-                }
-              </div>
-            }
-          </mat-card>
-
-          @if (boatCategory() === 'member') {
-            <div class="actions new-boat-actions">
-              <button matButton="text" type="button" (click)="createNewBoat()">New Members Boat</button>
+          @if (showHelmCrewFields()) {
+            <div class="helm-crew-row">
+              @if (selectedBoat()?.isClub) {
+                <mat-form-field subscriptSizing="dynamic">
+                  <mat-label>Helm</mat-label>
+                  <input
+                    matInput
+                    formControlName="helm"
+                    placeholder="Helm for this race entry"
+                    autocomplete="off"
+                    [matAutocomplete]="clubHelmAutocomplete.panel()" />
+                  <app-helm-name-autocomplete
+                    #clubHelmAutocomplete
+                    [control]="competitorDetailsGroup.controls['helm']" />
+                  <mat-error>Helm name required</mat-error>
+                </mat-form-field>
+              }
+              @if (!isSinglehander()) {
+                <mat-form-field subscriptSizing="dynamic">
+                  <mat-label>Crew (optional)</mat-label>
+                  <input matInput formControlName="crew" placeholder="Optional" autocomplete="off" />
+                </mat-form-field>
+              }
             </div>
           }
           <div class="actions details-step-actions">
