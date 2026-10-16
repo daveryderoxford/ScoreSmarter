@@ -9,6 +9,12 @@
       <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
     </button>
     <mat-menu #scopeMenu="matMenu">
+      <button mat-menu-item type="button" (click)="setViewScope('upcoming')">
+        @if (viewScope() === 'upcoming') {
+          <mat-icon>check</mat-icon>
+        }
+        <span>Upcoming</span>
+      </button>
       <button mat-menu-item type="button" (click)="setViewScope('today')">
         @if (viewScope() === 'today') {
           <mat-icon>check</mat-icon>
@@ -54,15 +60,17 @@
               <span class="gap">{{ summary.seriesName }} {{ summary.raceCount }} race(s)</span>
             }
           </span>
-          <span matListItemMeta>
-            <button
-              mat-icon-button
-              type="button"
-              aria-label="Delete entries"
-              (click)="openDeleteDialog(boat)">
-              <mat-icon class="warning">delete</mat-icon>
-            </button>
-          </span>
+          @if (canDeleteBoat(boat)) {
+            <span matListItemMeta>
+              <button
+                mat-icon-button
+                type="button"
+                aria-label="Delete entries"
+                (click)="openDeleteDialog(boat)">
+                <mat-icon class="warning">delete</mat-icon>
+              </button>
+            </span>
+          }
         </mat-list-item>
       }
     </mat-list>

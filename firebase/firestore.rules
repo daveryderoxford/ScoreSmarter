@@ -84,7 +84,17 @@ service cloud.firestore {
       return hasRequiredFields(['raceId', 'seriesEntryId', 'seriesId'])
         && pathKeyUnchanged('raceId')
         && pathKeyUnchanged('seriesId')
-        && pathKeyUnchanged('seriesEntryId');
+        && pathKeyUnchanged('seriesEntryId')
+        && enteredByUidOk();
+    }
+
+    // On create, enteredByUid (if set) must be the caller. Once stored it cannot change.
+    function enteredByUidOk() {
+      return !('enteredByUid' in request.resource.data)
+        || (resource == null && request.resource.data.enteredByUid == request.auth.uid)
+        || (resource != null
+          && (!('enteredByUid' in resource.data)
+            || request.resource.data.enteredByUid == resource.data.enteredByUid));
     }
 
     function isValidSeriesEntry() {
@@ -179,7 +189,8 @@ service cloud.firestore {
       match /race-results/{resultId} {
         allow read: if true;
         allow create, update: if isAuthorisedUser(clubId) && isValidRaceResult();
-        allow delete: if isRO(clubId);
+        allow delete: if isRO(clubId)
+          || (isAuthenticated() && resource.data.enteredByUid == request.auth.uid);
       }
 
       match /series-entries/{entryId} {

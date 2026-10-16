@@ -1,6 +1,10 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { sortRaces, type Race } from 'app/race-calender';
+import { isWithinNextDays } from 'app/race-calender/presentation/races-panel/races-panel-utils';
 import { RaceCalendarStore } from '../../race-calender/services/full-race-calander';
+
+/** Inclusive window matching self-entry eligibility (today through today + N days). */
+export const UPCOMING_RACE_DAYS = 7;
 
 /** Manages a list of 'currect races'
  * All information for currect races is held in memory
@@ -34,6 +38,16 @@ export class CurrentRaces {
       .filter(isScheduledToday)
       .sort(sortRaces);
   });
+
+  /** Races from today through the next {@link UPCOMING_RACE_DAYS} days (same window as self-entry). */
+  readonly upcomingRaces = computed(() => {
+    const now = new Date();
+    return [...this.allRacesById().values()]
+      .filter(race => isWithinNextDays(race, now, UPCOMING_RACE_DAYS))
+      .sort(sortRaces);
+  });
+
+  readonly upcomingRaceIds = computed(() => this.upcomingRaces().map(race => race.id));
 
   /** Today's races (from calendar) plus any manual extras still present in `allRaces`. */
   readonly selectedRaceIds = computed(() => {
