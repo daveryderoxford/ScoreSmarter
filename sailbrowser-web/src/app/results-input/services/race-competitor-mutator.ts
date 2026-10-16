@@ -13,6 +13,7 @@
  */
 import { inject, Injectable } from '@angular/core';
 import { Firestore, setDoc, writeBatch } from '@angular/fire/firestore';
+import { AuthService } from 'app/auth/auth.service';
 import { sailNumbersEqual } from 'app/boats/model/sail-number';
 import { divisionIdsEqual, entryDivisionIds } from 'app/race-calender/model/division';
 import { RaceCalendarStore } from 'app/race-calender';
@@ -131,6 +132,7 @@ export class RaceCompetitorMutator {
   private readonly raceCompetitors = inject(RaceCompetitorStore);
   private readonly seriesEntries = inject(SeriesEntryStore);
   private readonly raceCalendar = inject(RaceCalendarStore);
+  private readonly auth = inject(AuthService);
 
   private async runInBatch(work: (batch: ReturnType<typeof writeBatch>) => void | Promise<void>): Promise<void> {
     const batch = writeBatch(this.firestore);
@@ -278,6 +280,13 @@ export class RaceCompetitorMutator {
 
   async deleteRaceCompetitor(competitor: RaceCompetitor): Promise<void> {
     const seriesEntryId = competitor.seriesEntryId;
+
+    // Members may only delete the race-result row (series-entry delete stays RO-only in rules).
+    if (!this.auth.isRaceOfficer()) {
+      await this.raceCompetitors.deleteResult(competitor.id);
+      await this.raceCalendar.ensureRaceDirty(competitor.raceId);
+      return;
+    }
 
     const others = (await this.raceCompetitors.getCompetitorsForSeriesEntry(seriesEntryId)).filter(
       c => c.id !== competitor.id,

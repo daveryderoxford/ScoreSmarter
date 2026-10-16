@@ -13,6 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { AuthService } from 'app/auth/auth.service';
 import { Race } from 'app/race-calender';
 import { ResolvedRaceCompetitor } from 'app/results-input';
 import { CenteredText } from 'app/shared/components/centered-text';
@@ -23,8 +24,8 @@ import { RaceCompetitorMutator } from '../../results-input/services/race-competi
 import { RaceCompetitorReader } from '../../results-input/services/race-competitor-reader';
 import { DeleteEntryDialog, DeleteEntryRaceRow } from './delete-entry-dialog';
 
-/** View filter only — does not change which competitors are loaded from Firestore. */
-export type EntriesViewScope = 'today' | 'current';
+/** View filter only — loading covers selected ∪ upcoming races. */
+export type EntriesViewScope = 'upcoming' | 'today' | 'current';
 
 export interface BoatSeriesSummary {
   seriesName: string;
@@ -67,21 +68,34 @@ export class EntriesListPanel {
   protected readonly reader = inject(RaceCompetitorReader);
   private readonly mutator = inject(RaceCompetitorMutator);
   private readonly currentRaces = inject(CurrentRaces);
+  private readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly snackbar = inject(MatSnackBar);
 
-  /** Default: today's races only. */
-  readonly viewScope = signal<EntriesViewScope>('today');
+  /** Default: today through next 7 days (same window as self-entry). */
+  readonly viewScope = signal<EntriesViewScope>('upcoming');
 
-  readonly scopeLabel = computed(() =>
-    this.viewScope() === 'current' ? 'Recent' : 'Today',
-  );
+  readonly scopeLabel = computed(() => {
+    switch (this.viewScope()) {
+      case 'current':
+        return 'Recent';
+      case 'today':
+        return 'Today';
+      default:
+        return 'Upcoming';
+    }
+  });
 
-  private readonly visibleRaces = computed(() =>
-    this.viewScope() === 'today'
-      ? this.currentRaces.todaysRaces()
-      : this.currentRaces.selectedRaces(),
-  );
+  private readonly visibleRaces = computed(() => {
+    switch (this.viewScope()) {
+      case 'today':
+        return this.currentRaces.todaysRaces();
+      case 'current':
+        return this.currentRaces.selectedRaces();
+      default:
+        return this.currentRaces.upcomingRaces();
+    }
+  });
 
   private readonly visibleRaceIds = computed(
     () => new Set(this.visibleRaces().map(race => race.id)),
@@ -150,9 +164,22 @@ export class EntriesListPanel {
     return formatRaceTitle(race);
   }
 
+  /** RO can delete any unfinished entry; members only their own unfinished rows. */
+  canDeleteBoat(boat: BoatEntrySummary): boolean {
+    return this.deletableCompetitors(boat).length > 0;
+  }
+
   openDeleteDialog(boat: BoatEntrySummary): void {
+    const deletable = this.deletableCompetitors(boat);
+    if (deletable.length === 0) {
+      this.snackbar.open('You can only delete your own unfinished entries.', 'Dismiss', {
+        duration: 4000,
+      });
+      return;
+    }
+
     const racesById = new Map(this.visibleRaces().map((r: Race) => [r.id, r]));
-    const rows: DeleteEntryRaceRow[] = boat.competitors
+    const rows: DeleteEntryRaceRow[] = deletable
       .map(comp => {
         const race = racesById.get(comp.raceId);
         return {
@@ -164,7 +191,6 @@ export class EntriesListPanel {
       .sort((a, b) => a.raceLabel.localeCompare(b.raceLabel));
 
     const boatLabel = `${boat.boatClass} ${boat.sailNumber} — ${boat.helm}`;
-    const competitors = boat.competitors;
 
     this.dialog.open(DeleteEntryDialog, {
       width: '480px',
@@ -172,8 +198,19 @@ export class EntriesListPanel {
       bindings: [
         inputBinding('boatLabel', () => boatLabel),
         inputBinding('races', () => rows),
-        outputBinding<string[]>('delete', ids => void this.deleteCompetitors(competitors, ids)),
+        outputBinding<string[]>('delete', ids => void this.deleteCompetitors(deletable, ids)),
       ],
+    });
+  }
+
+  private deletableCompetitors(boat: BoatEntrySummary): ResolvedRaceCompetitor[] {
+    const isRO = this.auth.isRaceOfficer();
+    const uid = this.auth.user()?.uid;
+    return boat.competitors.filter(comp => {
+      const finished = !!(comp.manualFinishTime || comp.recordedFinishTime);
+      if (finished) return false;
+      if (isRO) return true;
+      return !!uid && comp.enteredByUid === uid;
     });
   }
 

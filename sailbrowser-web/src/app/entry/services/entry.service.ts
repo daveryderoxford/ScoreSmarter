@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { Auth } from '@angular/fire/auth';
 import { divisionIdsEqual, entryDivisionIds } from 'app/race-calender/model/division';
 import { RaceCalendarStore } from 'app/race-calender';
 import {
@@ -97,6 +98,7 @@ export class EntryService {
   private seriesEntryStore = inject(SeriesEntryStore);
   private raceCalanderStore = inject(RaceCalendarStore);
   private mutator = inject(RaceCompetitorMutator);
+  private auth = inject(Auth);
 
   /** Enter a race
    * throws a ScoreSmarterError exception if any conflict is detected.
@@ -142,6 +144,7 @@ export class EntryService {
         seriesId: race.seriesId,
         seriesEntryId,
         resultCode: details.resultCode ?? 'NOT FINISHED',
+        enteredByUid: this.auth.currentUser?.uid,
       };
 
       const id = await this.raceResultsStore.addResult(competitor);

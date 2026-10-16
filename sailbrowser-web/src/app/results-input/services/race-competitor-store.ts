@@ -2,7 +2,7 @@
 * Results Management
 * Operations on the 'race-results' collection.
 */
-import { inject, Injectable } from '@angular/core';
+import { computed, inject, Injectable } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import {
   collectionData,
@@ -18,9 +18,21 @@ import {
 import { FirestoreTenantService } from 'app/club-tenant';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { firestoreWrite } from 'app/shared/utils/with-timeout';
-import { of, tap } from 'rxjs';
+import { combineLatest, map, of, tap } from 'rxjs';
 import { RaceCompetitor } from '../model/race-competitor';
 import { CurrentRaces } from './current-races-store';
+
+/** Firestore `in` operator supports at most 30 values. */
+const FIRESTORE_IN_LIMIT = 30;
+
+function chunkIds(ids: readonly string[], size = FIRESTORE_IN_LIMIT): string[][] {
+  if (ids.length === 0) return [];
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += size) {
+    chunks.push(ids.slice(i, i + size));
+  }
+  return chunks;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -57,24 +69,54 @@ export class RaceCompetitorStore {
     return doc(this.collection, id);
   }
 
-  /** Race competitors in selected races */
+  /** Today + manual extras + upcoming (7-day) race ids for competitor loading. */
+  private readonly loadedRaceIds = computed(() => {
+    const ids = new Set<string>([
+      ...this.selectedRaces.selectedRaceIds(),
+      ...this.selectedRaces.upcomingRaceIds(),
+    ]);
+    return [...ids].sort();
+  });
+
+  private readonly loadedRaceIdsKey = computed(() => {
+    const ids = this.loadedRaceIds();
+    return ids.length === 0 ? '' : ids.join('\0');
+  });
+
+  /** Race competitors in selected and upcoming races */
   private readonly selectedCompResource = rxResource<RaceCompetitor[], string>({
-    params: () => this.selectedRaces.selectedRaceIdsKey(),
+    params: () => this.loadedRaceIdsKey(),
     stream: () => {
-      const selectedIds = this.selectedRaces.selectedRaceIds();
+      const selectedIds = this.loadedRaceIds();
       if (selectedIds.length === 0) {
         return of([]);
-      } else {
-        const q = query(
-          this.collection,
-          where('raceId', 'in', selectedIds)
-        );
-        return collectionData(q).pipe(
-          tap(rc => console.log(`RaceCompetitorStore. Loaded ${rc.length} competitors`))
-        );
       }
+
+      const chunks = chunkIds(selectedIds);
+      const streams = chunks.map(chunk =>
+        collectionData(query(this.collection, where('raceId', 'in', chunk))),
+      );
+
+      const merged$ =
+        streams.length === 1
+          ? streams[0]
+          : combineLatest(streams).pipe(
+              map(parts => {
+                const byId = new Map<string, RaceCompetitor>();
+                for (const part of parts) {
+                  for (const competitor of part) {
+                    byId.set(competitor.id, competitor);
+                  }
+                }
+                return [...byId.values()];
+              }),
+            );
+
+      return merged$.pipe(
+        tap(rc => console.log(`RaceCompetitorStore. Loaded ${rc.length} competitors`)),
+      );
     },
-    defaultValue: []
+    defaultValue: [],
   });
 
   /** Trim string fields that we still own on RaceCompetitor */

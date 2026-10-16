@@ -63,6 +63,13 @@ export class RaceCompetitor {
    */
   scoringSheetRow?: number;
 
+  /**
+   * Firebase Auth uid of the member who signed on this race entry.
+   * Used so members can delete their own unfinished entries. Absent on
+   * legacy rows and bulk imports.
+   */
+  enteredByUid?: string;
+
   constructor(data: Partial<RaceCompetitor>) {
     this.id = data.id || '';
     this.seriesEntryId = data.seriesEntryId || '';
@@ -77,6 +84,7 @@ export class RaceCompetitor {
     this.lapTimes = data.lapTimes || [];
     this.manualPosition = data.manualPosition;
     this.scoringSheetRow = data.scoringSheetRow;
+    this.enteredByUid = data.enteredByUid;
   }
 
   /**
