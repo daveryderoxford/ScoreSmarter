@@ -3,6 +3,7 @@ import { Auth, createUserWithEmailAndPassword, sendEmailVerification } from '@an
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { Router, RouterLink } from '@angular/router';
@@ -18,7 +19,7 @@ import { getFirebaseErrorMessage } from '../firebase-error-messages';
    selector: 'app-signup',
    templateUrl: './signup.html',
    styleUrls: ['./signup.scss'],
-   imports: [MatToolbarModule, FlexModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, RouterLink, Toolbar, PageLayout, DetailPane],
+   imports: [MatToolbarModule, FlexModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, RouterLink, Toolbar, PageLayout, DetailPane],
    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Signup {
@@ -28,6 +29,9 @@ export class Signup {
    private snackBar = inject(MatSnackBar);
 
    loading = signal(false);
+
+   protected hidePassword = signal(true);
+   protected hideConfirmPassword = signal(true);
 
    signupForm = this.formBuilder.group({
       email: ['', [Validators.required, Validators.email]],

@@ -12,13 +12,25 @@
 
    <mat-form-field>
       <mat-label>Password</mat-label>
-      <input matInput formControlName="password" type="password">
+      <input matInput formControlName="password" [type]="hidePassword() ? 'password' : 'text'">
+      <button mat-icon-button matSuffix type="button"
+         (click)="hidePassword.set(!hidePassword())"
+         [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
+         [attr.aria-pressed]="!hidePassword()">
+         <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+      </button>
       <mat-error>Password of 6 or more characters required</mat-error>
    </mat-form-field>
 
    <mat-form-field>
       <mat-label>Confirm Password</mat-label>
-      <input matInput formControlName="confirmPassword" type="password">
+      <input matInput formControlName="confirmPassword" [type]="hideConfirmPassword() ? 'password' : 'text'">
+      <button mat-icon-button matSuffix type="button"
+         (click)="hideConfirmPassword.set(!hideConfirmPassword())"
+         [attr.aria-label]="hideConfirmPassword() ? 'Show confirm password' : 'Hide confirm password'"
+         [attr.aria-pressed]="!hideConfirmPassword()">
+         <mat-icon>{{ hideConfirmPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+      </button>
       <mat-error>Confirm password required</mat-error>
       @if(signupForm.errors && signupForm.errors['passwordMissMatch']) {
          <mat-hint class=error>Passwords do not match</mat-hint>

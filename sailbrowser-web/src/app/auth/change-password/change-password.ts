@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Auth, updatePassword } from '@angular/fire/auth';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
 import { FlexModule } from '@ngbracket/ngx-layout/flex';
@@ -18,7 +19,7 @@ import { getFirebaseErrorMessage } from '../firebase-error-messages';
   selector: 'app-change-password',
   templateUrl: './change-password.html',
   styleUrls: ['./change-password.scss'],
-  imports: [FlexModule, MatCardModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, Toolbar, PageLayout, DetailPane],
+  imports: [FlexModule, MatCardModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule, Toolbar, PageLayout, DetailPane],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChangePassword {
@@ -26,6 +27,9 @@ export class ChangePassword {
   private formBuilder = inject(FormBuilder);
   private afAuth = inject(Auth);
   private snackBar = inject(MatSnackBar);
+
+  protected hidePassword = signal(true);
+  protected hideConfirmPassword = signal(true);
 
   form = this.formBuilder.group({
     password: ['', [Validators.required, Validators.minLength(6)]],

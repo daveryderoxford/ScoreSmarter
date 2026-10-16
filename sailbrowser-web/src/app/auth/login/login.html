@@ -29,7 +29,13 @@
 
                      <mat-form-field>
                         <mat-label>Password</mat-label>
-                        <input matInput formControlName="password" type="password" autocomplete="on">
+                        <input matInput formControlName="password" [type]="hidePassword() ? 'password' : 'text'" autocomplete="on">
+                        <button mat-icon-button matSuffix type="button"
+                           (click)="hidePassword.set(!hidePassword())"
+                           [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
+                           [attr.aria-pressed]="!hidePassword()">
+                           <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                        </button>
                         <mat-error>Password required</mat-error>
                      </mat-form-field>
 
