@@ -53,14 +53,16 @@
                </form>
             </div>
 
+            @if (oauthProviders.length > 0) {
             <div class="horizontal_rule"></div>
 
             <span class="mat-title-medium">OR LOGIN USING</span>
 
-            <button matButton="filled" (click)="signInWith('Google')" [disabled]="loading()"
-               fxFlexAlign="stretch">GOOGLE</button>
-            <button matButton="filled" (click)="signInWith('Facebook')" [disabled]="loading()"
-               fxFlexAlign="stretch">FACEBOOK</button>
+            @for (provider of oauthProviders; track provider) {
+            <button matButton="filled" (click)="signInWith(provider)" [disabled]="loading()"
+               fxFlexAlign="stretch">{{ provider | uppercase }}</button>
+            }
+            }
 
          </div>
       </mat-card-content>
