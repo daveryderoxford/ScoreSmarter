@@ -34,18 +34,25 @@ export class UserDataService {
     effect( async () => {
       if (this.as.loggedIn()) {
         try  {
-          const ensureUserData = await cloudCallable<
-            { clubId: string },
-            { user: UserData; id: string; isNew: boolean }
-          >('ensureUserData');
-          const result = await ensureUserData({ clubId: this.clubId });
-
-          console.log('UserDataService: User data returned for ' + result.data.id);
+          await this.ensureUserData();
         } catch (error) {
           console.error('UserDataService:  Error creating user data ', error);
         }
       }
     });
+  }
+
+  /**
+   * Creates the club user record if missing. Names, when given, are stored on a new
+   * record or fill in a record whose names are still blank; existing names are kept.
+   */
+  async ensureUserData(names?: { firstname: string; surname: string }): Promise<void> {
+    const ensureUserData = await cloudCallable<
+      { clubId: string; firstname?: string; surname?: string },
+      { user: UserData; id: string; isNew: boolean }
+    >('ensureUserData');
+    const result = await ensureUserData({ clubId: this.clubId, ...names });
+    console.log('UserDataService: User data returned for ' + result.data.id);
   }
 
 

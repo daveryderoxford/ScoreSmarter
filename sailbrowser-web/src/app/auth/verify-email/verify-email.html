@@ -1,0 +1,34 @@
+<app-page-layout>
+  <app-toolbar title="Verify your email" />
+
+  <app-detail-pane maxWidth="420px">
+    <div class="verify-body" fxLayout="column" fxLayoutGap="16px">
+      <p class="lead">
+        We’ve sent a verification link to
+        @if (email()) {
+          <strong>{{ email() }}</strong>
+        } @else {
+          your email address
+        }.
+        Please open that email and confirm your address before continuing.
+      </p>
+
+      @if (message()) {
+        <p class="status" role="status">{{ message() }}</p>
+      }
+
+      <div fxLayout="column" fxLayoutGap="10px">
+        <button matButton="filled" type="button" [disabled]="busy()" (click)="checkVerified()">
+          I’ve verified my email
+        </button>
+        <button matButton="outlined" type="button" [disabled]="busy()" (click)="resend()">
+          Resend verification email
+        </button>
+        <button matButton type="button" [disabled]="busy()" (click)="signOut()">
+          Sign out
+        </button>
+        <a matButton routerLink="/auth/login">Back to login</a>
+      </div>
+    </div>
+  </app-detail-pane>
+</app-page-layout>

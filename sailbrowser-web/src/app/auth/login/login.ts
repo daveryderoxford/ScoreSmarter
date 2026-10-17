@@ -25,6 +25,7 @@ import {
   oauthAuthProvider,
   type OAuthProviderId,
 } from '../auth-providers';
+import { needsEmailVerification } from '../email-verification';
 
 export type AuthType = 'EmailAndPassword' | OAuthProviderId;
 
@@ -147,6 +148,13 @@ export class LoginComponent {
 
   private _handleSignInSuccess() {
     console.log('LoginComponent: Successful login');
-      this.router.navigateByUrl(this.returnUrl() ?? '/');
+    if (needsEmailVerification(this.afAuth.currentUser)) {
+      void this.router.navigate(['/auth/verify-email'], {
+        queryParams: { returnUrl: this.returnUrl() || '/' },
+      });
+      return;
+    }
+    void this.router.navigateByUrl(this.returnUrl() ?? '/');
   }
 }
+
