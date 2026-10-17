@@ -1,15 +1,25 @@
 import { Routes } from '@angular/router';
 import { ChangePassword } from './change-password/change-password';
-import { authGuard } from './guards/auth-guard';
+import { authGuard, loggedInGuard } from './guards/auth-guard';
 import { LoginComponent } from './login/login';
 import { RecoverComponent } from './recover/recover-password';
 import { Signup } from './signup/signup';
+import { VerifyEmail } from './verify-email/verify-email';
 
 export const AUTH_ROUTES: Routes = [
-  { path: "login", component: LoginComponent, title: 'ScoreSmarter Login' },
-  { path: "signup", component: Signup, title: 'ScoreSmarterSignup' },
-  { path: "recover", component: RecoverComponent, title: 'ScoreSmarter Recover password' },
-  { path: "change-password", component: ChangePassword, canActivate: [authGuard], title: 'ScoreSmarter Change password'},
+  { path: 'login', component: LoginComponent, title: 'ScoreSmarter Login' },
+  { path: 'signup', component: Signup, title: 'ScoreSmarter Signup' },
+  { path: 'recover', component: RecoverComponent, title: 'ScoreSmarter Recover password' },
+  {
+    path: 'verify-email',
+    component: VerifyEmail,
+    canActivate: [loggedInGuard],
+    title: 'ScoreSmarter Verify email',
+  },
+  {
+    path: 'change-password',
+    component: ChangePassword,
+    canActivate: [authGuard],
+    title: 'ScoreSmarter Change password',
+  },
 ];
-
-

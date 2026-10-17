@@ -1,0 +1,16 @@
+.verify-body {
+  padding: 8px 0 16px;
+}
+
+.lead {
+  margin: 0;
+  font: var(--mat-sys-body-large);
+  color: var(--mat-sys-on-surface);
+  line-height: 1.45;
+}
+
+.status {
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
