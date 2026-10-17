@@ -20,11 +20,11 @@ import { RaceDayActions } from 'app/results-input/services/race-day-actions';
         }
         @if (auth.isRaceOfficer()) {
           <div class="day-actions">
-            <button matButton="outlined" type="button" (click)="actions.editDayDetails(firstRace()!)">
+            <button matButton type="button" (click)="actions.editDayDetails(firstRace()!)">
               <mat-icon>edit_note</mat-icon>
               Race day details
             </button>
-            <button matButton="outlined" type="button" (click)="actions.cancelRaces(firstRace()!, true)">
+            <button matButton type="button" (click)="actions.cancelRaces(firstRace()!, true)">
               <mat-icon>event_busy</mat-icon>
               Cancel races
             </button>
