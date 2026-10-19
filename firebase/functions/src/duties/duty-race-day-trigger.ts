@@ -2,7 +2,7 @@ import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import type { RaceDay } from "@shared/race-day";
 import { postDutyAttendance } from "./island-barn-duty-api.js";
 import {
-  newlyConfirmedKeys,
+  attendanceChanges,
   shouldConfirmWithIslandBarn,
 } from "./duty-race-day.js";
 
@@ -15,9 +15,9 @@ function requireApiKey(): string {
 }
 
 /**
- * When an IBRSC race-day member newly becomes `confirmed`, POST Island Barn
- * attendance. The document is created by `syncIbrscDutyTeamDaily`; clients only
- * write status, and this trigger owns the Island Barn side-effect.
+ * When an IBRSC race-day member is checked in (`confirmed`) or has a check-in undone,
+ * POST the attendance to Island Barn. The document is created by `syncIbrscDutyTeamDaily`;
+ * clients only write status, and this trigger owns the Island Barn side-effect.
  */
 export const raceDayDutyConfirmed = onDocumentUpdated(
   {
@@ -34,16 +34,16 @@ export const raceDayDutyConfirmed = onDocumentUpdated(
     const after = event.data.after.data() as RaceDay | undefined;
     if (!before?.dutyTeam || !after?.dutyTeam) return;
 
-    const keys = newlyConfirmedKeys(before.dutyTeam, after.dutyTeam);
-    if (keys.length === 0) return;
+    const changes = attendanceChanges(before.dutyTeam, after.dutyTeam);
+    if (changes.length === 0) return;
 
     const apiKey = requireApiKey();
-    for (const key of keys) {
+    for (const { key, attending } of changes) {
       try {
-        await postDutyAttendance(apiKey, key, true);
+        await postDutyAttendance(apiKey, key, attending);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
-        console.error("raceDayDutyConfirmed: Island Barn POST failed", { clubId, key, message });
+        console.error("raceDayDutyConfirmed: Island Barn POST failed", { clubId, key, attending, message });
         throw error;
       }
     }

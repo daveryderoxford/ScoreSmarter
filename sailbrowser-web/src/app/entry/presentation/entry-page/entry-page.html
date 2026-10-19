@@ -2,6 +2,11 @@
 <app-toolbar title="Enter"></app-toolbar>
 <app-list-pane maxWidth="480px">
 <div class="content">
+  @if (isOodEntry) {
+    <p class="ood-banner" role="status">
+      Entering as Officer of the Day{{ oodHelm ? ' for ' + oodHelm : '' }}
+    </p>
+  }
   @switch (step()) {
     @case ('recent') {
       <div class="recent-boats-container">

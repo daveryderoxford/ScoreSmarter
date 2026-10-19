@@ -1,14 +1,15 @@
-import { Component, inject, output } from '@angular/core';
+import { Component, inject, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChip } from '@angular/material/chips';
+import { MatChip, MatChipAvatar } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
-import type { RaceDayDutyMember } from '@shared/race-day';
+import type { DutyAttendanceStatus, RaceDayDutyMember } from '@shared/race-day';
 import { AuthService } from 'app/auth/auth.service';
 import { DutiesService } from '../services/duties.service';
 
 @Component({
   selector: 'app-duties-team-panel',
-  imports: [MatButtonModule, MatChip, MatListModule],
+  imports: [MatButtonModule, MatChip, MatChipAvatar, MatIconModule, MatListModule],
   template: `
     <div class="duties-section">
       <h2 class="duties-title">Duty Team</h2>
@@ -27,9 +28,17 @@ import { DutiesService } from '../services/duties.service';
               <div matListItemMeta class="duty-actions">
                 @if (auth.loggedIn()) {
                   @if (member.status === 'confirmed') {
-                    <span class="present">Confirmed</span>
+                    <mat-chip
+                      class="checked-in"
+                      highlighted
+                      [disabled]="busyKey() === member.key"
+                      [attr.aria-label]="'Undo check-in for ' + member.name"
+                      (click)="undoCheckIn(member)">
+                      <mat-icon matChipAvatar>check</mat-icon>
+                      Checked in
+                    </mat-chip>
                   } @else {
-                    <mat-chip (click)="checkIn(member)">Check in</mat-chip>
+                    <mat-chip [disabled]="busyKey() === member.key" (click)="checkIn(member)">Check in</mat-chip>
                   }
                 }
               </div>
@@ -64,17 +73,12 @@ import { DutiesService } from '../services/duties.service';
       min-width: 5.5rem;
     }
 
-    .present {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 32px;
-      width: 100%;
-      margin-top: -15px;
-      font: var(--mat-sys-title-small);
-      font-weight: 600;
-      color: #166534;
-      text-align: center;
+    .checked-in {
+      @include mat.chips-overrides((
+        elevated-selected-container-color: #dcfce7,
+        selected-label-text-color: #166534,
+        with-icon-selected-icon-color: #166534,
+      ));
     }
 
     .placeholder {
@@ -108,14 +112,30 @@ export class DutiesTeamPanel {
 
   readonly confirmed = output<RaceDayDutyMember>();
 
+  /** Member whose status write is in flight (prevents double toggles). */
+  protected readonly busyKey = signal<string | null>(null);
+
   reload(): void {
     this.duties.reload();
   }
 
   async checkIn(member: RaceDayDutyMember): Promise<void> {
-    const ok = await this.duties.setStatus(member, 'confirmed');
-    if (ok) {
+    if (await this.writeStatus(member, 'confirmed')) {
       this.confirmed.emit({ ...member, status: 'confirmed' });
+    }
+  }
+
+  async undoCheckIn(member: RaceDayDutyMember): Promise<void> {
+    await this.writeStatus(member, 'not-attending');
+  }
+
+  private async writeStatus(member: RaceDayDutyMember, status: DutyAttendanceStatus): Promise<boolean> {
+    if (this.busyKey()) return false;
+    this.busyKey.set(member.key);
+    try {
+      return await this.duties.setStatus(member, status);
+    } finally {
+      this.busyKey.set(null);
     }
   }
 }

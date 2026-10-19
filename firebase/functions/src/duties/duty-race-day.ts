@@ -57,20 +57,26 @@ export function applyDutyStatus(
   return next;
 }
 
-/** Keys whose status newly became `confirmed` (for Island Barn sync). */
-export function newlyConfirmedKeys(
+/**
+ * Members whose check-in changed (for Island Barn sync): `attending: true` when a member
+ * newly became `confirmed`, `false` when a check-in was undone.
+ */
+export function attendanceChanges(
   before: readonly RaceDayDutyMember[],
   after: readonly RaceDayDutyMember[],
-): string[] {
+): { key: string; attending: boolean }[] {
   const beforeByKey = new Map(before.map((member) => [member.key, member]));
-  const keys: string[] = [];
+  const changes: { key: string; attending: boolean }[] = [];
   for (const member of after) {
-    if (member.status !== "confirmed") continue;
     const previous = beforeByKey.get(member.key);
-    if (!previous || previous.status === "confirmed") continue;
-    keys.push(member.key);
+    if (!previous) continue;
+    const wasConfirmed = previous.status === "confirmed";
+    const isConfirmed = member.status === "confirmed";
+    if (wasConfirmed !== isConfirmed) {
+      changes.push({ key: member.key, attending: isConfirmed });
+    }
   }
-  return keys;
+  return changes;
 }
 
 export function shouldConfirmWithIslandBarn(clubId: string): boolean {

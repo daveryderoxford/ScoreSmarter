@@ -4,9 +4,9 @@ import type { DutyMember } from "@shared/duty-member";
 import type { RaceDay } from "@shared/race-day";
 import {
   applyDutyStatus,
+  attendanceChanges,
   IBRSC_CLUB_ID,
   mapDutyMembersToRaceDayTeam,
-  newlyConfirmedKeys,
   raceDayDateId,
   raceDayDocPath,
   shouldConfirmWithIslandBarn,
@@ -72,25 +72,34 @@ test("shouldConfirmWithIslandBarn only for ibrsc", () => {
   assert.equal(shouldConfirmWithIslandBarn("other"), false);
 });
 
-test("newlyConfirmedKeys returns keys newly set to confirmed", () => {
+test("attendanceChanges reports new check-ins as attending", () => {
   const team = mapDutyMembersToRaceDayTeam(ibTeam);
   assert.deepEqual(
-    newlyConfirmedKeys(team, applyDutyStatus(team, "ack-1", "attending")),
+    attendanceChanges(team, applyDutyStatus(team, "ack-1", "attending")),
     [],
   );
   assert.deepEqual(
-    newlyConfirmedKeys(team, applyDutyStatus(team, "ack-1", "confirmed")),
-    ["ack-1"],
+    attendanceChanges(team, applyDutyStatus(team, "ack-1", "confirmed")),
+    [{ key: "ack-1", attending: true }],
   );
   assert.deepEqual(
-    newlyConfirmedKeys(
+    attendanceChanges(
       applyDutyStatus(team, "ack-2", "attending"),
       applyDutyStatus(team, "ack-2", "confirmed"),
     ),
-    ["ack-2"],
+    [{ key: "ack-2", attending: true }],
   );
   const confirmed = applyDutyStatus(team, "ack-1", "confirmed");
-  assert.deepEqual(newlyConfirmedKeys(confirmed, confirmed), []);
+  assert.deepEqual(attendanceChanges(confirmed, confirmed), []);
+});
+
+test("attendanceChanges reports an undone check-in as not attending", () => {
+  const team = mapDutyMembersToRaceDayTeam(ibTeam);
+  const confirmed = applyDutyStatus(team, "ack-1", "confirmed");
+  assert.deepEqual(
+    attendanceChanges(confirmed, applyDutyStatus(confirmed, "ack-1", "not-attending")),
+    [{ key: "ack-1", attending: false }],
+  );
 });
 
 test("syncRaceDayDocument writes mapped team when the doc is missing", async () => {
