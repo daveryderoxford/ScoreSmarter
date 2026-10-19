@@ -2,6 +2,15 @@
 <app-toolbar title="Edit race details" showBack />
 <app-detail-pane maxWidth="350px">
 <form (ngSubmit)="submit()" [formGroup]="form" novalidate>
+  <mat-form-field>
+    <mat-label>Scheduled start time</mat-label>
+    <input matInput appTimeInput formControlName="startTime">
+    @if (race(); as r) {
+      <mat-hint>{{ r.scheduledStart | date:'EEE d MMM y' }}</mat-hint>
+    }
+    <mat-error>Start time required</mat-error>
+  </mat-form-field>
+
   <div class="type-display">Race type: <strong>{{ derivedRaceTypeLabel() }}</strong></div>
 
   @if (!isPrimaryLevelRatingSeries()) {

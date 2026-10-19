@@ -1,23 +1,18 @@
 <mat-list-item>
-   
-   <span matListItemTitle>
-      Race {{race().index}}
-      <span class="gap"></span>
-      {{ race().scheduledStart | date:'MMM d, y'}}
-      @if (race().raceOfDay > 1) {
-      / {{race().raceOfDay}}
-      }
-   </span>
-   <span>{{ race().status }}</span>
-   <span class="gap"></span>
-   @if (race().type !== 'Handicap') {
-   <span> {{ race().type }} </span>
-   <span class="gap"></span>
-   }
 
-   @if (race().isAverageLap) {
-   <span>Average lap</span>
-   }
+   <span matListItemTitle>Race {{race().index}}<span class="gap"></span>{{ race().scheduledStart | date:'MMM d, y'}}@if (race().raceOfDay > 1) { / {{race().raceOfDay}}}</span>
+   <span matListItemLine>
+      <span class="details-line">
+         <span>Start: <span class="start-time">{{ race().scheduledStart | date:'HH:mm' }}</span></span>
+         @if (race().isAverageLap) {
+         <span>Average lap</span>
+         }
+         @if (race().type !== 'Handicap') {
+         <span>{{ race().type }}</span>
+         }
+         <span class="status-pill" [attr.data-status]="statusTone()">{{ race().status }}</span>
+      </span>
+   </span>
    <span matListItemMeta>
       <button matIconButton (click)="edit.emit(race())">
          <mat-icon class="green">edit</mat-icon>
