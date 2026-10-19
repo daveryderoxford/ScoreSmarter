@@ -27,9 +27,9 @@ import {
 } from 'app/boats';
 import { BoatCoreFields } from 'app/boats/presentation/boat-form/boat-core-fields';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
-import { ClubStore, ClubTenant } from 'app/club-tenant';
+import { ClubStore } from 'app/club-tenant';
 import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
-import { DUTY_REGISTER_CLUB_ID } from 'app/duties';
+import { DutiesService } from 'app/duties';
 import { DutiesTeamPanel } from 'app/duties/presentation/duties-team-panel';
 import type { RaceDayDutyMember } from '@shared/race-day';
 import { RaceCalendarStore } from 'app/race-calender';
@@ -143,7 +143,7 @@ export class KioskEntryPage {
   private readonly boatsStore = inject(BoatsStore);
   private readonly raceCalendar = inject(RaceCalendarStore);
   private readonly clubStore = inject(ClubStore);
-  private readonly clubTenant = inject(ClubTenant);
+  private readonly duties = inject(DutiesService);
   private readonly currentRaces = inject(CurrentRaces);
   private readonly dialog = inject(MatDialog);
   private readonly dialogs = inject(DialogsService);
@@ -173,7 +173,7 @@ export class KioskEntryPage {
   readonly selectedClubClass = signal<string | null>(null);
   readonly busy = signal(false);
   readonly successMessage = signal('');
-  readonly showDutyCheckin = computed(() => this.clubTenant.clubId === DUTY_REGISTER_CLUB_ID);
+  readonly showDutyCheckin = computed(() => this.duties.hasDutyTeam());
   private readonly entryResultCode = signal<ResultCode | undefined>(undefined);
   /** Pause auto-return while the OOD confirm dialog is open. */
   private readonly dutyCheckinReturnPaused = signal(false);

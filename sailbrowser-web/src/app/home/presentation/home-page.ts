@@ -5,8 +5,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatMenuModule } from '@angular/material/menu';
 import { RouterLink } from '@angular/router';
-import { ClubStore, ClubTenant } from 'app/club-tenant';
-import { DUTY_REGISTER_CLUB_ID } from 'app/duties';
+import { ClubStore } from 'app/club-tenant';
+import { DutiesService } from 'app/duties';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { Title } from '@angular/platform-browser';
@@ -35,12 +35,12 @@ import { AuthService } from 'app/auth';
 })
 export class HomePage {
   protected readonly clubStore = inject(ClubStore);
-  private readonly clubTenant = inject(ClubTenant);
+  private readonly duties = inject(DutiesService);
   protected readonly auth = inject(AuthService);
   private readonly pageTitle = inject(Title);
   private readonly breakpoints = inject(AppBreakpoints);
 
-  protected readonly showDuties = computed(() => this.clubTenant.clubId === DUTY_REGISTER_CLUB_ID);
+  protected readonly showDuties = computed(() => this.duties.hasDutyTeam());
 
   protected readonly seriesResultsLink = computed(() =>
     this.breakpoints.isWideLayout() ? '/results/viewer' : '/results/mobile-results-list',

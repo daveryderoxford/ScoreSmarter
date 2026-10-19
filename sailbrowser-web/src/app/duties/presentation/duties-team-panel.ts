@@ -18,8 +18,6 @@ import { DutiesService } from '../services/duties.service';
       } @else if (duties.error(); as errorMessage) {
         <p class="error-text">{{ errorMessage }}</p>
         <button matButton type="button" (click)="reload()">Retry</button>
-      } @else if (duties.duties().length === 0) {
-        <p class="placeholder">No duty team today.</p>
       } @else {
         <mat-list>
           @for (member of duties.duties(); track member.key) {

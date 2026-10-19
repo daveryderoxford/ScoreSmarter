@@ -82,7 +82,12 @@ export interface RaceDayStore {
   set(path: string, data: RaceDay): Promise<void>;
 }
 
-export async function ensureRaceDayDocument(params: {
+/**
+ * Creates the race-day document from the Island Barn team. An existing document is
+ * left alone so re-runs never reset check-ins; no team means no document, which the
+ * web app treats as "no duty team today".
+ */
+export async function syncRaceDayDocument(params: {
   store: RaceDayStore;
   clubId: string;
   dateId: string;
@@ -94,13 +99,11 @@ export async function ensureRaceDayDocument(params: {
     return { date: params.dateId, created: false };
   }
 
-  const duties = params.clubId === IBRSC_CLUB_ID
-    ? await params.fetchIslandBarnTeam()
-    : [];
-  const raceDay: RaceDay = {
-    date: params.dateId,
-    dutyTeam: mapDutyMembersToRaceDayTeam(duties),
-  };
-  await params.store.set(path, raceDay);
+  const dutyTeam = mapDutyMembersToRaceDayTeam(await params.fetchIslandBarnTeam());
+  if (dutyTeam.length === 0) {
+    return { date: params.dateId, created: false };
+  }
+
+  await params.store.set(path, { date: params.dateId, dutyTeam });
   return { date: params.dateId, created: true };
 }

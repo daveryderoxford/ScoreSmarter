@@ -251,7 +251,7 @@ service cloud.firestore {
         allow write: if false;
       }
 
-      // Duty roster: create/delete via Admin SDK (ensureRaceDay); clients may
+      // Duty roster: created via Admin SDK (syncIbrscDutyTeamDaily); clients may
       // only change dutyTeam[].status when signed in.
       match /race-days/{date} {
         allow read: if true;

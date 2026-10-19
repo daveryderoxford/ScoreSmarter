@@ -16,7 +16,8 @@ function requireApiKey(): string {
 
 /**
  * When an IBRSC race-day member newly becomes `confirmed`, POST Island Barn
- * attendance. Client writes status directly; this trigger owns the IB side-effect.
+ * attendance. The document is created by `syncIbrscDutyTeamDaily`; clients only
+ * write status, and this trigger owns the Island Barn side-effect.
  */
 export const raceDayDutyConfirmed = onDocumentUpdated(
   {

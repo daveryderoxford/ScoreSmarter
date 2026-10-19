@@ -4,13 +4,13 @@ import type { DutyMember } from "@shared/duty-member";
 import type { RaceDay } from "@shared/race-day";
 import {
   applyDutyStatus,
-  ensureRaceDayDocument,
   IBRSC_CLUB_ID,
   mapDutyMembersToRaceDayTeam,
   newlyConfirmedKeys,
   raceDayDateId,
   raceDayDocPath,
   shouldConfirmWithIslandBarn,
+  syncRaceDayDocument,
   type RaceDayStore,
 } from "./duty-race-day.js";
 
@@ -93,46 +93,52 @@ test("newlyConfirmedKeys returns keys newly set to confirmed", () => {
   assert.deepEqual(newlyConfirmedKeys(confirmed, confirmed), []);
 });
 
-test("ensureRaceDayDocument writes mapped team on first call and is a no-op next", async () => {
+test("syncRaceDayDocument writes mapped team when the doc is missing", async () => {
   const store = memoryStore();
-  const fetches: number[] = [];
-  const first = await ensureRaceDayDocument({
+  const result = await syncRaceDayDocument({
     store,
     clubId: IBRSC_CLUB_ID,
     dateId: "2026-08-14",
-    fetchIslandBarnTeam: async () => {
-      fetches.push(1);
-      return ibTeam;
-    },
+    fetchIslandBarnTeam: async () => ibTeam,
   });
-  assert.deepEqual(first, { date: "2026-08-14", created: true });
+  assert.deepEqual(result, { date: "2026-08-14", created: true });
   const path = raceDayDocPath(IBRSC_CLUB_ID, "2026-08-14");
   assert.equal(store.docs[path]?.dutyTeam.length, 2);
   assert.equal(store.docs[path]?.dutyTeam[0]?.status, "not-attending");
+});
 
-  const second = await ensureRaceDayDocument({
+test("syncRaceDayDocument leaves an existing doc (and its check-ins) untouched", async () => {
+  const path = raceDayDocPath(IBRSC_CLUB_ID, "2026-08-14");
+  const existing: RaceDay = {
+    date: "2026-08-14",
+    dutyTeam: applyDutyStatus(mapDutyMembersToRaceDayTeam(ibTeam), "ack-1", "confirmed"),
+  };
+  const store = memoryStore({ [path]: existing });
+  let fetched = false;
+  const result = await syncRaceDayDocument({
     store,
     clubId: IBRSC_CLUB_ID,
     dateId: "2026-08-14",
     fetchIslandBarnTeam: async () => {
-      fetches.push(1);
+      fetched = true;
       return ibTeam;
     },
   });
-  assert.deepEqual(second, { date: "2026-08-14", created: false });
-  assert.equal(fetches.length, 1);
+  assert.deepEqual(result, { date: "2026-08-14", created: false });
+  assert.equal(fetched, false);
+  assert.equal(store.docs[path], existing);
 });
 
-test("ensureRaceDayDocument writes an empty team when Island Barn has no duty day", async () => {
-  const store = memoryStore();
-  await ensureRaceDayDocument({
-    store,
-    clubId: IBRSC_CLUB_ID,
-    dateId: "2026-08-14",
-    fetchIslandBarnTeam: async () => null,
-  });
-  assert.deepEqual(store.docs[raceDayDocPath(IBRSC_CLUB_ID, "2026-08-14")], {
-    date: "2026-08-14",
-    dutyTeam: [],
-  });
+test("syncRaceDayDocument writes nothing when Island Barn has no duty team", async () => {
+  for (const team of [null, []]) {
+    const store = memoryStore();
+    const result = await syncRaceDayDocument({
+      store,
+      clubId: IBRSC_CLUB_ID,
+      dateId: "2026-08-14",
+      fetchIslandBarnTeam: async () => team,
+    });
+    assert.deepEqual(result, { date: "2026-08-14", created: false });
+    assert.deepEqual(store.docs, {});
+  }
 });

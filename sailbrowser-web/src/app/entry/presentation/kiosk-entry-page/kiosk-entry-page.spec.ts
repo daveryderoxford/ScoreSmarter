@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BoatsStore } from 'app/boats';
 import { ClubStore, ClubTenant } from 'app/club-tenant';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
-import { DUTY_REGISTER_CLUB_ID, DutiesService } from 'app/duties';
+import { DutiesService } from 'app/duties';
 import { RaceCalendarStore } from 'app/race-calender';
 import { CurrentRaces } from 'app/results-input';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
@@ -99,11 +99,12 @@ function baseProviders(overrides: Record<string, unknown> = {}) {
     },
     {
       provide: ClubTenant,
-      useValue: { clubId: (overrides['clubId'] as string) ?? DUTY_REGISTER_CLUB_ID },
+      useValue: { clubId: 'test' },
     },
     {
       provide: DutiesService,
       useValue: {
+        hasDutyTeam: () => (overrides['hasDutyTeam'] as boolean | undefined) ?? true,
         duties: () => [],
         loading: () => false,
         error: () => null,
@@ -232,11 +233,11 @@ describe('KioskEntryPage', () => {
     vi.useRealTimers();
   });
 
-  it('hides duty check-in for other clubs', () => {
+  it('hides duty check-in when there is no duty team', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [KioskEntryPage],
-      providers: baseProviders({ clubId: 'test' }),
+      providers: baseProviders({ hasDutyTeam: false }),
     });
     expect(createPage().showDutyCheckin()).toBe(false);
   });
