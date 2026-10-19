@@ -20,12 +20,15 @@ import { Series } from '../model/series';
 import { RaceCalendarStore } from '../services/full-race-calander';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { getFleetName } from 'app/club-tenant/model/fleet';
+import { groupBy } from 'app/shared/utils/group-by';
+import { seriesStatus, type SeriesStatus } from '../model/series-status';
+import { StatusPill } from './status-pill/status-pill';
 
 @Component({
   selector: 'app-series-list',
   imports: [Toolbar, MatListModule, MatButtonModule, MatIconModule, RouterModule,
     MatDividerModule, MatTooltipModule, ReactiveFormsModule, MatFormFieldModule,
-    MatInputModule, DatePipe, LoadingCentered, MatDividerModule, PageLayout, ListPane],
+    MatInputModule, DatePipe, LoadingCentered, MatDividerModule, PageLayout, ListPane, StatusPill],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-layout>
@@ -58,6 +61,7 @@ import { getFleetName } from 'app/club-tenant/model/fleet';
                 <span matListItemLine>
                     {{getFleetName(series.primaryScoringConfiguration.fleet.id)}}
                     @if(series.startDate) { - {{series.startDate | date}} }
+                    <app-status-pill class="series-status" [status]="statusBySeries().get(series.id) ?? 'Future'" />
                 </span>
                 <span matListItemMeta>
                     <button matIconButton aria-label="Edit" [routerLink]="['/race-calender/series-details/'+series.id]">
@@ -92,6 +96,10 @@ import { getFleetName } from 'app/club-tenant/model/fleet';
     .right-justify {
       flex: 0 0 auto;
     }
+
+    .series-status {
+      margin-left: 8px;
+    }
   `
 })
 export class SeriesList {
@@ -110,6 +118,13 @@ export class SeriesList {
       !term
       || normaliseString(s.name).includes(term)
       || normaliseString(this.getSeasonName(s.seasonId)).includes(term));
+  });
+
+  readonly statusBySeries = computed(() => {
+    const bySeries = groupBy(this.rcs.allRaces(), race => race.seriesId);
+    return new Map<string, SeriesStatus>(
+      [...bySeries.entries()].map(([seriesId, races]) => [seriesId, seriesStatus(races)]),
+    );
   });
 
   getFleetName = (id: string | undefined) => {

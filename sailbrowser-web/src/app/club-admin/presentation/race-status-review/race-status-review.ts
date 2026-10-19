@@ -1,34 +1,44 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatDividerModule } from '@angular/material/divider';
-import { isBefore, startOfDay } from 'date-fns';
-import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
-import { deleteField } from '@angular/fire/firestore';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { RouterLink } from '@angular/router';
+import {
+  canMarkFinal,
+  hasResults,
+  racesAwaitingReview,
+  resultsStateOf,
+  sortRaces,
+  type ResultsState,
+} from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
-import { RaceStatus } from 'app/race-calender/model/race-status';
+import { StatusPill } from 'app/race-calender/presentation/status-pill/status-pill';
+import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
 import { RaceDayActions } from 'app/results-input/services/race-day-actions';
+import { ResultsStateService } from 'app/results-input/services/results-state.service';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { PageLayout } from 'app/shared/layout/page-layout';
-import { RouterModule } from '@angular/router';
 
+/** Club admin review of past race results: mark final or provisional, cancel or reinstate. */
 @Component({
   selector: 'app-race-status-review',
   imports: [
-    CommonModule,
-    MatCardModule,
+    DatePipe,
     MatButtonModule,
+    MatButtonToggleModule,
+    MatCardModule,
     MatIconModule,
-    MatChipsModule,
     MatMenuModule,
-    MatDividerModule,
+    MatSlideToggleModule,
+    RouterLink,
+    StatusPill,
     Toolbar,
     PageLayout,
-    RouterModule
   ],
   templateUrl: './race-status-review.html',
   styleUrl: './race-status-review.scss',
@@ -36,28 +46,42 @@ import { RouterModule } from '@angular/router';
 })
 export class RaceStatusReviewComponent {
   private readonly raceCalendarStore = inject(RaceCalendarStore);
+  private readonly resultsStateService = inject(ResultsStateService);
+  private readonly snackbar = inject(MatSnackBar);
   protected readonly raceDayActions = inject(RaceDayActions);
 
-  readonly pastUnverifiedRaces = computed(() => {
+  protected readonly canMarkFinal = canMarkFinal;
+  protected readonly hasResults = hasResults;
+  protected readonly resultsStateOf = resultsStateOf;
+
+  /** Also list final and cancelled past races, so they can be returned to provisional or reinstated. */
+  readonly showAll = signal(false);
+  /** Race whose results state is being saved. */
+  readonly busyRaceId = signal<string | null>(null);
+
+  readonly awaitingReview = computed(() => racesAwaitingReview(this.raceCalendarStore.allRaces()));
+  readonly noResultsCount = computed(() => this.awaitingReview().filter(r => r.status === 'Future').length);
+  readonly provisionalCount = computed(() => this.awaitingReview().filter(r => hasResults(r)).length);
+
+  readonly races = computed(() => {
     const now = new Date();
-    const allRaces = this.raceCalendarStore.allRaces();
-    return allRaces.filter((r) => {
-      // Past races
-      if (!isBefore(r.scheduledStart, now)) return false;
-      // Not yet verified or archived
-      return r.status !== 'Verified' && r.status !== 'Archived';
-    });
+    const races = this.showAll()
+      ? this.raceCalendarStore.allRaces().filter(r => r.scheduledStart < now)
+      : this.awaitingReview();
+    return [...races].sort(sortRaces).reverse();
   });
 
-  async setStatus(race: Race, status: RaceStatus) {
+  async setResultsState(race: Race, state: ResultsState): Promise<void> {
+    if (resultsStateOf(race) === state) return;
+    this.busyRaceId.set(race.id);
     try {
-      const leavingCancelled = race.status === 'Canceled' && status !== 'Canceled';
-      await this.raceCalendarStore.updateRaces([{
-        id: race.id,
-        data: leavingCancelled ? { status, cancellationReason: deleteField() } : { status },
-      }]);
-    } catch (e) {
-      console.error('Failed to update race status:', e);
+      await this.resultsStateService.setResultsState(race, state);
+    } catch (e: unknown) {
+      console.error('RaceStatusReview: failed to update results state', e);
+      const message = e instanceof Error ? e.message : 'Could not update the results state.';
+      this.snackbar.open(message, 'Dismiss', { duration: 5000 });
+    } finally {
+      this.busyRaceId.set(null);
     }
   }
 }

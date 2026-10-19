@@ -26,12 +26,13 @@ import { ListDetailLayout } from 'app/shared/layout/list-detail-layout';
 import { ListPane } from 'app/shared/layout/list-pane';
 import { DetailPane } from 'app/shared/layout/detail-pane';
 import { InfoPopover } from 'app/shared/components/info-popover';
+import { StatusPill } from 'app/race-calender/presentation/status-pill/status-pill';
 import { DutyRaceOfficerLookup } from 'app/duties';
 import { seriesScoringSchemeDetails } from 'app/scoring/model/scoring-algotirhm';
 
 @Component({
   selector: 'app-results-viewer',
-  imports: [Toolbar, SeasonList, SeriesResultsTable, LoadingCentered, RaceResultsTable, MatIconModule, MatButtonModule, DatePipe, CenteredText, RouterLink, MatSelectModule, MatFormFieldModule, MatChipsModule, PageLayout, ListDetailLayout, ListPane, DetailPane, InfoPopover],
+  imports: [Toolbar, SeasonList, SeriesResultsTable, LoadingCentered, RaceResultsTable, MatIconModule, MatButtonModule, DatePipe, CenteredText, RouterLink, MatSelectModule, MatFormFieldModule, MatChipsModule, PageLayout, ListDetailLayout, ListPane, DetailPane, InfoPopover, StatusPill],
   templateUrl: './results-viewer.html',
   styleUrl: './results-viewer.scss',
 })

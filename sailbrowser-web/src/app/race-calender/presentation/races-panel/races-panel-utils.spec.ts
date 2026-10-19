@@ -118,17 +118,14 @@ describe('races-panel-utils', () => {
   });
 
   describe('isCompletedRace', () => {
-    it('treats Completed, Published and Verified statuses as completed', () => {
+    it('treats Completed as completed', () => {
       expect(isCompletedRace(race({ status: 'Completed' }))).toBe(true);
-      expect(isCompletedRace(race({ status: 'Published' }))).toBe(true);
-      expect(isCompletedRace(race({ status: 'Verified' }))).toBe(true);
     });
 
     it('treats other statuses as not completed', () => {
       expect(isCompletedRace(race({ status: 'Future' }))).toBe(false);
       expect(isCompletedRace(race({ status: 'In progress' }))).toBe(false);
       expect(isCompletedRace(race({ status: 'Canceled' }))).toBe(false);
-      expect(isCompletedRace(race({ status: 'Postponed' }))).toBe(false);
     });
   });
 
@@ -140,7 +137,7 @@ describe('races-panel-utils', () => {
     it('treats other statuses as not canceled', () => {
       expect(isCanceledRace(race({ status: 'Future' }))).toBe(false);
       expect(isCanceledRace(race({ status: 'Completed' }))).toBe(false);
-      expect(isCanceledRace(race({ status: 'Postponed' }))).toBe(false);
+      expect(isCanceledRace(race({ status: 'In progress' }))).toBe(false);
     });
   });
 

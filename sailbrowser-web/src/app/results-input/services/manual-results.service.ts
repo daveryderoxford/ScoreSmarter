@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { ClubStore } from 'app/club-tenant';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import type { RaceStart } from 'app/race-calender/model/race-start';
-import type { RaceStatus } from 'app/race-calender/model/race-status';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { differenceInSeconds } from 'date-fns';
@@ -231,23 +230,6 @@ export class ManualResultsService {
   private readonly seriesEntryStore = inject(SeriesEntryStore);
   private readonly clubStore = inject(ClubStore);
 
-  private statusFromResultCodes(codes: ResultCode[]): RaceStatus | undefined {
-    if (codes.length === 0) return undefined;
-    const anyStarted = codes.some(code => code !== 'NOT FINISHED');
-    if (!anyStarted) return undefined;
-    const allCompleted = codes.every(code => code !== 'NOT FINISHED');
-    return allCompleted ? 'Completed' : 'In progress';
-  }
-
-  /** Moves the race to In progress / Completed from its result codes. A cancelled race stays cancelled. */
-  private async syncRaceStatus(race: Race, codes: ResultCode[]): Promise<void> {
-    if (race.status === 'Canceled') return;
-    const nextStatus = this.statusFromResultCodes(codes);
-    if (nextStatus && race.status !== nextStatus) {
-      await this.raceStore.updateRace(race.id, { status: nextStatus });
-    }
-  }
-
   /**
    * Calculates derived statistics for a result entry without persisting them.
    * This is useful for providing immediate feedback to the user in the UI.
@@ -350,12 +332,6 @@ export class ManualResultsService {
     }
 
     await this.competitorStore.updateResult(competitor.id, update);
-
-    const raceCompetitors = this.competitorStore.selectedCompetitors().filter(c => c.raceId === race.id);
-    const nextCodes = raceCompetitors.map(c => c.id === competitor.id ? resultCode : c.resultCode);
-    // A competitor created moments ago may not be in the store snapshot yet.
-    if (!raceCompetitors.some(c => c.id === competitor.id)) nextCodes.push(resultCode);
-    await this.syncRaceStatus(race, nextCodes);
   }
 
   /**
@@ -422,15 +398,9 @@ export class ManualResultsService {
       }
     }
 
-    const nextCodes: ResultCode[] = competitors.map(comp => {
-      const inProcessed = processedSet.has(comp.id);
-      const row = rowState.get(comp.id);
-      return inProcessed && row ? row.resultCode : 'NOT FINISHED';
-    });
     if (rows.length > 0) {
       await this.mutator.updateRaceCompetitorsBulk(race.id, rows);
     }
-    await this.syncRaceStatus(race, nextCodes);
   }
 }
 

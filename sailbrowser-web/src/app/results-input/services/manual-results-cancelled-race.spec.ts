@@ -10,6 +10,7 @@ import { SeriesEntryStore } from './series-entry-store';
 
 describe('ManualResultsService race status', () => {
   let updateRace: ReturnType<typeof vi.fn>;
+  let updateRaceCompetitorsBulk: ReturnType<typeof vi.fn>;
   let service: ManualResultsService;
 
   const competitor = { id: 'c1', raceId: 'r1', resultCode: 'NOT FINISHED' } as RaceCompetitor;
@@ -19,10 +20,11 @@ describe('ManualResultsService race status', () => {
 
   beforeEach(() => {
     updateRace = vi.fn(() => Promise.resolve());
+    updateRaceCompetitorsBulk = vi.fn(() => Promise.resolve());
     TestBed.configureTestingModule({
       providers: [
         { provide: RaceCalendarStore, useValue: { updateRace } },
-        { provide: RaceCompetitorMutator, useValue: { updateRaceCompetitorsBulk: vi.fn(() => Promise.resolve()) } },
+        { provide: RaceCompetitorMutator, useValue: { updateRaceCompetitorsBulk } },
         { provide: RaceCompetitorStore, useValue: {} },
         { provide: SeriesEntryStore, useValue: {} },
         { provide: ClubStore, useValue: {} },
@@ -31,21 +33,15 @@ describe('ManualResultsService race status', () => {
     service = TestBed.inject(ManualResultsService);
   });
 
-  const persist = (status: Race['status']) =>
-    service.persistOrderEntryState({
-      race: { id: 'r1', status } as Race,
+  it('writes results but leaves the race status to the server trigger', async () => {
+    await service.persistOrderEntryState({
+      race: { id: 'r1', status: 'Future' } as Race,
       competitors: [competitor],
       processedIds: ['c1'],
       rowState: finished,
     });
 
-  it('moves a race to Completed when every boat has finished', async () => {
-    await persist('Future');
-    expect(updateRace).toHaveBeenCalledWith('r1', { status: 'Completed' });
-  });
-
-  it('leaves a cancelled race cancelled', async () => {
-    await persist('Canceled');
+    expect(updateRaceCompetitorsBulk).toHaveBeenCalled();
     expect(updateRace).not.toHaveBeenCalled();
   });
 });

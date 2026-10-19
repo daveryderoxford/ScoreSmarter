@@ -84,9 +84,9 @@ describe('RaceDayDetailsDialog', () => {
   });
 
   it("saves to every race that day and republishes the published series", async () => {
-    const r1 = race('r1', day, { status: 'Published' });
+    const r1 = race('r1', day, { status: 'Completed' });
     const r2 = race('r2', sameDayLater);
-    const other = race('r3', new Date('2026-06-11T11:00:00'), { status: 'Published' });
+    const other = race('r3', new Date('2026-06-11T11:00:00'), { status: 'Completed' });
     const { dialog } = render({ race: r1, allRaces: [r1, r2, other] });
     dialog.form.controls.raceOfficer.setValue(' Pat ');
     dialog.form.controls.wind.setValue('SW 8-12 kts');

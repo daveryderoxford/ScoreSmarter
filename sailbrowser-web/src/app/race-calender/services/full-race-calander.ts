@@ -39,10 +39,7 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
    private readonly racesResource = firestoreListenerResource({
       name: 'race-calendar-races',
       stream: () =>
-         collectionData(
-            query(this.racesCollection, where('status', '!=', 'Archived')),
-            { idField: 'id' }
-         ).pipe(
+         collectionData(this.racesCollection, { idField: 'id' }).pipe(
             map(races => races.sort(sortRaces)),
             tap(races => console.log(`FullRaceCalander. Loaded ${races.length} races`))
          ),
@@ -110,7 +107,7 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
     * Fetches all races for a series directly from Firestore.
     */
    async getSeriesRacesById(seriesId: string): Promise<Race[]> {
-      const q = query(this.racesCollection, where('seriesId', '==', seriesId), where('status', '!=', 'Archived'));
+      const q = query(this.racesCollection, where('seriesId', '==', seriesId));
       const snapshot = await firestoreWrite(getDocs(q), 'Loading series races');
       return snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })).sort(sortRaces);
    }

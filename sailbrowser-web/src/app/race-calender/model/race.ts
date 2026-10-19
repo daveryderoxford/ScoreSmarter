@@ -1,6 +1,7 @@
 import { RaceStatus } from './race-status';
 import { RaceType } from './race-type';
 import { RaceStart } from './race-start';
+import type { ResultsState } from './results-state';
 
 export interface Race {
   id: string;
@@ -25,6 +26,8 @@ export interface Race {
   timeInputMode?: 'tod' | 'elapsed';
   type: RaceType;
   status: RaceStatus;
+  /** Absent means provisional. Reset to provisional by the server when results change. */
+  resultsState?: ResultsState;
   isDiscardable: boolean;
   isAverageLap: boolean;
   resultsSheetImage: string;

@@ -46,6 +46,9 @@
           <mat-icon>emoji_events</mat-icon>
           <span>Results</span>
         </a>
+        @if (auth.isClubAdmin()) {
+          <app-home-review-results-button />
+        }
       </div>
 
       @defer (on idle) {

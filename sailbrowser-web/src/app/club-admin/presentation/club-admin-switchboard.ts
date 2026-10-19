@@ -8,6 +8,7 @@ import { RouterLink } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
+import { racesAwaitingReview } from 'app/race-calender/model/results-review';
 import { differenceInDays, isFuture } from 'date-fns';
 import { ImportExportContext, ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
 import { RaceCalendarCsvService } from 'app/race-calender/services/race-calendar-csv.service';
@@ -81,10 +82,7 @@ export class ClubAdminSwitchboard {
     return null;
   });
 
-  readonly pastUnverifiedRacesCount = computed(() => {
-    const now = new Date();
-    return this.raceCalendarStore.allRaces().filter(r => r.scheduledStart < now && r.status !== 'Verified' && r.status !== 'Archived').length;
-  });
+  readonly pastUnverifiedRacesCount = computed(() => racesAwaitingReview(this.raceCalendarStore.allRaces()).length);
 
   readonly actions: AdminAction[] = [
 
@@ -134,7 +132,7 @@ export class ClubAdminSwitchboard {
       description: 'Data import/export and archiving results.',
       icon: 'archive',
       resources: [
-        { label: 'Review Past Races', route: '/club-admin/race-review' },
+        { label: 'Review results', route: '/club-admin/race-review' },
         { label: 'Archived Results', route: '/results' },
       ],
       importExportContexts: ['results']

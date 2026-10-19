@@ -1,5 +1,4 @@
 import type { Race } from '../../model/race';
-import type { RaceStatus } from '../../model/race-status';
 import { sortRaces } from '../../services/race-calendar-store-base';
 
 export type RacesPanelPeriod = 'past' | 'future' | null;
@@ -7,14 +6,8 @@ export type RacesPanelPeriod = 'past' | 'future' | null;
 /** Filters the consumer can choose to expose as chips in the panel. */
 export type RacesPanelFilter = 'past' | 'future' | 'hideCompleted';
 
-const COMPLETED_RACE_STATUSES: ReadonlySet<RaceStatus> = new Set([
-  'Completed',
-  'Published',
-  'Verified',
-]);
-
 export function isCompletedRace(race: Race): boolean {
-  return COMPLETED_RACE_STATUSES.has(race.status);
+  return race.status === 'Completed';
 }
 
 export function isCanceledRace(race: Race): boolean {
