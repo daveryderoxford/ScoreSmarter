@@ -265,6 +265,12 @@ service cloud.firestore {
       allow write: if isSysAdmin();
     }
 
+    // Global reference data, e.g. the class catalogue (classCatalogue).
+    match /system/public/reference/{docId} {
+      allow read: if true;
+      allow write: if isSysAdmin();
+    }
+
     match /system/private/{id} {
       allow read, write: if isSysAdmin();
     }

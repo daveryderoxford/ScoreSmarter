@@ -5,6 +5,8 @@ export interface BoatClass {
    name: string;
    handicaps: Handicap[];
    isSinglehander?: boolean;
+   /** Class catalogue entry: the RYA Class ID when positive, a non-RYA catalogue class when negative. */
+   catalogueId?: number;
 }
 
 export function isSinglehanderClass(className: string, classes: readonly BoatClass[]): boolean {

@@ -1,6 +1,40 @@
 <form (ngSubmit)="submit()" [formGroup]="form" novalidate>
 
   <mat-form-field>
+    <mat-label>{{ boatClass() ? 'Catalogue class' : 'Add from catalogue' }}</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input
+      matInput
+      [matAutocomplete]="catalogueAuto"
+      [value]="catalogueSearch()"
+      (input)="catalogueSearch.set($any($event.target).value)"
+      placeholder="Class name or RYA number">
+    <mat-autocomplete #catalogueAuto="matAutocomplete" (optionSelected)="onCatalogueSelected($event)">
+      @for (entry of catalogueOptions(); track entry.catalogueId) {
+        <mat-option [value]="entry.catalogueId">{{ catalogClassLabel(entry) }}</mat-option>
+      }
+    </mat-autocomplete>
+    @if (!boatClass()) {
+      <mat-hint>Fills in the name, single-hander and PY number</mat-hint>
+    }
+  </mat-form-field>
+
+  @if (linkedEntry(); as entry) {
+    <div class="catalogue-hint">
+      <mat-icon inline>link</mat-icon>
+      <span>Linked to {{ catalogClassLabel(entry) }}@if (entry.rya) { · RYA name: {{ entry.rya.name }} }</span>
+      <button matButton type="button" (click)="unlinkCatalogClass()">Unlink</button>
+    </div>
+  } @else if (suggestion(); as entry) {
+    <div class="catalogue-hint">
+      <span>Not linked. Suggested: {{ catalogClassLabel(entry) }}</span>
+      <button matButton type="button" (click)="linkCatalogClass(entry)">Link</button>
+    </div>
+  } @else if (boatClass()) {
+    <div class="catalogue-hint">Not linked to the class catalogue (needed for RYA PY returns).</div>
+  }
+
+  <mat-form-field>
     <mat-label>Name</mat-label>
     <input matInput formControlName="name">
     <mat-error>Class name is required</mat-error>

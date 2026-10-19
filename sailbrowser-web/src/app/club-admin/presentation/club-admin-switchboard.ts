@@ -19,6 +19,7 @@ import { ClassesCsvService } from 'app/club-tenant/services/classes-csv.service'
 import { ClubStore } from 'app/club-tenant';
 import { BoatsStore } from 'app/boats/services/boats.store';
 import { ExportResultsDialog } from './export-results-dialog/export-results-dialog';
+import { PyReturnsDialog } from './py-returns-dialog/py-returns-dialog';
 
 interface AdminResource {
   label: string;
@@ -151,6 +152,17 @@ export class ClubAdminSwitchboard {
         if (!result) return;
         this.downloadFile(result.csv, result.filename, 'text/csv');
         this.snackbar.open('Results exported', undefined, { duration: 3000 });
+      });
+  }
+
+  exportPyReturn(): void {
+    this.dialog
+      .open(PyReturnsDialog, { width: '720px', maxWidth: '95vw' })
+      .afterClosed()
+      .subscribe(result => {
+        if (!result) return;
+        this.downloadFile(result.csv, result.filename, 'text/csv');
+        this.snackbar.open('PY return downloaded', undefined, { duration: 3000 });
       });
   }
 

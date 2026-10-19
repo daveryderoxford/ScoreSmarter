@@ -37,6 +37,8 @@ export interface Club {
    logoUrl?: string;
    /** Public club website; shown in navigation and sidenav. */
    websiteUrl?: string;
+   /** RYA club affiliation ID, required for PY returns. */
+   ryaAffiliationId?: string;
    supportedHandicapSchemes: HandicapScheme[];
    laps?: boolean;
    oodScoring?: OODScoring;

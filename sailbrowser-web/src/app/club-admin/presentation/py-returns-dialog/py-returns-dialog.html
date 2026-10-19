@@ -1,0 +1,117 @@
+<h2 mat-dialog-title>RYA PY return</h2>
+<mat-dialog-content>
+  @if (build(); as build) {
+    <p class="summary">
+      {{ build.ret.races.length }} race{{ build.ret.races.length === 1 ? '' : 's' }} and {{ entryCount() }} finishers
+      will be returned.
+    </p>
+
+    @if (build.issues.length > 0) {
+      <section>
+        <h3>Issues</h3>
+        <ul class="issues">
+          @for (issue of build.issues; track issue) {
+            <li>{{ issue }}</li>
+          }
+        </ul>
+      </section>
+    }
+
+    <section>
+      <h3>Class check</h3>
+      <table class="classes">
+        <thead>
+          <tr><th>Club class</th><th>RYA ID</th><th>RYA class</th><th>Crew / rig / spin</th><th>Boats</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (c of build.classes; track c.className) {
+            <tr [class.problem]="c.status !== 'rya'">
+              <td>{{ c.className }}</td>
+              <td>{{ c.status === 'rya' ? c.catalogueId : '—' }}</td>
+              <td>
+                @switch (c.status) {
+                  @case ('rya') { {{ c.catalogue?.rya?.name ?? '(not in catalogue)' }} }
+                  @case ('non-rya') { Not an RYA class }
+                  @case ('unlinked') { Not linked }
+                  @case ('unknown-class') { Not a club class }
+                }
+              </td>
+              <td>
+                @if (c.catalogue; as entry) {
+                  {{ entry.crew }} / {{ entry.rig ?? '—' }} / {{ entry.spinnaker ?? '—' }}
+                }
+              </td>
+              <td>{{ c.entries }}</td>
+              <td>
+                @if (classEditLink(c.className); as link) {
+                  <a matButton [routerLink]="link" (click)="dialogRef.close()">Edit</a>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+    @if (build.excludedRaces.length > 0) {
+      <section>
+        <h3>Races left out ({{ build.excludedRaces.length }})</h3>
+        <ul class="excluded">
+          @for (race of build.excludedRaces; track race.raceId) {
+            <li><span>{{ race.label }}</span>: {{ race.reasons.join('; ') }}</li>
+          }
+        </ul>
+      </section>
+    }
+
+    <p class="meta">
+      The RYA XML format is pending (requested from technical&#64;rya.org.uk). Download the CSV to check the data.
+    </p>
+  } @else if (reader.seasonsLoading()) {
+    <div class="loading">
+      <mat-spinner diameter="32" />
+      <span>Loading seasons…</span>
+    </div>
+  } @else if (seasons().length === 0) {
+    <p>No published seasons found.</p>
+  } @else {
+    <p class="meta">Choose the series to return. Only handicap races that meet the RYA criteria are included.</p>
+    @for (season of seasons(); track season.id) {
+      <section class="season">
+        <mat-checkbox
+          [checked]="seasonFullySelected(season)"
+          (change)="selectSeason(season, $event.checked)">
+          <strong>{{ season.name }}</strong>
+        </mat-checkbox>
+        <ul class="series-list">
+          @for (series of season.series; track series.id) {
+            <li>
+              <mat-checkbox [checked]="selected().has(series.id)" (change)="toggle(series.id, $event.checked)">
+                {{ series.name }} <span class="meta">{{ series.raceCount }} races</span>
+              </mat-checkbox>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  }
+
+  @if (error(); as message) {
+    <p class="error" role="alert">{{ message }}</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button matButton type="button" (click)="dialogRef.close()" [disabled]="loading()">Cancel</button>
+  @if (build(); as build) {
+    <button matButton type="button" (click)="backToSelection()">Back</button>
+    <button matButton="outlined" type="button" disabled title="RYA XML format pending">Download XML</button>
+    <button matButton="filled" type="button" (click)="downloadCsv()" [disabled]="build.ret.races.length === 0">
+      Download CSV
+    </button>
+  } @else {
+    <button matButton="filled" type="button" (click)="check()" [disabled]="!canCheck()">
+      @if (loading()) { Checking… } @else { Check }
+    </button>
+  }
+</mat-dialog-actions>

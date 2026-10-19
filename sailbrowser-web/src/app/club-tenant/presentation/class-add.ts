@@ -46,6 +46,7 @@ export class ClassAdd {
         name: data.name!,
         handicaps: data.handicaps!,
         isSinglehander: data.isSinglehander ?? false,
+        ...(data.catalogueId !== undefined ? { catalogueId: data.catalogueId } : {}),
       };
       await this.cs.addClass(newClass);
       this.router.navigate(["/club/classes"]);

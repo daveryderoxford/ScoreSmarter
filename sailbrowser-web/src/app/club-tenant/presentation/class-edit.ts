@@ -40,11 +40,13 @@ export class ClassEdit {
       this.busy.set(true);
       const oldClass = this.boatClass();
       if (oldClass) {
+        const { catalogueId: _previous, ...rest } = oldClass;
         const newClass: BoatClass = {
-          ...oldClass,
+          ...rest,
           name: data.name!,
           handicaps: data.handicaps!,
           isSinglehander: data.isSinglehander ?? false,
+          ...(data.catalogueId !== undefined ? { catalogueId: data.catalogueId } : {}),
         };
         await this.cs.updateClass(oldClass, newClass);
         this.router.navigate(["/club/classes"]);

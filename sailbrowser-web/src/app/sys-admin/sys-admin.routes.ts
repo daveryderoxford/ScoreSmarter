@@ -32,4 +32,9 @@ export const SYS_ADMIN_ROUTES: Routes = [
       component: ScanAiConfigPage,
       title: 'Scan AI',
    },
+   {
+      path: 'class-catalogue',
+      loadComponent: () => import('./class-catalogue/class-catalogue-page').then(m => m.ClassCataloguePage),
+      title: 'Class catalogue',
+   },
 ];

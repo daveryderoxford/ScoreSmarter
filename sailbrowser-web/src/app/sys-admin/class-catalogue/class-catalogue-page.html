@@ -1,0 +1,143 @@
+<app-page-layout>
+  <app-toolbar title="Class catalogue">
+    <a matButton="text" routerLink="/sys-admin/switchboard">Back</a>
+  </app-toolbar>
+
+  <div class="page">
+    <mat-card appearance="outlined" class="card">
+      <mat-card-content>
+        <p>
+          The global list of boat classes clubs pick from. Positive ids are RYA Class IDs (used for
+          PY returns); negative ids are classes the RYA does not list.
+        </p>
+        <p class="meta">
+          {{ store.classes().length }} classes ({{ ryaCount() }} RYA)
+          @if (store.catalogue().ryaListVersion; as version) { · RYA list: {{ version }} }
+          @if (store.catalogue().updatedAt; as updated) { · updated {{ updated | date:'medium' }} }
+        </p>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="card">
+      <mat-card-header><mat-card-title>Import RYA list</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <p class="meta">
+          Save the RYA class configuration / PN spreadsheet as CSV. Classes are matched by RYA Class ID:
+          RYA names and PNs are updated, ScoreSmarter names and aliases are kept.
+        </p>
+        @if (pendingImport(); as pending) {
+          <div class="import-summary">
+            <strong>{{ pending.fileName }}</strong>:
+            {{ pending.merge.added }} added, {{ pending.merge.updated }} updated,
+            {{ pending.merge.unchanged }} unchanged.
+            @if (pending.merge.notInList.length > 0) {
+              <div class="meta">
+                Not in this list (kept so club links stay valid):
+                {{ pending.merge.notInList.length }}
+              </div>
+            }
+            @for (error of pending.errors; track error) {
+              <div class="error">{{ error }}</div>
+            }
+          </div>
+          <mat-form-field class="full-width">
+            <mat-label>List version (optional)</mat-label>
+            <input matInput [ngModel]="listVersion()" (ngModelChange)="listVersion.set($event)" placeholder="e.g. PN list 2026 v2">
+          </mat-form-field>
+          <div class="actions">
+            <button matButton="filled" type="button" [disabled]="busy()" (click)="saveImport()">Save import</button>
+            <button matButton type="button" [disabled]="busy()" (click)="cancelImport()">Cancel</button>
+          </div>
+        } @else {
+          <input #fileInput type="file" accept=".csv,text/csv" hidden (change)="onFileSelected($event)">
+          <button matButton="outlined" type="button" [disabled]="busy()" (click)="fileInput.click()">
+            <mat-icon>upload_file</mat-icon>
+            Choose CSV
+          </button>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="card">
+      <mat-card-header><mat-card-title>Add a non-RYA class</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <div class="add-row">
+          <mat-form-field class="grow">
+            <mat-label>Name</mat-label>
+            <input matInput [ngModel]="newName()" (ngModelChange)="newName.set($event)">
+          </mat-form-field>
+          <mat-form-field class="crew">
+            <mat-label>Crew</mat-label>
+            <input matInput type="number" min="1" [ngModel]="newCrew()" (ngModelChange)="newCrew.set($event)">
+          </mat-form-field>
+          <mat-form-field class="grow">
+            <mat-label>Aliases (comma separated)</mat-label>
+            <input matInput [ngModel]="newAliases()" (ngModelChange)="newAliases.set($event)">
+          </mat-form-field>
+          <button matButton="filled" type="button" [disabled]="busy() || !newName().trim()" (click)="addLocalClass()">
+            Add
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-form-field class="full-width">
+      <mat-label>Search classes</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input matInput [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Name, RYA name, id or alias">
+    </mat-form-field>
+
+    <table class="catalogue">
+      <thead>
+        <tr>
+          <th>Id</th>
+          <th>ScoreSmarter name</th>
+          <th>RYA name</th>
+          <th>Crew / rig / spin</th>
+          <th>PN</th>
+          <th>Aliases</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (entry of filtered(); track entry.catalogueId) {
+          <tr [class.local]="!isRyaClass(entry)">
+            <td>{{ entry.catalogueId }}</td>
+            @if (editingId() === entry.catalogueId) {
+              <td>
+                <input class="inline" [ngModel]="draftName()" (ngModelChange)="draftName.set($event)" aria-label="ScoreSmarter name">
+              </td>
+              <td>{{ entry.rya?.name ?? '—' }}</td>
+              <td>{{ entry.crew }} / {{ entry.rig ?? '—' }} / {{ entry.spinnaker ?? '—' }}</td>
+              <td>{{ entry.rya?.pn ?? '—' }}</td>
+              <td>
+                <input class="inline" [ngModel]="draftAliases()" (ngModelChange)="draftAliases.set($event)" aria-label="Aliases">
+              </td>
+              <td class="row-actions">
+                <button matIconButton type="button" aria-label="Save" [disabled]="busy()" (click)="saveEdit(entry)">
+                  <mat-icon>check</mat-icon>
+                </button>
+                <button matIconButton type="button" aria-label="Cancel" (click)="cancelEdit()">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </td>
+            } @else {
+              <td>{{ entry.name }}</td>
+              <td>{{ entry.rya?.name ?? '—' }}</td>
+              <td>{{ entry.crew }} / {{ entry.rig ?? '—' }} / {{ entry.spinnaker ?? '—' }}</td>
+              <td>{{ entry.rya?.pn ?? '—' }}</td>
+              <td>{{ (entry.aliases ?? []).join(', ') }}</td>
+              <td class="row-actions">
+                <button matIconButton type="button" aria-label="Edit" (click)="startEdit(entry)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+              </td>
+            }
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="meta">No classes. Import the RYA list to get started.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</app-page-layout>

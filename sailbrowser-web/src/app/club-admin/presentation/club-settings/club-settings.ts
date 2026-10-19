@@ -59,6 +59,7 @@ export class ClubSettingsComponent {
     latitude: [null as number | null, [Validators.min(-90), Validators.max(90)]],
     longitude: [null as number | null, [Validators.min(-180), Validators.max(180)]],
     websiteUrl: [''],
+    ryaAffiliationId: [''],
   });
 
   constructor() {
@@ -76,6 +77,7 @@ export class ClubSettingsComponent {
           latitude: club.latitude ?? null,
           longitude: club.longitude ?? null,
           websiteUrl: club.websiteUrl ?? '',
+          ryaAffiliationId: club.ryaAffiliationId ?? '',
         },
         { emitEvent: false },
       );
@@ -143,6 +145,7 @@ export class ClubSettingsComponent {
         latitude: this.toOptionalNumber(v.latitude),
         longitude: this.toOptionalNumber(v.longitude),
         websiteUrl: v.websiteUrl?.trim() || undefined,
+        ryaAffiliationId: v.ryaAffiliationId?.trim() || undefined,
       });
 
       this.form.markAsPristine();
