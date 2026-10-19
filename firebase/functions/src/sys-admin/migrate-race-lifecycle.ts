@@ -4,7 +4,7 @@ import { onCall } from "firebase-functions/v2/https";
 import { NOT_FINISHED } from "../races/race-lifecycle.js";
 import { assertAuthenticated, callerClaims, hasSysAdminRights } from "../shared/authorisation.js";
 import { detailedHttpsError } from "../shared/https-error.js";
-import { migratedRaceFields, type LegacyRaceStatus } from "./race-lifecycle-migration.js";
+import { migratedRaceFields, type LegacyRaceStatus, type RaceResultCounts } from "./race-lifecycle-migration.js";
 
 const WRITE_BATCH_LIMIT = 500;
 
@@ -18,8 +18,9 @@ interface ClubMigrationCounts {
 
 /**
  * One-time sys-admin migration of race documents to the reduced lifecycle
- * (Published / Verified / Postponed / Archived mapped onto the new statuses, and a
- * results state on every race). Pass `dryRun: true` to report counts without writing.
+ * (legacy statuses mapped onto the new ones, statuses recalculated from results, and a
+ * results state on every race). Only race documents are written; published results
+ * are untouched. Pass `dryRun: true` to report counts without writing.
  */
 export const migrateRaceLifecycle = onCall(
   { timeoutSeconds: 540, memory: "512MiB" },
@@ -42,14 +43,16 @@ export const migrateRaceLifecycle = onCall(
       const races = await db.collection(`clubs/${clubId}/races`).get();
       const counts: ClubMigrationCounts = { clubId, races: races.size, updated: 0, changes: {} };
 
-      const needsResults = races.docs.some((doc) => doc.get("status") === "Archived");
-      const racesWithResults = new Set<string>();
-      if (needsResults) {
-        const results = await db.collection(`clubs/${clubId}/race-results`).select("raceId", "resultCode").get();
-        for (const doc of results.docs) {
-          const code = (doc.get("resultCode") as string | undefined) ?? NOT_FINISHED;
-          if (code !== NOT_FINISHED) racesWithResults.add(doc.get("raceId") as string);
-        }
+      // One read of the club's results (two fields only) gives every race's counts.
+      const countsByRace = new Map<string, RaceResultCounts>();
+      const results = await db.collection(`clubs/${clubId}/race-results`).select("raceId", "resultCode").get();
+      for (const doc of results.docs) {
+        const raceId = doc.get("raceId") as string | undefined;
+        if (!raceId) continue;
+        const counts = countsByRace.get(raceId) ?? { entries: 0, notFinished: 0 };
+        counts.entries++;
+        if (((doc.get("resultCode") as string | undefined) ?? NOT_FINISHED) === NOT_FINISHED) counts.notFinished++;
+        countsByRace.set(raceId, counts);
       }
 
       let batch: WriteBatch = db.batch();
@@ -58,7 +61,7 @@ export const migrateRaceLifecycle = onCall(
         const status = doc.get("status") as LegacyRaceStatus;
         const update = migratedRaceFields(
           { status, resultsState: doc.get("resultsState") },
-          racesWithResults.has(doc.id),
+          countsByRace.get(doc.id) ?? { entries: 0, notFinished: 0 },
         );
         if (!update) continue;
         counts.updated++;
