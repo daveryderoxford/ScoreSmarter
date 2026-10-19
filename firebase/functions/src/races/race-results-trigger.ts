@@ -1,12 +1,23 @@
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { logger } from "firebase-functions/v2";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
-import { NOT_FINISHED, raceLifecycleUpdate, type RaceLifecycleFields } from "./race-lifecycle.js";
+import {
+  NOT_FINISHED,
+  raceLifecycleUpdate,
+  raceStatusFromCounts,
+  racesToRecompute,
+  type ComputedRaceStatus,
+  type RaceLifecycleFields,
+} from "./race-lifecycle.js";
 
 /**
  * Keeps a race's status (Future / In progress / Completed) in step with its results,
  * whichever client path wrote them, and returns final results to provisional when
  * they change.
+ *
+ * Cost: one race read per affected race, plus two count aggregations only when a
+ * result code changed. The race is written only when its status or results state
+ * actually changes.
  */
 export const raceResultsChanged = onDocumentWritten(
   {
@@ -15,27 +26,38 @@ export const raceResultsChanged = onDocumentWritten(
   },
   async (event) => {
     const clubId = event.params.clubId;
-    const before = event.data?.before.data();
-    const after = event.data?.after.data();
-    const raceId = (after?.["raceId"] ?? before?.["raceId"]) as string | undefined;
-    if (!raceId) return;
+    const affected = racesToRecompute(event.data?.before.data(), event.data?.after.data());
+    if (affected.length === 0) return;
 
     const db = getFirestore();
-    const raceRef = db.doc(`clubs/${clubId}/races/${raceId}`);
-    const raceSnap = await raceRef.get();
-    if (!raceSnap.exists) return;
-    const race = raceSnap.data() as RaceLifecycleFields;
-
-    const results = await db
-      .collection(`clubs/${clubId}/race-results`)
-      .where("raceId", "==", raceId)
-      .get();
-    const codes = results.docs.map((doc) => (doc.get("resultCode") as string | undefined) ?? NOT_FINISHED);
-
-    const update = raceLifecycleUpdate(race, codes);
-    if (!update) return;
-
-    await raceRef.update(update);
-    logger.info("raceResultsChanged: race updated", { clubId, raceId, ...update });
+    for (const { raceId, recomputeStatus } of affected) {
+      await syncRace(db, clubId, raceId, recomputeStatus);
+    }
   },
 );
+
+async function syncRace(db: Firestore, clubId: string, raceId: string, recomputeStatus: boolean): Promise<void> {
+  const raceRef = db.doc(`clubs/${clubId}/races/${raceId}`);
+  const raceSnap = await raceRef.get();
+  if (!raceSnap.exists) return;
+  const race = raceSnap.data() as RaceLifecycleFields;
+  if (race.status === "Canceled") return;
+  if (!recomputeStatus && race.resultsState !== "final") return;
+
+  const nextStatus = recomputeStatus ? await statusFromCounts(db, clubId, raceId) : undefined;
+  const update = raceLifecycleUpdate(race, nextStatus);
+  if (!update) return;
+
+  await raceRef.update(update);
+  logger.info("raceResultsChanged: race updated", { clubId, raceId, ...update });
+}
+
+/** Two count aggregations (about one read each) instead of reading every result. */
+async function statusFromCounts(db: Firestore, clubId: string, raceId: string): Promise<ComputedRaceStatus> {
+  const raceResults = db.collection(`clubs/${clubId}/race-results`).where("raceId", "==", raceId);
+  const [entries, notFinished] = await Promise.all([
+    raceResults.count().get(),
+    raceResults.where("resultCode", "==", NOT_FINISHED).count().get(),
+  ]);
+  return raceStatusFromCounts(entries.data().count, notFinished.data().count);
+}
