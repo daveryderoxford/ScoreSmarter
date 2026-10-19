@@ -6,6 +6,7 @@ import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, firestoreWrite, withTimeout } from 'ap
 import { isSameDay } from 'date-fns';
 import { map, tap } from 'rxjs';
 import { Race } from '../model/race';
+import { raceNumbering } from '../model/race-numbering';
 import { Series } from '../model/series';
 import { RaceCalendarStoreBase, RaceSeriesDetails, seriesSort, sortRaces } from './race-calendar-store-base';
 
@@ -223,17 +224,29 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
       await withTimeout(batch.commit(), FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Updating races');
    }
 
-   /** Update a race and recalculate series dates if scheduledStart changed */
+   /**
+    * Update a race. If scheduledStart changed, recalculate series dates and renumber
+    * races (index and race-of-day), since a new start time can change their order.
+    */
    override async updateRace(raceId: string, data: Partial<Race>): Promise<void> {
       const batch = writeBatch(this.firestore);
-      batch.set(this.raceRef(raceId), data, { merge: true });
+      const renumbered = new Map<string, Pick<Race, 'index' | 'raceOfDay'>>();
 
       if (data.scheduledStart) {
          const race = this.allRaces().find(r => r.id === raceId);
          if (race) {
             const allRacesForSeries = this.allRaces().filter(r => r.seriesId === race.seriesId);
-            const updatedRaces = allRacesForSeries.map(r => r.id === raceId ? { ...r, ...data } as Race : r);
-            
+            const updatedRaces = allRacesForSeries
+               .map(r => r.id === raceId ? { ...r, ...data } as Race : r)
+               .sort(sortRaces);
+
+            for (const [id, numbering] of raceNumbering(updatedRaces)) {
+               const existing = updatedRaces.find(r => r.id === id)!;
+               if (existing.index !== numbering.index || existing.raceOfDay !== numbering.raceOfDay) {
+                  renumbered.set(id, numbering);
+               }
+            }
+
             const dates = updatedRaces.map(r => r.scheduledStart.getTime());
             if (dates.length > 0) {
                const startDate = new Date(Math.min(...dates));
@@ -241,6 +254,11 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
                batch.update(this.ref(race.seriesId), { startDate, endDate });
             }
          }
+      }
+
+      batch.set(this.raceRef(raceId), { ...data, ...renumbered.get(raceId) }, { merge: true });
+      for (const [id, numbering] of renumbered) {
+         if (id !== raceId) batch.update(this.raceRef(id), numbering);
       }
 
       await withTimeout(batch.commit(), FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Updating race');

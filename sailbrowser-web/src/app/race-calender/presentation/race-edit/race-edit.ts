@@ -11,7 +11,10 @@ import { PageLayout } from 'app/shared/layout/page-layout';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { SubmitButton } from "app/shared/components/submit-button";
+import { DatePipe } from '@angular/common';
 import { Race, RaceCalendarStore } from 'app/race-calender';
+import { TimeInput } from 'app/shared/components/time-input/time-input';
+import { dateAtSecondsOfDay, secondsSinceStartOfDay } from 'app/shared/utils/time-utils';
 
 @Component({
   selector: 'app-race-edit',
@@ -34,7 +37,8 @@ import { Race, RaceCalendarStore } from 'app/race-calender';
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule,
-    MatCheckboxModule, MatButtonModule, MatSelectModule, Toolbar, SubmitButton, PageLayout, DetailPane],
+    MatCheckboxModule, MatButtonModule, MatSelectModule, Toolbar, SubmitButton, PageLayout, DetailPane,
+    TimeInput, DatePipe],
 })
 export class RaceEdit {
   private readonly fb = inject(FormBuilder);
@@ -62,6 +66,8 @@ export class RaceEdit {
   busy = signal(false);
 
   form = this.fb.group({
+    /** Seconds since midnight; the race's date is unchanged. */
+    startTime: [null as number | null, Validators.required],
     isPursuit: [false, Validators.required],
     isDiscardable: [true, Validators.required],
     isAverageLap: [true, Validators.required],
@@ -72,6 +78,7 @@ export class RaceEdit {
       const race = this.race();
       if (!race) return;
       this.form.patchValue({
+        startTime: secondsSinceStartOfDay(race.scheduledStart),
         isPursuit: race.type === 'Pursuit',
         isDiscardable: race.isDiscardable,
         isAverageLap: race.isAverageLap,
@@ -91,6 +98,10 @@ export class RaceEdit {
         isDiscardable: value.isDiscardable ?? true,
         isAverageLap: value.isAverageLap ?? true,
       };
+      const scheduledStart = dateAtSecondsOfDay(race.scheduledStart, value.startTime ?? 0);
+      if (scheduledStart.getTime() !== race.scheduledStart.getTime()) {
+        update.scheduledStart = scheduledStart;
+      }
 
       try {
         this.busy.set(true);
@@ -98,8 +109,8 @@ export class RaceEdit {
         this.form.reset();
         this.router.navigate(['/race-calender/series-details/', race.seriesId]);
       } catch (error: any) {
-        this.snackbar.open("Error encountered adding races", "Dismiss", { duration: 3000 });
-        console.log('AddRace: Error adding races ' + error.toString());
+        this.snackbar.open("Error encountered updating race", "Dismiss", { duration: 3000 });
+        console.log('RaceEdit: Error updating race ' + error.toString());
       } finally {
         this.busy.set(false);
       }
