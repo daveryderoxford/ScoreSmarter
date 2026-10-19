@@ -50,7 +50,7 @@
             <div class="series-header">
                <div class="series-title-row">
                   <h3> {{series()?.name}} - {{currentFleetName()}}</h3>
-                  @if (series()?.resultsState !== 'final') {
+                  @if (series()?.resultsState === 'provisional') {
                      <app-status-pill status="provisional" title="Some results in this series have not been confirmed final" />
                   }
                   @if (seriesInfo(); as info) {
@@ -98,7 +98,7 @@
                <div class="race-title">
                   <h3>Race {{race.index}} - {{race.scheduledStart| date:'dd MMM yy'}} @if (selectedScoringAlgorithmLabel()) { - {{selectedScoringAlgorithmLabel()}} } {{race.results.length === 0 ? ' - No
                      competitors' : '' }}</h3>
-                  @if (race.resultsState !== 'final') {
+                  @if (race.resultsState === 'provisional') {
                      <app-status-pill status="provisional" title="These results have not been confirmed final" />
                   }
                   <app-info-popover label="Race information" (opened)="loadDutyRaceOfficer(race)">

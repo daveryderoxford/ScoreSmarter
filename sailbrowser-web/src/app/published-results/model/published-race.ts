@@ -24,7 +24,7 @@ export interface PublishedRace {
    divisionDefinitions: Division[];
    raceOfficer?: string;
    wind?: string;
-   /** Absent on races published before results states were added (treated as provisional). */
+   /** Absent on races published before results states were added (shown without a badge). */
    resultsState?: ResultsState;
 }
 

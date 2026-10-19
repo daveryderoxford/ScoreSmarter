@@ -65,7 +65,7 @@ export interface PublishedSeries {
    /** Discards allowed for the races sailed so far. */
    discards?: number;
    cancelledRaces?: PublishedCancelledRace[];
-   /** Final only when every published race is final. Absent on older series (treated as provisional). */
+   /** Final only when every published race is final. Absent on older series (shown without a badge). */
    resultsState?: ResultsState;
 }
 
