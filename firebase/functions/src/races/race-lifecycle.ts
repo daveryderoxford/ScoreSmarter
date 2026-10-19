@@ -45,14 +45,18 @@ interface ResultDocFields {
 
 export interface RaceToRecompute {
   raceId: string;
-  /** False when only non-status fields changed (e.g. a finish time), so counts are skipped. */
+  /** False when no entry moved to or from NOT FINISHED, so counts are skipped. */
   recomputeStatus: boolean;
+}
+
+function isNotFinished(doc: ResultDocFields | undefined): boolean {
+  return (doc?.resultCode ?? NOT_FINISHED) === NOT_FINISHED;
 }
 
 /**
  * Races affected by a write to one race-results document. A result moved between
- * races affects both; an edit that keeps the same result code cannot change the
- * race status.
+ * races affects both. Within a race the status only changes when an entry moves
+ * between NOT FINISHED and any other code (e.g. OK to DNF cannot change it).
  */
 export function racesToRecompute(
   before: ResultDocFields | undefined,
@@ -62,8 +66,7 @@ export function racesToRecompute(
   const afterRace = typeof after?.raceId === "string" ? after.raceId : undefined;
 
   if (beforeRace && afterRace && beforeRace === afterRace) {
-    const codeChanged = (before?.resultCode ?? NOT_FINISHED) !== (after?.resultCode ?? NOT_FINISHED);
-    return [{ raceId: afterRace, recomputeStatus: codeChanged }];
+    return [{ raceId: afterRace, recomputeStatus: isNotFinished(before) !== isNotFinished(after) }];
   }
 
   return [beforeRace, afterRace]

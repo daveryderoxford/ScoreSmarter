@@ -35,13 +35,21 @@ test("raceLifecycleUpdate leaves cancelled races alone", () => {
   assert.equal(raceLifecycleUpdate({ status: "Canceled", resultsState: "final" }), null);
 });
 
-test("racesToRecompute skips the status counts when the result code is unchanged", () => {
+test("racesToRecompute only counts when an entry moves to or from NOT FINISHED", () => {
   assert.deepEqual(
     racesToRecompute({ raceId: "r1", resultCode: "OK" }, { raceId: "r1", resultCode: "OK" }),
     [{ raceId: "r1", recomputeStatus: false }],
   );
   assert.deepEqual(
+    racesToRecompute({ raceId: "r1", resultCode: "OK" }, { raceId: "r1", resultCode: "DNF" }),
+    [{ raceId: "r1", recomputeStatus: false }],
+  );
+  assert.deepEqual(
     racesToRecompute({ raceId: "r1", resultCode: NOT_FINISHED }, { raceId: "r1", resultCode: "OK" }),
+    [{ raceId: "r1", recomputeStatus: true }],
+  );
+  assert.deepEqual(
+    racesToRecompute({ raceId: "r1", resultCode: "DNF" }, { raceId: "r1", resultCode: NOT_FINISHED }),
     [{ raceId: "r1", recomputeStatus: true }],
   );
 });

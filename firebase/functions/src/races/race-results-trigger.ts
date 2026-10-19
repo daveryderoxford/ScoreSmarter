@@ -15,9 +15,9 @@ import {
  * whichever client path wrote them, and returns final results to provisional when
  * they change.
  *
- * Cost: one race read per affected race, plus two count aggregations only when a
- * result code changed. The race is written only when its status or results state
- * actually changes.
+ * Cost: one race read per affected race, plus two count aggregations only when an
+ * entry is added, removed or moves to/from NOT FINISHED. The race is written only
+ * when its status or results state actually changes.
  */
 export const raceResultsChanged = onDocumentWritten(
   {
