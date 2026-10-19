@@ -16,7 +16,7 @@
     <div class="alert-banner info">
       <mat-icon>info</mat-icon>
       <div class="alert-content">
-        <strong>Action Needed:</strong> {{ pastUnverifiedRacesCount() }} past {{ pastUnverifiedRacesCount() === 1 ? 'race has' : 'races have' }} provisional results to review.
+        <strong>Action Needed:</strong> {{ pastUnverifiedRacesCount() }} past {{ pastUnverifiedRacesCount() === 1 ? 'race needs' : 'races need' }} review (missing or provisional results).
       </div>
       <a matButton="elevated" routerLink="/club-admin/race-review">Review results</a>
     </div>

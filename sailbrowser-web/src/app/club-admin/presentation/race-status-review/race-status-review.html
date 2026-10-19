@@ -5,15 +5,21 @@
   <header class="page-header">
     <h1>Results review</h1>
     <p>
-      Results are published as provisional. Check each race, then mark it final once every entry
-      has a result.
+      Past races with no results need results entering or cancelling. Results are published as
+      provisional: check each race, then mark it final once every entry has a result.
     </p>
   </header>
 
   <div class="metrics">
     <mat-card class="metric-card" appearance="outlined">
       <mat-card-content>
-        <div class="metric-value">{{ awaitingReview().length }}</div>
+        <div class="metric-value">{{ noResultsCount() }}</div>
+        <div class="metric-label">Past races with no results</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="metric-card" appearance="outlined">
+      <mat-card-content>
+        <div class="metric-value">{{ provisionalCount() }}</div>
         <div class="metric-label">Past races with provisional results</div>
       </mat-card-content>
     </mat-card>
@@ -34,26 +40,33 @@
           </div>
           <div class="race-status">
             <app-status-pill [status]="race.status" />
-            @if (race.status !== 'Canceled') {
+            @if (hasResults(race)) {
               <app-status-pill [status]="state" />
             }
           </div>
           @if (race.status === 'Canceled' && race.cancellationReason) {
             <div class="cancellation-reason">Reason: {{ race.cancellationReason }}</div>
           }
+          @if (race.status === 'Future') {
+            <div class="hint">No results entered. Enter the results, or cancel the race if it wasn't sailed.</div>
+          }
           @if (race.status === 'In progress') {
             <div class="hint">Some entries have no result yet, so it can't be marked final.</div>
           }
-          <div class="race-links">
-            <a matButton [routerLink]="['/results-input', 'manual']" [queryParams]="{ raceId: race.id }">
-              <mat-icon>edit</mat-icon>
-              Edit results
-            </a>
-            <a matButton [routerLink]="['/results', 'viewer', race.seriesId]">
-              <mat-icon>emoji_events</mat-icon>
-              View published
-            </a>
-          </div>
+          @if (race.status !== 'Canceled') {
+            <div class="race-links">
+              <a matButton [routerLink]="['/results-input', 'manual']" [queryParams]="{ raceId: race.id }">
+                <mat-icon>edit</mat-icon>
+                {{ race.status === 'Future' ? 'Enter results' : 'Edit results' }}
+              </a>
+              @if (hasResults(race)) {
+                <a matButton [routerLink]="['/results', 'viewer', race.seriesId]">
+                  <mat-icon>emoji_events</mat-icon>
+                  View published
+                </a>
+              }
+            </div>
+          }
         </div>
 
         <div class="race-actions">
@@ -62,15 +75,21 @@
               Reinstate race
             </button>
           } @else {
-            <mat-button-toggle-group
-              hideSingleSelectionIndicator
-              [value]="state"
-              [disabled]="busyRaceId() === race.id"
-              [attr.aria-label]="'Results state for ' + race.seriesName + ' race ' + race.index"
-              (change)="setResultsState(race, $event.value)">
-              <mat-button-toggle value="provisional">Provisional</mat-button-toggle>
-              <mat-button-toggle value="final" [disabled]="!canMarkFinal(race)">Final</mat-button-toggle>
-            </mat-button-toggle-group>
+            @if (race.status === 'Future') {
+              <button matButton="outlined" type="button" class="danger-text" (click)="raceDayActions.cancelRaces(race)">
+                Cancel race
+              </button>
+            } @else {
+              <mat-button-toggle-group
+                hideSingleSelectionIndicator
+                [value]="state"
+                [disabled]="busyRaceId() === race.id"
+                [attr.aria-label]="'Results state for ' + race.seriesName + ' race ' + race.index"
+                (change)="setResultsState(race, $event.value)">
+                <mat-button-toggle value="provisional">Provisional</mat-button-toggle>
+                <mat-button-toggle value="final" [disabled]="!canMarkFinal(race)">Final</mat-button-toggle>
+              </mat-button-toggle-group>
+            }
 
             <button matIconButton [matMenuTriggerFor]="actionMenu" aria-label="More race actions">
               <mat-icon>more_vert</mat-icon>
@@ -88,7 +107,7 @@
       <div class="empty-state">
         <mat-icon>check_circle</mat-icon>
         <h2>All caught up</h2>
-        <p>There are no past races with provisional results.</p>
+        <p>Every past race has final results or has been cancelled.</p>
       </div>
     }
   </div>

@@ -11,20 +11,20 @@ function race(id: string, extra: Partial<Race>): Race {
 }
 
 describe('racesAwaitingReview', () => {
-  it('includes past in-progress and completed races that are still provisional', () => {
+  it('includes past provisional races and past races still Future', () => {
     const awaiting = racesAwaitingReview(
       [
         race('completed', {}),
         race('in-progress', { status: 'In progress', resultsState: 'provisional' }),
-        race('final', { resultsState: 'final' }),
         race('no-results', { status: 'Future' }),
+        race('final', { resultsState: 'final' }),
         race('cancelled', { status: 'Canceled' }),
-        race('upcoming', { scheduledStart: future, status: 'In progress' }),
+        race('upcoming', { scheduledStart: future, status: 'Future' }),
       ],
       now,
     );
 
-    expect(awaiting.map(r => r.id)).toEqual(['completed', 'in-progress']);
+    expect(awaiting.map(r => r.id)).toEqual(['completed', 'in-progress', 'no-results']);
   });
 });
 

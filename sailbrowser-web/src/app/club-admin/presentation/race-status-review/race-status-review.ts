@@ -51,6 +51,7 @@ export class RaceStatusReviewComponent {
   protected readonly raceDayActions = inject(RaceDayActions);
 
   protected readonly canMarkFinal = canMarkFinal;
+  protected readonly hasResults = hasResults;
   protected readonly resultsStateOf = resultsStateOf;
 
   /** Also list final and cancelled past races, so they can be returned to provisional or reinstated. */
@@ -59,13 +60,13 @@ export class RaceStatusReviewComponent {
   readonly busyRaceId = signal<string | null>(null);
 
   readonly awaitingReview = computed(() => racesAwaitingReview(this.raceCalendarStore.allRaces()));
+  readonly noResultsCount = computed(() => this.awaitingReview().filter(r => r.status === 'Future').length);
+  readonly provisionalCount = computed(() => this.awaitingReview().filter(r => hasResults(r)).length);
 
   readonly races = computed(() => {
     const now = new Date();
     const races = this.showAll()
-      ? this.raceCalendarStore.allRaces().filter(
-          r => r.scheduledStart < now && (hasResults(r) || r.status === 'Canceled'),
-        )
+      ? this.raceCalendarStore.allRaces().filter(r => r.scheduledStart < now)
       : this.awaitingReview();
     return [...races].sort(sortRaces).reverse();
   });
