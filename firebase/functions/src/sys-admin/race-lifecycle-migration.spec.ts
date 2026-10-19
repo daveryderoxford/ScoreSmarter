@@ -60,7 +60,18 @@ test("migratedRaceFields never changes a cancelled race's status", () => {
   });
 });
 
-test("migratedRaceFields never overwrites an existing results state and is idempotent", () => {
+test("migratedRaceFields returns a final race to provisional when it is no longer completed", () => {
+  assert.deepEqual(migratedRaceFields({ status: "Completed", resultsState: "final" }, partlyFinished), {
+    status: "In progress",
+    resultsState: "provisional",
+  });
+  assert.deepEqual(
+    migratedRaceFields({ status: "Completed", resultsState: "final" }, { entries: 2, notFinished: 2 }),
+    { status: "Future", resultsState: "provisional" },
+  );
+});
+
+test("migratedRaceFields keeps an existing results state on completed races and is idempotent", () => {
   assert.equal(migratedRaceFields({ status: "Completed", resultsState: "final" }, allFinished), null);
   assert.equal(migratedRaceFields({ status: "Completed", resultsState: "provisional" }, allFinished), null);
   assert.equal(migratedRaceFields({ status: "Future", resultsState: "provisional" }, noResults), null);
