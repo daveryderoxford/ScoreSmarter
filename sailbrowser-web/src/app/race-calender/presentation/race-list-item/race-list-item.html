@@ -10,7 +10,12 @@
          @if (race().type !== 'Handicap') {
          <span>{{ race().type }}</span>
          }
-         <span class="status-pill" [attr.data-status]="statusTone()">{{ race().status }}</span>
+         <span class="pills">
+            <app-status-pill [status]="race().status" />
+            @if (race().resultsState === 'final') {
+            <app-status-pill status="final" />
+            }
+         </span>
       </span>
    </span>
    <span matListItemMeta>

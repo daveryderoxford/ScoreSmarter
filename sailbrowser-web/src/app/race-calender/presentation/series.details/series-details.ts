@@ -13,7 +13,8 @@ import { RaceListItem } from "../race-list-item/race-list-item";
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { seriesScoringSchemeDetails } from 'app/scoring/model/scoring-algotirhm';
 import { seriesEntryGroupingDetails } from 'app/scoring';
-import { Race, RaceCalendarStore, Series } from 'app/race-calender';
+import { hasResults, Race, RaceCalendarStore, Series, seriesStatus } from 'app/race-calender';
+import { StatusPill } from '../status-pill/status-pill';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { ClubStore } from 'app/club-tenant';
 import { getFleetName } from 'app/club-tenant/model/fleet';
@@ -24,7 +25,7 @@ import { formatDiscardScheduleSummary } from 'app/scoring/model/discard-profile'
  */
 @Component({
    selector: 'app-series-details',
-   imports: [DatePipe, Toolbar, MatListModule, MatCardModule, MatIconModule, MatButtonModule, LoadingCentered, RaceListItem, PageLayout, ListPane],
+   imports: [DatePipe, Toolbar, MatListModule, MatCardModule, MatIconModule, MatButtonModule, LoadingCentered, RaceListItem, PageLayout, ListPane, StatusPill],
    templateUrl: 'series-details.html',
    styles: [`
 
@@ -47,6 +48,11 @@ import { formatDiscardScheduleSummary } from 'app/scoring/model/discard-profile'
       justify-content: space-between;
     }
     .detail-label { font-weight: 500; }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
   `],
    changeDetection: ChangeDetectionStrategy.OnPush,
@@ -93,8 +99,11 @@ export class SeriesDetails {
 
    races = this.rc.getSeriesRaces(this.id);
 
+   readonly status = computed(() => seriesStatus(this.races()));
+
+   /** Races with results can't be deleted (nor can their series). */
    isRacePublished(race: Race): boolean {
-      return race.status === 'Published' || race.status === 'Verified';
+      return hasResults(race);
    }
 
    busy = signal(false);

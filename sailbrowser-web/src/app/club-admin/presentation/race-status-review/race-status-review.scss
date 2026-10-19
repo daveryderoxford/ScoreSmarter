@@ -30,6 +30,8 @@
 .metrics {
   margin-bottom: 32px;
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
 
   .metric-card {
@@ -85,6 +87,23 @@
     font-weight: 500;
     color: var(--mat-sys-on-surface);
   }
+}
+
+.race-status {
+  display: flex;
+  gap: 8px;
+}
+
+.race-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: -12px;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .cancellation-reason {

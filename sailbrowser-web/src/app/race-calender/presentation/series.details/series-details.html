@@ -19,8 +19,9 @@
 
       <mat-card appearance="outlined">
         <mat-card-header>
-          <mat-card-title>
+          <mat-card-title class="title-row">
             <span>{{ series().name }}</span>
+            <app-status-pill [status]="status()" />
           </mat-card-title>
           <mat-card-subtitle>
             @if (fleet()) {

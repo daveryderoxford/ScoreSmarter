@@ -23,7 +23,7 @@ export interface CancelRacesDialogData {
 
 export const CANCELLATION_REASONS = ['No wind', 'Too windy', 'Insufficient entries', 'No race officer', 'Bad weather'];
 
-const STATUSES_WITH_RESULTS = new Set<Race['status']>(['In progress', 'Completed', 'Published', 'Verified']);
+const STATUSES_WITH_RESULTS = new Set<Race['status']>(['In progress', 'Completed']);
 
 /** Cancels one or more of a day's races with a reason. Returns true when races were cancelled. */
 @Component({

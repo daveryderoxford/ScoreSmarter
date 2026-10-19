@@ -11,7 +11,8 @@ import { PageLayout } from 'app/shared/layout/page-layout';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { SubmitButton } from "app/shared/components/submit-button";
-import { DatePipe } from '@angular/common';
+import { provideNativeDateAdapter } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { TimeInput } from 'app/shared/components/time-input/time-input';
 import { dateAtSecondsOfDay, secondsSinceStartOfDay } from 'app/shared/utils/time-utils';
@@ -36,9 +37,10 @@ import { dateAtSecondsOfDay, secondsSinceStartOfDay } from 'app/shared/utils/tim
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [provideNativeDateAdapter()],
   imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule,
     MatCheckboxModule, MatButtonModule, MatSelectModule, Toolbar, SubmitButton, PageLayout, DetailPane,
-    TimeInput, DatePipe],
+    TimeInput, MatDatepickerModule],
 })
 export class RaceEdit {
   private readonly fb = inject(FormBuilder);
@@ -66,7 +68,9 @@ export class RaceEdit {
   busy = signal(false);
 
   form = this.fb.group({
-    /** Seconds since midnight; the race's date is unchanged. */
+    /** Changing the date reschedules (postpones) the race. */
+    startDate: [null as Date | null, Validators.required],
+    /** Seconds since midnight on `startDate`. */
     startTime: [null as number | null, Validators.required],
     isPursuit: [false, Validators.required],
     isDiscardable: [true, Validators.required],
@@ -78,6 +82,7 @@ export class RaceEdit {
       const race = this.race();
       if (!race) return;
       this.form.patchValue({
+        startDate: race.scheduledStart,
         startTime: secondsSinceStartOfDay(race.scheduledStart),
         isPursuit: race.type === 'Pursuit',
         isDiscardable: race.isDiscardable,
@@ -98,7 +103,7 @@ export class RaceEdit {
         isDiscardable: value.isDiscardable ?? true,
         isAverageLap: value.isAverageLap ?? true,
       };
-      const scheduledStart = dateAtSecondsOfDay(race.scheduledStart, value.startTime ?? 0);
+      const scheduledStart = dateAtSecondsOfDay(value.startDate ?? race.scheduledStart, value.startTime ?? 0);
       if (scheduledStart.getTime() !== race.scheduledStart.getTime()) {
         update.scheduledStart = scheduledStart;
       }

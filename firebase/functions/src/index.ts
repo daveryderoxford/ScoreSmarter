@@ -19,12 +19,11 @@ export {
 export { uploadClubLogo } from "./club/upload-club-logo.js";
 export { createNewTenant } from "./sys-admin/newTenant.js";
 export { assignRole } from "./sys-admin/roles.js";
+export { migrateRaceLifecycle } from "./sys-admin/migrate-race-lifecycle.js";
 export { ensureUserData } from "./user/user.js";
 export { getForcast } from "./forecast/forecast.js";
 export { syncIbrscDutyTeamDaily } from "./duties/duty-register.js";
 export { raceDayDutyConfirmed } from "./duties/duty-race-day-trigger.js";
-export {
-  cancelStaleFutureRacesWeekly,
-} from "./maintenance/weekly-maintenance.js";
+export { raceResultsChanged } from "./races/race-results-trigger.js";
 export { exchangeKioskId } from "./kiosk/exchange-kiosk-id.js";
 export { manageAuthorizedKiosk } from "./kiosk/manage-authorized-kiosk.js";

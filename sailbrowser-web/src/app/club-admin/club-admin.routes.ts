@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { clubAdminGuard } from 'app/auth/guards/auth-guard';
 import { pendingChangesGuard } from 'app/shared/services/pending-changes-guard-service.guard';
 
 export const CLUB_ADMIN_ROUTES: Routes = [
@@ -15,6 +16,8 @@ export const CLUB_ADMIN_ROUTES: Routes = [
   },
   {
     path: 'race-review',
+    title: 'Results review',
+    canActivate: [clubAdminGuard],
     loadComponent: () => import('./presentation/race-status-review/race-status-review').then(m => m.RaceStatusReviewComponent),
   },
   {

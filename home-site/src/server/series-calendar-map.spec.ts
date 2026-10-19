@@ -243,7 +243,7 @@ describe('series-calendar-map', () => {
     ).toEqual({error: 'season_not_found'});
   });
 
-  it('buildSeriesCalendar attaches races and skips archived races', () => {
+  it('buildSeriesCalendar attaches races in schedule order', () => {
     const seasons = [{id: '2026', name: '2026'}];
     const seriesDocs = [
       {
@@ -278,16 +278,6 @@ describe('series-calendar-map', () => {
           raceOfDay: 1,
           status: 'Future',
           scheduledStart: new Date('2026-03-01T10:00:00.000Z'),
-        },
-      },
-      {
-        id: 'r-arch',
-        data: {
-          seriesId: 'spring',
-          index: 99,
-          raceOfDay: 1,
-          status: 'Archived',
-          scheduledStart: new Date('2026-02-01T10:00:00.000Z'),
         },
       },
     ];

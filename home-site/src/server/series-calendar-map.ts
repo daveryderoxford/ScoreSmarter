@@ -177,18 +177,15 @@ export interface RawRaceDoc {
 }
 
 /**
- * Index non-archived races by series id (sorted by scheduled start, then raceOfDay).
+ * Index races by series id (sorted by scheduled start, then raceOfDay).
  * Used when `includeRaces` is true so each series can attach its schedule.
+ * Archiving is done on the series, so races are not filtered by status here.
  */
 export function indexRacesBySeriesId(
   raceDocs: RawRaceDoc[],
 ): Map<string, CalendarRace[]> {
   const racesBySeriesId = new Map<string, CalendarRace[]>();
   for (const raceDoc of raceDocs) {
-    const status = raceDoc.data['status'];
-    if (status === 'Archived') {
-      continue;
-    }
     const seriesId = raceDoc.data['seriesId'];
     if (typeof seriesId !== 'string' || seriesId.length === 0) {
       continue;
@@ -212,7 +209,7 @@ export function indexRacesBySeriesId(
 
 /**
  * Build the public calendar response from club seasons, series docs, and races.
- * Skips archived series and archived races. Series with unknown seasonId are omitted.
+ * Skips archived series. Series with unknown seasonId are omitted.
  */
 export function buildSeriesCalendar(
   clubId: string,

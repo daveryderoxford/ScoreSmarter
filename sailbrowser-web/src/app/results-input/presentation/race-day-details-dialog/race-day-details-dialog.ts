@@ -16,7 +16,7 @@ export interface RaceDayDetailsDialogData {
   race: Race;
 }
 
-const PUBLISHED_STATUSES = new Set<Race['status']>(['Published', 'Verified']);
+const PUBLISHED_STATUSES = new Set<Race['status']>(['In progress', 'Completed']);
 
 /** Sets the race officer and wind for every race on the given race's day. Returns true when saved. */
 @Component({

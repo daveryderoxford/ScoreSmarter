@@ -1,72 +1,94 @@
 <app-page-layout>
-<app-toolbar title="Race Status Review"></app-toolbar>
+<app-toolbar title="Results review"></app-toolbar>
 
 <div class="review-container">
   <header class="page-header">
-    <h1>Past Races Review</h1>
-    <p>Review and verify past races. Mark them as canceled, verified, or archived as appropriate.</p>
+    <h1>Results review</h1>
+    <p>
+      Results are published as provisional. Check each race, then mark it final once every entry
+      has a result.
+    </p>
   </header>
 
   <div class="metrics">
     <mat-card class="metric-card" appearance="outlined">
-      <mat-card-header>
-        <mat-card-title>Action Required</mat-card-title>
-      </mat-card-header>
       <mat-card-content>
-        <div class="metric-value">{{ pastUnverifiedRaces().length }}</div>
-        <div class="metric-label">Past unverified races</div>
+        <div class="metric-value">{{ awaitingReview().length }}</div>
+        <div class="metric-label">Past races with provisional results</div>
       </mat-card-content>
     </mat-card>
+    <mat-slide-toggle [checked]="showAll()" (change)="showAll.set($event.checked)">
+      Show all past races (including final and cancelled)
+    </mat-slide-toggle>
   </div>
 
   <div class="races-list">
-    @for (race of pastUnverifiedRaces(); track race.id) {
+    @for (race of races(); track race.id) {
+      @let state = resultsStateOf(race);
       <mat-card class="race-card" appearance="outlined">
         <div class="race-info">
           <h3>{{ race.seriesName }} - Race {{ race.index }}</h3>
           <div class="race-meta">
             <mat-icon>calendar_today</mat-icon>
-            <span>{{ race.scheduledStart | date:'mediumDate' }} at {{ race.scheduledStart | date:'shortTime' }}</span>
+            <span>{{ race.scheduledStart | date:'mediumDate' }} at {{ race.scheduledStart | date:'HH:mm' }}</span>
           </div>
           <div class="race-status">
-            <mat-chip-set>
-              <mat-chip [class]="'status-' + race.status.toLowerCase().replace(' ', '-')">{{ race.status }}</mat-chip>
-            </mat-chip-set>
+            <app-status-pill [status]="race.status" />
+            @if (race.status !== 'Canceled') {
+              <app-status-pill [status]="state" />
+            }
           </div>
           @if (race.status === 'Canceled' && race.cancellationReason) {
             <div class="cancellation-reason">Reason: {{ race.cancellationReason }}</div>
           }
+          @if (race.status === 'In progress') {
+            <div class="hint">Some entries have no result yet, so it can't be marked final.</div>
+          }
+          <div class="race-links">
+            <a matButton [routerLink]="['/results-input', 'manual']" [queryParams]="{ raceId: race.id }">
+              <mat-icon>edit</mat-icon>
+              Edit results
+            </a>
+            <a matButton [routerLink]="['/results', 'viewer', race.seriesId]">
+              <mat-icon>emoji_events</mat-icon>
+              View published
+            </a>
+          </div>
         </div>
 
         <div class="race-actions">
-          <button mat-button color="primary" [matMenuTriggerFor]="actionMenu">
-            Update Status
-            <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
-          </button>
-          <mat-menu #actionMenu="matMenu">
-            <button mat-menu-item (click)="setStatus(race, 'Completed')">Mark as Completed</button>
-            <button mat-menu-item (click)="setStatus(race, 'Published')">Mark as Published</button>
-            <button mat-menu-item (click)="setStatus(race, 'Verified')">Mark as Verified</button>
-            <button mat-menu-item (click)="setStatus(race, 'Archived')">Mark as Archived</button>
-            <mat-divider></mat-divider>
-            <button mat-menu-item (click)="setStatus(race, 'Postponed')">Mark as Postponed</button>
-            @if (race.status === 'Canceled') {
-              <button mat-menu-item (click)="raceDayActions.reinstateRace(race)">Reinstate race</button>
-            } @else {
-              <button mat-menu-item class="danger-text" (click)="raceDayActions.cancelRaces(race)">Mark as Canceled</button>
-            }
-            <button mat-menu-item class="danger-text" (click)="raceDayActions.cancelRaces(race, true)">
-              Cancel all races on {{ race.scheduledStart | date:'mediumDate' }}
+          @if (race.status === 'Canceled') {
+            <button matButton="outlined" type="button" (click)="raceDayActions.reinstateRace(race)">
+              Reinstate race
             </button>
-          </mat-menu>
-          <a mat-stroked-button [routerLink]="['/race-calender']">View in Series</a>
+          } @else {
+            <mat-button-toggle-group
+              hideSingleSelectionIndicator
+              [value]="state"
+              [disabled]="busyRaceId() === race.id"
+              [attr.aria-label]="'Results state for ' + race.seriesName + ' race ' + race.index"
+              (change)="setResultsState(race, $event.value)">
+              <mat-button-toggle value="provisional">Provisional</mat-button-toggle>
+              <mat-button-toggle value="final" [disabled]="!canMarkFinal(race)">Final</mat-button-toggle>
+            </mat-button-toggle-group>
+
+            <button matIconButton [matMenuTriggerFor]="actionMenu" aria-label="More race actions">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #actionMenu="matMenu">
+              <button mat-menu-item class="danger-text" (click)="raceDayActions.cancelRaces(race)">Cancel race</button>
+              <button mat-menu-item class="danger-text" (click)="raceDayActions.cancelRaces(race, true)">
+                Cancel all races on {{ race.scheduledStart | date:'mediumDate' }}
+              </button>
+            </mat-menu>
+          }
         </div>
       </mat-card>
     } @empty {
       <div class="empty-state">
         <mat-icon>check_circle</mat-icon>
-        <h2>All Caught Up</h2>
-        <p>There are no past races requiring review.</p>
+        <h2>All caught up</h2>
+        <p>There are no past races with provisional results.</p>
       </div>
     }
   </div>

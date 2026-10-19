@@ -5,6 +5,7 @@ import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RaceCancellationService } from './race-cancellation.service';
+import { RaceCompetitorStore } from './race-competitor-store';
 
 function race(id: string, seriesId: string): Race {
   return { id, seriesId, status: 'Future' } as Race;
@@ -14,15 +15,18 @@ describe('RaceCancellationService', () => {
   let updateRaces: ReturnType<typeof vi.fn>;
   let scoreCompleteSeries: ReturnType<typeof vi.fn>;
   let snackOpen: ReturnType<typeof vi.fn>;
+  let getSeriesCompetitors: ReturnType<typeof vi.fn>;
   let service: RaceCancellationService;
 
   beforeEach(() => {
     updateRaces = vi.fn(() => Promise.resolve());
     scoreCompleteSeries = vi.fn(() => Promise.resolve());
     snackOpen = vi.fn();
+    getSeriesCompetitors = vi.fn(() => Promise.resolve([]));
     TestBed.configureTestingModule({
       providers: [
         { provide: RaceCalendarStore, useValue: { updateRaces } },
+        { provide: RaceCompetitorStore, useValue: { getSeriesCompetitors } },
         { provide: ScoringEngine, useValue: { scoreCompleteSeries } },
         { provide: MatSnackBar, useValue: { open: snackOpen } },
       ],
@@ -42,7 +46,13 @@ describe('RaceCancellationService', () => {
     expect(snackOpen).toHaveBeenCalledWith('3 races cancelled', undefined, { duration: 3000 });
   });
 
-  it('reinstates a race, clearing its reason', async () => {
+  it('reinstates a race, clearing its reason and taking its status from its results', async () => {
+    getSeriesCompetitors.mockResolvedValue([
+      { raceId: 'r1', resultCode: 'OK' },
+      { raceId: 'r1', resultCode: 'NOT FINISHED' },
+      { raceId: 'r2', resultCode: 'OK' },
+    ]);
+
     await service.reinstateRace(race('r1', 's1'));
 
     const [[updates]] = updateRaces.mock.calls as [[{ id: string; data: Record<string, unknown> }[]]];
@@ -51,6 +61,13 @@ describe('RaceCancellationService', () => {
     expect(updates[0]!.data).toHaveProperty('cancellationReason');
     expect(scoreCompleteSeries).toHaveBeenCalledWith('s1');
     expect(snackOpen).toHaveBeenCalledWith('Race reinstated', undefined, { duration: 3000 });
+  });
+
+  it('reinstates a race with no results as Future', async () => {
+    await service.reinstateRace(race('r1', 's1'));
+
+    const [[updates]] = updateRaces.mock.calls as [[{ id: string; data: Record<string, unknown> }[]]];
+    expect(updates[0]!.data['status']).toBe('Future');
   });
 
   it('keeps the cancellation but warns when publishing fails', async () => {

@@ -13,6 +13,7 @@ import { Title } from '@angular/platform-browser';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { HomeRacesSection } from './home-races-section';
 import { HomeDutiesSection } from './home-duties-section';
+import { HomeReviewResultsButton } from './home-review-results-button';
 import { AuthService } from 'app/auth';
 
 @Component({
@@ -30,6 +31,7 @@ import { AuthService } from 'app/auth';
     ClubLogo,
     HomeRacesSection,
     HomeDutiesSection,
+    HomeReviewResultsButton,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

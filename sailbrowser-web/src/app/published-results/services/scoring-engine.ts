@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Firestore, WriteBatch, getDoc, getDocs, writeBatch } from '@angular/fire/firestore';
 import { RaceCalendarStore, Series } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
+import { resultsStateOf, type ResultsState } from 'app/race-calender/model/results-state';
 import { RaceCompetitor, SeriesEntry, SeriesEntryStore } from 'app/results-input';
 import { RaceCompetitorStore } from 'app/results-input/services/race-competitor-store';
 import { scoreSeriesSnapshot } from 'app/scoring/core/public-api';
@@ -23,8 +24,13 @@ import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
 import { competitorsForConfigRace, isRaceScorable, seriesEntriesForConfig, type EntryMembership } from 'app/scoring/core/rules/eligibility';
 import { startOfDay, subDays } from 'date-fns';
 import { buildDncContext, DEFAULT_DNC_POLICY } from 'app/scoring/core/rules/dnc-context';
-type PublishedSeriesInfo = Required<Pick<PublishedSeries, 'racesSailed' | 'discards' | 'cancelledRaces'>> &
+type PublishedSeriesInfo = Required<Pick<PublishedSeries, 'racesSailed' | 'discards' | 'cancelledRaces' | 'resultsState'>> &
   Pick<PublishedSeries, 'scoringAlgorithm'>;
+
+/** A published series is final only when every race in it is final. */
+export function publishedSeriesResultsState(races: readonly Race[]): ResultsState {
+  return races.length > 0 && races.every(r => resultsStateOf(r) === 'final') ? 'final' : 'provisional';
+}
 
 /** Cancelled races in start order, for display on the published series. */
 export function publishedCancelledRaces(races: readonly Race[]): PublishedCancelledRace[] {
@@ -37,8 +43,6 @@ export function publishedCancelledRaces(races: readonly Race[]): PublishedCancel
 const SCORING_CANDIDATE_STATUSES = new Set<Race['status']>([
   'In progress',
   'Completed',
-  'Published',
-  'Verified',
 ]);
 
 @Injectable({ providedIn: 'root' })
@@ -121,8 +125,8 @@ export class ScoringEngine {
       throw new Error('Series not found');
     }
 
-    // 1. Races to score are chosen by race status. Manual results entry sets status to
-    //    In progress / Completed as competitors are recorded, so we do not also require
+    // 1. Races to score are chosen by race status. The server (`raceResultsChanged`) sets
+    //    In progress / Completed from the recorded results, so we do not also require
     //    "has competitor rows" or other heuristics here.
     const racesForSeries = await this.raceCalendarStore.getSeriesRacesById(seriesId);
 
@@ -227,6 +231,7 @@ export class ScoringEngine {
       racesSailed: racesToScore.length,
       discards: this.calculateDiscards(series, racesToScore.length),
       cancelledRaces,
+      resultsState: publishedSeriesResultsState(racesToScore),
     };
 
     if (racesToScore.length === 0) {
@@ -319,6 +324,7 @@ export class ScoringEngine {
       const source = racesToScore.find(r => r.id === race.id);
       if (source?.raceOfficer) race.raceOfficer = source.raceOfficer;
       if (source?.wind) race.wind = source.wind;
+      race.resultsState = source ? resultsStateOf(source) : 'provisional';
     }
     for (const competitor of currentSeriesResults) {
       competitor.divisions = rowDivisionIds(competitor);
@@ -381,6 +387,7 @@ export class ScoringEngine {
       racesSailed: info.racesSailed,
       discards: info.discards,
       cancelledRaces: info.cancelledRaces,
+      resultsState: info.resultsState,
       ...(info.scoringAlgorithm ? { scoringAlgorithm: info.scoringAlgorithm } : {}),
     };
     batch.set(seriesDoc, publishedSeries);

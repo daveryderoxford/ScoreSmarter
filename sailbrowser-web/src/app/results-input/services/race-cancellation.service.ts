@@ -4,11 +4,14 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ScoringEngine } from 'app/published-results/services/scoring-engine';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
+import { raceStatusFromResultCodes } from 'app/race-calender/model/race-status';
+import { RaceCompetitorStore } from './race-competitor-store';
 
 /** Cancels and reinstates races, then republishes each affected series once. */
 @Injectable({ providedIn: 'root' })
 export class RaceCancellationService {
   private readonly raceCalendar = inject(RaceCalendarStore);
+  private readonly competitors = inject(RaceCompetitorStore);
   private readonly scoringEngine = inject(ScoringEngine);
   private readonly snackbar = inject(MatSnackBar);
 
@@ -20,9 +23,12 @@ export class RaceCancellationService {
     await this.republish(races, races.length === 1 ? 'Race cancelled' : `${races.length} races cancelled`);
   }
 
+  /** Clears the cancellation and works the status out from the race's results. */
   async reinstateRace(race: Race): Promise<void> {
+    const seriesCompetitors = await this.competitors.getSeriesCompetitors(race.seriesId);
+    const codes = seriesCompetitors.filter(c => c.raceId === race.id).map(c => c.resultCode);
     await this.raceCalendar.updateRaces([
-      { id: race.id, data: { status: 'In progress', cancellationReason: deleteField() } },
+      { id: race.id, data: { status: raceStatusFromResultCodes(codes), cancellationReason: deleteField() } },
     ]);
     await this.republish([race], 'Race reinstated');
   }
