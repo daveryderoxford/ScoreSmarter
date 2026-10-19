@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AuthService } from 'app/auth/auth.service';
 import { BoatsStore, type Boat } from 'app/boats';
 import { ClubStore, ClubTenant } from 'app/club-tenant';
@@ -63,13 +63,18 @@ describe('EntryPage self-entry flows', () => {
   let loggedInSig: ReturnType<typeof signal<boolean>>;
   let userSig: ReturnType<typeof signal<UserData | undefined>>;
   let racesSig: ReturnType<typeof signal<Race[]>>;
+  let enterRaces: ReturnType<typeof vi.fn>;
+  let navigate: ReturnType<typeof vi.fn>;
 
   function setupTestBed(options: {
     isRO?: boolean;
     loggedIn?: boolean;
     userBoats?: Boat[];
     races?: Race[];
+    queryParams?: Record<string, string>;
   } = {}) {
+    enterRaces = vi.fn(async () => {});
+    navigate = vi.fn(() => Promise.resolve(true));
     isRaceOfficerSig = signal(options.isRO ?? false);
     loggedInSig = signal(options.loggedIn ?? true);
     userSig = signal<UserData | undefined>(
@@ -151,7 +156,7 @@ describe('EntryPage self-entry flows', () => {
           provide: EntryService,
           useValue: {
             findEntryConflicts: () => [],
-            enterRaces: async () => {},
+            enterRaces,
             swapAndEnter: async () => {},
           },
         },
@@ -174,14 +179,14 @@ describe('EntryPage self-entry flows', () => {
           useValue: {
             snapshot: {
               queryParamMap: {
-                get: () => null,
+                get: (key: string) => options.queryParams?.[key] ?? null,
               },
             },
           },
         },
         {
           provide: Router,
-          useValue: { navigate: () => Promise.resolve(true) },
+          useValue: { navigate },
         },
       ],
     });
@@ -319,5 +324,63 @@ describe('EntryPage self-entry flows', () => {
     racesSig.set([futureRace]);
     fixture.detectChanges();
     expect(comp.racePanelInitialPeriod()).toBe('future');
+  });
+
+  describe('OOD entry from duty check-in', () => {
+    const oodParams = { resultCode: 'OOD', helm: 'Alice SMITH', returnTo: 'home' };
+
+    function todayRace(): Race {
+      return {
+        id: 'r-today',
+        seriesId: 's1',
+        seriesName: 'Spring Series',
+        fleetId: 'f-gen',
+        index: 1,
+        raceOfDay: 1,
+        scheduledStart: new Date(),
+        type: 'Handicap',
+        status: 'Future',
+        isDiscardable: true,
+        isAverageLap: false,
+        resultsSheetImage: '',
+        dirty: false,
+      };
+    }
+
+    it('starts on the member boat picker searched by the duty member surname', () => {
+      const fixture = setupTestBed({ userBoats: [testBoat1], queryParams: oodParams });
+      const comp = fixture.componentInstance;
+
+      expect(comp.step()).toBe('details');
+      expect(comp.boatCategory()).toBe('member');
+      expect(comp.boatSearchControl.value).toBe('SMITH');
+    });
+
+    it('enters races with the OOD result code and returns home', async () => {
+      const race = todayRace();
+      const fixture = setupTestBed({ userBoats: [], races: [race], queryParams: oodParams });
+      const comp = fixture.componentInstance;
+      comp.selectedBoat.set(testBoat1);
+      comp.raceSelectionGroup.controls.enteredRaces.setValue([race]);
+      fixture.detectChanges();
+
+      await comp.onSubmit();
+
+      expect(enterRaces).toHaveBeenCalledWith(expect.objectContaining({ resultCode: 'OOD', helm: 'Alice Smith' }));
+      expect(navigate).toHaveBeenCalledWith(['home']);
+    });
+
+    it('does not set a result code for a normal entry', async () => {
+      const race = todayRace();
+      const fixture = setupTestBed({ userBoats: [], races: [race] });
+      const comp = fixture.componentInstance;
+      comp.selectedBoat.set(testBoat1);
+      comp.raceSelectionGroup.controls.enteredRaces.setValue([race]);
+      fixture.detectChanges();
+
+      await comp.onSubmit();
+
+      expect(enterRaces).toHaveBeenCalledWith(expect.objectContaining({ resultCode: undefined }));
+    });
   });
 });

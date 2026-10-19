@@ -70,6 +70,7 @@ import { trimBoatName, formatBoatOptionLabel } from 'app/boats/model/boat-displa
 import { EntryConflict, EntryService } from '../../services/entry.service';
 import { NewBoatDialog, type NewBoatDialogResult } from '../new-boat-dialog';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
+import { surnameOf } from 'app/boats/model/helm-name';
 import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, FIRESTORE_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 import { UserDataService } from 'app/user';
 
@@ -314,6 +315,15 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
       font: var(--mat-sys-title-medium);
     }
 
+    .ood-banner {
+      margin: 0 0 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
+      font: var(--mat-sys-title-small);
+    }
+
     .visitor-form mat-form-field {
       display: block;
       width: 100%;
@@ -371,10 +381,18 @@ export class EntryPage {
   private readonly returnTo = this.route.snapshot.queryParamMap.get('returnTo');
   private readonly initialBoatClass = this.route.snapshot.queryParamMap.get('boatClass');
   private readonly initialSailNumber = this.route.snapshot.queryParamMap.get('sailNumber');
+  /** Entry for the Officer of the Day (from duty check-in); helm is the duty member's name. */
+  protected readonly isOodEntry = this.route.snapshot.queryParamMap.get('resultCode') === 'OOD';
+  protected readonly oodHelm = this.isOodEntry
+    ? (this.route.snapshot.queryParamMap.get('helm') ?? '').trim()
+    : '';
   private readonly scopedRacePreselected = signal(false);
 
   private readonly defaultStep = computed<'recent' | 'category' | 'details'>(() => {
     if (this.initialBoatClass && this.initialSailNumber) {
+      return 'details';
+    }
+    if (this.isOodEntry) {
       return 'details';
     }
     if (this.auth.isRaceOfficer() || !this.auth.loggedIn()) {
@@ -640,6 +658,13 @@ export class EntryPage {
       this.selectedBoat.set(null);
       this.boatSearchControl.setValue('', { emitEvent: false });
     });
+
+    // Must be created after the clearing effect above so it runs second; reads no
+    // signals, so it runs once and narrows member boats to the OOD's surname.
+    if (this.oodHelm) {
+      const surname = surnameOf(this.oodHelm);
+      effect(() => this.boatSearchControl.setValue(surname));
+    }
 
     // Focus search when the member/club picker is first shown for this visit.
     afterRenderEffect(() => {
@@ -986,6 +1011,7 @@ export class EntryPage {
         this.cs.club(),
       ),
       boatName: trimBoatName(selected.name),
+      resultCode: this.isOodEntry ? ('OOD' as const) : undefined,
     };
 
     const conflicts = this._entryService.findEntryConflicts(entryData);
@@ -1049,6 +1075,16 @@ export class EntryPage {
       return;
     }
 
+    if (this.returnTo === 'home') {
+      this.snackbar.open(
+        `Entered ${races.length} race${races.length === 1 ? '' : 's'} as OOD.`,
+        'Dismiss',
+        { duration: 3000 },
+      );
+      this.router.navigate(['home']);
+      return;
+    }
+
     this.router.navigate(['entry', 'entries']);
   }
 
@@ -1064,6 +1100,8 @@ export class EntryPage {
       this.router.navigate(['results-input', 'manual'], {
         queryParams: { raceId: this.scopedRaceId },
       });
+    } else if (this.returnTo === 'home') {
+      this.router.navigate(['home']);
     } else {
       this.router.navigate(['entry', 'entries']);
     }
