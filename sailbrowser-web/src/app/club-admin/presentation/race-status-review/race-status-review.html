@@ -60,7 +60,7 @@
                 {{ race.status === 'Future' ? 'Enter results' : 'Edit results' }}
               </a>
               @if (hasResults(race)) {
-                <a matButton [routerLink]="['/results', 'viewer', race.seriesId]">
+                <a matButton [routerLink]="['/results', 'viewer', race.seriesId]" [queryParams]="{ raceId: race.id }">
                   <mat-icon>emoji_events</mat-icon>
                   View published
                 </a>
