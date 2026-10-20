@@ -8,6 +8,17 @@ h3 {
   font: var(--mat-sys-title-small);
 }
 
+.affiliation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  &.missing span {
+    color: var(--mat-sys-error);
+  }
+}
+
 .summary {
   font: var(--mat-sys-body-large);
 }

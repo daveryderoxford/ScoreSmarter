@@ -17,7 +17,6 @@ export const PY_MIN_DURATION_SECONDS = 20 * 60;
  * name. Written in the PY Online upload layout by {@link pyReturnToCsv}.
  */
 export interface PyReturn {
-  affiliationId: string;
   series: PySeriesReturn[];
 }
 
@@ -109,7 +108,6 @@ export function buildPyReturn(
   races: readonly PublishedRace[],
   clubClasses: readonly BoatClass[],
   catalogueById: ReadonlyMap<number, CatalogClass>,
-  affiliationId: string | undefined,
   seasonNameBySeriesId: ReadonlyMap<string, string> = new Map(),
 ): PyReturnBuild {
   const checks = new Map<string, PyClassCheck>();
@@ -206,7 +204,6 @@ export function buildPyReturn(
 
   const classes = [...checks.values()].sort((a, b) => a.className.localeCompare(b.className));
   const issues: string[] = [];
-  if (!affiliationId?.trim()) issues.push('No RYA affiliation ID: set it in Club settings.');
   for (const c of classes) {
     if (c.status === 'unlinked') issues.push(`${c.className} is not linked to the class catalogue; its boats are left out.`);
     if (c.status === 'non-rya') issues.push(`${c.className} is not an RYA class; its boats are left out.`);
@@ -215,7 +212,7 @@ export function buildPyReturn(
 
   const series = [...seriesReturns.values()].sort((a, b) => a.eventName.localeCompare(b.eventName));
   return {
-    ret: { affiliationId: affiliationId?.trim() ?? '', series },
+    ret: { series },
     excludedRaces,
     flaggedRaces,
     classes,

@@ -2,7 +2,7 @@ import { Clipboard } from '@angular/cdk/clipboard';
 import { Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -21,6 +21,8 @@ import {
   type PyReturnBuild,
   type PySeriesReturn,
 } from 'app/published-results/services/py-returns';
+import { firstValueFrom } from 'rxjs';
+import { RyaAffiliationDialog } from './rya-affiliation-dialog';
 
 /**
  * Pick published series, check them against the RYA PY criteria and download one
@@ -38,6 +40,7 @@ export class PyReturnsDialog {
   private readonly clubStore = inject(ClubStore);
   private readonly catalogue = inject(ClassCatalogueStore);
   private readonly clipboard = inject(Clipboard);
+  private readonly dialog = inject(MatDialog);
   private readonly snackbar = inject(MatSnackBar);
 
   protected readonly selected = signal<ReadonlySet<string>>(new Set());
@@ -52,6 +55,25 @@ export class PyReturnsDialog {
   );
 
   protected readonly canCheck = computed(() => !this.loading() && this.selected().size > 0);
+
+  protected readonly affiliationId = computed(() => this.clubStore.club().ryaAffiliationId);
+  protected readonly savingAffiliation = signal(false);
+
+  protected async editAffiliationId(): Promise<void> {
+    const id = await firstValueFrom(
+      this.dialog.open(RyaAffiliationDialog, { data: this.affiliationId() ?? '' }).afterClosed(),
+    );
+    if (!id || id === this.affiliationId()) return;
+    this.savingAffiliation.set(true);
+    try {
+      await this.clubStore.update({ ryaAffiliationId: id });
+    } catch (e: unknown) {
+      console.error('PyReturnsDialog: saving affiliation ID failed', e);
+      this.snackbar.open('Could not save the RYA affiliation ID', 'Dismiss', { duration: 4000 });
+    } finally {
+      this.savingAffiliation.set(false);
+    }
+  }
 
   protected toggle(seriesId: string, checked: boolean): void {
     const next = new Set(this.selected());
@@ -96,7 +118,7 @@ export class PyReturnsDialog {
         this.reader.seasons().flatMap(season => season.series.map(s => [sourceSeriesId(s.id), season.name] as const)),
       );
       const club = this.clubStore.club();
-      this.build.set(buildPyReturn(races, club.classes, this.catalogue.byId(), club.ryaAffiliationId, seasonNames));
+      this.build.set(buildPyReturn(races, club.classes, this.catalogue.byId(), seasonNames));
       this.downloaded.set(new Set());
     } catch (e: unknown) {
       console.error('PyReturnsDialog: check failed', e);

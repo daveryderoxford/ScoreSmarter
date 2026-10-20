@@ -77,9 +77,8 @@ const goodRace = (extra: Partial<PublishedRace> = {}) => race('r1', goodResults(
 
 describe('buildPyReturn', () => {
   it('returns finishers of RYA classes under their RYA Class ID, in one file per series', () => {
-    const build = buildPyReturn([goodRace()], clubClasses, catalogue, 'AFF123');
+    const build = buildPyReturn([goodRace()], clubClasses, catalogue);
 
-    expect(build.ret.affiliationId).toBe('AFF123');
     expect(build.ret.series).toHaveLength(1);
     const [series] = build.ret.series;
     expect(series).toMatchObject({ seriesId: 's1', eventName: 'Summer' });
@@ -92,7 +91,7 @@ describe('buildPyReturn', () => {
 
   it('splits races from different series into separate files', () => {
     const other = race('r2', goodResults(), { seriesId: 's2', seriesName: 'Winter', index: 3 });
-    const build = buildPyReturn([goodRace(), other], clubClasses, catalogue, 'AFF123');
+    const build = buildPyReturn([goodRace(), other], clubClasses, catalogue);
 
     expect(build.ret.series.map(s => [s.eventName, s.races.map(r => r.raceNumber)])).toEqual([
       ['Summer', [7]],
@@ -103,7 +102,7 @@ describe('buildPyReturn', () => {
   it('adds the season to event names so same-named series in different seasons differ', () => {
     const lastYear = race('r2', goodResults(), { seriesId: 's2' });
     const seasons = new Map([['s1', '2026'], ['s2', '2025']]);
-    const build = buildPyReturn([goodRace(), lastYear], clubClasses, catalogue, 'AFF123', seasons);
+    const build = buildPyReturn([goodRace(), lastYear], clubClasses, catalogue, seasons);
 
     expect(build.ret.series.map(s => s.eventName)).toEqual(['Summer (2025)', 'Summer (2026)']);
   });
@@ -113,7 +112,6 @@ describe('buildPyReturn', () => {
       [race('r1', [...goodResults(), result('Mystery', 3000)])],
       clubClasses,
       catalogue,
-      'AFF123',
     );
 
     expect(build.classes.find(c => c.className === 'Dory')?.status).toBe('non-rya');
@@ -127,7 +125,7 @@ describe('buildPyReturn', () => {
     const oneClass = race('one', [1, 2, 3, 4].map(i => result('ILCA 7', 3000 + i)));
     const short = race('short', [result('ILCA 7', 900), result('ILCA 7', 1000), result('RS200', 950), result('RS200', 990)]);
 
-    const build = buildPyReturn([tooFew, oneClass, short, goodRace()], clubClasses, catalogue, 'AFF123');
+    const build = buildPyReturn([tooFew, oneClass, short, goodRace()], clubClasses, catalogue);
 
     expect(build.ret.series[0].races.map(r => r.raceId).sort()).toEqual(['few', 'one', 'r1', 'short']);
     expect(build.excludedRaces).toHaveLength(0);
@@ -142,7 +140,7 @@ describe('buildPyReturn', () => {
     const pursuit = race('pursuit', goodResults(), { type: 'Pursuit' });
     const doriesOnly = race('dories', [1, 2, 3, 4].map(i => result('Dory', 3000 + i)));
 
-    const build = buildPyReturn([pursuit, doriesOnly], clubClasses, catalogue, 'AFF123');
+    const build = buildPyReturn([pursuit, doriesOnly], clubClasses, catalogue);
 
     expect(build.ret.series).toHaveLength(0);
     const reasons = Object.fromEntries(build.excludedRaces.map(r => [r.raceId, r.reasons.join('; ')]));
@@ -154,7 +152,7 @@ describe('buildPyReturn', () => {
     const base = goodRace();
     const secondary = { ...base, seriesId: 's1_cfg', seriesName: 'Summer - PY', results: base.results.slice(0, 2) };
 
-    const build = buildPyReturn([secondary, base], clubClasses, catalogue, 'AFF123');
+    const build = buildPyReturn([secondary, base], clubClasses, catalogue);
 
     expect(build.ret.series).toHaveLength(1);
     expect(build.ret.series[0].eventName).toBe('Summer');
@@ -164,10 +162,6 @@ describe('buildPyReturn', () => {
   it('names the event "Series (Season)"', () => {
     expect(pyEventName('Summer PM', ' 2025-26 ')).toBe('Summer PM (2025-26)');
     expect(pyEventName('Summer PM', undefined)).toBe('Summer PM');
-  });
-
-  it('flags a missing affiliation ID', () => {
-    expect(buildPyReturn([goodRace()], clubClasses, catalogue, '').issues[0]).toContain('affiliation');
   });
 });
 
@@ -195,7 +189,7 @@ describe('PY return helpers', () => {
   });
 
   it('writes the PY Online layout: title, header, a row per finisher, series race numbers, times in seconds', () => {
-    const build = buildPyReturn([goodRace()], clubClasses, catalogue, 'AFF123');
+    const build = buildPyReturn([goodRace()], clubClasses, catalogue);
     const lines = pyReturnToCsv(build.ret.series[0]).split('\n');
 
     expect(lines[0]).toBe('Complete race results');
@@ -210,7 +204,7 @@ describe('PY return helpers', () => {
 
   it('ranks unranked finishers by corrected time', () => {
     const unranked = race('r1', goodResults().map(r => ({ ...r, rank: 0 })));
-    const build = buildPyReturn([unranked], clubClasses, catalogue, 'AFF123');
+    const build = buildPyReturn([unranked], clubClasses, catalogue);
     const rows = pyReturnToCsv(build.ret.series[0]).split('\n').slice(2).map(l => l.split(','));
 
     expect(rows.map(cols => Number(cols[4])).sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
