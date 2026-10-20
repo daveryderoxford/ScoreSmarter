@@ -24,7 +24,7 @@ export interface PyReturn {
 export interface PySeriesReturn {
   /** Source series id (secondary scoring and division series are folded into it). */
   seriesId: string;
-  /** Event Name to enter on PY Online: the series name. */
+  /** Event Name to enter on PY Online: season and series name (see {@link pyEventName}). */
   eventName: string;
   races: PyReturnRace[];
 }
@@ -98,13 +98,15 @@ interface ResolvedEntry {
  * with an elapsed time are returned under their club class's RYA Class ID (a positive
  * `catalogueId`). Races that fail the RYA criteria are excluded with reasons, and
  * classes without an RYA ID are reported. A race published in several series
- * (secondary scoring, divisions) is returned once.
+ * (secondary scoring, divisions) is returned once. `seasonNameBySeriesId` (keyed by source
+ * series id) adds the season to each event name, so series repeated each season differ.
  */
 export function buildPyReturn(
   races: readonly PublishedRace[],
   clubClasses: readonly BoatClass[],
   catalogueById: ReadonlyMap<number, CatalogClass>,
   affiliationId: string | undefined,
+  seasonNameBySeriesId: ReadonlyMap<string, string> = new Map(),
 ): PyReturnBuild {
   const checks = new Map<string, PyClassCheck>();
   const checkFor = (className: string): PyClassCheck => {
@@ -166,7 +168,7 @@ export function buildPyReturn(
     const seriesId = sourceSeriesId(race.seriesId);
     let seriesReturn = seriesReturns.get(seriesId);
     if (!seriesReturn) {
-      seriesReturn = { seriesId, eventName: race.seriesName, races: [] };
+      seriesReturn = { seriesId, eventName: pyEventName(race.seriesName, seasonNameBySeriesId.get(seriesId)), races: [] };
       seriesReturns.set(seriesId, seriesReturn);
     }
     seriesReturn.races.push({
@@ -212,6 +214,13 @@ export function buildPyReturn(
     classes,
     issues,
   };
+}
+
+/** "Season - Series", or the series name alone when it already names the season. */
+export function pyEventName(seriesName: string, seasonName: string | undefined): string {
+  const season = normaliseWhitespace(seasonName);
+  if (!season || seriesName.toLowerCase().includes(season.toLowerCase())) return seriesName;
+  return `${season} - ${seriesName}`;
 }
 
 /**

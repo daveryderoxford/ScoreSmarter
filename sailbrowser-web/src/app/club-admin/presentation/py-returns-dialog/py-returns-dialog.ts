@@ -17,6 +17,7 @@ import {
   findClubClass,
   pyReturnFilename,
   pyReturnToCsv,
+  sourceSeriesId,
   type PyReturnBuild,
   type PySeriesReturn,
 } from 'app/published-results/services/py-returns';
@@ -91,8 +92,11 @@ export class PyReturnsDialog {
         const loaded = await this.reader.getSeriesWithRaces(seriesId);
         if (loaded) races.push(...loaded.races);
       }
+      const seasonNames = new Map(
+        this.reader.seasons().flatMap(season => season.series.map(s => [sourceSeriesId(s.id), season.name] as const)),
+      );
       const club = this.clubStore.club();
-      this.build.set(buildPyReturn(races, club.classes, this.catalogue.byId(), club.ryaAffiliationId));
+      this.build.set(buildPyReturn(races, club.classes, this.catalogue.byId(), club.ryaAffiliationId, seasonNames));
       this.downloaded.set(new Set());
     } catch (e: unknown) {
       console.error('PyReturnsDialog: check failed', e);
