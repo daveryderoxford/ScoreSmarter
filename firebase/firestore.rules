@@ -147,7 +147,7 @@ service cloud.firestore {
       return status in ['not-attending', 'attending', 'confirmed'];
     }
 
-    // Only dutyTeam[].status may change; identity fields and length stay put.
+    // Only dutyTeam[i].status may change; identity fields stay put.
     function dutyTeamMemberStatusOnlyUpdate(before, after, i) {
       return i >= before.size() || (
         after[i].keys().hasOnly(['key', 'name', 'role', 'status'])
@@ -155,8 +155,28 @@ service cloud.firestore {
         && before[i].name == after[i].name
         && before[i].role == after[i].role
         && isDutyAttendanceStatus(after[i].status)
-        && dutyTeamMemberStatusOnlyUpdate(before, after, i + 1)
       );
+    }
+
+    // Rules cannot loop or recurse, so each position is checked explicitly;
+    // teams of more than 30 are rejected.
+    function dutyTeamStatusOnlyUpdate(b, a) {
+      return b.size() <= 30
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 0) && dutyTeamMemberStatusOnlyUpdate(b, a, 1)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 2) && dutyTeamMemberStatusOnlyUpdate(b, a, 3)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 4) && dutyTeamMemberStatusOnlyUpdate(b, a, 5)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 6) && dutyTeamMemberStatusOnlyUpdate(b, a, 7)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 8) && dutyTeamMemberStatusOnlyUpdate(b, a, 9)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 10) && dutyTeamMemberStatusOnlyUpdate(b, a, 11)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 12) && dutyTeamMemberStatusOnlyUpdate(b, a, 13)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 14) && dutyTeamMemberStatusOnlyUpdate(b, a, 15)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 16) && dutyTeamMemberStatusOnlyUpdate(b, a, 17)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 18) && dutyTeamMemberStatusOnlyUpdate(b, a, 19)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 20) && dutyTeamMemberStatusOnlyUpdate(b, a, 21)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 22) && dutyTeamMemberStatusOnlyUpdate(b, a, 23)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 24) && dutyTeamMemberStatusOnlyUpdate(b, a, 25)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 26) && dutyTeamMemberStatusOnlyUpdate(b, a, 27)
+        && dutyTeamMemberStatusOnlyUpdate(b, a, 28) && dutyTeamMemberStatusOnlyUpdate(b, a, 29);
     }
 
     function isRaceDayStatusOnlyUpdate() {
@@ -165,11 +185,7 @@ service cloud.firestore {
         && request.resource.data.dutyTeam is list
         && resource.data.dutyTeam is list
         && request.resource.data.dutyTeam.size() == resource.data.dutyTeam.size()
-        && dutyTeamMemberStatusOnlyUpdate(
-          resource.data.dutyTeam,
-          request.resource.data.dutyTeam,
-          0
-        );
+        && dutyTeamStatusOnlyUpdate(resource.data.dutyTeam, request.resource.data.dutyTeam);
     }
 
     // ===============================================================
