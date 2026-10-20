@@ -16,6 +16,7 @@ import { FirebaseError } from '@angular/fire/app';
 import { emailVerificationActionCodeSettings } from '../email-verification';
 import { getFirebaseErrorMessage } from '../firebase-error-messages';
 import { UserDataService } from 'app/user/services/user-data.service';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 
 @Component({
    selector: 'app-signup',
@@ -60,8 +61,8 @@ export class Signup {
 
    async signup() {
 
-      const firstname = this.signupForm.get('firstname')!.value!.trim();
-      const surname = this.signupForm.get('surname')!.value!.trim();
+      const firstname = normaliseWhitespace(this.signupForm.get('firstname')!.value);
+      const surname = normaliseWhitespace(this.signupForm.get('surname')!.value);
       const email = this.signupForm.get('email')!.value!;
       const password = this.signupForm.get('password')!.value!;
 

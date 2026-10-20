@@ -11,6 +11,7 @@ import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
 import { racesOnSameDay } from 'app/race-calender/model/races-on-same-day';
 import { format } from 'date-fns';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 
 export interface RaceDayDetailsDialogData {
   race: Race;
@@ -111,7 +112,7 @@ export class RaceDayDetailsDialog {
     if (this.saving()) return;
     this.saving.set(true);
     this.error.set(null);
-    const raceOfficer = this.form.controls.raceOfficer.value.trim();
+    const raceOfficer = normaliseWhitespace(this.form.controls.raceOfficer.value);
     const wind = this.form.controls.wind.value.trim();
     const races = this.dayRaces();
     try {

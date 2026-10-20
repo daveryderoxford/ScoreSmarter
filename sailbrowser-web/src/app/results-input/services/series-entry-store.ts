@@ -21,6 +21,7 @@ import { FirestoreTenantService } from 'app/club-tenant';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { firestoreWrite } from 'app/shared/utils/with-timeout';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { map, of, tap } from 'rxjs';
 import { SeriesEntry } from '../model/series-entry';
 import { CurrentRaces } from './current-races-store';
@@ -39,6 +40,25 @@ export type SeriesEntryPartialUpdate =
     club?: string | null;
     boatName?: string | null;
   };
+
+/**
+ * Normalises name fields before a series entry is written (whitespace via
+ * `normaliseWhitespace`, sail number via `normalizeSailNumber`). Fields that are
+ * absent or `null` (clear) are left as they are.
+ */
+export function tidySeriesEntryStrings<T extends Partial<SeriesEntry> | SeriesEntryPartialUpdate>(entry: T): T {
+  const update = { ...entry };
+  for (const field of ['helm', 'crew', 'boatClass', 'club', 'boatName'] as const) {
+    const value = update[field];
+    if (typeof value === 'string') {
+      (update as Record<string, unknown>)[field] = normaliseWhitespace(value);
+    }
+  }
+  if (update.sailNumber != null) {
+    update.sailNumber = normalizeSailNumber(update.sailNumber);
+  }
+  return update;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -90,22 +110,8 @@ export class SeriesEntryStore {
     defaultValue: []
   });
 
-  /** Trim string fields if they exist on the update object */
   private tidyStrings<T extends Partial<SeriesEntry> | SeriesEntryPartialUpdate>(entry: T): T {
-    const update = { ...entry };
-    if (typeof update.helm === 'string') {
-      update.helm = update.helm.trim();
-    }
-    if (typeof update.crew === 'string') {
-      update.crew = update.crew.trim();
-    }
-    if (typeof update.boatClass === 'string') {
-      update.boatClass = update.boatClass.trim();
-    }
-    if (update.sailNumber != null) {
-      update.sailNumber = normalizeSailNumber(update.sailNumber);
-    }
-    return update;
+    return tidySeriesEntryStrings(entry);
   }
 
   readonly selectedEntries = this.selectedEntriesResource.value.asReadonly();

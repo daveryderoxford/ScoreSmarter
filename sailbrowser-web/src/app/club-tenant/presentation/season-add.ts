@@ -7,6 +7,7 @@ import { PageLayout } from 'app/shared/layout/page-layout';
 import { ClubStore } from '../services/club-store';
 import { SeasonForm } from './season-form/season-form';
 import { Season } from 'app/race-calender/model/season';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 
 @Component({
   selector: 'app-season-add',
@@ -34,7 +35,7 @@ export class SeasonAdd {
   async submitted(data: Partial<Season>) {
     try {
       this.busy.set(true);
-      const id = data.name!.trim();
+      const id = normaliseWhitespace(data.name);
       
       if (this.cs.club().seasons.some(s => s.id === id)) {
         this.snackbar.open(`Season with name '${id}' already exists`, "Dismiss", { duration: 3000 });

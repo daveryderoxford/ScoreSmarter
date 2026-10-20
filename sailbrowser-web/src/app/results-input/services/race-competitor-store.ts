@@ -18,6 +18,7 @@ import {
 import { FirestoreTenantService } from 'app/club-tenant';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { firestoreWrite } from 'app/shared/utils/with-timeout';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { combineLatest, map, of, tap } from 'rxjs';
 import { RaceCompetitor } from '../model/race-competitor';
 import { CurrentRaces } from './current-races-store';
@@ -32,6 +33,15 @@ function chunkIds(ids: readonly string[], size = FIRESTORE_IN_LIMIT): string[][]
     chunks.push(ids.slice(i, i + size));
   }
   return chunks;
+}
+
+/** Normalises the name fields still stored on a race competitor (crew override). */
+export function tidyRaceCompetitorStrings<T extends Partial<RaceCompetitor>>(comp: T): T {
+  const update = { ...comp };
+  if (typeof update.crewOverride === 'string') {
+    update.crewOverride = normaliseWhitespace(update.crewOverride);
+  }
+  return update;
 }
 
 @Injectable({
@@ -119,13 +129,8 @@ export class RaceCompetitorStore {
     defaultValue: [],
   });
 
-  /** Trim string fields that we still own on RaceCompetitor */
   private tidyStrings(comp: Partial<RaceCompetitor>): Partial<RaceCompetitor> {
-    const update = { ...comp };
-    if (typeof update.crewOverride === 'string') {
-      update.crewOverride = update.crewOverride.trim();
-    }
-    return update;
+    return tidyRaceCompetitorStrings(comp);
   }
 
   readonly selectedCompetitors = this.selectedCompResource.value.asReadonly();

@@ -5,6 +5,7 @@ import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, firestoreWrite, withTimeout } from 'ap
 import { Race } from '../model/race';
 import { Series } from '../model/series';
 import { FirestoreTenantService } from 'app/club-tenant';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 
 export interface RaceSeriesDetails {
   id: string;
@@ -27,13 +28,14 @@ export class RaceCalendarStoreBase {
 
   /** Add a series retruning a document Id */
   async addSeries(series: Partial<Series>): Promise<string> {
-    series.archived = false;
-    const id = generateSecureID(1000, `S-${series.name}`);
-    await firestoreWrite(setDoc(this.ref(id), series), 'Saving series');
+    const normalised = normaliseSeriesNames({ ...series, archived: false });
+    const id = generateSecureID(1000, `S-${normalised.name}`);
+    await firestoreWrite(setDoc(this.ref(id), normalised), 'Saving series');
     return id;
   }
 
-  async updateSeries(id: string, data: Partial<Series>) {
+  async updateSeries(id: string, input: Partial<Series>) {
+    const data = normaliseSeriesNames(input);
     const scoringCriticalFields: (keyof Series)[] = [
       'scoringAlgorithm',
       'entryAlgorithm',
@@ -82,6 +84,14 @@ export class RaceCalendarStoreBase {
   async deleteRace(race: Race): Promise<void> {
     await firestoreWrite(deleteDoc(this.raceRef(race.id)), 'Deleting race');
   }
+}
+
+/** Series and division names are stored with whitespace normalised. */
+export function normaliseSeriesNames(series: Partial<Series>): Partial<Series> {
+  const out: Partial<Series> = { ...series };
+  if (typeof out.name === 'string') out.name = normaliseWhitespace(out.name);
+  if (out.divisions) out.divisions = out.divisions.map(d => ({ ...d, name: normaliseWhitespace(d.name) }));
+  return out;
 }
 
 export function seriesSort(a: Series, b: Series): number {

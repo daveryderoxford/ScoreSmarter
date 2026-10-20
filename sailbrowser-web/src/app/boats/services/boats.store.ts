@@ -3,7 +3,7 @@ import { collectionData, deleteDoc, setDoc } from '@angular/fire/firestore';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 import { firestoreWrite } from 'app/shared/utils/with-timeout';
-import { normaliseString } from 'app/shared/utils/string-utils';
+import { normaliseString, normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { map } from 'rxjs';
 import { compareSailNumbers, normalizeSailNumber, sailNumberMatchesSearch } from '../model/sail-number';
 import { Boat } from '../model/boat';
@@ -30,16 +30,16 @@ export class BoatsStore {
   trimStrings(boat: Partial<Boat>): Partial<Boat> {
     const update = { ...boat };
     if (update.helm) {
-      update.helm = update.helm.trim();
+      update.helm = normaliseWhitespace(update.helm);
     }
     if (update.crew) {
-      update.crew = update.crew.trim();
+      update.crew = normaliseWhitespace(update.crew);
     }
     if (update.boatClass) {
-      update.boatClass = update.boatClass.trim();
+      update.boatClass = normaliseWhitespace(update.boatClass);
     }
     if (update.name) {
-      update.name = update.name.trim();
+      update.name = normaliseWhitespace(update.name);
     }
     if (update.sailNumber != null) {
       update.sailNumber = normalizeSailNumber(update.sailNumber);

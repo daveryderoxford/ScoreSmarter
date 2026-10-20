@@ -73,8 +73,11 @@ function normaliseNames(
    firstname: unknown,
    surname: unknown,
 ): { firstname: string; surname: string } | undefined {
-   const first = typeof firstname === "string" ? firstname.trim().slice(0, MAX_NAME_LENGTH) : "";
-   const last = typeof surname === "string" ? surname.trim().slice(0, MAX_NAME_LENGTH) : "";
+   // Same rule as the web app's normaliseWhitespace: trim and collapse runs of whitespace.
+   const tidy = (value: unknown) =>
+      typeof value === "string" ? value.replace(/\s+/g, " ").trim().slice(0, MAX_NAME_LENGTH) : "";
+   const first = tidy(firstname);
+   const last = tidy(surname);
    return first || last ? { firstname: first, surname: last } : undefined;
 }
 

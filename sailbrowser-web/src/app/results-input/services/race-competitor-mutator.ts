@@ -31,7 +31,8 @@ import {
   findCollidingEntry,
   PerHullIdentity,
 } from './series-entry-identity';
-import { SeriesEntryStore } from './series-entry-store';
+import { SeriesEntryStore, tidySeriesEntryStrings } from './series-entry-store';
+import { tidyRaceCompetitorStrings } from './race-competitor-store';
 
 /**
  * Thrown when a series-entry write would create or leave two entries with the
@@ -96,7 +97,7 @@ function mergePayloadFromRacePatch(patch: RaceScopedCompetitorPatch): Partial<Ra
     if (v === undefined) continue;
     (out as Record<string, unknown>)[k] = v;
   }
-  return out;
+  return tidyRaceCompetitorStrings(out);
 }
 
 function handicapListsEqual(a: Handicap[] | undefined, b: Handicap[] | undefined): boolean {
@@ -243,6 +244,7 @@ export class RaceCompetitorMutator {
         `RaceCompetitorMutator.updateSeriesEntryFromEdit: cannot change seriesId for entry ${previous.id}.`,
       );
     }
+    next = tidySeriesEntryStrings(next);
     if (seriesEntriesEqual(previous, next)) return;
 
     const identityChanged =

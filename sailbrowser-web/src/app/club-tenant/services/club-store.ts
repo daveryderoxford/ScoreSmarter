@@ -21,7 +21,7 @@ function normalizeSeasonStatus(value: SeasonStatus | string | undefined): Season
 import { dataObjectConverter } from 'app/shared/firebase/firestore-helper';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 import { firestoreWrite } from 'app/shared/utils/with-timeout';
-import { normaliseWhitespace } from 'app/shared/utils/string-utils';
+import { normaliseBoatClass, normaliseClubUpdate, normaliseFleet, normaliseSeason } from '../model/club-normalise';
 import { DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES } from 'app/results-input/services/suspect-time-rules';
 import { DEFAULT_LONG_DISCARDS, DEFAULT_SHORT_DISCARDS } from 'app/scoring/model/discard-profile';
 
@@ -154,7 +154,10 @@ export class ClubStore {
   }
 
   async update(update: Partial<Club>) {
-    return await firestoreWrite(setDoc(this.clubDoc()!, update, { merge: true }), 'Updating club');
+    return await firestoreWrite(
+      setDoc(this.clubDoc()!, normaliseClubUpdate(update), { merge: true }),
+      'Updating club',
+    );
   }
 
   // All club-doc mutators route through `setDoc({ merge: true })` rather than
@@ -165,14 +168,15 @@ export class ClubStore {
 
   async addFleet(fleet: Fleet) {
     await firestoreWrite(
-      setDoc(this.clubDoc()!, { fleets: arrayUnion(fleet) }, { merge: true }),
+      setDoc(this.clubDoc()!, { fleets: arrayUnion(normaliseFleet(fleet)) }, { merge: true }),
       'Adding fleet',
     );
   }
 
   async updateFleet(newFleet: Fleet) {
     const currentFleets = this._clubResource.value().fleets;
-    const updatedFleets = currentFleets.map(f => f.id === newFleet.id ? newFleet : f);
+    const normalised = normaliseFleet(newFleet);
+    const updatedFleets = currentFleets.map(f => f.id === newFleet.id ? normalised : f);
     await firestoreWrite(
       setDoc(this.clubDoc()!, { fleets: updatedFleets }, { merge: true }),
       'Updating fleet',
@@ -188,23 +192,16 @@ export class ClubStore {
     );
   }
 
-  /** Class names (and a new class's id) are stored with whitespace normalised. */
   async addClass(boatClass: BoatClass) {
-    const normalised: BoatClass = {
-      ...boatClass,
-      id: normaliseWhitespace(boatClass.id),
-      name: normaliseWhitespace(boatClass.name),
-    };
     await firestoreWrite(
-      setDoc(this.clubDoc()!, { classes: arrayUnion(normalised) }, { merge: true }),
+      setDoc(this.clubDoc()!, { classes: arrayUnion(normaliseBoatClass(boatClass, { isNew: true })) }, { merge: true }),
       'Adding class',
     );
   }
 
-  /** The class id is kept (it is referenced elsewhere); the name is stored with whitespace normalised. */
   async updateClass(oldClass: BoatClass, newClass: BoatClass) {
     const currentClasses = this.club().classes;
-    const normalised: BoatClass = { ...newClass, name: normaliseWhitespace(newClass.name) };
+    const normalised = normaliseBoatClass(newClass);
     const updatedClasses = currentClasses.map(c => c.id === oldClass.id ? normalised : c);
     await firestoreWrite(
       setDoc(this.clubDoc()!, { classes: updatedClasses }, { merge: true }),
@@ -221,14 +218,15 @@ export class ClubStore {
 
   async addSeason(season: Season) {
     await firestoreWrite(
-      setDoc(this.clubDoc()!, { seasons: arrayUnion(season) }, { merge: true }),
+      setDoc(this.clubDoc()!, { seasons: arrayUnion(normaliseSeason(season, { isNew: true })) }, { merge: true }),
       'Adding season',
     );
   }
 
   async updateSeason(oldSeason: Season, newSeason: Season) {
     const currentSeasons = this.club().seasons;
-    const updatedSeasons = currentSeasons.map(s => s.id === oldSeason.id ? newSeason : s);
+    const normalised = normaliseSeason(newSeason);
+    const updatedSeasons = currentSeasons.map(s => s.id === oldSeason.id ? normalised : s);
     await firestoreWrite(
       setDoc(this.clubDoc()!, { seasons: updatedSeasons }, { merge: true }),
       'Updating season',

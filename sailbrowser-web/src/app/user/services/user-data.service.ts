@@ -6,6 +6,7 @@ import { AuthService } from 'app/auth';
 import type { Boat } from 'app/boats';
 import { ClubTenant, FirestoreTenantService } from 'app/club-tenant';
 import { cloudCallable } from 'app/shared/firebase/cloud-functions';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { of } from 'rxjs';
 import { UserData } from '../model/user';
 import { pushRecentBoat } from './recent-boats';
@@ -67,9 +68,11 @@ export class UserDataService {
     }
 
     console.log('UserDataService: Saving user ' + this);
-    details.id = id;
+    const update: Partial<UserData> = { ...details, id };
+    if (typeof update.firstname === 'string') update.firstname = normaliseWhitespace(update.firstname);
+    if (typeof update.surname === 'string') update.surname = normaliseWhitespace(update.surname);
     // Use setDoc with merge=true rather than update as update does not support withConverter
-    await setDoc(this._doc(id), details, { merge: true });
+    await setDoc(this._doc(id), update, { merge: true });
   }
 
   private _doc(uid: string): DocumentReference<UserData> {
