@@ -105,7 +105,7 @@ describe('buildPyReturn', () => {
     const seasons = new Map([['s1', '2026'], ['s2', '2025']]);
     const build = buildPyReturn([goodRace(), lastYear], clubClasses, catalogue, 'AFF123', seasons);
 
-    expect(build.ret.series.map(s => s.eventName)).toEqual(['2025 - Summer', '2026 - Summer']);
+    expect(build.ret.series.map(s => s.eventName)).toEqual(['Summer (2025)', 'Summer (2026)']);
   });
 
   it('reports non-RYA and unlinked classes, and leaves their boats out', () => {
@@ -149,10 +149,9 @@ describe('buildPyReturn', () => {
     expect(build.ret.series[0].races[0].entries).toHaveLength(4);
   });
 
-  it('leaves the event name alone when the series already names its season', () => {
-    expect(pyEventName('Summer Handicap 2026', '2026')).toBe('Summer Handicap 2026');
-    expect(pyEventName('Summer', undefined)).toBe('Summer');
-    expect(pyEventName('Summer', ' Winter  2025-26 ')).toBe('Winter 2025-26 - Summer');
+  it('names the event "Series (Season)"', () => {
+    expect(pyEventName('Summer PM', ' 2025-26 ')).toBe('Summer PM (2025-26)');
+    expect(pyEventName('Summer PM', undefined)).toBe('Summer PM');
   });
 
   it('flags a missing affiliation ID', () => {

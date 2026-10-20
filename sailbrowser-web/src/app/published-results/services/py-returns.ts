@@ -216,11 +216,10 @@ export function buildPyReturn(
   };
 }
 
-/** "Season - Series", or the series name alone when it already names the season. */
+/** "Series (Season)", e.g. "Summer PM (2025-26)". */
 export function pyEventName(seriesName: string, seasonName: string | undefined): string {
   const season = normaliseWhitespace(seasonName);
-  if (!season || seriesName.toLowerCase().includes(season.toLowerCase())) return seriesName;
-  return `${season} - ${seriesName}`;
+  return season ? `${seriesName} (${season})` : seriesName;
 }
 
 /**
