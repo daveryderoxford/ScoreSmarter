@@ -11,7 +11,7 @@ export const PY_MIN_FINISHERS = 4;
 export const PY_MIN_CLASSES = 2;
 export const PY_MIN_DURATION_SECONDS = 20 * 60;
 
-/** Format-neutral PY return; serialised to the RYA XML once that format is available. */
+/** PY return, written in the PY Online upload layout by {@link pyReturnToCsv}. */
 export interface PyReturn {
   affiliationId: string;
   races: PyReturnRace[];
@@ -19,6 +19,8 @@ export interface PyReturn {
 
 export interface PyReturnRace {
   raceId: string;
+  /** Unique within the return (series race numbers clash across series on a day). */
+  raceNumber: number;
   /** yyyy-mm-dd */
   date: string;
   /** HH:mm */
@@ -30,14 +32,22 @@ export interface PyReturnRace {
 
 export interface PyReturnEntry {
   ryaClassId: number;
+  /** RYA class name from the class configuration list (how PY Online identifies the class). */
+  ryaClassName: string;
+  /** The club's own class name. */
   className: string;
+  rank: number;
   /** Letters and digits only (the RYA rejects symbols such as `/`). */
   sailNumber: string;
   helm: string;
+  crew: string;
   elapsedSeconds: number;
   correctedSeconds: number;
   laps: number;
   handicap: number;
+  persons: number;
+  rig: string;
+  spinnaker: string;
   resultCode: ResultCode;
 }
 
@@ -143,19 +153,26 @@ export function buildPyReturn(
     for (const f of returnable) f.check.entries++;
     included.push({
       raceId: race.id,
+      raceNumber: included.length + 1,
       date: format(race.scheduledStart, 'yyyy-MM-dd'),
       startTime: format(race.scheduledStart, 'HH:mm'),
       seriesName: race.seriesName,
       raceIndex: race.index,
       entries: returnable.map(({ result, check }) => ({
         ryaClassId: check.catalogueId!,
+        ryaClassName: check.catalogue?.rya?.name ?? result.boatClass,
         className: result.boatClass,
+        rank: result.rank,
         sailNumber: cleanSailNumber(result.sailNumber),
         helm: result.helm,
+        crew: result.crew ?? '',
         elapsedSeconds: result.elapsedTime,
         correctedSeconds: result.correctedTime,
         laps: result.laps,
         handicap: result.handicap,
+        persons: check.catalogue?.crew ?? 1,
+        rig: check.catalogue?.rig ?? '',
+        spinnaker: check.catalogue?.spinnaker ?? '',
         resultCode: result.resultCode,
       })),
     });
@@ -198,30 +215,43 @@ function mergeRaces(races: readonly PublishedRace[]): PublishedRace[] {
   return [...byId.values()].sort((a, b) => a.scheduledStart.getTime() - b.scheduledStart.getTime());
 }
 
-const PY_CSV_COLUMNS = [
-  'Affiliation ID', 'Date', 'Start', 'Series', 'Race', 'RYA Class ID', 'Class', 'Sail number',
-  'Helm', 'Elapsed (s)', 'Corrected (s)', 'Laps', 'Handicap', 'Result code',
+/** Title row and columns of the RYA "PY online" upload spreadsheet. */
+export const PY_ONLINE_TITLE = 'Complete race results';
+export const PY_ONLINE_COLUMNS = [
+  'Class', 'Race Number', 'Race Date', 'Start Name', 'Rank', 'SailNo', 'Helm', 'Crew',
+  'pn', 'Laps', 'Elapsed', 'Corrected', 'Persons', 'Rig', 'Spin',
 ];
 
-/** CSV of the return rows, for checking the data before the XML format is available. */
+/** Duration as h:mm:ss (hours not zero-padded), the format Sailwave sends to the RYA. */
+export function formatPyDuration(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.round(totalSeconds));
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${h}:${pad(m)}:${pad(s)}`;
+}
+
+/** The return in the PY Online upload layout: title row, header row, one row per finisher. */
 export function pyReturnToCsv(ret: PyReturn): string {
   const rows = ret.races.flatMap(race =>
     race.entries.map(e => ({
-      'Affiliation ID': ret.affiliationId,
-      Date: race.date,
-      Start: race.startTime,
-      Series: race.seriesName,
-      Race: String(race.raceIndex),
-      'RYA Class ID': String(e.ryaClassId),
-      Class: e.className,
-      'Sail number': e.sailNumber,
+      Class: e.ryaClassName,
+      'Race Number': String(race.raceNumber),
+      'Race Date': race.date,
+      'Start Name': race.seriesName,
+      Rank: e.rank > 0 ? String(e.rank) : '',
+      SailNo: e.sailNumber,
       Helm: e.helm,
-      'Elapsed (s)': String(Math.round(e.elapsedSeconds)),
-      'Corrected (s)': String(Math.round(e.correctedSeconds)),
-      Laps: String(e.laps),
-      Handicap: String(e.handicap),
-      'Result code': e.resultCode,
+      Crew: e.crew,
+      pn: String(e.handicap),
+      Laps: e.laps > 0 ? String(e.laps) : '',
+      Elapsed: formatPyDuration(e.elapsedSeconds),
+      Corrected: formatPyDuration(e.correctedSeconds),
+      Persons: String(e.persons),
+      Rig: e.rig,
+      Spin: e.spinnaker,
     })),
   );
-  return toCsv(PY_CSV_COLUMNS, rows);
+  return `${PY_ONLINE_TITLE}\n${toCsv(PY_ONLINE_COLUMNS, rows)}`;
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import type { CatalogClass } from 'app/club-tenant/model/catalog-class';
 import type { PublishedRace, RaceResult } from '../model/published-race';
-import { buildPyReturn, cleanSailNumber, pyReturnToCsv } from './py-returns';
+import { buildPyReturn, cleanSailNumber, formatPyDuration, pyReturnToCsv } from './py-returns';
 
 const clubClasses: BoatClass[] = [
   { id: 'ILCA 7', name: 'ILCA 7', handicaps: [], catalogueId: 191 },
@@ -130,11 +130,29 @@ describe('PY return helpers', () => {
     expect(cleanSailNumber('GBR 123/4')).toBe('GBR1234');
   });
 
-  it('writes one CSV row per returned entry', () => {
+  it('formats durations as h:mm:ss', () => {
+    expect(formatPyDuration(3000)).toBe('0:50:00');
+    expect(formatPyDuration(3725.4)).toBe('1:02:05');
+  });
+
+  it('writes the PY Online layout: title row, header row, one row per finisher', () => {
     const build = buildPyReturn([goodRace()], clubClasses, catalogue, 'AFF123');
     const lines = pyReturnToCsv(build.ret).split('\n');
 
-    expect(lines[0]).toContain('RYA Class ID');
-    expect(lines).toHaveLength(5);
+    expect(lines[0]).toBe('Complete race results');
+    expect(lines[1]).toBe(
+      'Class,Race Number,Race Date,Start Name,Rank,SailNo,Helm,Crew,pn,Laps,Elapsed,Corrected,Persons,Rig,Spin',
+    );
+    expect(lines).toHaveLength(6);
+    expect(lines.slice(2).find(l => l.startsWith('ILCA 7 / Laser'))).toMatch(
+      /^ILCA 7 \/ Laser,1,2026-06-06,Summer,1,GBR1234,Helm \d+,,1100,2,0:5\d:\d\d,0:5\d:\d\d,1,,$/,
+    );
+  });
+
+  it('numbers races uniquely within the return', () => {
+    const second = { ...goodRace(), id: 'r2', index: 1, seriesName: 'Other' };
+    const build = buildPyReturn([goodRace(), second], clubClasses, catalogue, 'AFF123');
+
+    expect(build.ret.races.map(r => r.raceNumber)).toEqual([1, 2]);
   });
 });

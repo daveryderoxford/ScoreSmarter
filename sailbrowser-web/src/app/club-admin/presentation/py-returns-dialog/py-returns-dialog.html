@@ -65,7 +65,7 @@
     }
 
     <p class="meta">
-      The RYA XML format is pending (requested from technical&#64;rya.org.uk). Download the CSV to check the data.
+      The CSV uses the RYA PY Online upload layout. Upload it at pyonline.org.uk, then approve the import there.
     </p>
   } @else if (reader.seasonsLoading()) {
     <div class="loading">
@@ -105,9 +105,8 @@
   <button matButton type="button" (click)="dialogRef.close()" [disabled]="loading()">Cancel</button>
   @if (build(); as build) {
     <button matButton type="button" (click)="backToSelection()">Back</button>
-    <button matButton="outlined" type="button" disabled title="RYA XML format pending">Download XML</button>
     <button matButton="filled" type="button" (click)="downloadCsv()" [disabled]="build.ret.races.length === 0">
-      Download CSV
+      Download PY Online CSV
     </button>
   } @else {
     <button matButton="filled" type="button" (click)="check()" [disabled]="!canCheck()">
