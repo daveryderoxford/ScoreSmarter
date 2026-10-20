@@ -37,8 +37,18 @@
   <mat-form-field>
     <mat-label>Name</mat-label>
     <input matInput formControlName="name">
+    @if (linkedEntry()) {
+      <mat-hint>Set by the class catalogue</mat-hint>
+    }
     <mat-error>Class name is required</mat-error>
   </mat-form-field>
+
+  @if (catalogueNameDiffers()) {
+    <div class="catalogue-hint">
+      <span>Catalogue name is "{{ linkedEntry()!.name }}"</span>
+      <button matButton type="button" (click)="useCatalogueName()">Use catalogue name</button>
+    </div>
+  }
 
   <app-handicap-scheme-inputs [form]="form" [schemes]="classSchemes()" />
 

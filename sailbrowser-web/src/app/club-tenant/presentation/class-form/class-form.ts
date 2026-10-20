@@ -112,6 +112,14 @@ export class ClassForm {
     return matches.slice(0, MAX_CATALOGUE_OPTIONS);
   });
 
+  /** A linked class whose name differs from its catalogue entry's ScoreSmarter name. */
+  protected readonly catalogueNameDiffers = computed(() => {
+    const entry = this.linkedEntry();
+    return !!entry && this.nameValue() !== entry.name;
+  });
+
+  private readonly nameValue = signal('');
+
   /** For an unlinked existing class, a catalogue entry matching its name. */
   protected readonly suggestion = computed(() => {
     const bc = this.boatClass();
@@ -146,6 +154,15 @@ export class ClassForm {
       this.form.patchValue(patch);
       this.catalogueId.set(bc.catalogueId ?? null);
     });
+
+    this.form.controls['name'].valueChanges.subscribe(v => this.nameValue.set(String(v ?? '')));
+
+    // A linked class takes its name from the catalogue; only unlinked classes are named freely.
+    effect(() => {
+      const name = this.form.controls['name'];
+      if (this.catalogueId() !== null) name.disable({ emitEvent: false });
+      else name.enable({ emitEvent: false });
+    });
   }
 
   protected onCatalogueSelected(event: MatAutocompleteSelectedEvent): void {
@@ -154,14 +171,14 @@ export class ClassForm {
   }
 
   /**
-   * Links the class to a catalogue entry. Adding a class also takes the catalogue name,
-   * single-hander flag and RYA PN as the PY handicap; editing never renames the class.
+   * Links the class to a catalogue entry, which sets its name to the catalogue's
+   * ScoreSmarter name (saving an existing class then renames it). Adding a class also
+   * takes the single-hander flag and the RYA PN as the PY handicap.
    */
   protected linkCatalogClass(entry: CatalogClass): void {
     const prefill = catalogClassPrefill(entry);
-    const patch: Record<string, unknown> = { catalogueId: prefill.catalogueId };
+    const patch: Record<string, unknown> = { catalogueId: prefill.catalogueId, name: prefill.name };
     if (!this.boatClass()) {
-      patch['name'] = prefill.name;
       patch['isSinglehander'] = prefill.isSinglehander;
       if (prefill.pyHandicap && this.classSchemes().includes('PY')) {
         patch[handicapControlName('PY')] = prefill.pyHandicap;
@@ -171,6 +188,13 @@ export class ClassForm {
     this.form.markAsDirty();
     this.catalogueId.set(prefill.catalogueId);
     this.catalogueSearch.set('');
+  }
+
+  protected useCatalogueName(): void {
+    const entry = this.linkedEntry();
+    if (!entry) return;
+    this.form.patchValue({ name: entry.name });
+    this.form.markAsDirty();
   }
 
   protected unlinkCatalogClass(): void {
@@ -194,8 +218,8 @@ export class ClassForm {
       catalogueId,
     };
     this.submitted.emit(output);
-    this.form.reset();
-    this.catalogueId.set(null);
+    // Keep values (the parent may cancel, e.g. a rename confirmation); clear dirty so leaving after save is allowed.
+    this.form.markAsPristine();
   }
 
   public canDeactivate(): boolean {

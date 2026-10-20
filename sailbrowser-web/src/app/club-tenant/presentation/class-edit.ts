@@ -1,10 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { DetailPane } from 'app/shared/layout/detail-pane';
 import { PageLayout } from 'app/shared/layout/page-layout';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { ClubStore } from '../services/club-store';
+import { ClassRenameService } from '../services/class-rename.service';
 import { ClassForm } from './class-form/class-form';
 import { BoatClass } from '../model/boat-class';
 
@@ -26,6 +29,8 @@ export class ClassEdit {
   private cs = inject(ClubStore);
   private router = inject(Router);
   private snackbar = inject(MatSnackBar);
+  private dialogs = inject(DialogsService);
+  private classRename = inject(ClassRenameService);
 
   id = input.required<string>();
 
@@ -43,11 +48,27 @@ export class ClassEdit {
         const { catalogueId: _previous, ...rest } = oldClass;
         const newClass: BoatClass = {
           ...rest,
-          name: data.name!,
+          name: normaliseWhitespace(data.name),
           handicaps: data.handicaps!,
           isSinglehander: data.isSinglehander ?? false,
           ...(data.catalogueId !== undefined ? { catalogueId: data.catalogueId } : {}),
         };
+
+        if (newClass.name !== oldClass.name) {
+          const plan = await this.classRename.plan(oldClass.name);
+          const records = plan.boats.length + plan.seriesEntries.length;
+          if (records > 0) {
+            const ok = await this.dialogs.confirm(
+              'Rename class',
+              `Rename "${oldClass.name}" to "${newClass.name}"? ${plan.boats.length} boat(s) and ` +
+                `${plan.seriesEntries.length} series entr${plan.seriesEntries.length === 1 ? 'y' : 'ies'} ` +
+                'will be updated. Published results keep the old name.',
+            );
+            if (!ok) return;
+            await this.classRename.apply(plan, newClass.name);
+          }
+        }
+
         await this.cs.updateClass(oldClass, newClass);
         this.router.navigate(["/club/classes"]);
       }
