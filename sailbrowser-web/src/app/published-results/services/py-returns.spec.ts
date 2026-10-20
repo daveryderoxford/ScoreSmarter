@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import type { CatalogClass } from 'app/club-tenant/model/catalog-class';
 import type { PublishedRace, RaceResult } from '../model/published-race';
-import { buildPyReturn, cleanSailNumber, formatPyDuration, pyReturnToCsv } from './py-returns';
+import { buildPyReturn, cleanSailNumber, pyReturnToCsv } from './py-returns';
 
 const clubClasses: BoatClass[] = [
   { id: 'ILCA 7', name: 'ILCA 7', handicaps: [], catalogueId: 191 },
@@ -130,12 +130,7 @@ describe('PY return helpers', () => {
     expect(cleanSailNumber('GBR 123/4')).toBe('GBR1234');
   });
 
-  it('formats durations as h:mm:ss', () => {
-    expect(formatPyDuration(3000)).toBe('0:50:00');
-    expect(formatPyDuration(3725.4)).toBe('1:02:05');
-  });
-
-  it('writes the PY Online layout: title row, header row, one row per finisher', () => {
+  it('writes the PY Online layout: title row, header row, one row per finisher, times in seconds', () => {
     const build = buildPyReturn([goodRace()], clubClasses, catalogue, 'AFF123');
     const lines = pyReturnToCsv(build.ret).split('\n');
 
@@ -145,8 +140,17 @@ describe('PY return helpers', () => {
     );
     expect(lines).toHaveLength(6);
     expect(lines.slice(2).find(l => l.startsWith('ILCA 7 / Laser'))).toMatch(
-      /^ILCA 7 \/ Laser,1,2026-06-06,Summer,1,GBR1234,Helm \d+,,1100,2,0:5\d:\d\d,0:5\d:\d\d,1,,$/,
+      /^ILCA 7 \/ Laser,1,2026-06-06,Summer,1,GBR1234,Helm \d+,,1100,2,30\d0,30\d0,1,,$/,
     );
+  });
+
+  it('uses "-" for a blank start name and ranks unranked finishers by corrected time', () => {
+    const unranked = race('r1', goodRace().results.map(r => ({ ...r, rank: 0 })), { seriesName: '  ' });
+    const build = buildPyReturn([unranked], clubClasses, catalogue, 'AFF123');
+    const rows = pyReturnToCsv(build.ret).split('\n').slice(2).map(l => l.split(','));
+
+    expect(rows.every(cols => cols[3] === '-')).toBe(true);
+    expect(rows.map(cols => Number(cols[4])).sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
   });
 
   it('numbers races uniquely within the return', () => {

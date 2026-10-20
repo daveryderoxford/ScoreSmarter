@@ -151,6 +151,7 @@ export function buildPyReturn(
     }
 
     for (const f of returnable) f.check.entries++;
+    const ranks = finisherRanks(finishers.map(f => f.result));
     included.push({
       raceId: race.id,
       raceNumber: included.length + 1,
@@ -162,7 +163,7 @@ export function buildPyReturn(
         ryaClassId: check.catalogueId!,
         ryaClassName: check.catalogue?.rya?.name ?? result.boatClass,
         className: result.boatClass,
-        rank: result.rank,
+        rank: ranks.get(result) ?? result.rank,
         sailNumber: cleanSailNumber(result.sailNumber),
         helm: result.helm,
         crew: result.crew ?? '',
@@ -222,36 +223,36 @@ export const PY_ONLINE_COLUMNS = [
   'pn', 'Laps', 'Elapsed', 'Corrected', 'Persons', 'Rig', 'Spin',
 ];
 
-/** Duration as h:mm:ss (hours not zero-padded), the format Sailwave sends to the RYA. */
-export function formatPyDuration(totalSeconds: number): string {
-  const seconds = Math.max(0, Math.round(totalSeconds));
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${h}:${pad(m)}:${pad(s)}`;
-}
-
-/** The return in the PY Online upload layout: title row, header row, one row per finisher. */
+/**
+ * The return in the PY Online upload layout: title row, header row, one row per finisher.
+ * RYA rules: Race Number and Rank are numbers, Race Date is yyyy-mm-dd, Start Name is
+ * mandatory ("-" when there is none), Elapsed and Corrected are whole seconds.
+ */
 export function pyReturnToCsv(ret: PyReturn): string {
   const rows = ret.races.flatMap(race =>
     race.entries.map(e => ({
       Class: e.ryaClassName,
       'Race Number': String(race.raceNumber),
       'Race Date': race.date,
-      'Start Name': race.seriesName,
-      Rank: e.rank > 0 ? String(e.rank) : '',
+      'Start Name': race.seriesName.trim() || '-',
+      Rank: String(e.rank),
       SailNo: e.sailNumber,
       Helm: e.helm,
       Crew: e.crew,
       pn: String(e.handicap),
       Laps: e.laps > 0 ? String(e.laps) : '',
-      Elapsed: formatPyDuration(e.elapsedSeconds),
-      Corrected: formatPyDuration(e.correctedSeconds),
+      Elapsed: String(Math.round(e.elapsedSeconds)),
+      Corrected: String(Math.round(e.correctedSeconds)),
       Persons: String(e.persons),
       Rig: e.rig,
       Spin: e.spinnaker,
     })),
   );
   return `${PY_ONLINE_TITLE}\n${toCsv(PY_ONLINE_COLUMNS, rows)}`;
+}
+
+/** Published rank, or position by corrected time for an unranked finisher (Rank must be a number). */
+function finisherRanks(finishers: readonly RaceResult[]): Map<RaceResult, number> {
+  const byCorrected = [...finishers].sort((a, b) => a.correctedTime - b.correctedTime);
+  return new Map(byCorrected.map((r, i) => [r, r.rank > 0 ? r.rank : i + 1] as const));
 }
