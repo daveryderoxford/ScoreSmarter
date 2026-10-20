@@ -43,7 +43,7 @@ export class ClassAdd {
 
       const newClass: BoatClass = {
         id,
-        name: data.name!,
+        name: id,
         handicaps: data.handicaps!,
         isSinglehander: data.isSinglehander ?? false,
         ...(data.catalogueId !== undefined ? { catalogueId: data.catalogueId } : {}),

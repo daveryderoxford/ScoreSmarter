@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import type { CatalogClass } from 'app/club-tenant/model/catalog-class';
 import type { PublishedRace, RaceResult } from '../model/published-race';
-import { buildPyReturn, cleanSailNumber, pyReturnFilename, pyReturnToCsv, sourceSeriesId } from './py-returns';
+import {
+  buildPyReturn,
+  cleanSailNumber,
+  findClubClass,
+  pyReturnFilename,
+  pyReturnToCsv,
+  sourceSeriesId,
+} from './py-returns';
 
 const clubClasses: BoatClass[] = [
   { id: 'ILCA 7', name: 'ILCA 7', handicaps: [], catalogueId: 191 },
@@ -139,6 +146,18 @@ describe('buildPyReturn', () => {
 });
 
 describe('PY return helpers', () => {
+  it('finds club classes by name, by id after a rename, and ignoring case and spacing', () => {
+    const classes: BoatClass[] = [
+      { id: 'Fusion 2', name: 'Fusion 2 ', handicaps: [] },
+      { id: 'RS Vaero', name: 'RS Vareo', handicaps: [] },
+    ];
+
+    expect(findClubClass('Fusion 2', classes)?.id).toBe('Fusion 2');
+    expect(findClubClass('RS Vaero', classes)?.name).toBe('RS Vareo');
+    expect(findClubClass('rs vareo', classes)?.id).toBe('RS Vaero');
+    expect(findClubClass('Unknown', classes)).toBeUndefined();
+  });
+
   it('strips symbols from sail numbers', () => {
     expect(cleanSailNumber('GBR 123/4')).toBe('GBR1234');
   });

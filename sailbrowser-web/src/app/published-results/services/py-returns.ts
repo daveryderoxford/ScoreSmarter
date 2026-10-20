@@ -1,5 +1,5 @@
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
-import type { CatalogClass } from 'app/club-tenant/model/catalog-class';
+import { normaliseClassName, type CatalogClass } from 'app/club-tenant/model/catalog-class';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import type { ResultCode } from 'app/scoring/model/result-code';
 import { toCsv } from 'app/shared/utils/csv';
@@ -105,12 +105,11 @@ export function buildPyReturn(
   catalogueById: ReadonlyMap<number, CatalogClass>,
   affiliationId: string | undefined,
 ): PyReturnBuild {
-  const classByName = new Map(clubClasses.map(c => [c.name, c] as const));
   const checks = new Map<string, PyClassCheck>();
   const checkFor = (className: string): PyClassCheck => {
     let check = checks.get(className);
     if (!check) {
-      const boatClass = classByName.get(className);
+      const boatClass = findClubClass(className, clubClasses);
       const catalogueId = boatClass?.catalogueId;
       const status: PyClassStatus = !boatClass
         ? 'unknown-class'
@@ -221,6 +220,20 @@ export function buildPyReturn(
 export function sourceSeriesId(publishedSeriesId: string): string {
   const separator = publishedSeriesId.indexOf('_');
   return separator < 0 ? publishedSeriesId : publishedSeriesId.slice(0, separator);
+}
+
+/**
+ * Club class for a class name stored on a result. Results keep the name the class had
+ * when they were published, so a renamed class is found by its id (the original name),
+ * and names are compared ignoring case and spacing (e.g. "Fusion 2 " vs "Fusion 2").
+ */
+export function findClubClass(className: string, clubClasses: readonly BoatClass[]): BoatClass | undefined {
+  const exact = clubClasses.find(c => c.name === className) ?? clubClasses.find(c => c.id === className);
+  if (exact) return exact;
+  const key = normaliseClassName(className);
+  return key
+    ? clubClasses.find(c => normaliseClassName(c.name) === key || normaliseClassName(c.id) === key)
+    : undefined;
 }
 
 /** Sail numbers with letters and digits only. */

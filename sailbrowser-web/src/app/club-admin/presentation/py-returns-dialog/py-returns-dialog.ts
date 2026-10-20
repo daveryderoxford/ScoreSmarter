@@ -14,6 +14,7 @@ import type { PublishedSeason } from 'app/published-results/model/published-seas
 import { PublishedResultsReader } from 'app/published-results/services/published-results-store';
 import {
   buildPyReturn,
+  findClubClass,
   pyReturnFilename,
   pyReturnToCsv,
   type PyReturnBuild,
@@ -72,7 +73,7 @@ export class PyReturnsDialog {
   }
 
   protected classEditLink(className: string): string[] | null {
-    const boatClass = this.clubStore.club().classes.find(c => c.name === className);
+    const boatClass = findClubClass(className, this.clubStore.club().classes);
     return boatClass ? ['/club', 'classes', 'edit', boatClass.id] : null;
   }
 
