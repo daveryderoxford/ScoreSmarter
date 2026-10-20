@@ -21,6 +21,7 @@ function normalizeSeasonStatus(value: SeasonStatus | string | undefined): Season
 import { dataObjectConverter } from 'app/shared/firebase/firestore-helper';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 import { firestoreWrite } from 'app/shared/utils/with-timeout';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { DEFAULT_SUSPECT_TIME_THRESHOLDS_MINUTES } from 'app/results-input/services/suspect-time-rules';
 import { DEFAULT_LONG_DISCARDS, DEFAULT_SHORT_DISCARDS } from 'app/scoring/model/discard-profile';
 
@@ -187,16 +188,24 @@ export class ClubStore {
     );
   }
 
+  /** Class names (and a new class's id) are stored with whitespace normalised. */
   async addClass(boatClass: BoatClass) {
+    const normalised: BoatClass = {
+      ...boatClass,
+      id: normaliseWhitespace(boatClass.id),
+      name: normaliseWhitespace(boatClass.name),
+    };
     await firestoreWrite(
-      setDoc(this.clubDoc()!, { classes: arrayUnion(boatClass) }, { merge: true }),
+      setDoc(this.clubDoc()!, { classes: arrayUnion(normalised) }, { merge: true }),
       'Adding class',
     );
   }
 
+  /** The class id is kept (it is referenced elsewhere); the name is stored with whitespace normalised. */
   async updateClass(oldClass: BoatClass, newClass: BoatClass) {
     const currentClasses = this.club().classes;
-    const updatedClasses = currentClasses.map(c => c.id === oldClass.id ? newClass : c);
+    const normalised: BoatClass = { ...newClass, name: normaliseWhitespace(newClass.name) };
+    const updatedClasses = currentClasses.map(c => c.id === oldClass.id ? normalised : c);
     await firestoreWrite(
       setDoc(this.clubDoc()!, { classes: updatedClasses }, { merge: true }),
       'Updating class',

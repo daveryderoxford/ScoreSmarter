@@ -7,6 +7,7 @@ import { PageLayout } from 'app/shared/layout/page-layout';
 import { ClubStore } from '../services/club-store';
 import { ClassForm } from './class-form/class-form';
 import { BoatClass } from '../model/boat-class';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 
 @Component({
   selector: 'app-class-add',
@@ -34,7 +35,7 @@ export class ClassAdd {
   async submitted(data: Partial<BoatClass>) {
     try {
       this.busy.set(true);
-      const id = data.name!.trim();
+      const id = normaliseWhitespace(data.name);
       
       if (this.cs.club().classes.some(c => c.id === id)) {
         this.snackbar.open(`Class with name '${id}' already exists`, "Dismiss", { duration: 3000 });

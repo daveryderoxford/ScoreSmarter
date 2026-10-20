@@ -1,4 +1,5 @@
 import { parseCsv } from 'app/shared/utils/csv';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import type { CatalogClass } from './catalog-class';
 
 /** One row of the RYA class configuration / PN list. */
@@ -30,7 +31,7 @@ const COLUMN_PATTERNS: Record<Column, RegExp> = {
 };
 
 const headerKey = (h: string) => h.toUpperCase().replace(/[^A-Z0-9]+/g, '');
-const optional = (value: string | undefined) => (value?.trim() ? value.trim() : undefined);
+const optional = (value: string | undefined) => normaliseWhitespace(value) || undefined;
 
 /**
  * Parses the RYA list saved as CSV from the RYA spreadsheet. Title rows above the
@@ -65,7 +66,7 @@ export function parseRyaClassList(text: string): RyaClassListParse {
   const seen = new Set<number>();
   for (const row of parsed.rows) {
     const ryaClassId = Number.parseInt(cell(row, 'id')?.trim() ?? '', 10);
-    const name = cell(row, 'name')?.replace(/\s+/g, ' ').trim();
+    const name = normaliseWhitespace(cell(row, 'name'));
     if (!Number.isInteger(ryaClassId) || ryaClassId <= 0 || !name) continue;
     if (seen.has(ryaClassId)) {
       errors.push(`RYA Class ID ${ryaClassId} appears more than once; the first row is used.`);
@@ -93,7 +94,7 @@ export function parseRyaClassList(text: string): RyaClassListParse {
  * Mixed-case names are kept. Sys-admins can edit the result.
  */
 export function cleanRyaClassName(ryaName: string): string {
-  const name = ryaName.replace(/\s+/g, ' ').trim();
+  const name = normaliseWhitespace(ryaName);
   if (name !== name.toUpperCase()) return name;
   return name
     .split(' ')

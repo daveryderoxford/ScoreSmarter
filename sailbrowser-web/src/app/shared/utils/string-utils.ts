@@ -10,6 +10,15 @@ export function normaliseString(str: string | undefined | null): string {
    return str?.toLowerCase().replace(/\s+/g, '')  || '';
 }
 
+/**
+ * Tidies user-entered text for storage: trims it and collapses runs of whitespace
+ * (including tabs and non-breaking spaces) to a single space. Apply when saving names
+ * so stored values compare exactly.
+ */
+export function normaliseWhitespace(text: string | undefined | null): string {
+   return (text ?? '').replace(/\s+/g, ' ').trim();
+}
+
 /** Number of single-character edits (insert, delete, replace, or swap of neighbours) between two strings. */
 export function editDistance(s: string, t: string): number {
   const d: number[][] = Array.from({ length: s.length + 1 }, (_, i) =>

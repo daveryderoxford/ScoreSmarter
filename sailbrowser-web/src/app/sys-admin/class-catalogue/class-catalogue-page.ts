@@ -17,6 +17,7 @@ import {
 import { mergeRyaClassList, parseRyaClassList, type RyaMergeResult } from 'app/club-tenant/model/rya-class-list';
 import { ClassCatalogueStore } from 'app/club-tenant/services/class-catalogue-store';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { PageLayout } from 'app/shared/layout/page-layout';
 
 interface PendingImport {
@@ -97,7 +98,7 @@ export class ClassCataloguePage {
   async saveImport(): Promise<void> {
     const pending = this.pendingImport();
     if (!pending) return;
-    const version = this.listVersion().trim() || pending.fileName;
+    const version = normaliseWhitespace(this.listVersion()) || pending.fileName;
     if (await this.save(pending.merge.classes, version)) {
       this.pendingImport.set(null);
       this.snackbar.open(
@@ -119,7 +120,7 @@ export class ClassCataloguePage {
   }
 
   async saveEdit(entry: CatalogClass): Promise<void> {
-    const name = this.draftName().trim();
+    const name = normaliseWhitespace(this.draftName());
     if (!name) return;
     const updated: CatalogClass = { ...entry, name, aliases: splitAliases(this.draftAliases()) };
     const classes = this.store.classes().map(c => (c.catalogueId === entry.catalogueId ? updated : c));
@@ -127,7 +128,7 @@ export class ClassCataloguePage {
   }
 
   async addLocalClass(): Promise<void> {
-    const name = this.newName().trim();
+    const name = normaliseWhitespace(this.newName());
     if (!name) return;
     const classes = this.store.classes();
     if (classes.some(c => normaliseClassName(c.name) === normaliseClassName(name))) {
@@ -169,5 +170,5 @@ export class ClassCataloguePage {
 }
 
 function splitAliases(text: string): string[] {
-  return [...new Set(text.split(',').map(a => a.trim()).filter(Boolean))];
+  return [...new Set(text.split(',').map(a => normaliseWhitespace(a)).filter(Boolean))];
 }

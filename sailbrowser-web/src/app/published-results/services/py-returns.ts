@@ -1,5 +1,6 @@
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
-import { normaliseClassName, type CatalogClass } from 'app/club-tenant/model/catalog-class';
+import type { CatalogClass } from 'app/club-tenant/model/catalog-class';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import type { ResultCode } from 'app/scoring/model/result-code';
 import { toCsv } from 'app/shared/utils/csv';
@@ -224,16 +225,11 @@ export function sourceSeriesId(publishedSeriesId: string): string {
 
 /**
  * Club class for a class name stored on a result. Results keep the name the class had
- * when they were published, so a renamed class is found by its id (the original name),
- * and names are compared ignoring case and spacing (e.g. "Fusion 2 " vs "Fusion 2").
+ * when they were published, so a renamed class is found by its id (its original name).
+ * Names are compared exactly; they are normalised when saved.
  */
 export function findClubClass(className: string, clubClasses: readonly BoatClass[]): BoatClass | undefined {
-  const exact = clubClasses.find(c => c.name === className) ?? clubClasses.find(c => c.id === className);
-  if (exact) return exact;
-  const key = normaliseClassName(className);
-  return key
-    ? clubClasses.find(c => normaliseClassName(c.name) === key || normaliseClassName(c.id) === key)
-    : undefined;
+  return clubClasses.find(c => c.name === className) ?? clubClasses.find(c => c.id === className);
 }
 
 /** Sail numbers with letters and digits only. */
@@ -300,7 +296,7 @@ export function pyReturnToCsv(series: PySeriesReturn): string {
 
 /** File name for a series' return, e.g. "Winter Sunday afternoon B2B Handicap 2026 - PY return.csv". */
 export function pyReturnFilename(series: PySeriesReturn): string {
-  const safe = series.eventName.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim() || 'series';
+  const safe = normaliseWhitespace(series.eventName.replace(/[\\/:*?"<>|]+/g, '-')) || 'series';
   return `${safe} - PY return.csv`;
 }
 

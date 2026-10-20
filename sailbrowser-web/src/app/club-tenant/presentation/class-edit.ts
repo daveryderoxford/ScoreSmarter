@@ -43,7 +43,7 @@ export class ClassEdit {
         const { catalogueId: _previous, ...rest } = oldClass;
         const newClass: BoatClass = {
           ...rest,
-          name: data.name!.trim(),
+          name: data.name!,
           handicaps: data.handicaps!,
           isSinglehander: data.isSinglehander ?? false,
           ...(data.catalogueId !== undefined ? { catalogueId: data.catalogueId } : {}),

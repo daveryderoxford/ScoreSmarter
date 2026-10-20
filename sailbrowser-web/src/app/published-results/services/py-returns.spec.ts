@@ -146,16 +146,16 @@ describe('buildPyReturn', () => {
 });
 
 describe('PY return helpers', () => {
-  it('finds club classes by name, by id after a rename, and ignoring case and spacing', () => {
+  it('finds club classes by name, or by id after a rename', () => {
     const classes: BoatClass[] = [
-      { id: 'Fusion 2', name: 'Fusion 2 ', handicaps: [] },
+      { id: 'Fusion 2', name: 'Fusion 2', handicaps: [] },
       { id: 'RS Vaero', name: 'RS Vareo', handicaps: [] },
     ];
 
     expect(findClubClass('Fusion 2', classes)?.id).toBe('Fusion 2');
+    expect(findClubClass('RS Vareo', classes)?.id).toBe('RS Vaero');
     expect(findClubClass('RS Vaero', classes)?.name).toBe('RS Vareo');
-    expect(findClubClass('rs vareo', classes)?.id).toBe('RS Vaero');
-    expect(findClubClass('Unknown', classes)).toBeUndefined();
+    expect(findClubClass('rs vareo', classes)).toBeUndefined();
   });
 
   it('strips symbols from sail numbers', () => {
