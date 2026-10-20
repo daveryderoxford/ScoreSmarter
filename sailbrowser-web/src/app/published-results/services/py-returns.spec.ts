@@ -122,20 +122,32 @@ describe('buildPyReturn', () => {
     expect(build.issues.some(i => i.includes('Mystery'))).toBe(true);
   });
 
-  it('excludes races that fail the RYA criteria, with reasons', () => {
+  it('returns races that fail the RYA criteria but flags them, with reasons', () => {
     const tooFew = race('few', [result('ILCA 7', 3000), result('RS200', 3000), result('RS200', 3100)]);
     const oneClass = race('one', [1, 2, 3, 4].map(i => result('ILCA 7', 3000 + i)));
     const short = race('short', [result('ILCA 7', 900), result('ILCA 7', 1000), result('RS200', 950), result('RS200', 990)]);
-    const pursuit = race('pursuit', goodResults(), { type: 'Pursuit' });
 
-    const build = buildPyReturn([tooFew, oneClass, short, pursuit], clubClasses, catalogue, 'AFF123');
+    const build = buildPyReturn([tooFew, oneClass, short, goodRace()], clubClasses, catalogue, 'AFF123');
 
-    expect(build.ret.series).toHaveLength(0);
-    const reasons = Object.fromEntries(build.excludedRaces.map(r => [r.raceId, r.reasons.join('; ')]));
+    expect(build.ret.series[0].races.map(r => r.raceId).sort()).toEqual(['few', 'one', 'r1', 'short']);
+    expect(build.excludedRaces).toHaveLength(0);
+    const reasons = Object.fromEntries(build.flaggedRaces.map(r => [r.raceId, r.reasons.join('; ')]));
+    expect(Object.keys(reasons).sort()).toEqual(['few', 'one', 'short']);
     expect(reasons['few']).toContain('3 finishers');
     expect(reasons['one']).toContain('1 RYA class');
     expect(reasons['short']).toContain('min');
+  });
+
+  it('leaves out non-handicap races and races without RYA-class finishers', () => {
+    const pursuit = race('pursuit', goodResults(), { type: 'Pursuit' });
+    const doriesOnly = race('dories', [1, 2, 3, 4].map(i => result('Dory', 3000 + i)));
+
+    const build = buildPyReturn([pursuit, doriesOnly], clubClasses, catalogue, 'AFF123');
+
+    expect(build.ret.series).toHaveLength(0);
+    const reasons = Object.fromEntries(build.excludedRaces.map(r => [r.raceId, r.reasons.join('; ')]));
     expect(reasons['pursuit']).toContain('Pursuit');
+    expect(reasons['dories']).toContain('no finishers in RYA classes');
   });
 
   it('folds secondary scoring copies into the source series and returns each race once', () => {

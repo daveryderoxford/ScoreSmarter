@@ -83,7 +83,10 @@ export interface PyExcludedRace {
 
 export interface PyReturnBuild {
   ret: PyReturn;
+  /** Races left out of the files: not handicap races, or no finishers in RYA classes. */
   excludedRaces: PyExcludedRace[];
+  /** Races in the files that the RYA is likely to exclude under its current criteria. */
+  flaggedRaces: PyExcludedRace[];
   classes: PyClassCheck[];
   issues: string[];
 }
@@ -96,8 +99,9 @@ interface ResolvedEntry {
 /**
  * Builds a PY return from published races. Only handicap races are used; finishers
  * with an elapsed time are returned under their club class's RYA Class ID (a positive
- * `catalogueId`). Races that fail the RYA criteria are excluded with reasons, and
- * classes without an RYA ID are reported. A race published in several series
+ * `catalogueId`). Races that fail the RYA criteria are still returned (PY Online applies
+ * its own rules) but flagged with reasons, and classes without an RYA ID are reported.
+ * A race published in several series
  * (secondary scoring, divisions) is returned once. `seasonNameBySeriesId` (keyed by source
  * series id) adds the season to each event name, so series repeated each season differ.
  */
@@ -133,6 +137,7 @@ export function buildPyReturn(
 
   const seriesReturns = new Map<string, PySeriesReturn>();
   const excludedRaces: PyExcludedRace[] = [];
+  const flaggedRaces: PyExcludedRace[] = [];
 
   for (const race of mergeRaces(races)) {
     const label = `${race.seriesName} race ${race.index} (${format(race.scheduledStart, 'd MMM yyyy')})`;
@@ -158,10 +163,11 @@ export function buildPyReturn(
     if (finishers.length > 0 && shortest < PY_MIN_DURATION_SECONDS) {
       reasons.push(`first finisher in ${Math.round(shortest / 60)} min (needs at least 20)`);
     }
-    if (reasons.length > 0) {
-      excludedRaces.push({ raceId: race.id, label, reasons });
+    if (returnable.length === 0) {
+      excludedRaces.push({ raceId: race.id, label, reasons: ['no finishers in RYA classes'] });
       continue;
     }
+    if (reasons.length > 0) flaggedRaces.push({ raceId: race.id, label, reasons });
 
     for (const f of returnable) f.check.entries++;
     const ranks = finisherRanks(finishers.map(f => f.result));
@@ -211,6 +217,7 @@ export function buildPyReturn(
   return {
     ret: { affiliationId: affiliationId?.trim() ?? '', series },
     excludedRaces,
+    flaggedRaces,
     classes,
     issues,
   };
