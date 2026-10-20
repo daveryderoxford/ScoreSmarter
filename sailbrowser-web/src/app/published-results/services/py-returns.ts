@@ -11,15 +11,26 @@ export const PY_MIN_FINISHERS = 4;
 export const PY_MIN_CLASSES = 2;
 export const PY_MIN_DURATION_SECONDS = 20 * 60;
 
-/** PY return, written in the PY Online upload layout by {@link pyReturnToCsv}. */
+/**
+ * PY return: one file per series, as PY Online gives each uploaded file a single event
+ * name. Written in the PY Online upload layout by {@link pyReturnToCsv}.
+ */
 export interface PyReturn {
   affiliationId: string;
+  series: PySeriesReturn[];
+}
+
+export interface PySeriesReturn {
+  /** Source series id (secondary scoring and division series are folded into it). */
+  seriesId: string;
+  /** Event Name to enter on PY Online: the series name. */
+  eventName: string;
   races: PyReturnRace[];
 }
 
 export interface PyReturnRace {
   raceId: string;
-  /** Unique within the return (series race numbers clash across series on a day). */
+  /** The series race number, so PY Online matches the club's published results. */
   raceNumber: number;
   /** yyyy-mm-dd */
   date: string;
@@ -118,7 +129,7 @@ export function buildPyReturn(
     return check;
   };
 
-  const included: PyReturnRace[] = [];
+  const seriesReturns = new Map<string, PySeriesReturn>();
   const excludedRaces: PyExcludedRace[] = [];
 
   for (const race of mergeRaces(races)) {
@@ -152,9 +163,15 @@ export function buildPyReturn(
 
     for (const f of returnable) f.check.entries++;
     const ranks = finisherRanks(finishers.map(f => f.result));
-    included.push({
+    const seriesId = sourceSeriesId(race.seriesId);
+    let seriesReturn = seriesReturns.get(seriesId);
+    if (!seriesReturn) {
+      seriesReturn = { seriesId, eventName: race.seriesName, races: [] };
+      seriesReturns.set(seriesId, seriesReturn);
+    }
+    seriesReturn.races.push({
       raceId: race.id,
-      raceNumber: included.length + 1,
+      raceNumber: race.index,
       date: format(race.scheduledStart, 'yyyy-MM-dd'),
       startTime: format(race.scheduledStart, 'HH:mm'),
       seriesName: race.seriesName,
@@ -188,12 +205,22 @@ export function buildPyReturn(
     if (c.status === 'unknown-class') issues.push(`${c.className} is not one of the club's classes; its boats are left out.`);
   }
 
+  const series = [...seriesReturns.values()].sort((a, b) => a.eventName.localeCompare(b.eventName));
   return {
-    ret: { affiliationId: affiliationId?.trim() ?? '', races: included },
+    ret: { affiliationId: affiliationId?.trim() ?? '', series },
     excludedRaces,
     classes,
     issues,
   };
+}
+
+/**
+ * The series a published race came from. Secondary scoring (`{id}_{configId}`) and
+ * division (`{id}_div_{divisionId}`) published series fold into their source series.
+ */
+export function sourceSeriesId(publishedSeriesId: string): string {
+  const separator = publishedSeriesId.indexOf('_');
+  return separator < 0 ? publishedSeriesId : publishedSeriesId.slice(0, separator);
 }
 
 /** Sail numbers with letters and digits only. */
@@ -201,8 +228,12 @@ export function cleanSailNumber(sailNumber: string): string {
   return String(sailNumber ?? '').replace(/[^A-Za-z0-9]/g, '');
 }
 
-/** One race per id; results from several published series are combined by series entry. */
+/**
+ * One race per id; results from several published series are combined by series entry.
+ * The primary series copy supplies the series name (secondary copies are "Name - Config").
+ */
 function mergeRaces(races: readonly PublishedRace[]): PublishedRace[] {
+  const isPrimary = (race: PublishedRace) => race.seriesId === sourceSeriesId(race.seriesId);
   const byId = new Map<string, PublishedRace>();
   for (const race of races) {
     const existing = byId.get(race.id);
@@ -211,7 +242,9 @@ function mergeRaces(races: readonly PublishedRace[]): PublishedRace[] {
       continue;
     }
     const seen = new Set(existing.results.map(r => r.seriesEntryId));
-    existing.results.push(...race.results.filter(r => !seen.has(r.seriesEntryId)));
+    const results = [...existing.results, ...race.results.filter(r => !seen.has(r.seriesEntryId))];
+    const base = isPrimary(race) && !isPrimary(existing) ? race : existing;
+    byId.set(race.id, { ...base, results });
   }
   return [...byId.values()].sort((a, b) => a.scheduledStart.getTime() - b.scheduledStart.getTime());
 }
@@ -224,17 +257,18 @@ export const PY_ONLINE_COLUMNS = [
 ];
 
 /**
- * The return in the PY Online upload layout: title row, header row, one row per finisher.
- * RYA rules: Race Number and Rank are numbers, Race Date is yyyy-mm-dd, Start Name is
- * mandatory ("-" when there is none), Elapsed and Corrected are whole seconds.
+ * One series in the PY Online upload layout: title row, header row, one row per finisher.
+ * The series name is entered as the Event Name on upload. RYA rules: Race Number and Rank
+ * are numbers, Race Date is yyyy-mm-dd, Start Name is mandatory ("-" when there is none),
+ * Elapsed and Corrected are whole seconds.
  */
-export function pyReturnToCsv(ret: PyReturn): string {
-  const rows = ret.races.flatMap(race =>
+export function pyReturnToCsv(series: PySeriesReturn): string {
+  const rows = series.races.flatMap(race =>
     race.entries.map(e => ({
       Class: e.ryaClassName,
       'Race Number': String(race.raceNumber),
       'Race Date': race.date,
-      'Start Name': race.seriesName.trim() || '-',
+      'Start Name': '-',
       Rank: String(e.rank),
       SailNo: e.sailNumber,
       Helm: e.helm,
@@ -249,6 +283,12 @@ export function pyReturnToCsv(ret: PyReturn): string {
     })),
   );
   return `${PY_ONLINE_TITLE}\n${toCsv(PY_ONLINE_COLUMNS, rows)}`;
+}
+
+/** File name for a series' return, e.g. "Winter Sunday afternoon B2B Handicap 2026 - PY return.csv". */
+export function pyReturnFilename(series: PySeriesReturn): string {
+  const safe = series.eventName.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim() || 'series';
+  return `${safe} - PY return.csv`;
 }
 
 /** Published rank, or position by corrected time for an unranked finisher (Rank must be a number). */

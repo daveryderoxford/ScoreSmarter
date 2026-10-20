@@ -156,14 +156,7 @@ export class ClubAdminSwitchboard {
   }
 
   exportPyReturn(): void {
-    this.dialog
-      .open(PyReturnsDialog, { width: '720px', maxWidth: '95vw' })
-      .afterClosed()
-      .subscribe(result => {
-        if (!result) return;
-        this.downloadFile(result.csv, result.filename, 'text/csv');
-        this.snackbar.open('PY return downloaded', undefined, { duration: 3000 });
-      });
+    this.dialog.open(PyReturnsDialog, { width: '760px', maxWidth: '95vw' });
   }
 
   handleExport(action: string, context?: ImportExportContext) {

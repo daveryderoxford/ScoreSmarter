@@ -1,10 +1,42 @@
 <h2 mat-dialog-title>RYA PY return</h2>
 <mat-dialog-content>
   @if (build(); as build) {
-    <p class="summary">
-      {{ build.ret.races.length }} race{{ build.ret.races.length === 1 ? '' : 's' }} and {{ entryCount() }} finishers
-      will be returned.
-    </p>
+    @if (build.ret.series.length === 0) {
+      <p class="summary">No races meet the RYA criteria.</p>
+    } @else {
+      <section>
+        <h3>Files to upload</h3>
+        <p class="meta">
+          Upload each file at pyonline.org.uk (Import race data), entering the series name as the Event Name,
+          then approve the import there.
+        </p>
+        <table class="files">
+          <tbody>
+            @for (series of build.ret.series; track series.seriesId) {
+              <tr>
+                <td>
+                  <div class="event-name">{{ series.eventName }}</div>
+                  <div class="meta">
+                    {{ series.races.length }} race{{ series.races.length === 1 ? '' : 's' }},
+                    {{ entryCount(series) }} finishers
+                  </div>
+                </td>
+                <td class="file-actions">
+                  <button matButton type="button" (click)="copyEventName(series)">
+                    <mat-icon>content_copy</mat-icon>
+                    Copy event name
+                  </button>
+                  <button matButton="filled" type="button" (click)="download(series)">
+                    <mat-icon>{{ downloaded().has(series.seriesId) ? 'check' : 'download' }}</mat-icon>
+                    Download
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
 
     @if (build.issues.length > 0) {
       <section>
@@ -63,10 +95,6 @@
         </ul>
       </section>
     }
-
-    <p class="meta">
-      The CSV uses the RYA PY Online upload layout. Upload it at pyonline.org.uk, then approve the import there.
-    </p>
   } @else if (reader.seasonsLoading()) {
     <div class="loading">
       <mat-spinner diameter="32" />
@@ -102,13 +130,11 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button matButton type="button" (click)="dialogRef.close()" [disabled]="loading()">Cancel</button>
-  @if (build(); as build) {
+  @if (build()) {
     <button matButton type="button" (click)="backToSelection()">Back</button>
-    <button matButton="filled" type="button" (click)="downloadCsv()" [disabled]="build.ret.races.length === 0">
-      Download PY Online CSV
-    </button>
+    <button matButton="filled" type="button" (click)="dialogRef.close()">Done</button>
   } @else {
+    <button matButton type="button" (click)="dialogRef.close()" [disabled]="loading()">Cancel</button>
     <button matButton="filled" type="button" (click)="check()" [disabled]="!canCheck()">
       @if (loading()) { Checking… } @else { Check }
     </button>

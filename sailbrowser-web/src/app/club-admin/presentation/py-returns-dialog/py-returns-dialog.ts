@@ -1,24 +1,29 @@
+import { Clipboard } from '@angular/cdk/clipboard';
 import { Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { ClubStore } from 'app/club-tenant';
 import { ClassCatalogueStore } from 'app/club-tenant/services/class-catalogue-store';
 import type { PublishedRace } from 'app/published-results/model/published-race';
 import type { PublishedSeason } from 'app/published-results/model/published-season';
 import { PublishedResultsReader } from 'app/published-results/services/published-results-store';
-import { buildPyReturn, pyReturnToCsv, type PyReturnBuild } from 'app/published-results/services/py-returns';
-import { format } from 'date-fns';
+import {
+  buildPyReturn,
+  pyReturnFilename,
+  pyReturnToCsv,
+  type PyReturnBuild,
+  type PySeriesReturn,
+} from 'app/published-results/services/py-returns';
 
-export interface PyReturnsDialogResult {
-  csv: string;
-  filename: string;
-}
-
-/** Pick published series, check them against the RYA PY criteria and download the return. */
+/**
+ * Pick published series, check them against the RYA PY criteria and download one
+ * PY Online file per series (PY Online gives each uploaded file one event name).
+ */
 @Component({
   selector: 'app-py-returns-dialog',
   imports: [MatDialogModule, MatButtonModule, MatCheckboxModule, MatIconModule, MatProgressSpinnerModule, RouterLink],
@@ -26,22 +31,22 @@ export interface PyReturnsDialogResult {
   styleUrl: './py-returns-dialog.scss',
 })
 export class PyReturnsDialog {
-  protected readonly dialogRef = inject(MatDialogRef<PyReturnsDialog, PyReturnsDialogResult>);
+  protected readonly dialogRef = inject(MatDialogRef<PyReturnsDialog>);
   protected readonly reader = inject(PublishedResultsReader);
   private readonly clubStore = inject(ClubStore);
   private readonly catalogue = inject(ClassCatalogueStore);
+  private readonly clipboard = inject(Clipboard);
+  private readonly snackbar = inject(MatSnackBar);
 
   protected readonly selected = signal<ReadonlySet<string>>(new Set());
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly build = signal<PyReturnBuild | null>(null);
+  /** Series files downloaded in this session, to tick them off. */
+  protected readonly downloaded = signal<ReadonlySet<string>>(new Set());
 
   protected readonly seasons = computed(() =>
     [...this.reader.seasons()].sort((a, b) => b.name.localeCompare(a.name)),
-  );
-
-  protected readonly entryCount = computed(() =>
-    (this.build()?.ret.races ?? []).reduce((sum, r) => sum + r.entries.length, 0),
   );
 
   protected readonly canCheck = computed(() => !this.loading() && this.selected().size > 0);
@@ -71,6 +76,10 @@ export class PyReturnsDialog {
     return boatClass ? ['/club', 'classes', 'edit', boatClass.id] : null;
   }
 
+  protected entryCount(series: PySeriesReturn): number {
+    return series.races.reduce((sum, r) => sum + r.entries.length, 0);
+  }
+
   protected async check(): Promise<void> {
     if (!this.canCheck()) return;
     this.loading.set(true);
@@ -83,6 +92,7 @@ export class PyReturnsDialog {
       }
       const club = this.clubStore.club();
       this.build.set(buildPyReturn(races, club.classes, this.catalogue.byId(), club.ryaAffiliationId));
+      this.downloaded.set(new Set());
     } catch (e: unknown) {
       console.error('PyReturnsDialog: check failed', e);
       this.error.set(e instanceof Error ? e.message : 'Could not load the selected results.');
@@ -95,12 +105,20 @@ export class PyReturnsDialog {
     this.build.set(null);
   }
 
-  protected downloadCsv(): void {
-    const build = this.build();
-    if (!build || build.ret.races.length === 0) return;
-    this.dialogRef.close({
-      csv: pyReturnToCsv(build.ret),
-      filename: `rya-py-return-${format(new Date(), 'yyyy-MM-dd')}.csv`,
-    });
+  protected copyEventName(series: PySeriesReturn): void {
+    if (this.clipboard.copy(series.eventName)) {
+      this.snackbar.open('Event name copied', undefined, { duration: 2000 });
+    }
+  }
+
+  protected download(series: PySeriesReturn): void {
+    const blob = new Blob([pyReturnToCsv(series)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = pyReturnFilename(series);
+    a.click();
+    URL.revokeObjectURL(url);
+    this.downloaded.set(new Set([...this.downloaded(), series.seriesId]));
   }
 }

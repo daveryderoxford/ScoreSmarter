@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import type { CatalogClass } from 'app/club-tenant/model/catalog-class';
 import type { PublishedRace, RaceResult } from '../model/published-race';
-import { buildPyReturn, cleanSailNumber, pyReturnToCsv } from './py-returns';
+import { buildPyReturn, cleanSailNumber, pyReturnFilename, pyReturnToCsv, sourceSeriesId } from './py-returns';
 
 const clubClasses: BoatClass[] = [
   { id: 'ILCA 7', name: 'ILCA 7', handicaps: [], catalogueId: 191 },
@@ -12,8 +12,8 @@ const clubClasses: BoatClass[] = [
 ];
 
 const catalogue = new Map<number, CatalogClass>([
-  [191, { catalogueId: 191, name: 'ILCA 7', crew: 1, rya: { name: 'ILCA 7 / Laser', pn: 1103 } }],
-  [303, { catalogueId: 303, name: 'RS200', crew: 2, rya: { name: 'RS200', pn: 1053 } }],
+  [191, { catalogueId: 191, name: 'ILCA 7', crew: 1, rig: 'U', spinnaker: '0', rya: { name: 'ILCA 7 / Laser', pn: 1103 } }],
+  [303, { catalogueId: 303, name: 'RS200', crew: 2, rig: 'S', spinnaker: 'A', rya: { name: 'RS200', pn: 1053 } }],
   [-1, { catalogueId: -1, name: 'Dory', crew: 2 }],
 ]);
 
@@ -44,7 +44,7 @@ function race(id: string, results: RaceResult[], extra: Partial<PublishedRace> =
   return {
     id,
     seriesName: 'Summer',
-    index: 1,
+    index: 7,
     seriesId: 's1',
     raceOfDay: 1,
     scheduledStart: new Date(2026, 5, 6, 14, 0),
@@ -57,32 +57,44 @@ function race(id: string, results: RaceResult[], extra: Partial<PublishedRace> =
   };
 }
 
-const goodRace = () =>
-  race('r1', [
-    result('ILCA 7', 3000),
-    result('ILCA 7', 3100),
-    result('RS200', 2900),
-    result('RS200', 3050),
-    result('Dory', 3300),
-    result('ILCA 7', 0, { resultCode: 'DNF' }),
-  ]);
+const goodResults = () => [
+  result('ILCA 7', 3000),
+  result('ILCA 7', 3100),
+  result('RS200', 2900),
+  result('RS200', 3050),
+  result('Dory', 3300),
+  result('ILCA 7', 0, { resultCode: 'DNF' }),
+];
+const goodRace = (extra: Partial<PublishedRace> = {}) => race('r1', goodResults(), extra);
 
 describe('buildPyReturn', () => {
-  it('returns finishers of RYA classes under their RYA Class ID', () => {
+  it('returns finishers of RYA classes under their RYA Class ID, in one file per series', () => {
     const build = buildPyReturn([goodRace()], clubClasses, catalogue, 'AFF123');
 
     expect(build.ret.affiliationId).toBe('AFF123');
-    expect(build.ret.races).toHaveLength(1);
-    const [returned] = build.ret.races;
+    expect(build.ret.series).toHaveLength(1);
+    const [series] = build.ret.series;
+    expect(series).toMatchObject({ seriesId: 's1', eventName: 'Summer' });
+    const [returned] = series.races;
+    expect(returned.raceNumber).toBe(7);
     expect(returned.date).toBe('2026-06-06');
-    expect(returned.startTime).toBe('14:00');
     expect(returned.entries.map(e => e.ryaClassId).sort()).toEqual([191, 191, 303, 303]);
     expect(returned.entries[0].sailNumber).toBe('GBR1234');
   });
 
+  it('splits races from different series into separate files', () => {
+    const other = race('r2', goodResults(), { seriesId: 's2', seriesName: 'Winter', index: 3 });
+    const build = buildPyReturn([goodRace(), other], clubClasses, catalogue, 'AFF123');
+
+    expect(build.ret.series.map(s => [s.eventName, s.races.map(r => r.raceNumber)])).toEqual([
+      ['Summer', [7]],
+      ['Winter', [3]],
+    ]);
+  });
+
   it('reports non-RYA and unlinked classes, and leaves their boats out', () => {
     const build = buildPyReturn(
-      [race('r1', [...goodRace().results, result('Mystery', 3000)])],
+      [race('r1', [...goodResults(), result('Mystery', 3000)])],
       clubClasses,
       catalogue,
       'AFF123',
@@ -98,11 +110,11 @@ describe('buildPyReturn', () => {
     const tooFew = race('few', [result('ILCA 7', 3000), result('RS200', 3000), result('RS200', 3100)]);
     const oneClass = race('one', [1, 2, 3, 4].map(i => result('ILCA 7', 3000 + i)));
     const short = race('short', [result('ILCA 7', 900), result('ILCA 7', 1000), result('RS200', 950), result('RS200', 990)]);
-    const pursuit = race('pursuit', goodRace().results, { type: 'Pursuit' });
+    const pursuit = race('pursuit', goodResults(), { type: 'Pursuit' });
 
     const build = buildPyReturn([tooFew, oneClass, short, pursuit], clubClasses, catalogue, 'AFF123');
 
-    expect(build.ret.races).toHaveLength(0);
+    expect(build.ret.series).toHaveLength(0);
     const reasons = Object.fromEntries(build.excludedRaces.map(r => [r.raceId, r.reasons.join('; ')]));
     expect(reasons['few']).toContain('3 finishers');
     expect(reasons['one']).toContain('1 RYA class');
@@ -110,14 +122,15 @@ describe('buildPyReturn', () => {
     expect(reasons['pursuit']).toContain('Pursuit');
   });
 
-  it('returns a race published in several series once', () => {
+  it('folds secondary scoring copies into the source series and returns each race once', () => {
     const base = goodRace();
-    const secondary = { ...base, seriesId: 's1_cfg', results: base.results.slice(0, 2) };
+    const secondary = { ...base, seriesId: 's1_cfg', seriesName: 'Summer - PY', results: base.results.slice(0, 2) };
 
-    const build = buildPyReturn([base, secondary], clubClasses, catalogue, 'AFF123');
+    const build = buildPyReturn([secondary, base], clubClasses, catalogue, 'AFF123');
 
-    expect(build.ret.races).toHaveLength(1);
-    expect(build.ret.races[0].entries).toHaveLength(4);
+    expect(build.ret.series).toHaveLength(1);
+    expect(build.ret.series[0].eventName).toBe('Summer');
+    expect(build.ret.series[0].races[0].entries).toHaveLength(4);
   });
 
   it('flags a missing affiliation ID', () => {
@@ -130,9 +143,15 @@ describe('PY return helpers', () => {
     expect(cleanSailNumber('GBR 123/4')).toBe('GBR1234');
   });
 
-  it('writes the PY Online layout: title row, header row, one row per finisher, times in seconds', () => {
+  it('maps published series ids back to their source series', () => {
+    expect(sourceSeriesId('s-summer-abc')).toBe('s-summer-abc');
+    expect(sourceSeriesId('s-summer-abc_cfg-py')).toBe('s-summer-abc');
+    expect(sourceSeriesId('s-summer-abc_div_fast')).toBe('s-summer-abc');
+  });
+
+  it('writes the PY Online layout: title, header, a row per finisher, series race numbers, times in seconds', () => {
     const build = buildPyReturn([goodRace()], clubClasses, catalogue, 'AFF123');
-    const lines = pyReturnToCsv(build.ret).split('\n');
+    const lines = pyReturnToCsv(build.ret.series[0]).split('\n');
 
     expect(lines[0]).toBe('Complete race results');
     expect(lines[1]).toBe(
@@ -140,23 +159,21 @@ describe('PY return helpers', () => {
     );
     expect(lines).toHaveLength(6);
     expect(lines.slice(2).find(l => l.startsWith('ILCA 7 / Laser'))).toMatch(
-      /^ILCA 7 \/ Laser,1,2026-06-06,Summer,1,GBR1234,Helm \d+,,1100,2,30\d0,30\d0,1,,$/,
+      /^ILCA 7 \/ Laser,7,2026-06-06,-,1,GBR1234,Helm \d+,,1100,2,30\d0,30\d0,1,U,0$/,
     );
   });
 
-  it('uses "-" for a blank start name and ranks unranked finishers by corrected time', () => {
-    const unranked = race('r1', goodRace().results.map(r => ({ ...r, rank: 0 })), { seriesName: '  ' });
+  it('ranks unranked finishers by corrected time', () => {
+    const unranked = race('r1', goodResults().map(r => ({ ...r, rank: 0 })));
     const build = buildPyReturn([unranked], clubClasses, catalogue, 'AFF123');
-    const rows = pyReturnToCsv(build.ret).split('\n').slice(2).map(l => l.split(','));
+    const rows = pyReturnToCsv(build.ret.series[0]).split('\n').slice(2).map(l => l.split(','));
 
-    expect(rows.every(cols => cols[3] === '-')).toBe(true);
     expect(rows.map(cols => Number(cols[4])).sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
   });
 
-  it('numbers races uniquely within the return', () => {
-    const second = { ...goodRace(), id: 'r2', index: 1, seriesName: 'Other' };
-    const build = buildPyReturn([goodRace(), second], clubClasses, catalogue, 'AFF123');
-
-    expect(build.ret.races.map(r => r.raceNumber)).toEqual([1, 2]);
+  it('names each file after its series', () => {
+    expect(pyReturnFilename({ seriesId: 's1', eventName: 'Winter / Sunday: B2B', races: [] })).toBe(
+      'Winter - Sunday- B2B - PY return.csv',
+    );
   });
 });

@@ -50,6 +50,26 @@ h3 {
   padding: 0 0 0 24px;
 }
 
+.files {
+  width: 100%;
+  border-collapse: collapse;
+
+  td {
+    padding: 6px;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+    vertical-align: middle;
+  }
+
+  .event-name {
+    font-weight: 500;
+  }
+
+  .file-actions {
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+
 .classes {
   width: 100%;
   border-collapse: collapse;
