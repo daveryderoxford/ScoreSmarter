@@ -9,7 +9,6 @@ const baseContext: ScannerContext = {
     entries: [{ id: "comp-1", class: "ILCA 7", sailNumber: "12345", name: "Sam" }],
   }],
   defaultLaps: 3,
-  listOrder: "chronological",
 };
 
 test("buildPrompt includes target race and roster details", () => {
@@ -161,7 +160,6 @@ const levelRatingContext: ScannerContext = {
       entries: [{ id: "c2", class: "ILCA 6", sailNumber: "67890", name: "Alex" }],
     },
   ],
-  listOrder: "unsorted",
   scanMode: "levelRating",
 };
 
@@ -200,7 +198,6 @@ test("buildLevelRatingPrompt uses single-race wording when only one target race"
       fleetClassName: "ILCA 7",
       entries: [{ id: "c1", class: "ILCA 7", sailNumber: "12345", name: "Sam" }],
     }],
-    listOrder: "unsorted",
     scanMode: "levelRating",
   });
   assert.match(prompt, /single race/i);

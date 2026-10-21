@@ -216,7 +216,6 @@ function defaultFieldConfidence<T>(
 
 /** Typed reactive form for the scanner-context setup step (Area 3: run scan). */
 export interface ScannerContextForm {
-  listOrder: FormControl<string>;
   timeFormat: FormControl<ScannerTimeFormat>;
   defaultLaps: FormControl<number>;
   model: FormControl<string>;

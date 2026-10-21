@@ -10,7 +10,6 @@ const baseContext: ScannerContext = {
   }],
   defaultLaps: 3,
   defaultHour: 14,
-  listOrder: "chronological",
 };
 
 const modes: ScannerTimeFormat[] = ["clock_hms", "stopwatch_hms_elapsed", "stopwatch_ms_elapsed"];
