@@ -1,7 +1,5 @@
 export type ScannerTimeFormat = "clock_hms" | "stopwatch_hms_elapsed" | "stopwatch_ms_elapsed";
 
-export type ScannerListOrder = "chronological" | "firstLap" | "unsorted";
-
 /** Handicap (times) vs level-rating (finish positions across one or more races). */
 export type ScannerScanMode = "handicap" | "levelRating";
 
@@ -38,7 +36,6 @@ export interface ScannerContext {
   races: ScannerRace[];
   defaultLaps?: number;
   defaultHour?: number;
-  listOrder: ScannerListOrder;
   classAliases?: Record<string, string>;
   /** Club class names (server-populated; client values are ignored). Spelling guide for unmatched rows. */
   clubClasses?: string[];

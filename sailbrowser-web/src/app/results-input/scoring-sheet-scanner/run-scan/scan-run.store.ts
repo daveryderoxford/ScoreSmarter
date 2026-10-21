@@ -72,7 +72,6 @@ export class ScanRunStore {
   private readonly scanAiConfig = inject(ScanAiConfigService);
 
   readonly contextForm = this.fb.nonNullable.group({
-    listOrder: ['chronological', Validators.required],
     timeFormat: this.fb.nonNullable.control<ScannerTimeFormat>('clock_hms', Validators.required),
     defaultLaps: [1, [Validators.min(1), Validators.max(20)]],
     model: this.fb.nonNullable.control(''),
@@ -279,7 +278,6 @@ export class ScanRunStore {
     if (isLevelRating) {
       return {
         races,
-        listOrder: 'unsorted',
         scanMode: 'levelRating',
         ...ai,
         ...(specialInstructions ? { specialInstructions } : {}),
@@ -292,7 +290,6 @@ export class ScanRunStore {
       races,
       defaultHour: this.defaultHourForParsing(),
       defaultLaps: formData.defaultLaps,
-      listOrder: formData.listOrder as 'chronological' | 'unsorted',
       lapsPresentOnSheet: isMultilap,
       timeFormat: formData.timeFormat,
       scanMode: 'handicap',

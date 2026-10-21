@@ -90,13 +90,6 @@ export function buildPrompt(ctx: ScannerContext, raceId: string): string {
 - For non-finish/status rows use placeholder { "elapsedMinutes": 0, "seconds": 0 }.`;
   }
 
-  let orderExpectation = `Order: UNSORTED — evaluate each row independently; do not rely on sequence.`;
-  if (ctx.listOrder === "chronological") {
-    orderExpectation = `Order: CHRONOLOGICAL — times should generally increase down the sheet. Use this to catch OCR errors; flag drastic breaks as MANUAL_CHECK and/or provide alternatives.`;
-  } else if (ctx.listOrder === "firstLap") {
-    orderExpectation = `Order: FIRST LAP — times generally increase, but overtakes/laps can make order approximate. Flag drastic breaks as MANUAL_CHECK and/or provide alternatives.`;
-  }
-
   return `
 You are reading a handwritten sailing race results sheet for a HANDICAP race. 
 Follow these rules exactly. ACCURACY is prefered to COMPLETNESS.
@@ -109,7 +102,6 @@ Target race id: ${raceId}. Target races in this scan: ${targetRacesStr}.
 - Row integrity: 
 -- extract strictly row-by-row. Never shift data vertically. Never take a competitor's time from a different row than their class/sail number.
 -- Hour exception (clock mode only): if the hour field is blank but MM:SS is present, you MAY estimate hour from adjacent rows (see Time column). Do not copy minutes or seconds from another row.
-- ${orderExpectation}
 
 # 2. COLUMN DEFINITIONS
 

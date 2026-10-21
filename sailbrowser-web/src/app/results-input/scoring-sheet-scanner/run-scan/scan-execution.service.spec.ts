@@ -27,7 +27,6 @@ describe('ScanExecutionService', () => {
         races: [],
         defaultHour: 14,
         defaultLaps: 3,
-        listOrder: 'chronological',
         classAliases: {},
         lapsPresentOnSheet: true,
         timeFormat: 'clock_hms',

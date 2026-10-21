@@ -416,7 +416,6 @@ async function parseFromStoredImage(
       fleetClassNames: Object.fromEntries(races.map((r) => [r.id, r.fleetClassName ?? ""])),
       clubClassCount: classNames.length,
       scanMode,
-      listOrder: mergedContext.listOrder,
       defaultHour: mergedContext.defaultHour,
       defaultLaps: mergedContext.defaultLaps,
       lapsPresentOnSheet: mergedContext.lapsPresentOnSheet ?? true,

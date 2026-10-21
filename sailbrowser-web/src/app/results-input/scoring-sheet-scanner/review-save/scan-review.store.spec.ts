@@ -95,7 +95,6 @@ function resolvedCompetitor(id = COMPETITOR_ID, sail = '1234'): ResolvedRaceComp
 class FakeScanRunStore {
   private readonly fb = new FormBuilder();
   readonly contextForm = this.fb.nonNullable.group({
-    listOrder: ['chronological', Validators.required],
     timeFormat: this.fb.nonNullable.control<ScannerTimeFormat>('clock_hms', Validators.required),
     defaultLaps: [1, [Validators.min(1), Validators.max(20)]],
     model: this.fb.nonNullable.control('gemini-3.7-flash', Validators.required),

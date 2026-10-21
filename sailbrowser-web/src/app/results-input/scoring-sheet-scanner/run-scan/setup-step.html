@@ -5,14 +5,6 @@
 
       @if (!isLevelRating()) {
         <div class="option-group">
-          <div class="option-group-label">Results ordering</div>
-          <mat-radio-group formControlName="listOrder" class="radio-group">
-            <mat-radio-button value="chronological">Time ordered (approximate)</mat-radio-button>
-            <mat-radio-button value="unsorted">Random order</mat-radio-button>
-          </mat-radio-group>
-        </div>
-
-        <div class="option-group">
           <div class="option-group-label">Time format</div>
           <mat-radio-group formControlName="timeFormat" class="radio-group">
             <mat-radio-button value="clock_hms">Real (clock) time</mat-radio-button>
