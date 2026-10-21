@@ -118,33 +118,9 @@
         </ul>
       </section>
     }
-  } @else if (reader.seasonsLoading()) {
-    <div class="loading">
-      <mat-spinner diameter="32" />
-      <span>Loading seasons…</span>
-    </div>
-  } @else if (seasons().length === 0) {
-    <p>No published seasons found.</p>
   } @else {
     <p class="meta">Choose the series to return. Handicap races are included; races the RYA may exclude are highlighted.</p>
-    @for (season of seasons(); track season.id) {
-      <section class="season">
-        <mat-checkbox
-          [checked]="seasonFullySelected(season)"
-          (change)="selectSeason(season, $event.checked)">
-          <strong>{{ season.name }}</strong>
-        </mat-checkbox>
-        <ul class="series-list">
-          @for (series of season.series; track series.id) {
-            <li>
-              <mat-checkbox [checked]="selected().has(series.id)" (change)="toggle(series.id, $event.checked)">
-                {{ series.name }} <span class="meta">{{ series.raceCount }} races</span>
-              </mat-checkbox>
-            </li>
-          }
-        </ul>
-      </section>
-    }
+    <app-published-series-picker [(selected)]="selected" excludeSecondary excludeLevelRating />
   }
 
   @if (error(); as message) {

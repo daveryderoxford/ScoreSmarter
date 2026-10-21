@@ -1,6 +1,7 @@
-import { signal } from '@angular/core';
+import { signal, type WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialogRef } from '@angular/material/dialog';
+import { FirestoreTenantService } from 'app/club-tenant';
 import { PublishedResultsReader } from 'app/published-results/services/published-results-store';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ExportResultsDialog } from './export-results-dialog';
@@ -25,6 +26,7 @@ describe('ExportResultsDialog', () => {
       imports: [ExportResultsDialog],
       providers: [
         { provide: MatDialogRef, useValue: { close } },
+        { provide: FirestoreTenantService, useValue: {} },
         {
           provide: PublishedResultsReader,
           useValue: {
@@ -39,10 +41,8 @@ describe('ExportResultsDialog', () => {
     const fixture = TestBed.createComponent(ExportResultsDialog);
     fixture.detectChanges();
     const dialog = fixture.componentInstance as unknown as {
-      selected(): ReadonlySet<string>;
+      selected: WritableSignal<ReadonlySet<string>>;
       canExport(): boolean;
-      selectAll(checked: boolean): void;
-      toggle(id: string, checked: boolean): void;
       export(): Promise<void>;
     };
     return { fixture, dialog };
@@ -100,13 +100,13 @@ describe('ExportResultsDialog', () => {
   it('disables export until a series is selected', () => {
     const { dialog } = render();
     expect(dialog.canExport()).toBe(false);
-    dialog.toggle('s1', true);
+    dialog.selected.set(new Set(['s1']));
     expect(dialog.canExport()).toBe(true);
   });
 
   it('exports the selected series and closes with csv', async () => {
     const { dialog } = render();
-    dialog.selectAll(true);
+    dialog.selected.set(new Set(['s1', 's2']));
     await dialog.export();
 
     expect(getSeriesWithRaces).toHaveBeenCalledWith('s1');

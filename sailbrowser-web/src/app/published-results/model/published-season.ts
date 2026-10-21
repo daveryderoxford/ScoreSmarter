@@ -1,8 +1,13 @@
+import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+
 export interface SeriesInfo {
    id: string;
+   /** Calendar series id. Equal to `id` for the primary published series; secondary scoring and division series differ. */
    baseSeriesId?: string;
    name: string;
    fleetId: string;
+   /** Scheme of the scoring configuration it was published with. Absent on series published before this field was added. */
+   handicapScheme?: HandicapScheme;
    startDate: Date;
    endDate: Date;
    raceCount: number;

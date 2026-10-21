@@ -1,16 +1,14 @@
 import { Clipboard } from '@angular/cdk/clipboard';
 import { Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { ClubStore } from 'app/club-tenant';
 import { ClassCatalogueStore } from 'app/club-tenant/services/class-catalogue-store';
 import type { PublishedRace } from 'app/published-results/model/published-race';
-import type { PublishedSeason } from 'app/published-results/model/published-season';
+import { PublishedSeriesPicker } from 'app/published-results/presentation/published-series-picker/published-series-picker';
 import { PublishedResultsReader } from 'app/published-results/services/published-results-store';
 import {
   buildPyReturn,
@@ -30,7 +28,7 @@ import { RyaAffiliationDialog } from './rya-affiliation-dialog';
  */
 @Component({
   selector: 'app-py-returns-dialog',
-  imports: [MatDialogModule, MatButtonModule, MatCheckboxModule, MatIconModule, MatProgressSpinnerModule, RouterLink],
+  imports: [MatDialogModule, MatButtonModule, MatIconModule, PublishedSeriesPicker, RouterLink],
   templateUrl: './py-returns-dialog.html',
   styleUrl: './py-returns-dialog.scss',
 })
@@ -49,10 +47,6 @@ export class PyReturnsDialog {
   protected readonly build = signal<PyReturnBuild | null>(null);
   /** Series files downloaded in this session, to tick them off. */
   protected readonly downloaded = signal<ReadonlySet<string>>(new Set());
-
-  protected readonly seasons = computed(() =>
-    [...this.reader.seasons()].sort((a, b) => b.name.localeCompare(a.name)),
-  );
 
   protected readonly canCheck = computed(() => !this.loading() && this.selected().size > 0);
 
@@ -73,26 +67,6 @@ export class PyReturnsDialog {
     } finally {
       this.savingAffiliation.set(false);
     }
-  }
-
-  protected toggle(seriesId: string, checked: boolean): void {
-    const next = new Set(this.selected());
-    if (checked) next.add(seriesId);
-    else next.delete(seriesId);
-    this.selected.set(next);
-  }
-
-  protected selectSeason(season: PublishedSeason, checked: boolean): void {
-    const next = new Set(this.selected());
-    for (const series of season.series) {
-      if (checked) next.add(series.id);
-      else next.delete(series.id);
-    }
-    this.selected.set(next);
-  }
-
-  protected seasonFullySelected(season: PublishedSeason): boolean {
-    return season.series.length > 0 && season.series.every(s => this.selected().has(s.id));
   }
 
   protected classEditLink(className: string): string[] | null {
