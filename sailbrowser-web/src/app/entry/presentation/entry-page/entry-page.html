@@ -107,11 +107,12 @@
               <input
                 #boatSearchInput
                 matInput
-                [formControl]="boatSearchControl"
+                [value]="boatSearch()"
+                (input)="boatSearch.set($any($event.target).value)"
                 [placeholder]="boatCategory() === 'club' ? 'Class or Sail No' : 'Helm, Class or Sail No'"
                 autocomplete="off">
-              @if (boatSearchControl.value) {
-                <button mat-icon-button matSuffix type="button" (click)="boatSearchControl.setValue('')" aria-label="Clear search">
+              @if (boatSearch()) {
+                <button mat-icon-button matSuffix type="button" (click)="boatSearch.set('')" aria-label="Clear search">
                   <mat-icon>close</mat-icon>
                 </button>
               }
@@ -127,7 +128,7 @@
           @if (filteredBoatGroups().length === 0) {
             <div class="boat-picker-list boat-picker-list--empty">
               <p class="boat-picker-empty">
-                {{ boatSearchControl.value.trim() ? 'No boats match this search.' : 'No boats available.' }}
+                {{ boatSearch().trim() ? 'No boats match this search.' : 'No boats available.' }}
               </p>
             </div>
           } @else {
