@@ -182,7 +182,7 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
       overflow-y: auto;
       border: 1px solid var(--mat-sys-outline-variant);
       border-radius: 8px;
-      background: var(--mat-sys-surface);
+      background: var(--mat-sys-surface-container);
       box-sizing: border-box;
       padding-top: 4px;
       padding-bottom: 4px;
