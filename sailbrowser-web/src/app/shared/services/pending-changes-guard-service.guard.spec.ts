@@ -29,11 +29,9 @@ describe('pendingChangesGuard', () => {
 
   it('resets dirty state after the user confirms discard', async () => {
     const discardChanges = vi.fn();
+    const confirm = vi.fn().mockResolvedValue(true);
     TestBed.configureTestingModule({
-      providers: [{
-        provide: DialogsService,
-        useValue: { confirm: vi.fn().mockResolvedValue(true) },
-      }],
+      providers: [{ provide: DialogsService, useValue: { confirm } }],
     });
 
     await expect(runGuard({
@@ -41,6 +39,11 @@ describe('pendingChangesGuard', () => {
       discardChanges,
     })).resolves.toBe(true);
     expect(discardChanges).toHaveBeenCalledOnce();
+    expect(confirm).toHaveBeenCalledWith(
+      'Discard changes?',
+      expect.any(String),
+      { confirm: 'Discard changes', cancel: 'Keep editing' },
+    );
   });
 
   it('leaves edits in place when the user cancels', async () => {

@@ -59,10 +59,11 @@ export class ClassEdit {
           const records = plan.boats.length + plan.seriesEntries.length;
           if (records > 0) {
             const ok = await this.dialogs.confirm(
-              'Rename class',
-              `Rename "${oldClass.name}" to "${newClass.name}"? ${plan.boats.length} boat(s) and ` +
+              'Rename class?',
+              `"${oldClass.name}" will be renamed to "${newClass.name}". ${plan.boats.length} boat(s) and ` +
                 `${plan.seriesEntries.length} series entr${plan.seriesEntries.length === 1 ? 'y' : 'ies'} ` +
                 'will be updated. Published results keep the old name.',
+              { confirm: 'Rename' },
             );
             if (!ok) return;
             await this.classRename.apply(plan, newClass.name);

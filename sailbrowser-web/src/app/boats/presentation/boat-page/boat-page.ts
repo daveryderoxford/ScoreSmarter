@@ -186,7 +186,7 @@ export class BoatsPage {
   );
 
   async deleteBoat(boat: Boat) {
-    if (await this.ds.confirm('Delete Boat', `Are you sure you want to delete ${boat.boatClass} ${this.boatSailLabel(boat)}?`)) {
+    if (await this.ds.confirm('Delete boat?', `${boat.boatClass} ${this.boatSailLabel(boat)} will be deleted.`, { confirm: 'Delete' })) {
       try {
         await this.bs.delete(boat.id);
         if (this.selectedBoatId() === boat.id) {

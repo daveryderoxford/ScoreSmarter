@@ -422,6 +422,7 @@ export class KioskEntryPage {
       const enter = await this.dialogs.confirm(
         'Enter as OOD?',
         `Enter today's races as Officer of the Day for ${member.name}?`,
+        { confirm: 'Enter as OOD', cancel: 'Not now' },
       );
       if (!enter) return;
       this.entryResultCode.set('OOD');
@@ -740,6 +741,7 @@ export class KioskEntryPage {
       const save = await this.dialogs.confirm(
         'Save to boat register?',
         'Save this boat so it appears next time you sign on?',
+        { confirm: 'Save boat', cancel: "Don't save" },
       );
       if (save) {
         try {

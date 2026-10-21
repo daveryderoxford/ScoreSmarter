@@ -41,8 +41,9 @@ export class RaceDayActions {
   /** Resolves true when the race was reinstated. */
   async reinstateRace(race: Race): Promise<boolean> {
     const ok = await this.dialogs.confirm(
-      'Reinstate race',
-      `Reinstate ${race.seriesName} race ${race.index}? It will be scored again with any results already entered.`,
+      'Reinstate race?',
+      `${race.seriesName} race ${race.index} will be scored again with any results already entered.`,
+      { confirm: 'Reinstate' },
     );
     if (!ok) return false;
     await this.cancellation.reinstateRace(race);

@@ -35,7 +35,7 @@ export interface RacePickerDialogData {
     <mat-dialog-actions align="end">
       <button mat-button type="button" (click)="cancel()">Cancel</button>
       <button matButton="filled" type="button" [disabled]="!canConfirm()" (click)="confirm()">
-        OK
+        Select
       </button>
     </mat-dialog-actions>
   `,

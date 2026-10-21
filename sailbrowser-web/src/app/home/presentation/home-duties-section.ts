@@ -19,6 +19,7 @@ export class HomeDutiesSection {
     const enter = await this.dialogs.confirm(
       'Enter as OOD?',
       `Enter today's races as Officer of the Day for ${member.name}?`,
+      { confirm: 'Enter as OOD', cancel: 'Not now' },
     );
     if (!enter) return;
     await this.router.navigate(['/entry/enter'], {

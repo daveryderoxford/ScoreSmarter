@@ -294,8 +294,8 @@ export class HandicapInputPanel {
     try {
       if (current && this.form.dirty) {
         const choice = await this.dialogs.promptUnsavedChanges(
-          'Unsaved edits',
-          'Save your edits before switching competitor?'
+          'Save changes?',
+          `You have unsaved changes to ${current.helm}. Save them before switching competitor?`
         );
         if (choice === 'cancel') return;
         if (choice === 'save') {

@@ -96,7 +96,7 @@ const MAX_HELM_SUGGESTIONS = 20;
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button matButton type="button" (click)="dialogRef.close()">Cancel</button>
-      <button matButton="filled" type="button" (click)="save()" [disabled]="!canSave()">OK</button>
+      <button matButton="filled" type="button" (click)="save()" [disabled]="!canSave()">Update row</button>
     </mat-dialog-actions>
   `,
   styles: `

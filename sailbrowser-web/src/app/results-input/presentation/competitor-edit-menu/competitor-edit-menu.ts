@@ -95,8 +95,9 @@ export class CompetitorEditMenuComponent {
   async confirmDelete(): Promise<void> {
     const c = this.competitor();
     const ok = await this.dialogs.confirm(
-      'Delete competitor',
-      `Remove ${c.helm} from this race?`,
+      'Remove competitor?',
+      `${c.helm} will be removed from this race.`,
+      { confirm: 'Remove' },
     );
     if (!ok) return;
     await this.editService.deleteRaceCompetitor(c.id);

@@ -128,7 +128,7 @@ export class FleetPage {
   getFleetName = getFleetName;
 
   async deleteFleet(fleet: Fleet) {
-    if (await this.ds.confirm('Delete Fleet', `Are you sure you want to delete ${getFleetName(fleet)}?`)) {
+    if (await this.ds.confirm('Delete fleet?', `${getFleetName(fleet)} will be deleted.`, { confirm: 'Delete' })) {
       try {
         await this.cs.removeFleet(fleet);
         if (this.selectedFleetId() === fleet.id) {

@@ -40,7 +40,11 @@ export const dirtySeriesGuard: CanDeactivateFn<ManualResultsPage> = async (compo
       ${e}
       `);
       snackbar.dismiss();
-      const ret = await dialog.confirm('Error processing results', 'Press OK to exit or cancel to remain on page');
+      const ret = await dialog.confirm(
+        'Leave without publishing?',
+        'Your results are saved but could not be published. Stay to try again, or leave and publish later.',
+        { confirm: 'Leave page', cancel: 'Stay on page' },
+      );
       return ret;
    }
    snackbar.dismiss();

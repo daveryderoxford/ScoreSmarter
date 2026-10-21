@@ -83,7 +83,7 @@ export class ClassPage {
   }
 
   async deleteClass(boatClass: BoatClass) {
-    if (await this.ds.confirm('Delete Class', `Are you sure you want to delete ${boatClass.name}?`)) {
+    if (await this.ds.confirm('Delete class?', `${boatClass.name} will be deleted.`, { confirm: 'Delete' })) {
       try {
         await this.cs.removeClass(boatClass);
         this.snackbar.open("Class deleted", "Dismiss", { duration: 3000 });

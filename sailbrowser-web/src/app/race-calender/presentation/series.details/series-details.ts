@@ -125,7 +125,7 @@ export class SeriesDetails {
    }
 
    async deleteRace(race: Race) {
-      if (await this.ds.confirm('Delete race', 'Are you sure you want to delete this race?')) {
+      if (await this.ds.confirm('Delete race?', 'This race will be deleted.', { confirm: 'Delete' })) {
          try {
             this.busy.set(true);
             await this.rc.deleteRace(race);
@@ -142,7 +142,7 @@ export class SeriesDetails {
 
    async deleteSeries(id: string) {
 
-      if (await this.ds.confirm('Delete series', 'Are you sure you want to delete this series?')) {
+      if (await this.ds.confirm('Delete series?', 'This series will be deleted.', { confirm: 'Delete' })) {
          try {
             this.busy.set(true);
             await this.rc.deleteSeries(id);

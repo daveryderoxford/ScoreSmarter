@@ -21,7 +21,12 @@ import { firstValueFrom, lastValueFrom } from 'rxjs';
 export class DialogsService {
     private dialog = inject(MatDialog);
 
-    public async confirm(title: string, message: string): Promise<boolean> {
+    /** Resolves true for the confirm button. Name buttons after their action when OK/Cancel would be unclear. */
+    public async confirm(
+        title: string,
+        message: string,
+        labels: { confirm?: string; cancel?: string } = {},
+    ): Promise<boolean> {
 
         let dialogRef: MatDialogRef<ConfirmDialog>;
 
@@ -29,6 +34,8 @@ export class DialogsService {
 
         dialogRef.componentInstance.title = title;
         dialogRef.componentInstance.message = message;
+        if (labels.confirm) dialogRef.componentInstance.confirmLabel = labels.confirm;
+        if (labels.cancel) dialogRef.componentInstance.cancelLabel = labels.cancel;
 
         return lastValueFrom(dialogRef.afterClosed());
     }
@@ -67,8 +74,8 @@ export class DialogsService {
     }
 
     public async promptUnsavedChanges(
-        title = 'Unsaved changes',
-        message = 'Save your edits before switching?'
+        title = 'Save changes?',
+        message = 'You have unsaved changes. Save them before continuing?'
     ): Promise<UnsavedChangesChoice> {
         const dialogRef = this.dialog.open(UnsavedChangesDialog, {
             data: { title, message },

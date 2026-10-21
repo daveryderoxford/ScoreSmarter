@@ -67,7 +67,7 @@ export class SeasonPage {
   });
 
   async deleteSeason(season: Season) {
-    if (await this.ds.confirm('Delete Season', `Are you sure you want to delete ${season.name}?`)) {
+    if (await this.ds.confirm('Delete season?', `${season.name} will be deleted.`, { confirm: 'Delete' })) {
       try {
         await this.cs.removeSeason(season);
         this.snackbar.open("Season deleted", "Dismiss", { duration: 3000 });

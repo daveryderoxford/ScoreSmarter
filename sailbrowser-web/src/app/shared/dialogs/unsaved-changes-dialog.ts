@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatDividerModule } from '@angular/material/divider';
-
 export type UnsavedChangesChoice = 'save' | 'discard' | 'cancel';
 
 export interface UnsavedChangesDialogData {
@@ -10,23 +8,22 @@ export interface UnsavedChangesDialogData {
   message?: string;
 }
 
-const DEFAULT_TITLE = 'Unsaved changes';
-const DEFAULT_MESSAGE = 'Save your edits before switching competitor?';
+const DEFAULT_TITLE = 'Save changes?';
+const DEFAULT_MESSAGE = 'You have unsaved changes. Save them before continuing?';
 
 @Component({
   selector: 'app-unsaved-changes-dialog',
   template: `
-    <h3 mat-dialog-title>{{ title() }}</h3>
+    <h2 mat-dialog-title>{{ title() }}</h2>
     <p mat-dialog-content>{{ message() }}</p>
-    <mat-divider />
-    <div mat-dialog-actions>
-      <button type="button" mat-raised-button (click)="dialogRef.close('save')">Save</button>
-      <button type="button" mat-button (click)="dialogRef.close('discard')">Discard</button>
-      <button type="button" mat-button (click)="dialogRef.close('cancel')">Cancel</button>
-    </div>
+    <mat-dialog-actions align="end">
+      <button type="button" matButton (click)="dialogRef.close('cancel')">Keep editing</button>
+      <button type="button" matButton (click)="dialogRef.close('discard')">Discard changes</button>
+      <button type="button" matButton="filled" (click)="dialogRef.close('save')">Save changes</button>
+    </mat-dialog-actions>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatDialogModule, MatDividerModule, MatButtonModule],
+  imports: [MatDialogModule, MatButtonModule],
 })
 export class UnsavedChangesDialog {
   protected readonly dialogRef =

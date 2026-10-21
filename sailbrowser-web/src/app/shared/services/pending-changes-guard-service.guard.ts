@@ -18,8 +18,9 @@ export const pendingChangesGuard: CanDeactivateFn<ComponentCanDeactivate> = asyn
   }
 
   const confirmed = await ds.confirm(
-    ' Unsaved changes',
-    'You have unsaved changes.  \n Press Cancel to go back and save these changes, or OK to lose these changes.',
+    'Discard changes?',
+    'You have unsaved changes. If you leave now, your progress will be lost.',
+    { confirm: 'Discard changes', cancel: 'Keep editing' },
   );
   if (confirmed) {
     component.discardChanges?.();
