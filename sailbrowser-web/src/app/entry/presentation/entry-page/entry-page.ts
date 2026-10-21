@@ -64,7 +64,7 @@ import { PageLayout } from 'app/shared/layout/page-layout';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { EntryConflictSummary } from 'app/shared/dialogs/entry-conflict-dialog';
 import { groupBy } from 'app/shared/utils/group-by';
-import { firstValueFrom, debounceTime, startWith } from 'rxjs';
+import { firstValueFrom, debounce, startWith, timer } from 'rxjs';
 import { resolveHandicapsForSeries, entryClubForCategory, meetsPrimaryFleetEligibility } from '../../services/entry-helpers';
 import { trimBoatName, formatBoatOptionLabel } from 'app/boats/model/boat-display';
 import { EntryConflict, EntryService } from '../../services/entry.service';
@@ -579,13 +579,19 @@ export class EntryPage {
 
   readonly boatSearchControl = new FormControl('', { nonNullable: true });
 
+  /** Debounced while typing; clearing applies at once so a re-shown list is never filtered by a hidden term. */
   private readonly searchTerm = toSignal(
     this.boatSearchControl.valueChanges.pipe(
       startWith(this.boatSearchControl.value),
-      debounceTime(150),
+      debounce(term => timer(term ? 150 : 0)),
     ),
     { initialValue: '' }
   );
+
+  /** Must emit: the list filters on `searchTerm`, which only follows value changes. */
+  private clearBoatSearch(): void {
+    this.boatSearchControl.setValue('');
+  }
 
   readonly filteredBoats = computed(() => {
     const term = this.searchTerm().trim();
@@ -656,7 +662,7 @@ export class EntryPage {
       // Clear selection when category changes
       this.boatCategory();
       this.selectedBoat.set(null);
-      this.boatSearchControl.setValue('', { emitEvent: false });
+      this.clearBoatSearch();
     });
 
     // Must be created after the clearing effect above so it runs second; reads no
@@ -744,7 +750,7 @@ export class EntryPage {
           this.selectedBoat.set(boat);
         } else {
           // If not found, at least set the search term to help them find it
-          this.boatSearchControl.setValue(`${classVal} ${sailVal}`, { emitEvent: false });
+          this.boatSearchControl.setValue(`${classVal} ${sailVal}`);
         }
       }
     });
@@ -809,7 +815,7 @@ export class EntryPage {
   chooseAnotherBoat(): void {
     this.startedFromRecent.set(false);
     this.selectedBoat.set(null);
-    this.boatSearchControl.setValue('', { emitEvent: false });
+    this.clearBoatSearch();
     this.boatCategory.set('member');
     this.step.set('category');
   }
@@ -817,7 +823,7 @@ export class EntryPage {
   startMember(): void {
     this.startedFromRecent.set(false);
     this.selectedBoat.set(null);
-    this.boatSearchControl.setValue('', { emitEvent: false });
+    this.clearBoatSearch();
     this.boatCategory.set('member');
     this.step.set('details');
   }
@@ -825,7 +831,7 @@ export class EntryPage {
   startClub(): void {
     this.startedFromRecent.set(false);
     this.selectedBoat.set(null);
-    this.boatSearchControl.setValue('', { emitEvent: false });
+    this.clearBoatSearch();
     this.boatCategory.set('club');
     this.step.set('details');
   }
@@ -833,7 +839,7 @@ export class EntryPage {
   startVisitor(): void {
     this.startedFromRecent.set(false);
     this.selectedBoat.set(null);
-    this.boatSearchControl.setValue('', { emitEvent: false });
+    this.clearBoatSearch();
     this.boatCategory.set('visitor');
     this.resetVisitorForm();
     this.step.set('details');
@@ -850,7 +856,7 @@ export class EntryPage {
     }
     if (this.step() === 'details') {
       this.selectedBoat.set(null);
-      this.boatSearchControl.setValue('', { emitEvent: false });
+      this.clearBoatSearch();
       this.resetVisitorForm();
       this.step.set('category');
       return;
@@ -862,7 +868,7 @@ export class EntryPage {
       }
     }
     this.selectedBoat.set(null);
-    this.boatSearchControl.setValue('', { emitEvent: false });
+    this.clearBoatSearch();
     this.resetVisitorForm();
   }
 
@@ -1057,7 +1063,7 @@ export class EntryPage {
     this.raceSelectionGroup.reset();
     this.competitorDetailsGroup.reset();
     this.selectedBoat.set(null);
-    this.boatSearchControl.setValue('', { emitEvent: false });
+    this.clearBoatSearch();
     this.resetVisitorForm();
     this.step.set(this.hasRecentBoats() ? 'recent' : 'category');
 

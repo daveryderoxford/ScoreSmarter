@@ -275,6 +275,22 @@ describe('EntryPage self-entry flows', () => {
     expect(component.step()).toBe('recent');
   });
 
+  it('clears the member search and its filter when going back to the entry type buttons', async () => {
+    const fixture = setupTestBed({ isRO: false, userBoats: [] });
+    const component = fixture.componentInstance;
+    component.startMember();
+    component.boatSearchControl.setValue('Aero');
+    await new Promise(resolve => setTimeout(resolve, 200));
+    expect(component.filteredBoats().map(b => b.id)).toEqual(['b2']);
+
+    component.goBack();
+    component.startMember();
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(component.boatSearchControl.value).toBe('');
+    expect(component.filteredBoats().map(b => b.id)).toEqual(['b1', 'b2']);
+  });
+
   it('sets racePanelInitialPeriod to null when races exist today, and "future" when no races exist today', () => {
     const now = new Date();
     const todayRace: Race = {
