@@ -1,6 +1,36 @@
 import { describe, expect, it } from 'vitest';
 import { Race } from 'app/race-calender/model/race';
-import { publishedCancelledRaces, publishedSeriesResultsState } from './scoring-engine';
+import type { Series } from 'app/race-calender/model/series';
+import type { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
+import { publishedCancelledRaces, publishedSeriesResultsState, publishedSeriesTargets } from './scoring-engine';
+
+describe('publishedSeriesTargets', () => {
+  it('publishes each scoring configuration, then separately scored divisions under the primary', () => {
+    const primary = { id: 'p', name: 'Handicap' } as ScoringConfiguration;
+    const secondary = { id: 'py', name: 'PY' } as ScoringConfiguration;
+    const series = {
+      id: 'sat',
+      name: 'Saturday',
+      primaryScoringConfiguration: primary,
+      secondaryScoringConfigurations: [secondary],
+      divisions: [
+        { id: 'jun', name: 'Juniors', scoreAs: 'separateSeries' },
+        { id: 'tag', name: 'Tagged', scoreAs: 'classification' },
+      ],
+    } as unknown as Series;
+
+    expect(publishedSeriesTargets(series, [primary, secondary])).toEqual([
+      { config: primary, publishedSeriesId: 'sat', publishedSeriesName: 'Saturday', membership: { kind: 'fleet' } },
+      { config: secondary, publishedSeriesId: 'sat_py', publishedSeriesName: 'Saturday - PY', membership: { kind: 'fleet' } },
+      {
+        config: primary,
+        publishedSeriesId: 'sat_div_jun',
+        publishedSeriesName: 'Saturday - Juniors',
+        membership: { kind: 'division', divisionId: 'jun' },
+      },
+    ]);
+  });
+});
 
 function race(id: string, index: number, start: string, status: Race['status'], extra: Partial<Race> = {}): Race {
   return { id, index, scheduledStart: new Date(start), status, ...extra } as Race;

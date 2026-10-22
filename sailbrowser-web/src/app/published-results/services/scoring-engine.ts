@@ -19,6 +19,7 @@ import { PublishedRace } from '../model/published-race';
 import { PublishedSeason, SeriesInfo } from '../model/published-season';
 import { PublishedCancelledRace, PublishedSeries } from '../model/published-series';
 import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH } from './published-results-store';
+import { samePublishedContent } from './published-content';
 
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
 import { competitorsForConfigRace, isRaceScorable, seriesEntriesForConfig, type EntryMembership } from 'app/scoring/core/rules/eligibility';
@@ -38,6 +39,37 @@ export function publishedCancelledRaces(races: readonly Race[]): PublishedCancel
     .filter(r => r.status === 'Canceled')
     .sort((a, b) => a.scheduledStart.getTime() - b.scheduledStart.getTime())
     .map(r => ({ raceId: r.id, index: r.index, scheduledStart: r.scheduledStart }));
+}
+
+/** A published series built from a calendar series: one per scoring configuration, plus separately scored divisions. */
+export interface PublishedSeriesTarget {
+  config: ScoringConfiguration;
+  publishedSeriesId: string;
+  publishedSeriesName: string;
+  membership: EntryMembership;
+}
+
+export function publishedSeriesTargets(series: Series, configs: ScoringConfiguration[]): PublishedSeriesTarget[] {
+  const primary = series.primaryScoringConfiguration;
+  return [
+    ...configs.map(config => {
+      const isPrimary = config.id === primary.id;
+      return {
+        config,
+        publishedSeriesId: isPrimary ? series.id : `${series.id}_${config.id}`,
+        publishedSeriesName: isPrimary ? series.name : `${series.name} - ${config.name}`,
+        membership: { kind: 'fleet' } as EntryMembership,
+      };
+    }),
+    ...(series.divisions ?? [])
+      .filter(division => division.scoreAs === 'separateSeries')
+      .map(division => ({
+        config: primary,
+        publishedSeriesId: `${series.id}_div_${division.id}`,
+        publishedSeriesName: `${series.name} - ${division.name}`,
+        membership: { kind: 'division', divisionId: division.id } as EntryMembership,
+      })),
+  ];
 }
 
 const SCORING_CANDIDATE_STATUSES = new Set<Race['status']>([
@@ -119,7 +151,10 @@ export class ScoringEngine {
     seriesId: string,
     additionalRaceIds: string[] = []
   ): Promise<void> {
-    const series = await this.raceCalendarStore.getSeriesById(seriesId);
+    const [series, racesForSeries] = await Promise.all([
+      this.raceCalendarStore.getSeriesById(seriesId),
+      this.raceCalendarStore.getSeriesRacesById(seriesId),
+    ]);
     if (!series) {
       console.error(`ScoringEngine: Series ${seriesId} not found in Firestore.`);
       throw new Error('Series not found');
@@ -128,7 +163,6 @@ export class ScoringEngine {
     // 1. Races to score are chosen by race status. The server (`raceResultsChanged`) sets
     //    In progress / Completed from the recorded results, so we do not also require
     //    "has competitor rows" or other heuristics here.
-    const racesForSeries = await this.raceCalendarStore.getSeriesRacesById(seriesId);
 
     let candidateRaces = racesForSeries.filter(r => SCORING_CANDIDATE_STATUSES.has(r.status));
 
@@ -152,49 +186,36 @@ export class ScoringEngine {
         return timeA - timeB;
       });
 
-      // 3. Fetch all competitors and entries (needed for scoring and per-fleet filters).
-      const allSeriesCompetitors = await this.rcs.getSeriesCompetitors(seriesId);
-      const seriesEntries = await this.seriesEntryStore.getSeriesEntries(seriesId);
+      const configsToScore = [series.primaryScoringConfiguration, ...(series.secondaryScoringConfigurations || [])];
+      const targets = publishedSeriesTargets(series, configsToScore);
+
+      // 3. Read everything scoring needs at once: competitors and entries (scoring and
+      //    per-fleet filters), the currently published races of each target, and the season.
+      const [allSeriesCompetitors, seriesEntries, storedRaces] = await Promise.all([
+        this.rcs.getSeriesCompetitors(seriesId),
+        this.seriesEntryStore.getSeriesEntries(seriesId),
+        Promise.all(targets.map(t => this.readPublishedRaces(t.publishedSeriesId))),
+        this.loadSeason(seasonUpdates, series.seasonId),
+      ]);
 
       console.log(`ScoringEngine: Series ${seriesId} - Races: ${candidateRaces.length}, Competitors: ${allSeriesCompetitors.length}, Entries: ${seriesEntries.length}`);
 
-      const configsToScore = [series.primaryScoringConfiguration, ...(series.secondaryScoringConfigurations || [])];
-
-      for (const config of configsToScore) {
-        const isPrimary = config.id === series.primaryScoringConfiguration.id;
-        const publishedSeriesId = isPrimary ? series.id : `${series.id}_${config.id}`;
-        const publishedSeriesName = isPrimary ? series.name : `${series.name} - ${config.name}`;
-
+      targets.forEach((target, i) => {
         const scorableRaces = candidateRaces.filter(race =>
-          isRaceScorable(race, config, allSeriesCompetitors, seriesEntries),
+          isRaceScorable(race, target.config, allSeriesCompetitors, seriesEntries, target.membership),
         );
-
-        await this.rescoreAllRacesForConfig(batch, seasonUpdates, series, config, publishedSeriesId, publishedSeriesName, scorableRaces, allSeriesCompetitors, seriesEntries, cancelledRaces);
-      }
-
-      const primary = series.primaryScoringConfiguration;
-      for (const division of series.divisions ?? []) {
-        if (division.scoreAs !== 'separateSeries') continue;
-        const publishedSeriesId = `${series.id}_div_${division.id}`;
-        const publishedSeriesName = `${series.name} - ${division.name}`;
-        const membership: EntryMembership = { kind: 'division', divisionId: division.id };
-        const scorableRaces = candidateRaces.filter(race =>
-          isRaceScorable(race, primary, allSeriesCompetitors, seriesEntries, membership),
-        );
-        await this.rescoreAllRacesForConfig(
+        this.rescoreAllRacesForConfig(
           batch,
           seasonUpdates,
           series,
-          primary,
-          publishedSeriesId,
-          publishedSeriesName,
+          target,
           scorableRaces,
           allSeriesCompetitors,
           seriesEntries,
           cancelledRaces,
-          membership,
+          storedRaces[i],
         );
-      }
+      });
 
       this.cleanupStaleSeries(batch, seasonUpdates, series, configsToScore);
     }
@@ -212,19 +233,18 @@ export class ScoringEngine {
     return discardsForRaceIndex(series, raceCount);
   }
 
-  private async rescoreAllRacesForConfig(
+  private rescoreAllRacesForConfig(
     batch: WriteBatch,
     seasonUpdates: Map<string, PublishedSeason>,
     series: Series,
-    config: ScoringConfiguration,
-    publishedSeriesId: string,
-    publishedSeriesName: string,
+    target: PublishedSeriesTarget,
     racesToScore: Race[],
     allSeriesCompetitors: RaceCompetitor[],
     seriesEntries: SeriesEntry[],
     cancelledRaces: PublishedCancelledRace[],
-    membership: EntryMembership = { kind: 'fleet' },
-  ): Promise<void> {
+    storedRaces: PublishedRace[],
+  ): void {
+    const { config, publishedSeriesId, publishedSeriesName, membership } = target;
     const catalog: Division[] = series.divisions ?? [];
     const seriesInfo: PublishedSeriesInfo = {
       scoringAlgorithm: series.scoringAlgorithm,
@@ -236,9 +256,8 @@ export class ScoringEngine {
 
     if (racesToScore.length === 0) {
       this.savePublishedSeries(batch, publishedSeriesId, publishedSeriesName, config.fleet.id, [], [], seriesInfo);
-      const existingRaces = await this.readPublishedRaces(publishedSeriesId);
-      this.savePublishedRaces(batch, publishedSeriesId, [], existingRaces);
-      await this.prepareSeasonUpdate(
+      this.savePublishedRaces(batch, publishedSeriesId, [], storedRaces);
+      this.prepareSeasonUpdate(
         seasonUpdates,
         series,
         publishedSeriesId,
@@ -341,9 +360,8 @@ export class ScoringEngine {
       seriesDivisionDefinitions,
       seriesInfo,
     );
-    const existingRaces = await this.readPublishedRaces(publishedSeriesId);
-    this.savePublishedRaces(batch, publishedSeriesId, existingPublishedRaces, existingRaces);
-    await this.prepareSeasonUpdate(
+    this.savePublishedRaces(batch, publishedSeriesId, existingPublishedRaces, storedRaces);
+    this.prepareSeasonUpdate(
       seasonUpdates,
       series,
       publishedSeriesId,
@@ -393,9 +411,16 @@ export class ScoringEngine {
     batch.set(seriesDoc, publishedSeries);
   }
 
+  /**
+   * Writes scored races whose content differs from the stored copy. Every race is rescored
+   * because some points depend on the whole series (e.g. DNC points grow with entries), so
+   * races other than the edited one can change too.
+   */
   private savePublishedRaces(batch: WriteBatch, publishedSeriesId: string, scoredRaces: PublishedRace[], existingRaces: PublishedRace[]): void {
-    // Save all scored races
+    const storedById = new Map(existingRaces.map(r => [r.id, r] as const));
     scoredRaces.forEach(race => {
+      const stored = storedById.get(race.id);
+      if (stored && samePublishedContent(race, stored)) return;
       const raceDoc = this.tenant.docRef<PublishedRace>(PUBLISHED_SERIES_PATH, publishedSeriesId, 'races', race.id);
       batch.set(raceDoc, race);
     });
@@ -435,7 +460,16 @@ export class ScoringEngine {
     }
   }
 
-  private async prepareSeasonUpdate(
+  /** Reads the published season into `updates` (once per publish) so series can be added to it. */
+  private async loadSeason(updates: Map<string, PublishedSeason>, seasonId: string): Promise<void> {
+    if (updates.has(seasonId)) return;
+    const stored = await this.readPublishedSeason(seasonId);
+    if (updates.has(seasonId)) return;
+    const seasonName = this.clubStore.club().seasons.find(s => s.id === seasonId)?.name || 'Unknown Season';
+    updates.set(seasonId, stored ?? { id: seasonId, name: seasonName, series: [] });
+  }
+
+  private prepareSeasonUpdate(
     updates: Map<string, PublishedSeason>,
     series: Series,
     publishedSeriesId: string,
@@ -444,18 +478,9 @@ export class ScoringEngine {
     raceCount: number,
     recentRaceCount6d: number,
     lastPublishedRaceStart: Date | undefined,
-  ): Promise<void> {
-    const seasonId = series.seasonId;
-    let seasonData = updates.get(seasonId);
-
-    if (!seasonData) {
-      seasonData = (await this.readPublishedSeason(seasonId)) ?? undefined;
-      if (!seasonData) {
-        const seasonName = this.clubStore.club().seasons.find(s => s.id === seasonId)?.name || 'Unknown Season';
-        seasonData = { id: seasonId, name: seasonName, series: [] };
-      }
-      updates.set(seasonId, seasonData);
-    }
+  ): void {
+    const seasonData = updates.get(series.seasonId);
+    if (!seasonData) throw new Error(`ScoringEngine: season ${series.seasonId} not loaded`);
 
     const seriesInfo: SeriesInfo = {
       id: publishedSeriesId,
