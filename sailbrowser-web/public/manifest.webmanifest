@@ -2,6 +2,8 @@
   "name": "ScoreSmarter",
   "short_name": "ScoreSmarter",
   "display": "standalone",
+  "theme_color": "#d7e3ff",
+  "background_color": "#faf9fd",
   "scope": "./",
   "start_url": "./",
   "icons": [
