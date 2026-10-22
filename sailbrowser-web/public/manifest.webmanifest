@@ -1,6 +1,6 @@
 {
-  "name": "sailbrowser-web",
-  "short_name": "sailbrowser-web",
+  "name": "ScoreSmarter",
+  "short_name": "ScoreSmarter",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",
