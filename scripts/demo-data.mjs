@@ -12,7 +12,7 @@
  *
  *   node scripts/demo-data.mjs                         # dry run: summarise the baseline from ibrsc
  *   node scripts/demo-data.mjs --export                # write the baseline to Storage
- *   node scripts/demo-data.mjs --training-sheet sheet.json --training-image sheet.jpg
+ *   node scripts/demo-data.mjs --training-sheet scripts/demo-training-sheet.json
  *   node scripts/demo-data.mjs --reset                 # reset the demo club now
  *   node scripts/demo-data.mjs --from ibrsc --export --reset
  */
@@ -34,7 +34,7 @@ initializeApp({ projectId: 'sailbrowser-efef0', storageBucket: 'sailbrowser-efef
 
 const {
   BASELINE_CLUB_FIELDS, BASELINE_FILE, DEMO_CLUB_ID, RESTORED_COLLECTIONS,
-  TRAINING_IMAGE_FILE, TRAINING_SHEET_FILE, encodeValue,
+  TRAINING_SHEET_FILE, encodeValue,
 } = await import(new URL('demo-baseline.js', LIB));
 const { resetDemoClub } = await import(new URL('reset-demo.js', LIB));
 
@@ -204,9 +204,8 @@ async function upload(path, contents, contentType) {
 async function main() {
   const exporting = flag('--export');
   const sheetPath = option('--training-sheet');
-  const imagePath = option('--training-image');
   const resetting = flag('--reset');
-  const dryRun = !exporting && !sheetPath && !imagePath && !resetting;
+  const dryRun = !exporting && !sheetPath && !resetting;
 
   if (exporting || dryRun) {
     const built = await buildBaseline();
@@ -221,7 +220,6 @@ async function main() {
     }
     await upload(TRAINING_SHEET_FILE, JSON.stringify(sheet, null, 2), 'application/json');
   }
-  if (imagePath) await upload(TRAINING_IMAGE_FILE, readFileSync(imagePath), 'image/jpeg');
   if (resetting) {
     const summary = await resetDemoClub();
     console.log('Demo club reset:', summary);

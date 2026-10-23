@@ -2,8 +2,8 @@ import { Timestamp } from "firebase-admin/firestore";
 import type { DemoBaseline, DocData } from "./demo-baseline.js";
 
 /**
- * Describes the training scoring sheet so each day's race has entries that match the
- * handwritten rows. Uploaded as JSON next to the sheet photo.
+ * Describes the printed training scoring sheet so each day's race has entries and boats
+ * that match its handwritten rows. Trainees photograph and upload the sheet themselves.
  */
 export interface TrainingSheet {
   /** Baseline series whose scoring configuration, fleet and rules the training series copies. */
@@ -68,8 +68,8 @@ function classHandicaps(baseline: DemoBaseline, boatClass: string, py: number | 
 }
 
 /**
- * Training series (in the Training season) and today's race, ready for an AI scan of the
- * training sheet. Rows that are `entered` get a series entry and an unfinished race
+ * Training series (in the Training season) and today's race, ready for trainees to
+ * capture and scan the training sheet. Rows that are `entered` get a series entry and an unfinished race
  * result; rows that are `inBoats` get a boat in the register. Rows with neither are on
  * the sheet only, so the trainee has to add them.
  */

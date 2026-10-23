@@ -3,11 +3,10 @@ import { Timestamp } from "firebase-admin/firestore";
 /** The only club the demo reset may ever write to. */
 export const DEMO_CLUB_ID = "demo";
 
-/** Storage folder for the demo baseline and training sheet (not publicly readable). */
+/** Storage folder for the demo baseline and training sheet rows (not publicly readable). */
 export const DEMO_STORAGE_PREFIX = "system/private/demo";
 export const BASELINE_FILE = `${DEMO_STORAGE_PREFIX}/baseline.json`;
 export const TRAINING_SHEET_FILE = `${DEMO_STORAGE_PREFIX}/training-sheet.json`;
-export const TRAINING_IMAGE_FILE = `${DEMO_STORAGE_PREFIX}/training-sheet.jpg`;
 
 /** Firestore doc recording the last reset (used to find documents changed since). */
 export const RESET_STATE_DOC = "system/private/demo/resetState";
