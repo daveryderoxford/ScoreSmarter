@@ -1,37 +1,97 @@
 {
-  "templateSeriesId": "s-spring-pm-hAKGtl4h7G",
-  "seriesName": "Training",
-  "startTime": "11:00",
-  "rows": [
-    { "boatClass": "ILCA 7", "sailNumber": "214567", "helm": "Harriet Quill", "py": 1100 },
-    { "boatClass": "ILCA 6", "sailNumber": "209884", "helm": "Desmond Fogg", "py": 1145 },
-    { "boatClass": "Solo", "sailNumber": "5612", "helm": "Imogen Rook", "py": 1135 },
-    { "boatClass": "RS200", "sailNumber": "1873", "helm": "Barnaby Wick", "crew": "Tamsin Wick", "py": 1046 },
-    { "boatClass": "RS400", "sailNumber": "1420", "helm": "Cosmo Hale", "crew": "Lettie Hale", "py": 942 },
-    { "boatClass": "Blaze", "sailNumber": "812", "helm": "Peregrine Ash", "py": 1027 },
-    { "boatClass": "Streaker", "sailNumber": "1765", "helm": "Matilda Crisp", "py": 1128 },
-    { "boatClass": "Phantom", "sailNumber": "1301", "helm": "Rupert Dene", "py": 1004, "note": "Suggested DNS on the sheet" },
-    { "boatClass": "Topper", "sailNumber": "48211", "helm": "Poppy Fennell", "py": 1365 },
-    { "boatClass": "ILCA 4", "sailNumber": "187650", "helm": "Felix Marchbank", "py": 1208 },
+  "races": [
     {
-      "boatClass": "ILCA 7", "sailNumber": "207133", "helm": "Ottilie Brand", "py": 1100,
-      "inBoats": false, "note": "Entered in the race but not in the boat register"
+      "key": "handicap",
+      "type": "Handicap",
+      "seriesName": "Training - Handicap",
+      "startTime": "11:00",
+      "rows": [
+        { "boatClass": "ILCA 7", "sailNumber": "214567", "helm": "Harriet Quill", "py": 1100 },
+        { "boatClass": "ILCA 6", "sailNumber": "209884", "helm": "Desmond Fogg", "py": 1145 },
+        { "boatClass": "Solo", "sailNumber": "5612", "helm": "Imogen Rook", "py": 1135 },
+        { "boatClass": "RS200", "sailNumber": "1873", "helm": "Barnaby Wick", "crew": "Tamsin Wick", "py": 1046 },
+        { "boatClass": "RS400", "sailNumber": "1420", "helm": "Cosmo Hale", "crew": "Lettie Hale", "py": 942 },
+        { "boatClass": "Blaze", "sailNumber": "812", "helm": "Peregrine Ash", "py": 1027 },
+        { "boatClass": "Streaker", "sailNumber": "1765", "helm": "Matilda Crisp", "py": 1128 },
+        { "boatClass": "Phantom", "sailNumber": "1301", "helm": "Rupert Dene", "py": 1004, "note": "Suggested DNS on the sheet" },
+        { "boatClass": "Topper", "sailNumber": "48211", "helm": "Poppy Fennell", "py": 1365 },
+        { "boatClass": "ILCA 4", "sailNumber": "187650", "helm": "Felix Marchbank", "py": 1208 },
+        {
+          "boatClass": "ILCA 7", "sailNumber": "207133", "helm": "Ottilie Brand", "py": 1100,
+          "inBoats": false, "note": "Entered in the race but not in the boat register"
+        },
+        {
+          "boatClass": "Solo", "sailNumber": "5398", "helm": "Jasper Lowe", "py": 1135,
+          "entered": false, "note": "In the boat register but not entered"
+        },
+        {
+          "boatClass": "RS200", "sailNumber": "1652", "helm": "Agnes Thorpe", "crew": "Ivo Thorpe", "py": 1046,
+          "entered": false, "note": "In the boat register but not entered"
+        },
+        {
+          "boatClass": "ILCA 6", "sailNumber": "198021", "helm": "Wilf Harcourt", "py": 1145,
+          "entered": false, "note": "In the boat register but not entered"
+        },
+        {
+          "boatClass": "Pico", "sailNumber": "3011", "helm": "Daisy Pell", "py": 1330,
+          "entered": false, "inBoats": false, "note": "Not entered and not in the register: the trainee adds this boat"
+        }
+      ]
     },
     {
-      "boatClass": "Solo", "sailNumber": "5398", "helm": "Jasper Lowe", "py": 1135,
-      "entered": false, "note": "In the boat register but not entered"
+      "key": "pursuit",
+      "type": "Pursuit",
+      "seriesName": "Training - Pursuit",
+      "startTime": "13:00",
+      "rows": [
+        { "boatClass": "Topper", "sailNumber": "47302", "helm": "Hector Gale", "py": 1365 },
+        { "boatClass": "Solo", "sailNumber": "5770", "helm": "Mabel Crane", "py": 1135 },
+        { "boatClass": "ILCA 6", "sailNumber": "203345", "helm": "Ambrose Tull", "py": 1145 },
+        { "boatClass": "RS200", "sailNumber": "1710", "helm": "Beatrix Mott", "crew": "Ned Mott", "py": 1046 },
+        { "boatClass": "ILCA 7", "sailNumber": "211098", "helm": "Clement Ives", "py": 1100 },
+        { "boatClass": "Blaze", "sailNumber": "790", "helm": "Ivy Penrose", "py": 1027 },
+        { "boatClass": "RS400", "sailNumber": "1388", "helm": "Lionel Stark", "crew": "Edie Stark", "py": 942, "note": "Suggested DNF on the sheet" },
+        {
+          "boatClass": "Streaker", "sailNumber": "1702", "helm": "Winifred Rowe", "py": 1128,
+          "inBoats": false, "note": "Entered in the race but not in the boat register"
+        },
+        {
+          "boatClass": "ILCA 4", "sailNumber": "190221", "helm": "Arlo Finch", "py": 1208,
+          "entered": false, "note": "In the boat register but not entered"
+        },
+        {
+          "boatClass": "Phantom", "sailNumber": "1244", "helm": "Esme Larch", "py": 1004,
+          "entered": false, "inBoats": false, "note": "Not entered and not in the register: the trainee adds this boat"
+        }
+      ]
     },
     {
-      "boatClass": "RS200", "sailNumber": "1652", "helm": "Agnes Thorpe", "crew": "Ivo Thorpe", "py": 1046,
-      "entered": false, "note": "In the boat register but not entered"
-    },
-    {
-      "boatClass": "ILCA 6", "sailNumber": "198021", "helm": "Wilf Harcourt", "py": 1145,
-      "entered": false, "note": "In the boat register but not entered"
-    },
-    {
-      "boatClass": "Pico", "sailNumber": "3011", "helm": "Daisy Pell", "py": 1330,
-      "entered": false, "inBoats": false, "note": "Not entered and not in the register: the trainee adds this boat"
+      "key": "level-rating",
+      "type": "Level Rating",
+      "seriesName": "Training - Level Rating",
+      "startTime": "14:30",
+      "boatClass": "ILCA 7",
+      "rows": [
+        { "boatClass": "ILCA 7", "sailNumber": "215031", "helm": "Gideon Swale" },
+        { "boatClass": "ILCA 7", "sailNumber": "208764", "helm": "Henrietta Moss" },
+        { "boatClass": "ILCA 7", "sailNumber": "212290", "helm": "Ptolemy Grey" },
+        { "boatClass": "ILCA 7", "sailNumber": "199870", "helm": "Clemency Drew" },
+        { "boatClass": "ILCA 7", "sailNumber": "206113", "helm": "Ignatius Hart" },
+        { "boatClass": "ILCA 7", "sailNumber": "210452", "helm": "Philippa Lark" },
+        { "boatClass": "ILCA 7", "sailNumber": "201987", "helm": "Rufus Ainsley", "note": "Suggested OCS on the sheet" },
+        {
+          "boatClass": "ILCA 7", "sailNumber": "213376", "helm": "Sybil Ord",
+          "inBoats": false, "note": "Entered in the race but not in the boat register"
+        },
+        {
+          "boatClass": "ILCA 7", "sailNumber": "204518", "helm": "Hugo Pemberly",
+          "entered": false, "note": "In the boat register but not entered"
+        },
+        {
+          "boatClass": "ILCA 7", "sailNumber": "207659", "helm": "Odile Fairweather",
+          "entered": false, "inBoats": false, "note": "Not entered and not in the register: the trainee adds this boat"
+        }
+      ]
     }
   ]
 }

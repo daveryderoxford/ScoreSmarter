@@ -1,17 +1,37 @@
 import { Timestamp } from "firebase-admin/firestore";
 import type { DemoBaseline, DocData } from "./demo-baseline.js";
 
+export type TrainingRaceType = "Handicap" | "Pursuit" | "Level Rating";
+
 /**
- * Describes the printed training scoring sheet so each day's race has entries and boats
- * that match its handwritten rows. Trainees photograph and upload the sheet themselves.
+ * Describes the printed training scoring sheets so each day's training races have
+ * entries and boats that match their handwritten rows. Trainees photograph and upload
+ * the sheets themselves.
  */
 export interface TrainingSheet {
-  /** Baseline series whose scoring configuration, fleet and rules the training series copies. */
-  templateSeriesId: string;
-  /** Defaults to "Training". */
+  races: TrainingRaceSpec[];
+}
+
+export interface TrainingRaceSpec {
+  /** Short id used in document ids, e.g. "handicap". Unique within the sheet. */
+  key: string;
+  type: TrainingRaceType;
+  /** Defaults to "Training - {type}". */
   seriesName?: string;
   /** Local (UK) start time, "HH:mm". Defaults to "11:00". */
   startTime?: string;
+  /**
+   * Baseline series whose scoring rules (scheme, entry grouping, discards and primary
+   * scoring configuration with its fleet) the training series copies. Optional.
+   */
+  templateSeriesId?: string;
+  /**
+   * Club fleet to race in when there is no template. Defaults to the club's General
+   * Handicap fleet, or for Level Rating the club's fleet for `boatClass`.
+   */
+  fleetId?: string;
+  /** Level Rating only: the one-design class (all rows must be this class). */
+  boatClass?: string;
   rows: TrainingSheetRow[];
 }
 
@@ -22,7 +42,7 @@ export interface TrainingSheetRow {
   crew?: string;
   /** PY to use when the class has no PY in the club's class list. */
   py?: number;
-  /** Entered in today's race (series entry and race result). Default true. */
+  /** Entered in the race (series entry and race result). Default true. */
   entered?: boolean;
   /** In the club's boat register. Default true. */
   inBoats?: boolean;
@@ -31,10 +51,9 @@ export interface TrainingSheetRow {
 }
 
 export const TRAINING_SEASON = { id: "training", name: "Training", status: "current" } as const;
-export const TRAINING_SERIES_ID = "S-training";
 
 export interface TrainingDocs {
-  raceId: string;
+  raceIds: string[];
   /** Docs keyed by path relative to the club. */
   docs: Record<string, DocData>;
 }
@@ -67,86 +86,142 @@ function classHandicaps(baseline: DemoBaseline, boatClass: string, py: number | 
   return py !== undefined ? [{ scheme: "PY", value: py }] : [];
 }
 
+function trainingFleet(baseline: DemoBaseline, spec: TrainingRaceSpec): DocData {
+  const fleets = (baseline.club["fleets"] as DocData[] | undefined) ?? [];
+  const fleet = spec.fleetId
+    ? fleets.find(f => f["id"] === spec.fleetId)
+    : spec.type === "Level Rating"
+      ? fleets.find(f => f["type"] === "BoatClass" && f["boatClassId"] === spec.boatClass)
+      : fleets.find(f => f["type"] === "GeneralHandicap");
+  if (!fleet) {
+    const wanted = spec.fleetId
+      ? `fleet ${spec.fleetId}`
+      : spec.type === "Level Rating" ? `a ${spec.boatClass} class fleet` : "a General Handicap fleet";
+    throw new Error(`Training race "${spec.key}": the club has no ${wanted}; set fleetId`);
+  }
+  return fleet;
+}
+
+function scoringConfiguration(spec: TrainingRaceSpec, fleet: DocData): DocData {
+  return spec.type === "Level Rating"
+    ? { id: "overall", name: "Level Rating", type: "LevelRating", handicapScheme: "Level Rating", fleet }
+    : { id: "overall", name: "PY", type: "Handicap", handicapScheme: "PY", fleet };
+}
+
+/** Scoring rules for the training series: copied from the template series, or defaults. */
+function seriesScoring(baseline: DemoBaseline, spec: TrainingRaceSpec): { scoring: DocData; fleet: DocData } {
+  if (spec.templateSeriesId) {
+    const template = baseline.docs[`series/${spec.templateSeriesId}`];
+    if (!template) throw new Error(`Training race "${spec.key}": template series ${spec.templateSeriesId} is not in the baseline`);
+    const config = template["primaryScoringConfiguration"] as DocData | undefined;
+    const fleet = config?.["fleet"] as DocData | undefined;
+    if (!config || !fleet) throw new Error(`Training race "${spec.key}": template series has no scoring configuration`);
+    return {
+      fleet,
+      scoring: {
+        scoringAlgorithm: template["scoringAlgorithm"] ?? "short",
+        entryAlgorithm: template["entryAlgorithm"] ?? "classSailNumberHelm",
+        discards: template["discards"] ?? [],
+        primaryScoringConfiguration: config,
+      },
+    };
+  }
+  const fleet = trainingFleet(baseline, spec);
+  return {
+    fleet,
+    scoring: {
+      scoringAlgorithm: "short",
+      entryAlgorithm: "classSailNumberHelm",
+      discards: [],
+      primaryScoringConfiguration: scoringConfiguration(spec, fleet),
+    },
+  };
+}
+
 /**
- * Training series (in the Training season) and today's race, ready for trainees to
- * capture and scan the training sheet. Rows that are `entered` get a series entry and an unfinished race
- * result; rows that are `inBoats` get a boat in the register. Rows with neither are on
- * the sheet only, so the trainee has to add them.
+ * For each training race: a series in the Training season and today's race. Rows that
+ * are `entered` get a series entry and an unfinished race result; rows that are
+ * `inBoats` get a boat in the register. Rows with neither are on the sheet only, so the
+ * trainee has to add them.
  */
 export function buildTrainingDocs(sheet: TrainingSheet, baseline: DemoBaseline, now: Date): TrainingDocs {
-  const template = baseline.docs[`series/${sheet.templateSeriesId}`];
-  if (!template) throw new Error(`Template series ${sheet.templateSeriesId} is not in the baseline`);
-  const config = template["primaryScoringConfiguration"] as DocData & { fleet: DocData };
-  if (!config?.fleet) throw new Error(`Template series ${sheet.templateSeriesId} has no scoring configuration`);
-
   const dateId = londonDateId(now);
-  const start = Timestamp.fromDate(londonTime(dateId, sheet.startTime ?? "11:00"));
-  const seriesName = sheet.seriesName ?? "Training";
-  const raceId = `R-training-${dateId}`;
-  const seriesId = TRAINING_SERIES_ID;
+  const docs: Record<string, DocData> = {};
+  const raceIds: string[] = [];
 
-  const docs: Record<string, DocData> = {
-    [`series/${seriesId}`]: {
-      ...template,
+  for (const spec of sheet.races) {
+    if (spec.type === "Level Rating" && !spec.boatClass) {
+      throw new Error(`Training race "${spec.key}": Level Rating needs boatClass`);
+    }
+    const { fleet, scoring } = seriesScoring(baseline, spec);
+    const start = Timestamp.fromDate(londonTime(dateId, spec.startTime ?? "11:00"));
+    const seriesName = spec.seriesName ?? `Training - ${spec.type}`;
+    const seriesId = `S-training-${spec.key}`;
+    const raceId = `R-training-${spec.key}-${dateId}`;
+    raceIds.push(raceId);
+
+    docs[`series/${seriesId}`] = {
       name: seriesName,
       seasonId: TRAINING_SEASON.id,
       archived: false,
       startDate: start,
       endDate: start,
+      ...scoring,
       secondaryScoringConfigurations: [],
       divisions: [],
       dirty: false,
-    },
-    [`races/${raceId}`]: {
+    };
+    docs[`races/${raceId}`] = {
       seriesId,
       seriesName,
-      fleetId: config.fleet["id"],
+      fleetId: fleet["id"],
       index: 1,
       raceOfDay: 1,
       scheduledStart: start,
-      type: "Handicap",
+      type: spec.type,
       status: "Future",
       isDiscardable: true,
       isAverageLap: false,
       resultsSheetImage: "",
       dirty: false,
-    },
-  };
+    };
 
-  sheet.rows.forEach((row, i) => {
-    const handicaps = classHandicaps(baseline, row.boatClass, row.py);
-    if (row.inBoats ?? true) {
-      docs[`boats/B-training-${i + 1}`] = {
+    spec.rows.forEach((row, i) => {
+      const n = i + 1;
+      const handicaps = classHandicaps(baseline, row.boatClass, row.py);
+      if (row.inBoats ?? true) {
+        docs[`boats/B-training-${spec.key}-${n}`] = {
+          boatClass: row.boatClass,
+          sailNumber: row.sailNumber,
+          name: "",
+          helm: row.helm,
+          crew: row.crew ?? "",
+          isClub: false,
+          handicaps,
+          ownerUid: "demo",
+        };
+      }
+      if (!(row.entered ?? true)) return;
+      const entryId = `SE-training-${spec.key}-${n}`;
+      docs[`series-entries/${entryId}`] = {
+        seriesId,
+        helm: row.helm,
+        ...(row.crew ? { crew: row.crew } : {}),
         boatClass: row.boatClass,
         sailNumber: row.sailNumber,
-        name: "",
-        helm: row.helm,
-        crew: row.crew ?? "",
-        isClub: false,
         handicaps,
-        ownerUid: "demo",
+        divisions: [],
       };
-    }
-    if (!(row.entered ?? true)) return;
-    const entryId = `SE-training-${i + 1}`;
-    docs[`series-entries/${entryId}`] = {
-      seriesId,
-      helm: row.helm,
-      ...(row.crew ? { crew: row.crew } : {}),
-      boatClass: row.boatClass,
-      sailNumber: row.sailNumber,
-      handicaps,
-      divisions: [],
-    };
-    docs[`race-results/RC-training-${dateId}-${i + 1}`] = {
-      seriesEntryId: entryId,
-      raceId,
-      seriesId,
-      resultCode: "NOT FINISHED",
-      manualLaps: 0,
-      lapTimes: [],
-    };
-  });
+      docs[`race-results/RC-training-${spec.key}-${dateId}-${n}`] = {
+        seriesEntryId: entryId,
+        raceId,
+        seriesId,
+        resultCode: "NOT FINISHED",
+        manualLaps: 0,
+        lapTimes: [],
+      };
+    });
+  }
 
-  return { raceId, docs };
+  return { raceIds, docs };
 }

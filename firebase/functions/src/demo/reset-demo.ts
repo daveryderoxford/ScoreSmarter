@@ -19,7 +19,7 @@ import { buildTrainingDocs, TRAINING_SEASON, type TrainingSheet } from "./traini
 export interface DemoResetSummary {
   rewritten: number;
   deleted: number;
-  trainingRaceId?: string;
+  trainingRaceIds: string[];
   trainingEntries: number;
 }
 
@@ -51,7 +51,7 @@ async function existingDocs(db: Firestore): Promise<Map<string, number>> {
 }
 
 /**
- * Returns the demo club to its baseline and sets up today's training race.
+ * Returns the demo club to its baseline and sets up today's training races.
  * Only documents changed since the last reset are rewritten. Never touches any club
  * other than {@link DEMO_CLUB_ID}, nor the demo club's users or kiosks.
  */
@@ -107,14 +107,14 @@ export async function resetDemoClub(now = new Date()): Promise<DemoResetSummary>
     }
     await trainingWriter.close();
   } else {
-    logger.info("resetDemoClub: no training sheet; skipping training race", { file: TRAINING_SHEET_FILE });
+    logger.info("resetDemoClub: no training sheet; skipping training races", { file: TRAINING_SHEET_FILE });
   }
 
   const summary: DemoResetSummary = {
     rewritten: plan.writes.length,
     deleted: plan.deletes.length,
-    ...(training ? { trainingRaceId: training.raceId } : {}),
-    trainingEntries: sheet?.rows.filter(r => r.entered ?? true).length ?? 0,
+    trainingRaceIds: training?.raceIds ?? [],
+    trainingEntries: Object.keys(training?.docs ?? {}).filter(p => p.startsWith("series-entries/")).length,
   };
   await db.doc(RESET_STATE_DOC).set({
     lastResetAt: Timestamp.now(),

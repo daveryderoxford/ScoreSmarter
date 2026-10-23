@@ -191,7 +191,9 @@ function summarise({ baseline, nameMap }) {
   const series = Object.entries(baseline.docs)
     .filter(([path]) => path.startsWith('series/'))
     .map(([path, data]) => `${path.slice('series/'.length)}  ${data.name} (season ${data.seasonId})`);
-  console.log(`Series (use an id as the training sheet's templateSeriesId):\n  ${series.join('\n  ')}`);
+  console.log(`Series:\n  ${series.join('\n  ')}`);
+  const fleets = (baseline.club.fleets ?? []).map(f => `${f.id}  ${f.type}${f.boatClassId ? ` ${f.boatClassId}` : ''}${f.name ? ` ${f.name}` : ''}`);
+  console.log(`Fleets (a training race can set fleetId to one of these):\n  ${fleets.join('\n  ')}`);
   console.log(`People renamed: ${nameMap.size}; sample: ${[...nameMap.values()].slice(0, 8).join(', ')}`);
   console.log(`Size: ${(JSON.stringify(baseline).length / 1024 / 1024).toFixed(1)} MB`);
 }
@@ -215,8 +217,8 @@ async function main() {
   }
   if (sheetPath) {
     const sheet = JSON.parse(readFileSync(sheetPath, 'utf8'));
-    if (!sheet.templateSeriesId || !Array.isArray(sheet.rows)) {
-      throw new Error('Training sheet needs templateSeriesId and rows');
+    if (!Array.isArray(sheet.races) || sheet.races.some(r => !r.key || !r.type || !Array.isArray(r.rows))) {
+      throw new Error('Training sheet needs races, each with key, type and rows');
     }
     await upload(TRAINING_SHEET_FILE, JSON.stringify(sheet, null, 2), 'application/json');
   }
