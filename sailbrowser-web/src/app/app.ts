@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, effect, inject, OnInit, viewChild } from '@angular/core';
 import { RouteConfigLoadEnd, RouteConfigLoadStart, Router, RouterOutlet } from "@angular/router";
+import { AuthService } from './auth/auth.service';
 import { AppUpdateService } from './shared/services/app-update.service';
+import { isInstalledApp, StoragePersistenceService } from './shared/services/storage-persistence.service';
 import { LazyInject } from './shared/services/lazy-injector';
 import { SidenavService } from './shared/services/sidenav.service';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -28,6 +30,8 @@ export class App implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly lazyInject = inject(LazyInject);
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+  private readonly storagePersistence = inject(StoragePersistenceService);
 
   sidenav = viewChild.required(MatSidenav);
 
@@ -44,6 +48,13 @@ export class App implements OnInit {
   );
 
   constructor() {
+    // Unsent results wait in Firestore's IndexedDB queue while offline.
+    effect(() => {
+      if (this.auth.isRaceOfficer() || isInstalledApp()) {
+        void this.storagePersistence.ensurePersisted();
+      }
+    });
+
     // Zoneless: SW events set a signal; this effect runs inside the component graph so
     // MatSnackBar renders reliably (afterNextRender from a service often never fires).
     effect(() => {
