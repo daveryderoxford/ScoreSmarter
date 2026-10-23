@@ -1,0 +1,37 @@
+{
+  "templateSeriesId": "s-spring-pm-hAKGtl4h7G",
+  "seriesName": "Training",
+  "startTime": "11:00",
+  "rows": [
+    { "boatClass": "ILCA 7", "sailNumber": "214567", "helm": "Harriet Quill", "py": 1100 },
+    { "boatClass": "ILCA 6", "sailNumber": "209884", "helm": "Desmond Fogg", "py": 1145 },
+    { "boatClass": "Solo", "sailNumber": "5612", "helm": "Imogen Rook", "py": 1135 },
+    { "boatClass": "RS200", "sailNumber": "1873", "helm": "Barnaby Wick", "crew": "Tamsin Wick", "py": 1046 },
+    { "boatClass": "RS400", "sailNumber": "1420", "helm": "Cosmo Hale", "crew": "Lettie Hale", "py": 942 },
+    { "boatClass": "Blaze", "sailNumber": "812", "helm": "Peregrine Ash", "py": 1027 },
+    { "boatClass": "Streaker", "sailNumber": "1765", "helm": "Matilda Crisp", "py": 1128 },
+    { "boatClass": "Phantom", "sailNumber": "1301", "helm": "Rupert Dene", "py": 1004, "note": "Suggested DNS on the sheet" },
+    { "boatClass": "Topper", "sailNumber": "48211", "helm": "Poppy Fennell", "py": 1365 },
+    { "boatClass": "ILCA 4", "sailNumber": "187650", "helm": "Felix Marchbank", "py": 1208 },
+    {
+      "boatClass": "ILCA 7", "sailNumber": "207133", "helm": "Ottilie Brand", "py": 1100,
+      "inBoats": false, "note": "Entered in the race but not in the boat register"
+    },
+    {
+      "boatClass": "Solo", "sailNumber": "5398", "helm": "Jasper Lowe", "py": 1135,
+      "entered": false, "note": "In the boat register but not entered"
+    },
+    {
+      "boatClass": "RS200", "sailNumber": "1652", "helm": "Agnes Thorpe", "crew": "Ivo Thorpe", "py": 1046,
+      "entered": false, "note": "In the boat register but not entered"
+    },
+    {
+      "boatClass": "ILCA 6", "sailNumber": "198021", "helm": "Wilf Harcourt", "py": 1145,
+      "entered": false, "note": "In the boat register but not entered"
+    },
+    {
+      "boatClass": "Pico", "sailNumber": "3011", "helm": "Daisy Pell", "py": 1330,
+      "entered": false, "inBoats": false, "note": "Not entered and not in the register: the trainee adds this boat"
+    }
+  ]
+}

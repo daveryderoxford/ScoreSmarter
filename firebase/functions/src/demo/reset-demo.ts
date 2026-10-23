@@ -123,7 +123,7 @@ export async function resetDemoClub(now = new Date()): Promise<DemoResetSummary>
     rewritten: plan.writes.length,
     deleted: plan.deletes.length,
     ...(training ? { trainingRaceId: training.raceId } : {}),
-    trainingEntries: sheet?.rows.length ?? 0,
+    trainingEntries: sheet?.rows.filter(r => r.entered ?? true).length ?? 0,
   };
   await db.doc(RESET_STATE_DOC).set({
     lastResetAt: Timestamp.now(),

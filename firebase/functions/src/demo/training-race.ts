@@ -22,6 +22,12 @@ export interface TrainingSheetRow {
   crew?: string;
   /** PY to use when the class has no PY in the club's class list. */
   py?: number;
+  /** Entered in today's race (series entry and race result). Default true. */
+  entered?: boolean;
+  /** In the club's boat register. Default true. */
+  inBoats?: boolean;
+  /** For whoever writes the sheet, e.g. "DNS". Not used by the reset. */
+  note?: string;
 }
 
 export const TRAINING_SEASON = { id: "training", name: "Training", status: "current" } as const;
@@ -62,8 +68,10 @@ function classHandicaps(baseline: DemoBaseline, boatClass: string, py: number | 
 }
 
 /**
- * Training series (in the Training season), today's race, a series entry per sheet row
- * and an unfinished race result for each, ready for an AI scan of the training sheet.
+ * Training series (in the Training season) and today's race, ready for an AI scan of the
+ * training sheet. Rows that are `entered` get a series entry and an unfinished race
+ * result; rows that are `inBoats` get a boat in the register. Rows with neither are on
+ * the sheet only, so the trainee has to add them.
  */
 export function buildTrainingDocs(sheet: TrainingSheet, baseline: DemoBaseline, now: Date): TrainingDocs {
   const template = baseline.docs[`series/${sheet.templateSeriesId}`];
@@ -106,6 +114,20 @@ export function buildTrainingDocs(sheet: TrainingSheet, baseline: DemoBaseline, 
   };
 
   sheet.rows.forEach((row, i) => {
+    const handicaps = classHandicaps(baseline, row.boatClass, row.py);
+    if (row.inBoats ?? true) {
+      docs[`boats/B-training-${i + 1}`] = {
+        boatClass: row.boatClass,
+        sailNumber: row.sailNumber,
+        name: "",
+        helm: row.helm,
+        crew: row.crew ?? "",
+        isClub: false,
+        handicaps,
+        ownerUid: "demo",
+      };
+    }
+    if (!(row.entered ?? true)) return;
     const entryId = `SE-training-${i + 1}`;
     docs[`series-entries/${entryId}`] = {
       seriesId,
@@ -113,7 +135,7 @@ export function buildTrainingDocs(sheet: TrainingSheet, baseline: DemoBaseline, 
       ...(row.crew ? { crew: row.crew } : {}),
       boatClass: row.boatClass,
       sailNumber: row.sailNumber,
-      handicaps: classHandicaps(baseline, row.boatClass, row.py),
+      handicaps,
       divisions: [],
     };
     docs[`race-results/RC-training-${dateId}-${i + 1}`] = {

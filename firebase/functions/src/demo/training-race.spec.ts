@@ -66,6 +66,40 @@ test("buildTrainingDocs creates today's race with an unfinished entry per sheet 
   });
 });
 
+test("buildTrainingDocs adds boats and entries according to each row's entered / inBoats flags", () => {
+  const { docs } = buildTrainingDocs(
+    {
+      templateSeriesId: "S-sat",
+      rows: [
+        { boatClass: "ILCA 7", sailNumber: "1", helm: "Entered And Registered" },
+        { boatClass: "ILCA 7", sailNumber: "2", helm: "Entered Only", inBoats: false },
+        { boatClass: "ILCA 7", sailNumber: "3", helm: "Registered Only", entered: false },
+        { boatClass: "ILCA 7", sailNumber: "4", helm: "Sheet Only", entered: false, inBoats: false },
+      ],
+    },
+    baseline,
+    new Date("2026-06-10T08:00:00Z"),
+  );
+
+  const paths = Object.keys(docs);
+  assert.deepEqual(paths.filter(p => p.startsWith("boats/")).sort(), ["boats/B-training-1", "boats/B-training-3"]);
+  assert.deepEqual(paths.filter(p => p.startsWith("series-entries/")).sort(), [
+    "series-entries/SE-training-1",
+    "series-entries/SE-training-2",
+  ]);
+  assert.equal(paths.filter(p => p.startsWith("race-results/")).length, 2);
+  assert.deepEqual(docs["boats/B-training-3"], {
+    boatClass: "ILCA 7",
+    sailNumber: "3",
+    name: "",
+    helm: "Registered Only",
+    crew: "",
+    isClub: false,
+    handicaps: [{ scheme: "PY", value: 1100 }],
+    ownerUid: "demo",
+  });
+});
+
 test("buildTrainingDocs rejects a template series that is not in the baseline", () => {
   assert.throws(() => buildTrainingDocs({ templateSeriesId: "missing", rows: [] }, baseline, new Date()), /not in the baseline/);
 });
