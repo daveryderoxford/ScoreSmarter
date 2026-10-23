@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ScoreSmarter demo – training sheet crib</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  body { font: 11pt/1.35 -apple-system, "Helvetica Neue", Arial, sans-serif; color: #111; }
+  h1 { font-size: 17pt; margin: 0 0 4px; }
+  h2 { font-size: 13pt; margin: 18px 0 6px; page-break-after: avoid; }
+  p, li { margin: 3px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; page-break-inside: avoid; }
+  th, td { border: 1px solid #999; padding: 3px 6px; text-align: left; vertical-align: top; }
+  th { background: #eee; }
+  td.n, th.n { width: 2.5em; text-align: center; }
+  .write { font-family: "Comic Sans MS", "Bradley Hand", cursive; }
+  .tip { color: #444; font-size: 9.5pt; }
+  .mess { background: #fff4cc; }
+  .race { page-break-before: always; }
+</style>
+</head>
+<body>
+<h1>ScoreSmarter demo – training sheet crib</h1>
+<p>What to hand-write on the club scoring sheets for the three daily training races in the demo club
+(<code>demo.ro.scoresmarter.app</code>, Training season). Boats and entries are recreated every night from
+<code>scripts/demo-training-sheet.json</code>; keep this crib in step if that file changes.</p>
+<ul>
+  <li>Use the normal club sheet with the typewritten row numbers in the first column.</li>
+  <li>Write in the order shown. Rows marked <span class="mess">&nbsp;yellow&nbsp;</span> are deliberate mistakes
+    so trainees see “Needs attention” flags and alternative readings.</li>
+  <li>Photograph the finished sheets once, then print the photos (or the sheets) for trainees to capture.</li>
+</ul>
+
+<h2>1. Training – Handicap (start 11:00, clock times)</h2>
+<table>
+  <tr><th class="n">Row</th><th>Class</th><th>Sail no.</th><th>Helm / crew</th><th>Finish</th><th>In the demo</th></tr>
+  <tr><td class="n">1</td><td class="write">ILCA 7</td><td class="write">214567</td><td class="write">Harriet Quill</td><td class="write">11:53:43</td><td>Entered</td></tr>
+  <tr><td class="n">2</td><td class="write">ILCA 6</td><td class="write">209884</td><td class="write">Desmond Fogg</td><td class="write">11:57:21</td><td>Entered</td></tr>
+  <tr class="mess"><td class="n">3</td><td class="write">Solo</td><td class="write">5612</td><td class="write">Imogen Rook</td><td class="write"><s>11:58:05</s> 11:56:05</td><td>Entered. Cross out the first time and rewrite it.</td></tr>
+  <tr><td class="n">4</td><td class="write">RS200</td><td class="write">1873</td><td class="write">Barnaby Wick / Tamsin Wick</td><td class="write">11:53:21</td><td>Entered</td></tr>
+  <tr><td class="n">5</td><td class="write">RS400</td><td class="write">1420</td><td class="write">Cosmo Hale / Lettie Hale</td><td class="write">11:46:52</td><td>Entered</td></tr>
+  <tr><td class="n">6</td><td class="write">Blaze</td><td class="write">812</td><td class="write">Peregrine Ash</td><td class="write">11:53:14</td><td>Entered</td></tr>
+  <tr><td class="n">7</td><td class="write">Streaker</td><td class="write">1765</td><td class="write">Matilda Crisp</td><td class="write">11:56:47</td><td>Entered</td></tr>
+  <tr><td class="n">8</td><td class="write">Phantom</td><td class="write">1301</td><td class="write">Rupert Dene</td><td class="write">DNS</td><td>Entered; did not start</td></tr>
+  <tr><td class="n">9</td><td class="write">Topper</td><td class="write">48211</td><td class="write">Poppy Fennell</td><td class="write">12:11:40</td><td>Entered</td></tr>
+  <tr class="mess"><td class="n">10</td><td class="write">ILCA 4</td><td class="write">187650</td><td class="write">Felix Marchbank</td><td class="write">01:18</td><td>Entered. Hour left off (12:01:18) – the scanner estimates it from the rows around it.</td></tr>
+  <tr><td class="n">11</td><td class="write">ILCA 7</td><td class="write">207133</td><td class="write">Ottilie Brand</td><td class="write">11:54:05</td><td>Entered, not in boat register</td></tr>
+  <tr><td class="n">12</td><td class="write">Solo</td><td class="write">5398</td><td class="write">Jasper Lowe</td><td class="write">11:58:27</td><td>In boat register, <b>not entered</b></td></tr>
+  <tr><td class="n">13</td><td class="write">RS200</td><td class="write">1652</td><td class="write">Agnes Thorpe / Ivo Thorpe</td><td class="write">11:55:47</td><td>In boat register, <b>not entered</b></td></tr>
+  <tr><td class="n">14</td><td class="write">ILCA 6</td><td class="write">198021</td><td class="write">Wilf Harcourt</td><td class="write">11:59:44</td><td>In boat register, <b>not entered</b></td></tr>
+  <tr><td class="n">15</td><td class="write">Pico</td><td class="write">3011</td><td class="write">Daisy Pell</td><td class="write">12:08:10</td><td><b>Not entered, not registered</b> – trainee adds</td></tr>
+</table>
+<p class="tip">Expected result (with the sheet’s PYs; small differences if the club’s class PYs differ):
+1 Harriet Quill, 2 Ottilie Brand, 3 Imogen Rook, 4 Cosmo Hale, 5 Desmond Fogg, 6 Matilda Crisp,
+7 Felix Marchbank, 8 Barnaby Wick, 9 Daisy Pell, 10 Jasper Lowe, 11 Peregrine Ash, 12 Wilf Harcourt,
+13 Poppy Fennell, 14 Agnes Thorpe; Rupert Dene DNS. First finisher sails 46:52 (over the RYA 20-minute minimum).</p>
+
+<h2 class="race">2. Training – Pursuit (start 13:00, finish order)</h2>
+<p class="tip">There is no AI scan for pursuit races: trainees enter this finishing order on the Results Entry page
+(finish-order entry). The sheet can be written in start order with a finishing position against each boat.</p>
+<table>
+  <tr><th class="n">Row</th><th>Class</th><th>Sail no.</th><th>Helm / crew</th><th>Finish position</th><th>In the demo</th></tr>
+  <tr><td class="n">1</td><td class="write">Topper</td><td class="write">47302</td><td class="write">Hector Gale</td><td class="write">3</td><td>Entered</td></tr>
+  <tr><td class="n">2</td><td class="write">Solo</td><td class="write">5770</td><td class="write">Mabel Crane</td><td class="write">2</td><td>Entered</td></tr>
+  <tr><td class="n">3</td><td class="write">ILCA 6</td><td class="write">203345</td><td class="write">Ambrose Tull</td><td class="write">9</td><td>Entered</td></tr>
+  <tr><td class="n">4</td><td class="write">RS200</td><td class="write">1710</td><td class="write">Beatrix Mott / Ned Mott</td><td class="write">5</td><td>Entered</td></tr>
+  <tr><td class="n">5</td><td class="write">ILCA 7</td><td class="write">211098</td><td class="write">Clement Ives</td><td class="write">1</td><td>Entered</td></tr>
+  <tr><td class="n">6</td><td class="write">Blaze</td><td class="write">790</td><td class="write">Ivy Penrose</td><td class="write">7</td><td>Entered</td></tr>
+  <tr><td class="n">7</td><td class="write">RS400</td><td class="write">1388</td><td class="write">Lionel Stark / Edie Stark</td><td class="write">DNF</td><td>Entered; did not finish</td></tr>
+  <tr><td class="n">8</td><td class="write">Streaker</td><td class="write">1702</td><td class="write">Winifred Rowe</td><td class="write">8</td><td>Entered, not in boat register</td></tr>
+  <tr><td class="n">9</td><td class="write">ILCA 4</td><td class="write">190221</td><td class="write">Arlo Finch</td><td class="write">4</td><td>In boat register, <b>not entered</b></td></tr>
+  <tr><td class="n">10</td><td class="write">Phantom</td><td class="write">1244</td><td class="write">Esme Larch</td><td class="write">6</td><td><b>Not entered, not registered</b> – trainee adds</td></tr>
+</table>
+<p class="tip">Finishing order: 1 Clement Ives, 2 Mabel Crane, 3 Hector Gale, 4 Arlo Finch, 5 Beatrix Mott, 6 Esme Larch,
+7 Ivy Penrose, 8 Winifred Rowe, 9 Ambrose Tull; Lionel Stark DNF.</p>
+
+<h2>3. Training – Level Rating (start 14:30, ILCA 7, finish order)</h2>
+<p class="tip">Level Rating sheets are read in finish order: each row is the next boat across the line.
+Some sail numbers are written as the last digits only, as race officers often do; the scanner works out which boat it is.</p>
+<table>
+  <tr><th class="n">Row</th><th>Sail no. (as written)</th><th>Helm</th><th>Notes</th><th>In the demo</th></tr>
+  <tr><td class="n">1</td><td class="write">212290</td><td>Ptolemy Grey</td><td></td><td>Entered</td></tr>
+  <tr class="mess"><td class="n">2</td><td class="write">8764</td><td>Henrietta Moss</td><td>Last digits only (208764)</td><td>Entered</td></tr>
+  <tr><td class="n">3</td><td class="write">215031</td><td>Gideon Swale</td><td></td><td>Entered</td></tr>
+  <tr class="mess"><td class="n">4</td><td class="write">6113</td><td>Ignatius Hart</td><td>Last digits only (206113)</td><td>Entered</td></tr>
+  <tr><td class="n">5</td><td class="write">207659</td><td>Odile Fairweather</td><td></td><td><b>Not entered, not registered</b> – trainee adds</td></tr>
+  <tr class="mess"><td class="n">6</td><td class="write">199870</td><td>Clemency Drew</td><td>Optional: draw a linked arrow between rows 6 and 7 (they finished the other way round)</td><td>Entered</td></tr>
+  <tr><td class="n">7</td><td class="write">210452</td><td>Philippa Lark</td><td></td><td>Entered</td></tr>
+  <tr><td class="n">8</td><td class="write">213376</td><td>Sybil Ord</td><td></td><td>Entered, not in boat register</td></tr>
+  <tr><td class="n">9</td><td class="write">204518</td><td>Hugo Pemberly</td><td></td><td>In boat register, <b>not entered</b></td></tr>
+  <tr><td class="n">10</td><td class="write">201987 OCS</td><td>Rufus Ainsley</td><td>Over the line at the start</td><td>Entered</td></tr>
+</table>
+<p class="tip">Helm names are only for the crib; Level Rating sheets usually carry just sail numbers.
+Without the arrow the order is as listed; with it, Philippa Lark is 6th and Clemency Drew 7th. Rufus Ainsley OCS.</p>
+</body>
+</html>
