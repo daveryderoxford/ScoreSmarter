@@ -35,3 +35,7 @@ node_modules/
 # Firebase Functions build/test artifacts
 /firebase/functions/lib/
 /firebase/functions/lib-test*/
+
+# Firebase / Google service account keys
+*-firebase-adminsdk-*.json
+service-account*.json

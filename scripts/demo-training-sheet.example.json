@@ -1,0 +1,10 @@
+{
+  "templateSeriesId": "S-replace-with-a-series-id-from-the-dry-run",
+  "seriesName": "Training",
+  "startTime": "11:00",
+  "rows": [
+    { "boatClass": "ILCA 7", "sailNumber": "123456", "helm": "Alex Ashby" },
+    { "boatClass": "RS200", "sailNumber": "1234", "helm": "Sam Barker", "crew": "Jo Carver" },
+    { "boatClass": "Solo", "sailNumber": "5678", "helm": "Chris Dalton" }
+  ]
+}
