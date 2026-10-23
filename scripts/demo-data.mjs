@@ -31,6 +31,8 @@ const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 const { getStorage } = require('firebase-admin/storage');
 
 initializeApp({ projectId: 'sailbrowser-efef0', storageBucket: 'sailbrowser-efef0.appspot.com' });
+// HTTPS (REST) rather than gRPC: more tolerant of flaky Wi-Fi, VPNs and DNS on a laptop.
+getFirestore().settings({ preferRest: true });
 
 const {
   BASELINE_CLUB_FIELDS, BASELINE_FILE, DEMO_CLUB_ID, RESTORED_COLLECTIONS,
