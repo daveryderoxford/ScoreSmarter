@@ -140,6 +140,16 @@ test("buildTrainingDocs adds boats and entries according to each row's entered /
   });
 });
 
+test("buildTrainingDocs uses the built-in General Handicap fleet when the club does not store one", () => {
+  const withoutGeneral: DemoBaseline = { ...baseline, club: { ...baseline.club, fleets: [ilcaFleet] } };
+  const { docs } = buildTrainingDocs({ races: [handicap()] }, withoutGeneral, now);
+
+  assert.equal(docs["races/R-training-handicap-2026-06-10"]["fleetId"], "general-handicap");
+  assert.deepEqual((docs["series/S-training-handicap"]["primaryScoringConfiguration"] as { fleet: unknown }).fleet, {
+    id: "general-handicap", type: "GeneralHandicap", name: "General Handicap",
+  });
+});
+
 test("buildTrainingDocs explains a missing template series, class fleet or Level Rating class", () => {
   assert.throws(() => buildTrainingDocs({ races: [handicap({ templateSeriesId: "missing" })] }, baseline, now), /not in the baseline/);
   assert.throws(

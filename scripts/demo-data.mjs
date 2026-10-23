@@ -195,7 +195,7 @@ function summarise({ baseline, nameMap }) {
     .map(([path, data]) => `${path.slice('series/'.length)}  ${data.name} (season ${data.seasonId})`);
   console.log(`Series:\n  ${series.join('\n  ')}`);
   const fleets = (baseline.club.fleets ?? []).map(f => `${f.id}  ${f.type}${f.boatClassId ? ` ${f.boatClassId}` : ''}${f.name ? ` ${f.name}` : ''}`);
-  console.log(`Fleets (a training race can set fleetId to one of these):\n  ${fleets.join('\n  ')}`);
+  console.log(`Fleets (a training race can set fleetId to one of these):\n  general-handicap  GeneralHandicap (built in)\n  ${fleets.join('\n  ')}`);
   console.log(`People renamed: ${nameMap.size}; sample: ${[...nameMap.values()].slice(0, 8).join(', ')}`);
   console.log(`Size: ${(JSON.stringify(baseline).length / 1024 / 1024).toFixed(1)} MB`);
 }

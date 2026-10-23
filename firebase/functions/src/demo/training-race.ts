@@ -86,8 +86,12 @@ function classHandicaps(baseline: DemoBaseline, boatClass: string, py: number | 
   return py !== undefined ? [{ scheme: "PY", value: py }] : [];
 }
 
+/** Every club has this fleet; the app adds it (ClubStore) rather than storing it on the club. */
+const GENERAL_HANDICAP_FLEET: DocData = { id: "general-handicap", type: "GeneralHandicap", name: "General Handicap" };
+
 function trainingFleet(baseline: DemoBaseline, spec: TrainingRaceSpec): DocData {
-  const fleets = (baseline.club["fleets"] as DocData[] | undefined) ?? [];
+  const stored = (baseline.club["fleets"] as DocData[] | undefined) ?? [];
+  const fleets = stored.some(f => f["type"] === "GeneralHandicap") ? stored : [GENERAL_HANDICAP_FLEET, ...stored];
   const fleet = spec.fleetId
     ? fleets.find(f => f["id"] === spec.fleetId)
     : spec.type === "Level Rating"
