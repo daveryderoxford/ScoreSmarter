@@ -26,3 +26,4 @@ export { raceDayDutyConfirmed } from "./duties/duty-race-day-trigger.js";
 export { raceResultsChanged } from "./races/race-results-trigger.js";
 export { exchangeKioskId } from "./kiosk/exchange-kiosk-id.js";
 export { manageAuthorizedKiosk } from "./kiosk/manage-authorized-kiosk.js";
+export { resetDemoClubNightly, resetDemoClubNow } from "./demo/demo-functions.js";
