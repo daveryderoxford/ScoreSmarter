@@ -103,6 +103,10 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
     super(inject(ElementRef));
 
     this.inputControl.valueChanges.subscribe(seconds => {
+      const currentSeconds = this.value ? this.dateToSeconds(this.value) : null;
+      // The mask re-emits the same seconds on blur. Keep the original Date so the
+      // parent control stays pristine when the sailor only focused the field.
+      if (seconds === currentSeconds) return;
       this.value = this.secondsToDate(seconds);
       this._onChange(this.value);
     });

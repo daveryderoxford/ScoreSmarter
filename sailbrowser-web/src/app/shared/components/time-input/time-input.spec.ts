@@ -137,6 +137,30 @@ describe('TimeInput', () => {
     expect(time.negative()).toBe(false);
   });
 
+  it('blur of an unchanged clock time does not mark the control dirty', () => {
+    const { fixture, input, control } = render();
+    const seconds = 14 * 3600 + 32 * 60 + 5;
+    control.setValue(seconds);
+    fixture.detectChanges();
+    expect(control.dirty).toBe(false);
+
+    input.dispatchEvent(new Event('blur'));
+
+    expect(control.value).toBe(seconds);
+    expect(control.dirty).toBe(false);
+    expect(input.value).toBe('14:32:05');
+  });
+
+  it('blur still commits a time the sailor actually changed', () => {
+    const { fixture, input, control } = render();
+    control.setValue(14 * 3600 + 32 * 60 + 5);
+    fixture.detectChanges();
+    input.value = '14:33:05';
+    input.dispatchEvent(new Event('blur'));
+    expect(control.value).toBe(14 * 3600 + 33 * 60 + 5);
+    expect(control.dirty).toBe(true);
+  });
+
   it('resets empty elapsed fields to plus on blur', () => {
     const { time, input } = render('mss');
     time.toggleSign();

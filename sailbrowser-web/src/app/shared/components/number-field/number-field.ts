@@ -1,8 +1,10 @@
-import { computed, Directive, ElementRef, inject, input } from '@angular/core';
+import { computed, Directive, ElementRef, forwardRef, inject, input } from '@angular/core';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import {
   coerceNumberFieldMode,
   isAllowedNumberFieldText,
   normalizeNumberFieldInsert,
+  numberFieldCommittedValue,
   numberFieldInputMode,
   numberFieldPattern,
   replaceNumberFieldSelection,
@@ -10,9 +12,10 @@ import {
 } from './number-field-value';
 
 /**
- * Attribute filter for numeric `<input>` fields. Keeps the native control and
- * FormControl type; only blocks illegal keystrokes/paste and sets `inputmode`
- * plus `pattern` for the mobile keyboard and constraint validation.
+ * Attribute filter and value accessor for numeric `<input>` fields. Blocks illegal
+ * keystrokes, sets `inputmode` and `pattern` for the mobile keyboard, and stores a
+ * number on the FormControl. Selecting the field on a phone re-fires `input` with the
+ * same digits; that notification is ignored so the control stays pristine.
  *
  * ```html
  * <input matInput appNumberField formControlName="laps">
@@ -22,6 +25,11 @@ import {
  */
 @Directive({
   selector: 'input[appNumberField]',
+  providers: [{
+    provide: NG_VALUE_ACCESSOR,
+    useExisting: forwardRef(() => NumberField),
+    multi: true,
+  }],
   host: {
     type: 'text',
     '[attr.inputmode]': 'inputMode()',
@@ -31,11 +39,16 @@ import {
     '(paste)': 'onPaste($event)',
     '(drop)': 'onDrop($event)',
     '(input)': 'onInput()',
+    '(blur)': 'onBlur()',
     '(compositionend)': 'onInput()',
   },
 })
-export class NumberField {
+export class NumberField implements ControlValueAccessor {
   private readonly elementRef = inject<ElementRef<HTMLInputElement>>(ElementRef);
+  private onChange: (value: number | null) => void = () => {};
+  private onTouched: () => void = () => {};
+  /** Last number pushed to the form, or loaded by `writeValue`. */
+  private committed: number | null = null;
 
   readonly mode = input(coerceNumberFieldMode(undefined), {
     alias: 'appNumberField',
@@ -44,6 +57,29 @@ export class NumberField {
 
   readonly inputMode = computed(() => numberFieldInputMode(this.mode()));
   readonly pattern = computed(() => numberFieldPattern(this.mode()));
+
+  writeValue(value: number | string | null): void {
+    const parsed = coerceNumberModel(value);
+    this.committed = parsed;
+    const input = this.elementRef.nativeElement;
+    const rendered = parsed == null ? '' : String(parsed);
+    if (input.value === rendered) return;
+    // Keep a partial such as "1." or "1.50" when it already means this number.
+    if (parsed != null && numberFieldCommittedValue(input.value) === parsed) return;
+    input.value = rendered;
+  }
+
+  registerOnChange(fn: (value: number | null) => void): void {
+    this.onChange = fn;
+  }
+
+  registerOnTouched(fn: () => void): void {
+    this.onTouched = fn;
+  }
+
+  setDisabledState(isDisabled: boolean): void {
+    this.elementRef.nativeElement.disabled = isDisabled;
+  }
 
   onKeydown(event: KeyboardEvent): void {
     if (event.isComposing || event.ctrlKey || event.metaKey || event.altKey) {
@@ -108,12 +144,25 @@ export class NumberField {
 
   onInput(): void {
     const input = this.elementRef.nativeElement;
+    if (input.disabled) return;
     const sanitized = sanitizeNumberFieldText(input.value, this.mode());
-    if (sanitized === input.value) {
+    if (sanitized !== input.value) {
+      const caret = Math.min(input.selectionStart ?? sanitized.length, sanitized.length);
+      this.applyValue(input, sanitized, caret);
       return;
     }
-    const caret = Math.min(input.selectionStart ?? sanitized.length, sanitized.length);
-    this.applyValue(input, sanitized, caret);
+    this.commitParsed(sanitized);
+  }
+
+  onBlur(): void {
+    const input = this.elementRef.nativeElement;
+    const parsed = numberFieldCommittedValue(input.value);
+    if (parsed === undefined) {
+      input.value = this.committed == null ? '' : String(this.committed);
+    } else {
+      this.commitParsed(input.value);
+    }
+    this.onTouched();
   }
 
   private wouldAllow(input: HTMLInputElement, insert: string): boolean {
@@ -151,6 +200,20 @@ export class NumberField {
     input.setSelectionRange(caret, caret);
     input.dispatchEvent(new Event('input', { bubbles: true }));
   }
+
+  /** Notify the form only when the parsed number differs. Angular dirties on every callback. */
+  private commitParsed(text: string): void {
+    const parsed = numberFieldCommittedValue(text);
+    if (parsed === undefined || parsed === this.committed) return;
+    this.committed = parsed;
+    this.onChange(parsed);
+  }
+}
+
+function coerceNumberModel(value: number | string | null | undefined): number | null {
+  if (value == null || value === '') return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
 }
 
 export type { NumberFieldMode } from './number-field-value';
