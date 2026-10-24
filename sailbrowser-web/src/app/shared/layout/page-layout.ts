@@ -37,12 +37,15 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
       background-color: var(--mat-sys-surface-container-low);
     }
 
+    /* Scrolls pages whose content is taller than the screen; panes that size to the
+       body (list/detail, manual results) never overflow it and keep their own scrolling. */
     .body {
       flex: 1 1 auto;
       min-height: 0;
       min-width: 0;
       display: flex;
       flex-direction: column;
+      overflow: hidden auto;
     }
   `,
 })

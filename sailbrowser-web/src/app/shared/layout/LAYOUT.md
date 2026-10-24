@@ -30,6 +30,8 @@ Toolbar page with a list **or** a form. Do **not** add `ListDetailLayout`.
 - The **route** page owns `PageLayout` and the toolbar. Form child components stay forms.
 
 `PageLayout` + an existing custom body is also valid (home, switchboards, manual results).
+The `PageLayout` body scrolls vertically when a custom body is taller than the screen; content that
+sizes itself to the body (panes, `height: 100%` layouts) keeps its own internal scrolling.
 
 ## Recipe 2 — list and detail
 
