@@ -1,0 +1,4 @@
+{
+  "name": "ScoreSmarter",
+  "install": "npm ci --prefix sailbrowser-web\nnpm ci --prefix home-site\nnpm ci --prefix firebase\nnpm ci --prefix firebase/functions"
+}
