@@ -3,6 +3,7 @@ import {
   coerceNumberFieldMode,
   isAllowedNumberFieldText,
   normalizeNumberFieldInsert,
+  numberFieldCommittedValue,
   numberFieldInputMode,
   numberFieldPattern,
   replaceNumberFieldSelection,
@@ -82,5 +83,23 @@ describe('normalizeNumberFieldInsert and replaceNumberFieldSelection', () => {
 
   it('replaces the selected range', () => {
     expect(replaceNumberFieldSelection('1234', 1, 3, '9')).toBe('194');
+  });
+});
+
+describe('numberFieldCommittedValue', () => {
+  it('parses empty as null and incomplete prefixes as unset', () => {
+    expect(numberFieldCommittedValue('')).toBeNull();
+    expect(numberFieldCommittedValue('-')).toBeUndefined();
+    expect(numberFieldCommittedValue('.')).toBeUndefined();
+    expect(numberFieldCommittedValue('-.')).toBeUndefined();
+  });
+
+  it('parses the number typed so far, including a trailing dot', () => {
+    expect(numberFieldCommittedValue('3')).toBe(3);
+    expect(numberFieldCommittedValue('03')).toBe(3);
+    expect(numberFieldCommittedValue('1.')).toBe(1);
+    expect(numberFieldCommittedValue('1.50')).toBe(1.5);
+    expect(numberFieldCommittedValue('-51.50')).toBe(-51.5);
+    expect(numberFieldCommittedValue('.5')).toBe(0.5);
   });
 });

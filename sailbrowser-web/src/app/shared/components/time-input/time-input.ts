@@ -285,6 +285,7 @@ export class TimeInput implements ControlValueAccessor {
   }
 
   private commitValue(seconds: number | null, display: string, writeDisplay = true): void {
+    const unchanged = Object.is(seconds, this.committedSeconds);
     this.committedSeconds = seconds;
     if (this.format() === 'mss') {
       this.negative.set(seconds != null && seconds < 0);
@@ -292,7 +293,11 @@ export class TimeInput implements ControlValueAccessor {
     if (writeDisplay) {
       this.elementRef.nativeElement.value = display;
     }
-    this.onChange(seconds);
+    // Blur and a completed mask re-commit the current seconds. Emitting again marks the
+    // parent control dirty even when the sailor did not change the time.
+    if (!unchanged) {
+      this.onChange(seconds);
+    }
   }
 
   private renderCommitted(fmt: TimeInputFormat): void {

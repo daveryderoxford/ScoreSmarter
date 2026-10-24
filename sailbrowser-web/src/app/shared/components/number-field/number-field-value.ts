@@ -78,3 +78,15 @@ export function replaceNumberFieldSelection(
 ): string {
   return value.slice(0, start) + insert + value.slice(end);
 }
+
+/**
+ * Number represented by field text.
+ * `null` is an empty field. `undefined` is an incomplete prefix (`-`, `.`, `-.`).
+ * A trailing dot (`1.`) is the number typed so far.
+ */
+export function numberFieldCommittedValue(text: string): number | null | undefined {
+  if (text === '') return null;
+  if (!/^-?(?:\d+\.?\d*|\.\d+)$/.test(text)) return undefined;
+  const n = Number(text);
+  return Number.isFinite(n) ? n : undefined;
+}
