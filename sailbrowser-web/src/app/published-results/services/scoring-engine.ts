@@ -20,7 +20,7 @@ import { PublishedSeason, SeriesInfo } from '../model/published-season';
 import { PublishedCancelledRace, PublishedRaceStart, PublishedSeries } from '../model/published-series';
 import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH } from './published-results-store';
 import { samePublishedContent } from './published-content';
-import { compactSeriesResults, type StoredPublishedSeries } from '../model/published-series-storage';
+import { compactPublishedSeries, type StoredPublishedSeries } from '../model/published-series-storage';
 
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
 import { competitorsForConfigRace, isRaceScorable, seriesEntriesForConfig, type EntryMembership } from 'app/scoring/core/rules/eligibility';
@@ -405,11 +405,11 @@ export class ScoringEngine {
     info: PublishedSeriesInfo,
   ): void {
     const seriesDoc = this.tenant.docRef<StoredPublishedSeries>(PUBLISHED_SERIES_PATH, publishedSeriesId);
-    const publishedSeries: StoredPublishedSeries = {
+    const publishedSeries: PublishedSeries = {
       id: publishedSeriesId,
       name: publishedSeriesName,
       fleetId: fleetId,
-      competitors: compactSeriesResults(results),
+      competitors: results,
       divisionDefinitions,
       racesSailed: info.racesSailed,
       discards: info.discards,
@@ -418,7 +418,7 @@ export class ScoringEngine {
       raceStarts: info.raceStarts,
       ...(info.scoringAlgorithm ? { scoringAlgorithm: info.scoringAlgorithm } : {}),
     };
-    batch.set(seriesDoc, publishedSeries);
+    batch.set(seriesDoc, compactPublishedSeries(publishedSeries));
   }
 
   /**

@@ -4,20 +4,21 @@ import { of, map } from 'rxjs';
 import { PublishedSeason } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
 import { PublishedRace } from '../model/published-race';
-import { expandSeriesResult, type StoredPublishedSeries } from '../model/published-series-storage';
+import { expandPublishedSeries, type StoredPublishedSeries } from '../model/published-series-storage';
 import { publishedDivisionDefinitions } from 'app/race-calender/model/division';
 import { FirestoreTenantService } from 'app/club-tenant/services/firestore-tenant';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 
-/** Restores compact race scores and defaults missing `divisions` / `divisionDefinitions` on read. */
-function coercePublishedSeries(series: StoredPublishedSeries | undefined): PublishedSeries | undefined {
-  if (!series) return undefined;
+/** Restores the full race scores and defaults missing `divisions` / `divisionDefinitions` on read. */
+function coercePublishedSeries(stored: StoredPublishedSeries | undefined): PublishedSeries | undefined {
+  if (!stored) return undefined;
+  const series = expandPublishedSeries(stored);
   return {
     ...series,
-    competitors: series.competitors.map(c => {
-      const row = expandSeriesResult(c);
-      return { ...row, divisions: Array.isArray(row.divisions) ? row.divisions : [] };
-    }),
+    competitors: series.competitors.map(c => ({
+      ...c,
+      divisions: Array.isArray(c.divisions) ? c.divisions : [],
+    })),
     divisionDefinitions: publishedDivisionDefinitions(series),
   };
 }
