@@ -91,7 +91,7 @@
                }
             </div>
             <app-series-results-table [series]="series()!" [raceTitles]="raceTitles()"
-               (raceClicked)="raceClicked($event)" />
+               (raceClicked)="raceNumberClicked($event)" />
 
             @for (race of reversedRaces(); track race.id; let i = $index, isFirst = $first, isLast = $last) {
             <div class="race-container" [attr.data-race-id]="race.id" [attr.id]="'race-' + race.id">
@@ -150,6 +150,15 @@
                   [scoringHandicapScheme]="firstCompetitorHandicapScheme()"
                   [divisionDefinitions]="divisionDefinitionsForRace(race)"
                />
+               }
+            </div>
+            }
+            @if (store.hasMoreRaces()) {
+            <div #moreRaces class="more-races">
+               @if (store.racesLoading()) {
+                  <span>Loading races…</span>
+               } @else {
+                  <button matButton type="button" (click)="store.loadMoreRaces()">Show earlier races</button>
                }
             </div>
             }

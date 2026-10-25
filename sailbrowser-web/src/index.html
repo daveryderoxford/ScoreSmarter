@@ -10,6 +10,12 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <!-- App Check (reCAPTCHA Enterprise) and Firestore: fetch/connect while main.js downloads.
+       The preload URL must match the script App Check adds (@firebase/app-check RECAPTCHA_ENTERPRISE_URL). -->
+  <link rel="preload" href="https://www.google.com/recaptcha/enterprise.js" as="script">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin="">
+  <link rel="preconnect" href="https://content-firebaseappcheck.googleapis.com" crossorigin="">
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin="">
   <!-- Non-blocking: do not compete with main.js / first paint on Slow 4G. -->
   <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&amp;display=swap"

@@ -20,6 +20,7 @@ import { PublishedSeason, SeriesInfo } from '../model/published-season';
 import { PublishedCancelledRace, PublishedSeries } from '../model/published-series';
 import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH } from './published-results-store';
 import { samePublishedContent } from './published-content';
+import { compactSeriesResults, type StoredPublishedSeries } from '../model/published-series-storage';
 
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
 import { competitorsForConfigRace, isRaceScorable, seriesEntriesForConfig, type EntryMembership } from 'app/scoring/core/rules/eligibility';
@@ -395,12 +396,12 @@ export class ScoringEngine {
     divisionDefinitions: Division[],
     info: PublishedSeriesInfo,
   ): void {
-    const seriesDoc = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, publishedSeriesId);
-    const publishedSeries: PublishedSeries = {
+    const seriesDoc = this.tenant.docRef<StoredPublishedSeries>(PUBLISHED_SERIES_PATH, publishedSeriesId);
+    const publishedSeries: StoredPublishedSeries = {
       id: publishedSeriesId,
       name: publishedSeriesName,
       fleetId: fleetId,
-      competitors: results,
+      competitors: compactSeriesResults(results),
       divisionDefinitions,
       racesSailed: info.racesSailed,
       discards: info.discards,

@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { afterRenderEffect, Component, computed, effect, ElementRef, inject, input, signal } from '@angular/core';
+import { afterRenderEffect, Component, computed, effect, ElementRef, inject, input, signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
@@ -123,19 +123,56 @@ export class ResultsViewer {
   /** Duty-roster race officer by race id, for races published without one; null when the roster has none. */
   protected readonly dutyRaceOfficers = signal<ReadonlyMap<string, string | null>>(new Map());
 
-  raceTitles = computed(() => this.races().map((({ id, index, scheduledStart, raceOfDay }) => ({
-    id,
-    index,
-    scheduledStart,
-    raceOfDay
-  })
-  )));
+  /** Standings column headings: race numbers from the standings, dates once each race has loaded. */
+  raceTitles = computed(() => {
+    const byIndex = new Map(this.races().map(r => [r.index, r] as const));
+    return this.store.seriesRaceIndexes().map(index => ({ index, scheduledStart: byIndex.get(index)?.scheduledStart }));
+  });
+
+  /** Race number clicked in the standings before that race had loaded; scrolled to once it loads. */
+  private readonly pendingRaceIndex = signal<number | undefined>(undefined);
+  private readonly requestedRaceId = signal('');
+  private readonly moreRaces = viewChild<ElementRef<HTMLElement>>('moreRaces');
 
   constructor() {
     // Effect to read series data when the selected Id changes
     // based on route parameter
     effect(() => {
       this.store.selectedSeriesId.set(this.id());
+    });
+
+    // A link to a race that is not among the newest races loads enough races to include it.
+    effect(() => {
+      const raceId = this.raceId();
+      if (!raceId || !this.series() || this.races().some(r => r.id === raceId)) return;
+      const key = `${this.id()}:${raceId}`;
+      if (this.requestedRaceId() === key) return;
+      this.requestedRaceId.set(key);
+      void this.store.ensureRaceIdLoaded(raceId);
+    });
+
+    effect(() => {
+      const index = this.pendingRaceIndex();
+      if (index === undefined) return;
+      const race = this.races().find(r => r.index === index);
+      if (!race) return;
+      this.pendingRaceIndex.set(undefined);
+      this.raceClicked(race.id);
+    });
+
+    // Load earlier races as the end of the race list scrolls near. Re-observing after each
+    // load re-checks a marker that is still in view.
+    afterRenderEffect(onCleanup => {
+      const marker = this.moreRaces()?.nativeElement;
+      this.races(); // tracked: recreate the observer after each load
+      if (!marker || typeof IntersectionObserver === 'undefined') return;
+      const root = (this.elementRef.nativeElement as HTMLElement).querySelector('.tables-scroll');
+      const observer = new IntersectionObserver(
+        entries => { if (entries.some(e => e.isIntersecting)) this.store.loadMoreRaces(); },
+        { root, rootMargin: '0px 0px 800px 0px' },
+      );
+      observer.observe(marker);
+      onCleanup(() => observer.disconnect());
     });
 
     // When deep-linked with raceId, scroll the selected race into view after render.
@@ -157,6 +194,17 @@ export class ResultsViewer {
 
   togglePanel() {
     this.isPanelCollapsed.update(v => !v);
+  }
+
+  /** A race number clicked in the standings; loads the race first if needed. */
+  raceNumberClicked(index: number) {
+    const race = this.races().find(r => r.index === index);
+    if (race) {
+      this.raceClicked(race.id);
+      return;
+    }
+    this.pendingRaceIndex.set(index);
+    this.store.ensureRaceIndexLoaded(index);
   }
 
   raceClicked(raceId: string) {

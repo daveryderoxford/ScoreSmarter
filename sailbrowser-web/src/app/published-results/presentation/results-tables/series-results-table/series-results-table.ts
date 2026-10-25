@@ -25,9 +25,11 @@ export class SeriesResultsTable {
   series = input.required<PublishedSeries>();
   seriesColumns = input<SeriesColumn[]>([...seriesColumns]);
   showBoatClass = input(true);
-  raceTitles = input.required<{ id: string; index: number; scheduledStart: Date; raceOfDay: number; }[]>();
+  /** One per race column; the date is shown once known (races load on demand). */
+  raceTitles = input.required<{ index: number; scheduledStart?: Date }[]>();
   fontSize = input<string>('10pt');
-  raceClicked = output<string>();
+  /** Race number of the clicked column heading. */
+  raceClicked = output<number>();
 
   /** Snapshot of division definitions for markers and the Division column. */
   protected readonly divisionDefinitions = computed(() =>
@@ -68,6 +70,7 @@ export class SeriesResultsTable {
 
   raceTitle(index: number): string {
     const title = this.raceTitles()[index];
+    if (!title) return '';
     let ret = 'Race ' + title.index.toString() + '<br>';
     if (title.scheduledStart) {
       ret = `${ret} ${format(title.scheduledStart, 'MMM dd')}`;
@@ -98,8 +101,8 @@ export class SeriesResultsTable {
     return this.boatClassLines(comp).length > 1;
   }
 
-  onRaceHeaderClick(raceIndex: number) {
-    const id = this.raceTitles()[raceIndex].id;
-    this.raceClicked.emit(id);
+  onRaceHeaderClick(column: number) {
+    const title = this.raceTitles()[column];
+    if (title) this.raceClicked.emit(title.index);
   }
 }
