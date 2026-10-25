@@ -88,7 +88,11 @@ export class PublishedResultsReader {
       name: 'published-series-races',
       params: () => {
          const id = this.selectedSeriesId();
-         return id ? { id, count: this.raceLimit() } : undefined;
+         if (!id) return undefined;
+         // Series published before race starts were stored need every race for the heading dates.
+         const series = this.series();
+         const legacy = series?.id === id && !series.raceStarts;
+         return { id, count: legacy ? ALL_RACES : this.raceLimit() };
       },
       stream: ({ params }) => {
          if (!params) return of([] as PublishedRace[]);

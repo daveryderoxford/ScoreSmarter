@@ -67,6 +67,16 @@ export interface PublishedSeries {
    cancelledRaces?: PublishedCancelledRace[];
    /** Final only when every published race is final. Absent on older series (shown without a badge). */
    resultsState?: ResultsState;
+   /**
+    * Number and start of every published race, so the standings headings have dates
+    * before the races themselves load. Absent on series published before this was added.
+    */
+   raceStarts?: PublishedRaceStart[];
+}
+
+export interface PublishedRaceStart {
+   index: number;
+   scheduledStart: Date;
 }
 
 export interface PublishedCancelledRace {

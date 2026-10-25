@@ -123,10 +123,12 @@ export class ResultsViewer {
   /** Duty-roster race officer by race id, for races published without one; null when the roster has none. */
   protected readonly dutyRaceOfficers = signal<ReadonlyMap<string, string | null>>(new Map());
 
-  /** Standings column headings: race numbers from the standings, dates once each race has loaded. */
+  /** Standings column headings: race numbers from the standings, dates from the series' race starts. */
   raceTitles = computed(() => {
-    const byIndex = new Map(this.races().map(r => [r.index, r] as const));
-    return this.store.seriesRaceIndexes().map(index => ({ index, scheduledStart: byIndex.get(index)?.scheduledStart }));
+    const starts = new Map<number, Date>();
+    for (const r of this.races()) starts.set(r.index, r.scheduledStart);
+    for (const s of this.series()?.raceStarts ?? []) starts.set(s.index, s.scheduledStart);
+    return this.store.seriesRaceIndexes().map(index => ({ index, scheduledStart: starts.get(index) }));
   });
 
   /** Race number clicked in the standings before that race had loaded; scrolled to once it loads. */
