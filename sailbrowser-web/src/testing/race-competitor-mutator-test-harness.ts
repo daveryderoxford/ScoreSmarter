@@ -1,47 +1,44 @@
 /**
  * Test harness for `RaceCompetitorMutator`: run the **real** mutator against
- * in-memory store fakes. `writeBatch` and `setDoc` cannot be `vi.spyOn`’d in
- * ESM (namespace not configurable), so we replace them via
- * `vi.mock('@angular/fire/firestore')` and apply the same converter + merge
- * rules as production (`toDbModel` + `applyFirestoreWirePatch`).
+ * in-memory store fakes. `provideMutatorTestFirestore()` replaces the
+ * `FIRESTORE_WRITES` entry points and applies the same converter + merge rules
+ * as production (`toDbModel` + wire patch).
  *
  * - **`setDoc`** — used for single-doc race updates (`updateRaceCompetitor`);
  *   applied immediately to the harness stores.
  * - **`writeBatch`** — used for atomic multi-write paths; `commit()` flushes
  *   queued ops into the same stores.
- *
- * **Import this module before any file that pulls in `RaceCompetitorMutator`**
- * (e.g. before `race-competitor-edit.service` / `entry.service`) so the mock
- * is registered first.
  */
-import type { DocumentReference } from '@angular/fire/firestore';
+import type { Provider } from '@angular/core';
+import {
+  type DocumentReference,
+  FieldValue,
+  Firestore,
+  Timestamp,
+  type WriteBatch,
+} from '@angular/fire/firestore';
 import { RaceCompetitor } from 'app/results-input/model/race-competitor';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
-import { FieldValue, Timestamp } from '@angular/fire/firestore';
-import { afterEach, vi } from 'vitest';
+import { toDbModel } from 'app/shared/firebase/firestore-helper';
+import { FIRESTORE_WRITES, type FirestoreWrites } from 'app/shared/firebase/firestore-writes';
+import type { afterEach } from 'vitest';
 
-/** Minimal doc ref shape the mutator passes to `writeBatch`; real refs expose `.id`. */
+/** Minimal doc ref shape the mutator passes to writes; real refs expose `.id`. */
 export interface TestDocRef { id: string; __testCollection: 'race-results' | 'series-entries' }
 
-function isDeleteFieldValue(v: unknown): boolean {
-  return v instanceof FieldValue;
-}
+type WireRecord = Record<string, unknown>;
 
 /** Apply Firestore wire values on top of App records (delete sentinel removes key; Timestamp -> Date). */
-function applyFirestoreWirePatch<T extends Record<string, unknown>>(previous: T, data: Record<string, unknown>): T {
-  const next = { ...(previous as Record<string, unknown>) };
+function applyFirestoreWirePatch(previous: WireRecord, data: WireRecord): WireRecord {
+  const next = { ...previous };
   for (const [key, raw] of Object.entries(data)) {
-    if (isDeleteFieldValue(raw)) {
+    if (raw instanceof FieldValue) {
       delete next[key];
       continue;
     }
-    let v = raw;
-    if (v instanceof Timestamp) {
-      v = v.toDate();
-    }
-    next[key] = v;
+    next[key] = raw instanceof Timestamp ? raw.toDate() : raw;
   }
-  return next as T;
+  return next;
 }
 
 /**
@@ -121,125 +118,96 @@ export interface MutatorTestHarnessStores {
   seriesEntries: MutatorTestSeriesEntryStore;
 }
 
-/** Set by `installMutatorWriteBatchHarness`; read by the mocked Firestore helpers. */
-export const mutatorHarnessStores = vi.hoisted(() => ({
-  current: null as MutatorTestHarnessStores | null,
-}));
+let currentStores: MutatorTestHarnessStores | null = null;
 
 function harnessStoresOrThrow(): MutatorTestHarnessStores {
-  const stores = mutatorHarnessStores.current;
-  if (!stores) {
-    throw new Error(
-      'RaceCompetitor mutator tests: import the harness first and call installMutatorWriteBatchHarness() in beforeEach.',
-    );
+  if (!currentStores) {
+    throw new Error('RaceCompetitor mutator tests: call installMutatorWriteBatchHarness() in beforeEach.');
   }
-  return stores;
+  return currentStores;
 }
 
 /** Applies one converter output onto the in-memory doc (mirror of batch `set` merge). */
-function applyConvertedFirestoreSet(
-  stores: MutatorTestHarnessStores,
-  ref: TestDocRef,
-  converted: Record<string, unknown>,
-): void {
+function applySet(stores: MutatorTestHarnessStores, ref: TestDocRef, converted: WireRecord): void {
   if (ref.__testCollection === 'race-results') {
-    const idx = stores.raceCompetitors.comps.findIndex(c => c.id === ref.id);
+    const comps = stores.raceCompetitors.comps;
+    const idx = comps.findIndex(c => c.id === ref.id);
     if (idx < 0) return;
-    const prev = stores.raceCompetitors.comps[idx];
-    const prevPlain = Object.assign({}, prev as unknown as Record<string, unknown>);
-    const merged = applyFirestoreWirePatch(prevPlain, converted);
-    stores.raceCompetitors.comps[idx] = new RaceCompetitor(
-      merged as unknown as RaceCompetitor & Record<string, unknown>,
-    );
+    const merged = applyFirestoreWirePatch(Object.assign({}, comps[idx] as unknown as WireRecord), converted);
+    comps[idx] = new RaceCompetitor(merged as unknown as RaceCompetitor);
   } else {
-    const idx = stores.seriesEntries.entries.findIndex(e => e.id === ref.id);
+    const entries = stores.seriesEntries.entries;
+    const idx = entries.findIndex(e => e.id === ref.id);
     if (idx < 0) return;
-    const prev = stores.seriesEntries.entries[idx] as SeriesEntry & Record<string, unknown>;
-    const merged = applyFirestoreWirePatch({ ...prev } as Record<string, unknown>, converted) as Record<
-      string,
-      unknown
-    > & { id: string };
-    stores.seriesEntries.entries[idx] = merged as unknown as SeriesEntry;
+    entries[idx] = applyFirestoreWirePatch({ ...entries[idx] } as WireRecord, converted) as unknown as SeriesEntry;
   }
 }
 
-vi.mock('@angular/fire/firestore', async importOriginal => {
-  const actual = await importOriginal<typeof import('@angular/fire/firestore')>();
-  const { toDbModel } = await import('app/shared/firebase/firestore-helper');
+async function applyDelete(stores: MutatorTestHarnessStores, ref: TestDocRef): Promise<void> {
+  if (ref.__testCollection === 'race-results') {
+    await stores.raceCompetitors.deleteResult(ref.id);
+  } else {
+    await stores.seriesEntries.deleteEntry(ref.id);
+  }
+}
 
-  return {
-    ...actual,
-    setDoc: async (
-      ref: unknown,
-      data: Record<string, unknown>,
-      options?: { merge?: boolean },
-    ): Promise<void> => {
-      const stores = harnessStoresOrThrow();
-      const merge = options?.merge ?? false;
-      const converted = merge
-        ? toDbModel(data as Record<string, never>, true, true)
-        : toDbModel(data as Record<string, never>, false, true);
-      applyConvertedFirestoreSet(stores, ref as TestDocRef, converted as Record<string, unknown>);
-    },
-    writeBatch: () => {
-      const stores = harnessStoresOrThrow();
+function convert(data: unknown, merge: boolean): WireRecord {
+  return toDbModel(data as Record<string, never>, merge, true) as WireRecord;
+}
 
-      type Op =
-        | { kind: 'set'; ref: TestDocRef; data: Record<string, unknown>; merge: boolean }
-        | { kind: 'delete'; ref: TestDocRef };
-      const ops: Op[] = [];
+const testFirestoreWrites: FirestoreWrites = {
+  async setDoc(ref, data, options) {
+    applySet(harnessStoresOrThrow(), ref as unknown as TestDocRef, convert(data, 'merge' in options && !!options.merge));
+  },
+  writeBatch() {
+    const stores = harnessStoresOrThrow();
+    type Op = { kind: 'set'; ref: TestDocRef; data: WireRecord } | { kind: 'delete'; ref: TestDocRef };
+    const ops: Op[] = [];
 
-      const applyBatch = async () => {
+    const batch = {
+      update(ref: unknown, data: unknown) {
+        ops.push({ kind: 'set', ref: ref as TestDocRef, data: convert(data, true) });
+        return batch;
+      },
+      set(ref: unknown, data: unknown, options?: { merge?: boolean }) {
+        ops.push({ kind: 'set', ref: ref as TestDocRef, data: convert(data, options?.merge ?? false) });
+        return batch;
+      },
+      delete(ref: unknown) {
+        ops.push({ kind: 'delete', ref: ref as TestDocRef });
+        return batch;
+      },
+      async commit() {
         for (const op of ops) {
-          if (op.kind === 'delete') {
-            if (op.ref.__testCollection === 'race-results') {
-              await stores.raceCompetitors.deleteResult(op.ref.id);
-            } else {
-              await stores.seriesEntries.deleteEntry(op.ref.id);
-            }
-            continue;
-          }
-          applyConvertedFirestoreSet(stores, op.ref, op.data);
+          if (op.kind === 'delete') await applyDelete(stores, op.ref);
+          else applySet(stores, op.ref, op.data);
         }
-      };
+      },
+    };
+    return batch as unknown as WriteBatch;
+  },
+};
 
-      const batch = {
-        update(ref: unknown, data: Record<string, unknown>) {
-          const converted = toDbModel(data as Record<string, never>, true, true);
-          ops.push({ kind: 'set', ref: ref as TestDocRef, data: converted as Record<string, unknown>, merge: true });
-          return batch as unknown as ReturnType<typeof actual.writeBatch>;
-        },
-        set(ref: unknown, data: Record<string, unknown>, options?: { merge?: boolean }) {
-          const merge = options?.merge ?? false;
-          const converted = merge
-            ? toDbModel(data as Record<string, never>, true, true)
-            : toDbModel(data as Record<string, never>, false, true);
-          ops.push({ kind: 'set', ref: ref as TestDocRef, data: converted as Record<string, unknown>, merge });
-          return batch as unknown as ReturnType<typeof actual.writeBatch>;
-        },
-        delete(ref: unknown) {
-          ops.push({ kind: 'delete', ref: ref as TestDocRef });
-          return batch as unknown as ReturnType<typeof actual.writeBatch>;
-        },
-        commit: () => applyBatch(),
-      };
-      return batch as unknown as ReturnType<typeof actual.writeBatch>;
-    },
-  };
-});
+/** Providers routing the mutator's Firestore writes into the harness stores. */
+export function provideMutatorTestFirestore(): Provider[] {
+  return [
+    { provide: Firestore, useValue: {} },
+    { provide: FIRESTORE_WRITES, useValue: testFirestoreWrites },
+  ];
+}
 
 /**
- * Points the mocked `writeBatch` and `setDoc` at these stores for the current test.
+ * Points the fake `writeBatch` and `setDoc` at these stores for the current test.
  * Clears the ref after each test when `registerTeardown` is `afterEach`.
  */
 export function installMutatorWriteBatchHarness(
   stores: MutatorTestHarnessStores,
   registerTeardown?: typeof afterEach,
 ): void {
-  mutatorHarnessStores.current = stores;
+  currentStores = stores;
   if (registerTeardown) {
     registerTeardown(() => {
-      mutatorHarnessStores.current = null;
+      currentStores = null;
     });
   }
 }

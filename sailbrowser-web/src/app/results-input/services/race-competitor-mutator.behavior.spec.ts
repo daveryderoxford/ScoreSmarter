@@ -1,11 +1,11 @@
-/** Must load before `RaceCompetitorMutator` (registers `writeBatch` mock). */
 import { TestBed } from '@angular/core/testing';
-import { Firestore } from '@angular/fire/firestore';
 import {
   installMutatorWriteBatchHarness,
   MutatorTestRaceCompetitorStore,
   MutatorTestSeriesEntryStore,
+  provideMutatorTestFirestore,
 } from '@testing/race-competitor-mutator-test-harness';
+import { provideTestAuth } from '@testing/auth-test-provider';
 import { RaceCalendarStore } from 'app/race-calender';
 import { Race } from 'app/race-calender/model/race';
 import { afterEach } from 'vitest';
@@ -38,11 +38,12 @@ describe('RaceCompetitorMutator behaviour (.harness)', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        provideTestAuth(),
         RaceCompetitorMutator,
         { provide: RaceCompetitorStore, useValue: raceCompetitors },
         { provide: SeriesEntryStore, useValue: seriesEntries },
         { provide: RaceCalendarStore, useValue: calendars },
-        { provide: Firestore, useValue: {} },
+        provideMutatorTestFirestore(),
       ],
     });
     mutator = TestBed.inject(RaceCompetitorMutator);

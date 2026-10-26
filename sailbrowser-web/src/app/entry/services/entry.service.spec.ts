@@ -2,9 +2,10 @@ import {
   installMutatorWriteBatchHarness,
   MutatorTestRaceCompetitorStore,
   MutatorTestSeriesEntryStore,
+  provideMutatorTestFirestore,
 } from '@testing/race-competitor-mutator-test-harness';
+import { provideTestAuth } from '@testing/auth-test-provider';
 import { TestBed } from '@angular/core/testing';
-import { Firestore } from '@angular/fire/firestore';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ClubStore } from 'app/club-tenant';
 import type { SeriesEntryMatchingStrategy } from 'app/entry/model/entry-grouping';
@@ -109,12 +110,13 @@ describe('EntryService.findEntryConflicts', () => {
     installMutatorWriteBatchHarness({ raceCompetitors, seriesEntries }, afterEach);
     TestBed.configureTestingModule({
       providers: [
+        provideTestAuth(),
         EntryService,
         { provide: RaceCompetitorStore, useValue: raceCompetitors },
         { provide: SeriesEntryStore, useValue: seriesEntries },
         { provide: RaceCalendarStore, useClass: FakeRaceCalendarStore },
         { provide: ClubStore, useClass: FakeClubStore },
-        { provide: Firestore, useValue: {} },
+        provideMutatorTestFirestore(),
         RaceCompetitorMutator,
       ],
     });
@@ -223,12 +225,13 @@ describe('EntryService.swapAndEnter', () => {
     installMutatorWriteBatchHarness({ raceCompetitors, seriesEntries }, afterEach);
     TestBed.configureTestingModule({
       providers: [
+        provideTestAuth(),
         EntryService,
         { provide: RaceCompetitorStore, useValue: raceCompetitors },
         { provide: SeriesEntryStore, useValue: seriesEntries },
         { provide: RaceCalendarStore, useClass: FakeRaceCalendarStore },
         { provide: ClubStore, useClass: FakeClubStore },
-        { provide: Firestore, useValue: {} },
+        provideMutatorTestFirestore(),
         RaceCompetitorMutator,
       ],
     });
