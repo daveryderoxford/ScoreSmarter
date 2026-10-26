@@ -1,6 +1,13 @@
+import { Timestamp, type QueryDocumentSnapshot } from '@angular/fire/firestore';
+import { toDbModel } from 'app/shared/firebase/firestore-helper';
 import { describe, expect, it } from 'vitest';
 import type { PublishedSeries, PublishedSeriesResult } from './published-series';
-import { compactPublishedSeries, expandPublishedSeries, type StoredPublishedSeries } from './published-series-storage';
+import {
+  compactPublishedSeries,
+  expandPublishedSeries,
+  publishedSeriesConverter,
+  type StoredPublishedSeries,
+} from './published-series-storage';
 
 type Score = PublishedSeriesResult['raceScores'][number];
 const ok = (raceIndex: number, points: number, isDiscard = false): Score => ({ raceIndex, points, resultCode: 'OK', isDiscard });
@@ -88,6 +95,28 @@ describe('published series storage', () => {
     const original = { ...series([alex]), raceStarts: undefined };
     expect(compactPublishedSeries(original).dncPoints).toBeUndefined();
     expect(expandPublishedSeries(compactPublishedSeries(original))).toEqual(withoutTiebreak(original));
+  });
+
+  it('converter compacts full writes and passes partial writes through', () => {
+    const written = publishedSeriesConverter.toFirestore(series([alex, sam]));
+    expect(written['dncPoints']).toBe(15);
+    expect(written['competitors'][1].raceScores).toEqual([{ raceIndex: 3, points: 2 }]);
+    expect(written['raceStarts'][0].scheduledStart).toBeInstanceOf(Timestamp);
+    expect('id' in written).toBe(false);
+
+    expect(publishedSeriesConverter.toFirestore({ name: 'Renamed' }, { merge: true })).toEqual({ name: 'Renamed' });
+  });
+
+  it('converter reads a stored document back as the full series with division defaults', () => {
+    const original = series([alex, sam]);
+    const stored = toDbModel(compactPublishedSeries(original), false, true);
+    const snap = { id: 's1', data: () => stored } as unknown as QueryDocumentSnapshot;
+
+    const read = publishedSeriesConverter.fromFirestore(snap);
+    expect(read).toEqual({
+      ...withoutTiebreak(original),
+      competitors: withoutTiebreak(original).competitors.map(c => ({ ...c, divisions: [] })),
+    });
   });
 
   it('reads documents in the older full and per-score discard formats', () => {

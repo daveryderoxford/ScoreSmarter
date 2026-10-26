@@ -1,26 +1,17 @@
 import { Injectable, inject, signal, computed, linkedSignal } from '@angular/core';
-import { collectionData, docData, query, orderBy, limit, getDoc, getDocs } from '@angular/fire/firestore';
+import { collectionData, docData, query, orderBy, limit, getDoc, getDocs, type DocumentReference } from '@angular/fire/firestore';
 import { of, map } from 'rxjs';
 import { PublishedSeason } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
 import { PublishedRace } from '../model/published-race';
-import { expandPublishedSeries, type StoredPublishedSeries } from '../model/published-series-storage';
+import { publishedSeriesConverter } from '../model/published-series-storage';
 import { publishedDivisionDefinitions } from 'app/race-calender/model/division';
 import { FirestoreTenantService } from 'app/club-tenant/services/firestore-tenant';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 
-/** Restores the full race scores and defaults missing `divisions` / `divisionDefinitions` on read. */
-function coercePublishedSeries(stored: StoredPublishedSeries | undefined): PublishedSeries | undefined {
-  if (!stored) return undefined;
-  const series = expandPublishedSeries(stored);
-  return {
-    ...series,
-    competitors: series.competitors.map(c => ({
-      ...c,
-      divisions: Array.isArray(c.divisions) ? c.divisions : [],
-    })),
-    divisionDefinitions: publishedDivisionDefinitions(series),
-  };
+/** A published series document; reads and writes go through {@link publishedSeriesConverter}. */
+export function publishedSeriesDoc(tenant: FirestoreTenantService, seriesId: string): DocumentReference<PublishedSeries> {
+  return tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, seriesId).withConverter(publishedSeriesConverter);
 }
 
 function coercePublishedRace(race: PublishedRace): PublishedRace {
@@ -80,8 +71,7 @@ export class PublishedResultsReader {
       params: () => this.selectedSeriesId(),
       stream: ({ params: id }) => {
          if (!id) return of(undefined);
-         const seriesDocRef = this.tenant.docRef<StoredPublishedSeries>(PUBLISHED_SERIES_PATH, id);
-         return docData(seriesDocRef).pipe(map(coercePublishedSeries));
+         return docData(publishedSeriesDoc(this.tenant, id));
       },
    });
 
@@ -163,22 +153,18 @@ export class PublishedResultsReader {
       }
 
       // Fallback to fetching directly from Firestore
-      const seriesDocRef = this.tenant.docRef<StoredPublishedSeries>(PUBLISHED_SERIES_PATH, id);
-      const snapshot = await getDoc(seriesDocRef);
-      return snapshot.exists() ? coercePublishedSeries(snapshot.data()) : undefined;
+      const snapshot = await getDoc(publishedSeriesDoc(this.tenant, id));
+      return snapshot.exists() ? snapshot.data() : undefined;
    }
 
    /** One-shot fetch of a published series and all its races. Does not change `selectedSeriesId`. */
    async getSeriesWithRaces(id: string): Promise<{ series: PublishedSeries; races: PublishedRace[] } | undefined> {
-      const seriesDocRef = this.tenant.docRef<StoredPublishedSeries>(PUBLISHED_SERIES_PATH, id);
       const racesCol = this.tenant.collectionRef<PublishedRace>(PUBLISHED_SERIES_PATH, id, 'races');
       const [seriesSnap, racesSnap] = await Promise.all([
-         getDoc(seriesDocRef),
+         getDoc(publishedSeriesDoc(this.tenant, id)),
          getDocs(query(racesCol, orderBy('index', 'asc'))),
       ]);
-      if (!seriesSnap.exists()) return undefined;
-
-      const series = coercePublishedSeries(seriesSnap.data());
+      const series = seriesSnap.data();
       if (!series) return undefined;
       return {
          series,

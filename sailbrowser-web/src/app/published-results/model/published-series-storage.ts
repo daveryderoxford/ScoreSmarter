@@ -1,3 +1,12 @@
+import type {
+  DocumentData,
+  FirestoreDataConverter,
+  PartialWithFieldValue,
+  QueryDocumentSnapshot,
+  SetOptions,
+} from '@angular/fire/firestore';
+import { publishedDivisionDefinitions } from 'app/race-calender/model/division';
+import { dataObjectConverter, toAppModel } from 'app/shared/firebase/firestore-helper';
 import type { PublishedSeries, PublishedSeriesResult } from './published-series';
 
 type RaceScore = PublishedSeriesResult['raceScores'][number];
@@ -105,3 +114,29 @@ export function expandPublishedSeries(series: StoredPublishedSeries): PublishedS
     competitors: series.competitors.map(row => expandRow(row, raceIndexes, dncPoints)),
   };
 }
+
+/** A stored series as the app uses it: full race scores, and division fields defaulted. */
+export function readPublishedSeries(stored: StoredPublishedSeries): PublishedSeries {
+  const series = expandPublishedSeries(stored);
+  return {
+    ...series,
+    competitors: series.competitors.map(c => ({ ...c, divisions: Array.isArray(c.divisions) ? c.divisions : [] })),
+    divisionDefinitions: publishedDivisionDefinitions(series),
+  };
+}
+
+const genericConverter = dataObjectConverter<StoredPublishedSeries>();
+
+/**
+ * Converter for published series documents, so no reader or writer sees the stored
+ * format: full writes are compacted, reads are expanded. Partial writes pass through.
+ */
+export const publishedSeriesConverter: FirestoreDataConverter<PublishedSeries> = {
+  toFirestore(series: PartialWithFieldValue<PublishedSeries>, options?: SetOptions): DocumentData {
+    if (options) return genericConverter.toFirestore(series as PartialWithFieldValue<StoredPublishedSeries>, options);
+    return genericConverter.toFirestore(compactPublishedSeries(series as PublishedSeries));
+  },
+  fromFirestore(snap: QueryDocumentSnapshot): PublishedSeries {
+    return readPublishedSeries({ ...toAppModel<StoredPublishedSeries>(snap.data()), id: snap.id });
+  },
+};

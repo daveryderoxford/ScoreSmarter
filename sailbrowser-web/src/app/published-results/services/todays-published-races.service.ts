@@ -10,7 +10,7 @@ import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import type { PublishedRace } from '../model/published-race';
 import type { SeriesInfo } from '../model/published-season';
 import type { PublishedSeries } from '../model/published-series';
-import { PUBLISHED_SERIES_PATH, PublishedResultsReader } from './published-results-store';
+import { PUBLISHED_SERIES_PATH, PublishedResultsReader, publishedSeriesDoc } from './published-results-store';
 import {
   isScheduledInRecentLocalDays,
   isScheduledToday,
@@ -88,7 +88,7 @@ export class TodaysPublishedRacesService {
 
   private watchSeriesBlocks(info: SeriesInfo, mode: PublishedRacesMode): Observable<TodaysPublishedRaceBlock[]> {
     const seriesId = info.id;
-    const seriesRef = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, seriesId);
+    const seriesRef = publishedSeriesDoc(this.tenant, seriesId);
     const racesQuery = query(
       this.tenant.collectionRef<PublishedRace>(PUBLISHED_SERIES_PATH, seriesId, 'races'),
       orderBy('scheduledStart', 'asc'),
