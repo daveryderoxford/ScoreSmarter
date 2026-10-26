@@ -2,7 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { Race } from 'app/race-calender/model/race';
 import type { Series } from 'app/race-calender/model/series';
 import type { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
-import { publishedCancelledRaces, publishedSeriesResultsState, publishedSeriesTargets } from './scoring-engine';
+import { publishedCancelledRaces, publishedRaceStarts, publishedSeriesResultsState, publishedSeriesTargets } from './scoring-engine';
+
+describe('publishedRaceStarts', () => {
+  it('lists each race number and start in race order', () => {
+    const races = [
+      { id: 'b', index: 3, scheduledStart: new Date('2026-06-12T11:00:00') },
+      { id: 'a', index: 1, scheduledStart: new Date('2026-06-10T11:00:00') },
+    ] as Race[];
+
+    expect(publishedRaceStarts(races)).toEqual([
+      { index: 1, scheduledStart: new Date('2026-06-10T11:00:00') },
+      { index: 3, scheduledStart: new Date('2026-06-12T11:00:00') },
+    ]);
+  });
+});
 
 describe('publishedSeriesTargets', () => {
   it('publishes each scoring configuration, then separately scored divisions under the primary', () => {

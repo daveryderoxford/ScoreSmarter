@@ -50,6 +50,13 @@
    margin-top: 2rem;
 }
 
+.more-races {
+   display: flex;
+   justify-content: center;
+   padding: 1.5rem 0;
+   color: var(--mat-sys-on-surface-variant);
+}
+
 .race-title {
    display: flex;
    align-items: center;

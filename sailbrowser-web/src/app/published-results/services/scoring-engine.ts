@@ -17,20 +17,27 @@ import type { Division } from 'app/race-calender/model/division';
 import { groupBy } from 'app/shared/utils/group-by';
 import { PublishedRace } from '../model/published-race';
 import { PublishedSeason, SeriesInfo } from '../model/published-season';
-import { PublishedCancelledRace, PublishedSeries } from '../model/published-series';
-import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH } from './published-results-store';
+import { PublishedCancelledRace, PublishedRaceStart, PublishedSeries } from '../model/published-series';
+import { PUBLISHED_SEASONS_PATH, PUBLISHED_SERIES_PATH, publishedSeriesDoc } from './published-results-store';
 import { samePublishedContent } from './published-content';
 
 import { ClubStore, FirestoreTenantService } from 'app/club-tenant';
 import { competitorsForConfigRace, isRaceScorable, seriesEntriesForConfig, type EntryMembership } from 'app/scoring/core/rules/eligibility';
 import { startOfDay, subDays } from 'date-fns';
 import { buildDncContext, DEFAULT_DNC_POLICY } from 'app/scoring/core/rules/dnc-context';
-type PublishedSeriesInfo = Required<Pick<PublishedSeries, 'racesSailed' | 'discards' | 'cancelledRaces' | 'resultsState'>> &
+type PublishedSeriesInfo = Required<Pick<PublishedSeries, 'racesSailed' | 'discards' | 'cancelledRaces' | 'resultsState' | 'raceStarts'>> &
   Pick<PublishedSeries, 'scoringAlgorithm'>;
 
 /** A published series is final only when every race in it is final. */
 export function publishedSeriesResultsState(races: readonly Race[]): ResultsState {
   return races.length > 0 && races.every(r => resultsStateOf(r) === 'final') ? 'final' : 'provisional';
+}
+
+/** Number and start of each published race, in race order (standings headings). */
+export function publishedRaceStarts(races: readonly Race[]): PublishedRaceStart[] {
+  return races
+    .map(r => ({ index: r.index, scheduledStart: r.scheduledStart }))
+    .sort((a, b) => a.index - b.index);
 }
 
 /** Cancelled races in start order, for display on the published series. */
@@ -252,6 +259,7 @@ export class ScoringEngine {
       discards: this.calculateDiscards(series, racesToScore.length),
       cancelledRaces,
       resultsState: publishedSeriesResultsState(racesToScore),
+      raceStarts: publishedRaceStarts(racesToScore),
     };
 
     if (racesToScore.length === 0) {
@@ -395,7 +403,7 @@ export class ScoringEngine {
     divisionDefinitions: Division[],
     info: PublishedSeriesInfo,
   ): void {
-    const seriesDoc = this.tenant.docRef<PublishedSeries>(PUBLISHED_SERIES_PATH, publishedSeriesId);
+    const seriesDoc = publishedSeriesDoc(this.tenant, publishedSeriesId);
     const publishedSeries: PublishedSeries = {
       id: publishedSeriesId,
       name: publishedSeriesName,
@@ -406,6 +414,7 @@ export class ScoringEngine {
       discards: info.discards,
       cancelledRaces: info.cancelledRaces,
       resultsState: info.resultsState,
+      raceStarts: info.raceStarts,
       ...(info.scoringAlgorithm ? { scoringAlgorithm: info.scoringAlgorithm } : {}),
     };
     batch.set(seriesDoc, publishedSeries);
