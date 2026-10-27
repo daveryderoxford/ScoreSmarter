@@ -2,13 +2,6 @@
 <app-toolbar title="ScoreSmarter Signup"></app-toolbar>
 
 <app-detail-pane maxWidth="400px">
-@if (googleEnabled) {
-<p class="google-hint">
-   Have a Google account? <a routerLink="/auth/login">Continue with Google</a> instead.
-   You won't need to confirm your email.
-</p>
-}
-
 <form [formGroup]="signupForm" (ngSubmit)="signup()">
 
    <mat-form-field>
