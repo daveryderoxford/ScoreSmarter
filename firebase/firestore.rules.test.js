@@ -8,6 +8,8 @@ import {
   assertFails,
   assertSucceeds,
 } from '@firebase/rules-unit-testing';
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/firestore';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rules = readFileSync(join(__dirname, 'firestore.rules'), 'utf8');
@@ -198,4 +200,66 @@ test('club user owner can update profile but not role', async () => {
       surname: 'Lovelace',
     }),
   );
+});
+
+test('user cannot create their own club user doc with a role other than user', async () => {
+  const db = authedDb('new-user', clubUserClaims('user'));
+  const profile = { tenantId: CLUB_ID, firstname: 'New', surname: 'User' };
+  await assertFails(db.doc(`clubs/${CLUB_ID}/users/new-user`).set({ ...profile, role: 'club-admin' }));
+  await assertSucceeds(db.doc(`clubs/${CLUB_ID}/users/new-user`).set({ ...profile, role: 'user' }));
+});
+
+function registration(id, overrides = {}) {
+  const now = firebase.firestore.FieldValue.serverTimestamp();
+  return {
+    id,
+    clubName: 'West Bay SC',
+    subdomain: 'westbay',
+    contactName: 'Sam Secretary',
+    contactEmail: 'sec@westbay.org',
+    status: 'new',
+    source: 'home-site',
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
+test('anyone can submit a valid club registration', async () => {
+  const db = testEnv.unauthenticatedContext().firestore();
+  await assertSucceeds(db.doc('club-registrations/reg-ok').set(registration('reg-ok')));
+});
+
+test('club registration rejects bad subdomains, emails, statuses and extra fields', async () => {
+  const db = testEnv.unauthenticatedContext().firestore();
+  const bad = [
+    { subdomain: 'West Bay' },
+    { subdomain: 'ab' },
+    { subdomain: 'abcdefghijklm' },
+    { contactEmail: 'not-an-email' },
+    { status: 'approved' },
+    { clubId: 'westbay' },
+    { createdAt: new Date(2020, 0, 1) },
+  ];
+  for (const [i, overrides] of bad.entries()) {
+    await assertFails(db.doc(`club-registrations/reg-bad-${i}`).set(registration(`reg-bad-${i}`, overrides)));
+  }
+  await assertFails(db.doc('club-registrations/reg-x').set(registration('reg-other-id')));
+});
+
+test('only sys-admins can read registrations, and may only reject or reopen them', async () => {
+  const path = 'club-registrations/reg-review';
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc(path).set({ ...registration('reg-review'), createdAt: new Date(), updatedAt: new Date() });
+  });
+  const now = firebase.firestore.FieldValue.serverTimestamp();
+
+  await assertFails(testEnv.unauthenticatedContext().firestore().doc(path).get());
+  await assertFails(authedDb(USER_UID, clubUserClaims('club-admin')).doc(path).get());
+
+  const admin = authedDb(SYS_ADMIN_UID);
+  await assertSucceeds(admin.doc(path).get());
+  await assertFails(admin.doc(path).update({ status: 'approved', updatedAt: now }));
+  await assertFails(admin.doc(path).update({ clubId: 'westbay', updatedAt: now }));
+  await assertSucceeds(admin.doc(path).update({ status: 'rejected', notes: 'Duplicate', updatedAt: now }));
 });

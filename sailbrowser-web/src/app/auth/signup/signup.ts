@@ -13,6 +13,7 @@ import { DetailPane } from 'app/shared/layout/detail-pane';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { FirebaseError } from '@angular/fire/app';
+import { isOAuthProviderEnabled } from '../auth-providers';
 import { emailVerificationActionCodeSettings } from '../email-verification';
 import { getFirebaseErrorMessage } from '../firebase-error-messages';
 import { UserDataService } from 'app/user/services/user-data.service';
@@ -34,6 +35,7 @@ export class Signup {
 
    loading = signal(false);
 
+   protected readonly googleEnabled = isOAuthProviderEnabled('Google');
    protected hidePassword = signal(true);
    protected hideConfirmPassword = signal(true);
 

@@ -19,54 +19,75 @@
         </div>
         <h3 class="text-2xl font-bold text-white mb-2">Request Received!</h3>
         <p class="text-slate-400 mb-8">
-          We have saved your request. We will contact you soon.
+          We'll review your request and email {{ submittedEmail() }} when your club is ready.
         </p>
         <button (click)="submitted.set(false)" class="btn-secondary mx-auto">Submit Another Request</button>
       </div>
       } @else {
-      <form [formGroup]="clubForm" (ngSubmit)="onSubmit()" class="grid md:grid-cols-2 gap-6">
+      <form [formGroup]="clubForm" (ngSubmit)="onSubmit()" class="grid md:grid-cols-2 gap-6" novalidate>
         <div class="md:col-span-2">
           <label for="clubName" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Club Name</label>
-          <input id="clubName" type="text" formControlName="name" placeholder="e.g. West Bay Sailing Club"
+          <input id="clubName" type="text" formControlName="name" placeholder="e.g. West Bay Sailing Club" maxlength="100"
             class="w-full bg-slate-900/60 border border-white/15 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+          @if (showError('name', 'required')) {
+          <p class="text-red-400 text-sm mt-2">Enter your club's name.</p>
+          } @else if (showError('name', 'minlength')) {
+          <p class="text-red-400 text-sm mt-2">Club name must be at least 3 characters.</p>
+          }
         </div>
 
         <div class="md:col-span-2">
           <label for="subdomain" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Website name (eg bwsc)</label>
           <div class="flex items-center">
-            <input id="subdomain" type="text" formControlName="subdomain" placeholder="westbay"
-              class="flex-grow bg-slate-900/60 border border-white/15 rounded-l-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
-            <span class="bg-slate-900 border border-l-0 border-white/15 rounded-r-xl px-4 py-3 text-slate-500 font-mono text-sm">.scoresmarter.app</span>
+            <input id="subdomain" type="text" formControlName="subdomain" placeholder="westbay" maxlength="12"
+              autocapitalize="none" autocomplete="off" spellcheck="false"
+              class="flex-grow min-w-0 bg-slate-900/60 border border-white/15 rounded-l-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+            <span class="bg-slate-900 border border-l-0 border-white/15 rounded-r-xl px-4 py-3 text-slate-500 font-mono text-sm">.ro.scoresmarter.app</span>
           </div>
-          @if ((clubForm.controls.subdomain.touched || submitted()) && clubForm.controls.subdomain.errors?.['maxlength']) {
-          <p class="text-red-400 text-sm mt-2">Subdomain must be 12 characters or fewer.</p>
-          } @else if ((clubForm.controls.subdomain.touched || submitted()) && clubForm.controls.subdomain.errors?.['pattern']) {
+          @if (showError('subdomain', 'required')) {
+          <p class="text-red-400 text-sm mt-2">Choose a website name for your club.</p>
+          } @else if (showError('subdomain', 'minlength') || showError('subdomain', 'maxlength')) {
+          <p class="text-red-400 text-sm mt-2">Website name must be 3 to 12 characters.</p>
+          } @else if (showError('subdomain', 'pattern')) {
           <p class="text-red-400 text-sm mt-2">Use lowercase letters/numbers with hyphens between segments (no leading/trailing hyphen).</p>
-          } @else if ((clubForm.controls.subdomain.touched || submitted()) && clubForm.controls.subdomain.errors?.['notUnique']) {
+          } @else if (showError('subdomain', 'reserved')) {
+          <p class="text-red-400 text-sm mt-2">That name is reserved. Please choose another.</p>
+          } @else if (showError('subdomain', 'notUnique')) {
           <p class="text-red-400 text-sm mt-2">That club id is already in use. Please choose another.</p>
           }
         </div>
 
         <div>
           <label for="contactName" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Contact Name</label>
-          <input id="contactName" type="text" formControlName="contactName" placeholder="Jane Smith"
+          <input id="contactName" type="text" formControlName="contactName" placeholder="Jane Smith" maxlength="100" autocomplete="name"
             class="w-full bg-slate-900/60 border border-white/15 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+          @if (showError('contactName', 'required') || showError('contactName', 'minlength')) {
+          <p class="text-red-400 text-sm mt-2">Enter the contact's name.</p>
+          }
         </div>
 
         <div>
           <label for="contactEmail" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Contact Email</label>
-          <input id="contactEmail" type="email" formControlName="contactEmail" placeholder="club@example.com"
+          <input id="contactEmail" type="email" formControlName="contactEmail" placeholder="club@example.com" maxlength="254" autocomplete="email"
             class="w-full bg-slate-900/60 border border-white/15 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
+          @if (showError('contactEmail', 'required')) {
+          <p class="text-red-400 text-sm mt-2">Enter the contact's email address.</p>
+          } @else if (showError('contactEmail', 'pattern')) {
+          <p class="text-red-400 text-sm mt-2">Enter a valid email address.</p>
+          }
         </div>
 
-        <div class="md:col-span-2">
-          <label for="burgeeUrl" class="block text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Burgee URL (Optional)</label>
-          <input id="burgeeUrl" type="url" formControlName="burgeeUrl" placeholder="https://example.com/burgee.png"
-            class="w-full bg-slate-900/60 border border-white/15 rounded-xl px-4 py-3 text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-all">
-        </div>
+        <p class="md:col-span-2 text-slate-400 text-sm">
+          The contact becomes the club's administrator when they first sign in to the club's site
+          with this email address.
+        </p>
+
+        @if (submitError()) {
+        <p class="md:col-span-2 text-red-400 text-sm" role="alert">{{ submitError() }}</p>
+        }
 
         <div class="md:col-span-2 mt-2">
-          <button type="submit" [disabled]="clubForm.invalid || isSubmitting()"
+          <button type="submit" [disabled]="isSubmitting()"
             class="btn-primary w-full justify-center py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed">
             @if (isSubmitting()) {
             <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>

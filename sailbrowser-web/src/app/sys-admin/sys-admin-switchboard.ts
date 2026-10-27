@@ -13,6 +13,9 @@ import { PageLayout } from 'app/shared/layout/page-layout';
     <app-toolbar title="System admin"/>
     <div class=container>
       <div class=buttons>
+        <a matButton='tonal' routerLink="/sys-admin/registrations">
+            Club registrations
+        </a>
         <a matButton='tonal' routerLink="/sys-admin/users">
             User administration
         </a>

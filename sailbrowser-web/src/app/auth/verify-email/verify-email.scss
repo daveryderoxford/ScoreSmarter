@@ -9,6 +9,12 @@
   line-height: 1.45;
 }
 
+.tip {
+  margin: 0;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .status {
   margin: 0;
   font: var(--mat-sys-body-medium);

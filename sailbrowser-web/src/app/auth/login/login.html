@@ -9,6 +9,18 @@
 
          <div fxLayout="column" fxLayoutAlign="space-around center" fxLayoutGap=10px>
 
+            @if (oauthProviders.length > 0) {
+            @for (provider of oauthProviders; track provider) {
+            <button matButton="filled" (click)="signInWith(provider)" [disabled]="loading()"
+               fxFlexAlign="stretch">CONTINUE WITH {{ provider | uppercase }}</button>
+            }
+            <span class="mat-body-small">No email confirmation needed</span>
+
+            <div class="horizontal_rule"></div>
+
+            <span class="mat-title-medium">OR USE YOUR EMAIL</span>
+            }
+
             <div fxLayout="column" fxLayoutAlign="space-around center" fxLayoutGap=10px>
 
                <form [formGroup]="loginForm" (ngSubmit)="loginFormSubmit()">
@@ -58,17 +70,6 @@
 
                </form>
             </div>
-
-            @if (oauthProviders.length > 0) {
-            <div class="horizontal_rule"></div>
-
-            <span class="mat-title-medium">OR LOGIN USING</span>
-
-            @for (provider of oauthProviders; track provider) {
-            <button matButton="filled" (click)="signInWith(provider)" [disabled]="loading()"
-               fxFlexAlign="stretch">{{ provider | uppercase }}</button>
-            }
-            }
 
          </div>
       </mat-card-content>

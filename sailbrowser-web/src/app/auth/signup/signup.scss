@@ -6,3 +6,9 @@ form {
 mat-form-field {
   width: 100%;
 }
+
+.google-hint {
+  margin: 0 0 16px;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}

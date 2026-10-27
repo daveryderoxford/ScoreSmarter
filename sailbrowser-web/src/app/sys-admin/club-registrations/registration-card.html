@@ -1,0 +1,64 @@
+@let r = registration();
+<mat-card appearance="outlined">
+  <mat-card-header>
+    <mat-card-title>{{ r.clubName }}</mat-card-title>
+    <mat-card-subtitle>
+      <span class="status" [class]="r.status">{{ r.status }}</span>
+      · {{ r.createdAt | date:'d MMM yyyy HH:mm' }}
+    </mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+    <p>Requested address: {{ r.subdomain }}.ro.scoresmarter.app</p>
+    <p>Contact: {{ r.contactName }} &lt;<a [href]="'mailto:' + r.contactEmail">{{ r.contactEmail }}</a>&gt;</p>
+
+    @if (r.status === 'new') {
+      <div class="fields">
+        <mat-form-field>
+          <mat-label>Club id</mat-label>
+          <input matInput [formControl]="clubId" autocapitalize="none" spellcheck="false">
+          <mat-hint>Becomes {{ clubId.value || '…' }}.ro.scoresmarter.app</mat-hint>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Club name</mat-label>
+          <input matInput [formControl]="clubName">
+        </mat-form-field>
+      </div>
+    }
+
+    @if (r.status === 'approved') {
+      <p>Club: <a [href]="url()" target="_blank" rel="noopener">{{ url() }}</a></p>
+      <p>
+        @if (r.adminClaimedAt) {
+          Club admin signed in {{ r.adminClaimedAt | date:'d MMM yyyy HH:mm' }}.
+        } @else {
+          Waiting for {{ r.contactEmail }} to sign in and become club admin.
+        }
+      </p>
+      @if (!r.emailsSent?.approved) {
+        <p class="warning">The welcome email was not sent. Copy the message and send it to the contact.</p>
+      }
+    }
+
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+  </mat-card-content>
+
+  <mat-card-actions align="end">
+    @switch (r.status) {
+      @case ('new') {
+        <button matButton type="button" [disabled]="busy()" (click)="reject()">Reject</button>
+        <button matButton="filled" type="button" [disabled]="busy() || clubId.invalid || clubName.invalid" (click)="approve()">
+          Approve and create club
+        </button>
+      }
+      @case ('rejected') {
+        <button matButton type="button" [disabled]="busy()" (click)="reopen()">Reopen</button>
+      }
+      @case ('approved') {
+        <button matButton type="button" (click)="copyWelcome()">Copy welcome message</button>
+      }
+    }
+  </mat-card-actions>
+</mat-card>

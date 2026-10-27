@@ -17,7 +17,8 @@ export {
   uploadImageFromPhone,
 } from "./scoring-sheet-scanner/scoring-sheet-scanner.js";
 export { uploadClubLogo } from "./club/upload-club-logo.js";
-export { createNewTenant } from "./sys-admin/newTenant.js";
+export { approveClubRegistration } from "./onboarding/approve-club-registration.js";
+export { clubRegistrationCreated } from "./onboarding/club-registration-created.js";
 export { assignRole } from "./sys-admin/roles.js";
 export { ensureUserData } from "./user/user.js";
 export { getForcast } from "./forecast/forecast.js";
