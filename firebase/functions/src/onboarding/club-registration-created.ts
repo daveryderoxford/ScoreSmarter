@@ -6,11 +6,11 @@ import { registrationNotificationEmail, registrationReceivedEmail } from "./onbo
 import { CLUB_REGISTRATIONS, type ClubRegistration, type RegistrationEmails } from "./onboarding-model.js";
 
 /** Secret Manager, not .env: the repository is public. */
-const NOTIFY_EMAIL_SECRET = "ONBOARDING_NOTIFY_EMAIL";
+const NOTIFY_EMAIL_SECRET = "ONBOARDING_ALERT_EMAIL";
 
 /**
  * Acknowledges a new club registration to its contact and alerts the system
- * administrators at the ONBOARDING_NOTIFY_EMAIL address.
+ * administrators at the ONBOARDING_ALERT_EMAIL address.
  */
 export const clubRegistrationCreated = onDocumentCreated(
   { document: `${CLUB_REGISTRATIONS}/{registrationId}`, secrets: [POSTMARK_SECRET, NOTIFY_EMAIL_SECRET] },
@@ -34,7 +34,7 @@ export const clubRegistrationCreated = onDocumentCreated(
       if (notifyTo) {
         sent.notified = await sendEmail(registrationNotificationEmail(registration, notifyTo));
       } else {
-        logger.warn("clubRegistrationCreated: ONBOARDING_NOTIFY_EMAIL is not set; no alert sent");
+        logger.warn(`clubRegistrationCreated: ${NOTIFY_EMAIL_SECRET} is not set; no alert sent`);
       }
     }
 
