@@ -10,7 +10,13 @@
         } @else {
           your email address
         }.
-        Please open that email and confirm your address before continuing.
+        Please open that email and confirm your address. This page continues automatically
+        once you have.
+      </p>
+
+      <p class="tip">
+        The email comes from <strong>{{ sender }}</strong>. Not there after a minute or two?
+        Check your junk or spam folder.
       </p>
 
       @if (message()) {
@@ -21,8 +27,12 @@
         <button matButton="filled" type="button" [disabled]="busy()" (click)="checkVerified()">
           I’ve verified my email
         </button>
-        <button matButton="outlined" type="button" [disabled]="busy()" (click)="resend()">
-          Resend verification email
+        <button matButton="outlined" type="button" [disabled]="busy() || resendCooldown() > 0" (click)="resend()">
+          @if (resendCooldown() > 0) {
+            Resend in {{ resendCooldown() }}s
+          } @else {
+            Resend verification email
+          }
         </button>
         <button matButton type="button" [disabled]="busy()" (click)="signOut()">
           Sign out

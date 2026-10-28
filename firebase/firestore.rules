@@ -143,6 +143,42 @@ service cloud.firestore {
         && clubUserRoleUnchanged();
     }
 
+    function isStringOfSize(value, min, max) {
+      return value is string && value.size() >= min && value.size() <= max;
+    }
+
+    // Registration form on the home site; unauthenticated, so validated tightly. The club
+    // id pattern and lengths match firebase/functions/src/shared/club-id.ts.
+    function isValidClubRegistration(registrationId) {
+      let data = request.resource.data;
+      let fields = ['id', 'clubName', 'subdomain', 'contactName', 'contactEmail',
+        'status', 'source', 'createdAt', 'updatedAt'];
+      return data.keys().hasOnly(fields)
+        && data.keys().hasAll(fields)
+        && data.id == registrationId
+        && isStringOfSize(data.clubName, 3, 100)
+        && isStringOfSize(data.subdomain, 3, 12)
+        && data.subdomain.matches('^[a-z0-9]+(-[a-z0-9]+)*$')
+        && isStringOfSize(data.contactName, 2, 100)
+        && isStringOfSize(data.contactEmail, 3, 254)
+        && data.contactEmail.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && data.status == 'new'
+        && data.source == 'home-site'
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    // Sys-admins reject or reopen requests and keep notes; approval is done by the
+    // approveClubRegistration function.
+    function isRegistrationReviewUpdate() {
+      let data = request.resource.data;
+      return data.diff(resource.data).affectedKeys().hasOnly(['status', 'notes', 'updatedAt'])
+        && resource.data.status in ['new', 'rejected']
+        && data.status in ['new', 'rejected']
+        && (!('notes' in data) || isStringOfSize(data.notes, 0, 2000))
+        && data.updatedAt == request.time;
+    }
+
     function isDutyAttendanceStatus(status) {
       return status in ['not-attending', 'attending', 'confirmed'];
     }
@@ -255,7 +291,8 @@ service cloud.firestore {
 
       match /users/{userId} {
         allow read: if isOwner(userId) || isClubAdmin(clubId) || isSysAdmin();
-        allow create: if isOwner(userId) && clubUserCreateValid(userId, clubId);
+        allow create: if isOwner(userId) && clubUserCreateValid(userId, clubId)
+          && request.resource.data.role == 'user';
         allow update: if isSysAdmin() && clubUserCreateValid(userId, clubId)
           || isOwner(userId) && clubUserOwnerUpdateValid(userId, clubId);
         allow delete: if isSysAdmin();
@@ -274,6 +311,12 @@ service cloud.firestore {
         allow create, delete: if false;
         allow update: if isAuthenticated() && isRaceDayStatusOnlyUpdate();
       }
+    }
+
+    match /club-registrations/{registrationId} {
+      allow create: if isValidClubRegistration(registrationId);
+      allow read, delete: if isSysAdmin();
+      allow update: if isSysAdmin() && isRegistrationReviewUpdate();
     }
 
     match /system/public/{id} {

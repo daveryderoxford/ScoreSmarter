@@ -1,0 +1,32 @@
+p {
+  margin: 4px 0;
+}
+
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+
+  mat-form-field {
+    flex: 1 1 220px;
+  }
+}
+
+.status {
+  text-transform: capitalize;
+  font-weight: 600;
+
+  &.new {
+    color: var(--mat-sys-primary);
+  }
+
+  &.rejected {
+    color: var(--mat-sys-error);
+  }
+}
+
+.warning,
+.error {
+  color: var(--mat-sys-error);
+}

@@ -2,6 +2,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { AuthData } from "firebase-functions/tasks";
 import { CallableRequest, onCall } from "firebase-functions/v2/https";
 import { Role, UserData } from "../model/user-data.js";
+import { grantFirstAdminIfContact } from "../onboarding/first-admin.js";
 import { assertAuthenticated } from "../shared/authorisation.js";
 import { detailedHttpsError } from "../shared/https-error.js";
 
@@ -37,7 +38,7 @@ export const ensureUserData =
 
       // Transaction so a concurrent call without names (the login-time call) cannot
       // overwrite names written by the signup call.
-      return await db.runTransaction(async tx => {
+      const result = await db.runTransaction(async tx => {
          const docSnap = await tx.get(userRef);
 
          if (!docSnap.exists) {
@@ -61,6 +62,11 @@ export const ensureUserData =
 
          return { user: existing, id: uid, isNew: false };
       });
+
+      const roleGranted = await grantFirstAdminIfContact(db, clubId, auth);
+      return roleGranted
+         ? { ...result, user: { ...result.user, role: "club-admin" as const }, roleGranted }
+         : { ...result, roleGranted };
    } catch (error) {
       console.error("Error updating user profile:", error);
       throw detailedHttpsError("internal", "Unable to update profile.", {

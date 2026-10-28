@@ -1,8 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
-import { collection, doc, getDoc, getFirestore, serverTimestamp, writeBatch } from '@angular/fire/firestore';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { collection, doc, getDoc, getFirestore, serverTimestamp, setDoc } from '@angular/fire/firestore';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+
+/** Copy of RESERVED_CLUB_IDS in firebase/functions/src/shared/club-id.ts. */
+const RESERVED_CLUB_IDS = new Set([
+  'www', 'auth', 'ro', 'api', 'app', 'admin', 'mail', 'email', 'support', 'help',
+  'dev', 'staging', 'test-site', 'scoresmarter', 'tenant-apps', 'sys-admin',
+]);
+
+const notReserved = (control: AbstractControl): ValidationErrors | null =>
+  RESERVED_CLUB_IDS.has(control.value) ? { reserved: true } : null;
+
 @Component({
   selector: 'app-club-registration',
   imports: [CommonModule, ReactiveFormsModule],
@@ -14,75 +24,71 @@ export class ClubRegistration {
 
   isSubmitting = signal(false);
   submitted = signal(false);
+  submittedEmail = signal('');
+  submitError = signal('');
 
-  clubForm = this.fb.group({
-    name: ['', [Validators.required, Validators.minLength(3)]],
-    // Lowercase letters/numbers with hyphen-separated segments.
-    // Examples: "bwsc", "west-bay", "sailing-club-1"
-    // Not allowed: leading/trailing hyphen, spaces, uppercase, special chars.
-    subdomain: [
-      '',
-      [
-        Validators.required,
-        Validators.maxLength(12),
-        Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-      ],
-    ],
-    contactName: ['', [Validators.required, Validators.minLength(2)]],
-    contactEmail: ['', [Validators.required, Validators.email]],
-    burgeeUrl: ['', [Validators.pattern(/https?:\/\/.+/)]]
+  // Lengths and patterns match the club-registrations rule in firebase/firestore.rules.
+  clubForm = this.fb.nonNullable.group({
+    name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+    // Lowercase letters/numbers with hyphen-separated segments, e.g. "bwsc", "west-bay".
+    subdomain: ['', [
+      Validators.required,
+      Validators.minLength(3),
+      Validators.maxLength(12),
+      Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+      notReserved,
+    ]],
+    contactName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+    contactEmail: ['', [
+      Validators.required,
+      Validators.maxLength(254),
+      Validators.pattern(/^[^@\s]+@[^@\s]+\.[^@\s]+$/),
+    ]],
   });
 
+  /** True when the control should show its error (after it is touched). */
+  showError(name: keyof typeof this.clubForm.controls, error: string): boolean {
+    const control = this.clubForm.controls[name];
+    return control.touched && control.hasError(error);
+  }
+
   async onSubmit() {
-    const form = this.clubForm.getRawValue();
-    const subdomainControl = this.clubForm.controls.subdomain;
-    const subdomain = (form.subdomain || '').toLowerCase().trim();
-
-    // Normalize to lowercase before running validators/uniqueness checks.
-    subdomainControl.setValue(subdomain, { emitEvent: false });
-    subdomainControl.updateValueAndValidity({ emitEvent: false });
-
+    const { name, subdomain, contactName, contactEmail } = this.clubForm.controls;
+    for (const control of [name, contactName, contactEmail]) control.setValue(control.value.trim());
+    subdomain.setValue(subdomain.value.toLowerCase().trim());
+    this.clubForm.markAllAsTouched();
+    this.submitError.set('');
     if (this.clubForm.invalid) return;
 
-    const contactName = form.contactName || '';
-    const contactEmail = form.contactEmail || '';
-    const clubName = form.name || '';
-    const burgeeUrl = form.burgeeUrl || '';
-
+    const form = this.clubForm.getRawValue();
     this.isSubmitting.set(true);
 
     try {
-      const existingClubRef = doc(this.firestore, 'clubs', subdomain);
-      const existingClub = await getDoc(existingClubRef);
+      const existingClub = await getDoc(doc(this.firestore, 'clubs', form.subdomain));
       if (existingClub.exists()) {
-        subdomainControl.setErrors({ ...(subdomainControl.errors || {}), notUnique: true });
-        subdomainControl.markAsTouched();
+        subdomain.setErrors({ notUnique: true });
         return;
       }
 
-      const batch = writeBatch(this.firestore);
-      const tenantRequestRef = doc(collection(this.firestore, 'tenant-request'));
-
-      batch.set(tenantRequestRef, {
-        id: tenantRequestRef.id,
-        clubName,
-        subdomain,
-        burgeeUrl: burgeeUrl || null,
-        contactName,
-        contactEmail,
+      const registrationRef = doc(collection(this.firestore, 'club-registrations'));
+      await setDoc(registrationRef, {
+        id: registrationRef.id,
+        clubName: form.name,
+        subdomain: form.subdomain,
+        contactName: form.contactName,
+        contactEmail: form.contactEmail,
         status: 'new',
         source: 'home-site',
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
 
-      await batch.commit();
-
+      this.submittedEmail.set(form.contactEmail);
       this.submitted.set(true);
       this.clubForm.reset();
     } catch (err) {
       console.error('ClubRegistration: Registration failed:', err);
-      alert('Failed to submit registration. Please try again.');
+      this.submitError.set('Sorry, we could not send your request. Please try again in a few minutes.');
     } finally {
       this.isSubmitting.set(false);
     }

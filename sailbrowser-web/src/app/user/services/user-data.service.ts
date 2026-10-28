@@ -2,6 +2,7 @@ import { Injectable, computed, effect, inject } from "@angular/core";
 import { rxResource } from '@angular/core/rxjs-interop';
 import { User } from "@angular/fire/auth";
 import { DocumentReference, arrayRemove, arrayUnion, doc, docData, setDoc } from "@angular/fire/firestore";
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from 'app/auth';
 import type { Boat } from 'app/boats';
 import { ClubTenant, FirestoreTenantService } from 'app/club-tenant';
@@ -16,6 +17,7 @@ import { pushRecentBoat } from './recent-boats';
 })
 export class UserDataService {
   private as = inject(AuthService);
+  private snackBar = inject(MatSnackBar);
   private tenant = inject(FirestoreTenantService);
   private clubId = inject(ClubTenant).clubId;
 
@@ -50,10 +52,15 @@ export class UserDataService {
   async ensureUserData(names?: { firstname: string; surname: string }): Promise<void> {
     const ensureUserData = await cloudCallable<
       { clubId: string; firstname?: string; surname?: string },
-      { user: UserData; id: string; isNew: boolean }
+      { user: UserData; id: string; isNew: boolean; roleGranted?: boolean }
     >('ensureUserData');
     const result = await ensureUserData({ clubId: this.clubId, ...names });
     console.log('UserDataService: User data returned for ' + result.data.id);
+    if (result.data.roleGranted) {
+      // First club admin of a new club: pick up the new claim straight away.
+      await this.as.refreshIdToken();
+      this.snackBar.open('You are now the club administrator.', 'Close', { duration: 8000 });
+    }
   }
 
 

@@ -33,6 +33,11 @@ export const SYS_ADMIN_ROUTES: Routes = [
       title: 'Scan AI',
    },
    {
+      path: 'registrations',
+      loadComponent: () => import('./club-registrations/club-registrations-page').then(m => m.ClubRegistrationsPage),
+      title: 'Club registrations',
+   },
+   {
       path: 'class-catalogue',
       loadComponent: () => import('./class-catalogue/class-catalogue-page').then(m => m.ClassCataloguePage),
       title: 'Class catalogue',
