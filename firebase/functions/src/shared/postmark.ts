@@ -3,9 +3,13 @@ import { logger } from "firebase-functions/v2";
 /** Secret Manager name of the Postmark Server API token; list it in the function's `secrets`. */
 export const POSTMARK_SECRET = "POSTMARK_SERVER_TOKEN";
 
-const FROM = "ScoreSmarter <noreply@scoresmarter.app>";
+export const NOREPLY_SENDER = "ScoreSmarter <noreply@scoresmarter.app>";
+/** For emails people may reply to; mail to support@ is forwarded by the domain host. */
+export const SUPPORT_SENDER = "ScoreSmarter <support@scoresmarter.app>";
 
 export interface EmailMessage {
+  /** Defaults to {@link NOREPLY_SENDER}. */
+  from?: string;
   to: string;
   subject: string;
   text: string;
@@ -33,7 +37,7 @@ export async function sendEmail(message: EmailMessage): Promise<boolean> {
         "X-Postmark-Server-Token": token,
       },
       body: JSON.stringify({
-        From: FROM,
+        From: message.from ?? NOREPLY_SENDER,
         To: message.to,
         Subject: message.subject,
         TextBody: message.text,

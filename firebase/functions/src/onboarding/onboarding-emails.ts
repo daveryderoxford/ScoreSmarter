@@ -1,4 +1,4 @@
-import type { EmailMessage } from "../shared/postmark.js";
+import { SUPPORT_SENDER, type EmailMessage } from "../shared/postmark.js";
 import { clubUrl, type ClubRegistration } from "./onboarding-model.js";
 
 type Registration = Pick<ClubRegistration, "clubName" | "subdomain" | "contactName" | "contactEmail">;
@@ -8,6 +8,7 @@ const firstName = (name: string) => name.trim().split(/\s+/)[0] || name.trim();
 /** To the club's contact when their registration arrives. */
 export function registrationReceivedEmail(registration: Registration): EmailMessage {
   return {
+    from: SUPPORT_SENDER,
     to: registration.contactEmail,
     tag: "registration-received",
     subject: `We've received your ScoreSmarter request for ${registration.clubName}`,
@@ -43,6 +44,7 @@ export function registrationNotificationEmail(registration: Registration, to: st
 export function clubApprovedEmail(registration: Registration, clubId: string, clubName: string): EmailMessage {
   const url = clubUrl(clubId);
   return {
+    from: SUPPORT_SENDER,
     to: registration.contactEmail,
     tag: "registration-approved",
     subject: `${clubName} is ready on ScoreSmarter`,
