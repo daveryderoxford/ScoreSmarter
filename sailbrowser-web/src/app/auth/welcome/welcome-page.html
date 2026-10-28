@@ -1,0 +1,90 @@
+<app-page-layout>
+  <app-toolbar title="Welcome to ScoreSmarter" />
+
+  <app-detail-pane maxWidth="420px">
+    @if (linkProblem()) {
+      <div class="welcome-body">
+        <p class="lead">{{ linkProblem() }}</p>
+        <p>
+          For a new link, email <a href="mailto:support@scoresmarter.app">support&#64;scoresmarter.app</a>.
+        </p>
+        <a matButton="outlined" routerLink="/auth/login">Sign in</a>
+      </div>
+    } @else if (details(); as d) {
+      <div class="welcome-body">
+        <h2>Set up your administrator account for {{ d.clubName }}</h2>
+        <p class="lead">
+          Hello {{ d.contactName || d.contactEmail }}. Once your account is set up you'll be
+          {{ d.clubName }}'s administrator on ScoreSmarter.
+        </p>
+
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+
+        @switch (state()) {
+          @case ('signed-in') {
+            <p>You're signed in as <strong>{{ signedInEmail() }}</strong>.</p>
+            <button matButton="filled" type="button" [disabled]="busy()" (click)="continueAsSignedIn()">
+              Continue as {{ signedInEmail() }}
+            </button>
+            <button matButton type="button" [disabled]="busy()" (click)="useDifferentAccount()">
+              Use a different account
+            </button>
+          }
+
+          @case ('existing-account') {
+            <p>
+              There's already a ScoreSmarter account for <strong>{{ d.contactEmail }}</strong>.
+              Sign in with it and you'll come back here to finish.
+            </p>
+            <a matButton="filled" routerLink="/auth/login" [queryParams]="{ returnUrl: loginReturnUrl() }">
+              Sign in
+            </a>
+          }
+
+          @case ('new-account') {
+            <form [formGroup]="passwordForm" (ngSubmit)="createAccount()" class="password-form">
+              <mat-form-field>
+                <mat-label>Email</mat-label>
+                <input matInput [value]="d.contactEmail" readonly>
+              </mat-form-field>
+
+              <mat-form-field>
+                <mat-label>Choose a password</mat-label>
+                <input matInput formControlName="password" autocomplete="new-password"
+                  [type]="hidePassword() ? 'password' : 'text'">
+                <button mat-icon-button matSuffix type="button" (click)="hidePassword.set(!hidePassword())"
+                  [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'">
+                  <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+                <mat-error>At least {{ minPasswordLength }} characters</mat-error>
+              </mat-form-field>
+
+              <mat-form-field>
+                <mat-label>Confirm password</mat-label>
+                <input matInput formControlName="confirmPassword" autocomplete="new-password"
+                  [type]="hidePassword() ? 'password' : 'text'">
+                <mat-error>Confirm your password</mat-error>
+                @if (passwordForm.hasError('passwordMismatch') && passwordForm.controls.confirmPassword.touched) {
+                  <mat-hint class="error">Passwords do not match</mat-hint>
+                }
+              </mat-form-field>
+
+              <button matButton="filled" type="submit" [disabled]="busy()">Create account</button>
+            </form>
+
+            @if (googleEnabled) {
+              <div class="divider">or</div>
+              <button matButton="outlined" type="button" [disabled]="busy()" (click)="continueWithGoogle()">
+                Continue with Google
+              </button>
+            }
+          }
+        }
+      </div>
+    } @else {
+      <app-loading-centered />
+    }
+  </app-detail-pane>
+</app-page-layout>

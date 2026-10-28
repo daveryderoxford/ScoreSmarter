@@ -1,4 +1,4 @@
-import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
 import { logger } from "firebase-functions/v2";
 import { onCall } from "firebase-functions/v2/https";
 import { assertAuthenticated, isSysAdmin } from "../shared/authorisation.js";
@@ -12,8 +12,11 @@ import {
   newClubDoc,
   normaliseEmail,
   onboardingPath,
+  welcomeUrl,
+  type ClubOnboarding,
   type ClubRegistration,
 } from "./onboarding-model.js";
+import { issueWelcomeCode } from "./welcome-code.js";
 
 interface ApproveRequest {
   registrationId: string;
@@ -24,9 +27,9 @@ interface ApproveRequest {
 }
 
 /**
- * Sys-admin: creates the club for a registration and records its contact email, so the
- * first user to sign in with that verified email becomes club admin (see ensureUserData),
- * then emails the contact. Safe to retry once approved.
+ * Sys-admin: creates the club for a registration and emails the contact a one-time
+ * welcome link to set up their administrator account (see club-welcome.ts). Safe to
+ * retry once approved: an unclaimed club gets a fresh link.
  */
 export const approveClubRegistration = onCall<ApproveRequest>({ secrets: [POSTMARK_SECRET] }, async request => {
   assertAuthenticated(request.auth);
@@ -54,7 +57,14 @@ export const approveClubRegistration = onCall<ApproveRequest>({ secrets: [POSTMA
     const clubName = (request.data.clubName ?? registration.clubName).trim();
 
     if (registration.status === "approved" && registration.clubId === clubId) {
-      return { registration, clubId, clubName: registration.clubName };
+      const onboardingRef = db.doc(onboardingPath(clubId));
+      const onboarding = (await tx.get(onboardingRef)).data() as ClubOnboarding | undefined;
+      if (!onboarding || onboarding.claimedBy) {
+        return { registration, clubId, clubName: registration.clubName, code: undefined };
+      }
+      const { code, fields } = issueWelcomeCode(new Date());
+      tx.update(onboardingRef, fields);
+      return { registration, clubId, clubName: registration.clubName, code };
     }
     if (registration.status !== "new") {
       throw detailedHttpsError("failed-precondition", `This registration is already ${registration.status}.`, {
@@ -76,11 +86,13 @@ export const approveClubRegistration = onCall<ApproveRequest>({ secrets: [POSTMA
       });
     }
 
-    tx.create(clubRef, newClubDoc(registration, clubName));
+    const { code, fields } = issueWelcomeCode(new Date());
+    tx.create(clubRef, newClubDoc(registration, clubName, Timestamp.now()));
     tx.create(db.doc(onboardingPath(clubId)), {
       adminEmail: normaliseEmail(registration.contactEmail),
       registrationId,
       createdAt: FieldValue.serverTimestamp(),
+      ...fields,
     });
     tx.update(registrationRef, {
       status: "approved",
@@ -89,15 +101,16 @@ export const approveClubRegistration = onCall<ApproveRequest>({ secrets: [POSTMA
       approvedAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
-    return { registration, clubId, clubName };
+    return { registration, clubId, clubName, code };
   });
 
-  const { registration, clubId, clubName } = approved;
+  const { registration, clubId, clubName, code } = approved;
+  const link = code ? welcomeUrl(clubId, code) : undefined;
   let emailSent = registration.emailsSent?.approved === true;
-  if (!emailSent) {
-    emailSent = await sendEmail(clubApprovedEmail(registration, clubId, clubName));
+  if (!emailSent && link) {
+    emailSent = await sendEmail(clubApprovedEmail(registration, clubId, clubName, link));
     if (emailSent) await registrationRef.update({ "emailsSent.approved": true });
   }
   logger.info("approveClubRegistration: club created", { registrationId, clubId, emailSent });
-  return { clubId, clubUrl: clubUrl(clubId), emailSent };
+  return { clubId, clubUrl: clubUrl(clubId), welcomeUrl: link, emailSent };
 });

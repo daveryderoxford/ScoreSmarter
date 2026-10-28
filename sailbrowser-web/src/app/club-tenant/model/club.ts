@@ -20,6 +20,12 @@ export interface ScoringDefaults {
    dncCalculation: DncCalculation;
 }
 
+/**
+ * Where a new club is in setting itself up (set by the onboarding functions). Clubs
+ * created before onboarding have no status and are established.
+ */
+export type OnboardingStatus = 'awaiting-admin' | 'setting-up' | 'complete';
+
 export interface Club {
    id: string;
    name: string;
@@ -45,4 +51,7 @@ export interface Club {
    longSeriesDefaults: ScoringDefaults;
    shortSeriesDefaults: ScoringDefaults;
    suspectTimeThresholds?: SuspectTimeThresholdOverrides;
+   onboardingStatus?: OnboardingStatus;
+   onboardingStartedAt?: Date;
+   adminJoinedAt?: Date;
 }

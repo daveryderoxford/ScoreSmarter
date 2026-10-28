@@ -32,7 +32,13 @@ export class RegistrationCard implements OnInit {
 
   protected readonly url = computed(() => clubUrl(this.registration().clubId ?? this.registration().subdomain));
 
-  /** For the sys-admin to send when the approval email could not be sent. */
+  /**
+   * The welcome link from the last approval or resend. Only its hash is stored, so it is
+   * known only straight after one of those.
+   */
+  protected readonly welcomeLink = signal<string | undefined>(undefined);
+
+  /** For the sys-admin to send when the welcome email could not be sent. */
   protected readonly welcomeMessage = computed(() => {
     const r = this.registration();
     return [
@@ -40,11 +46,11 @@ export class RegistrationCard implements OnInit {
       '',
       `${r.clubName} is now set up on ScoreSmarter at ${this.url()}`,
       '',
-      `Sign in there using ${r.contactEmail} and you will become the club's administrator `
-        + 'automatically. You can sign in with Google, or create an account with that email '
-        + 'address and confirm it from the email we send you.',
+      'Open this link to set up your administrator account (valid for 30 days):',
+      this.welcomeLink() ?? '',
       '',
-      'Once signed in, open Club settings to upload your burgee or logo.',
+      'You can choose a password, or continue with your Google account. Once you are in, '
+        + 'open Club settings to upload your burgee or logo.',
     ].join('\n');
   });
 
@@ -61,9 +67,24 @@ export class RegistrationCard implements OnInit {
         this.clubId.value.trim().toLowerCase(),
         this.clubName.value.trim(),
       );
+      this.welcomeLink.set(result.welcomeUrl);
       this.snackBar.open(
         result.emailSent ? `Club created and ${this.registration().contactEmail} emailed.`
-          : 'Club created, but the email could not be sent. Copy the message below and send it.',
+          : 'Club created, but the email could not be sent. Copy the welcome message and send it.',
+        'Close',
+        { duration: 8000 },
+      );
+    });
+  }
+
+  /** New welcome link (the old one stops working), emailed to the contact. */
+  async resendWelcome(): Promise<void> {
+    await this.run(async () => {
+      const result = await this.service.resendWelcome(this.registration().id);
+      this.welcomeLink.set(result.welcomeUrl);
+      this.snackBar.open(
+        result.emailSent ? `New welcome link emailed to ${this.registration().contactEmail}.`
+          : 'New welcome link created, but the email could not be sent. Copy the welcome message and send it.',
         'Close',
         { duration: 8000 },
       );

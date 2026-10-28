@@ -17,6 +17,11 @@ export const AUTH_ROUTES: Routes = [
     title: 'ScoreSmarter Verify email',
   },
   {
+    path: 'welcome',
+    loadComponent: () => import('./welcome/welcome-page').then(m => m.WelcomePage),
+    title: 'ScoreSmarter Welcome',
+  },
+  {
     path: 'change-password',
     component: ChangePassword,
     canActivate: [authGuard],
