@@ -29,6 +29,13 @@ export interface ClubRegistration {
 export interface ApproveResult {
   clubId: string;
   clubUrl: string;
+  /** Missing when approval was repeated after the admin had already joined. */
+  welcomeUrl?: string;
+  emailSent: boolean;
+}
+
+export interface ResendWelcomeResult {
+  welcomeUrl: string;
   emailSent: boolean;
 }
 
@@ -51,12 +58,19 @@ export class ClubRegistrationsService {
   readonly isLoading = this.resource.isLoading;
   readonly error = this.resource.error;
 
-  /** Creates the club; the contact becomes club admin when they sign in with their email. */
+  /** Creates the club and emails the contact a welcome link to set up their administrator account. */
   async approve(registrationId: string, clubId: string, clubName: string): Promise<ApproveResult> {
     const approve = await cloudCallable<{ registrationId: string; clubId: string; clubName: string }, ApproveResult>(
       'approveClubRegistration',
     );
     const result = await approve({ registrationId, clubId, clubName });
+    return result.data;
+  }
+
+  /** Replaces an unclaimed club's welcome link and emails the new one. */
+  async resendWelcome(registrationId: string): Promise<ResendWelcomeResult> {
+    const reissue = await cloudCallable<{ registrationId: string }, ResendWelcomeResult>('reissueClubWelcome');
+    const result = await reissue({ registrationId });
     return result.data;
   }
 

@@ -39,6 +39,9 @@ export interface ClubOnboarding {
   adminEmail: string;
   registrationId: string;
   createdAt: Timestamp;
+  /** SHA-256 of the welcome link's one-time code; removed once claimed. */
+  codeHash?: string;
+  codeExpiresAt?: Timestamp;
   claimedBy?: string;
   claimedAt?: Timestamp;
 }
@@ -47,11 +50,26 @@ export const normaliseEmail = (email: string) => email.trim().toLowerCase();
 
 export const clubUrl = (clubId: string) => `https://${clubId}.ro.scoresmarter.app`;
 
+/** The club site page where the contact sets up their administrator account. */
+export const welcomeUrl = (clubId: string, code: string) =>
+  `${clubUrl(clubId)}/auth/welcome?code=${encodeURIComponent(code)}`;
+
+/**
+ * Where a new club is in setting itself up. Clubs created before onboarding have no
+ * status and are treated as established. Stored on the public club doc, so no
+ * personal data goes with it.
+ */
+export type OnboardingStatus = "awaiting-admin" | "setting-up" | "complete";
+
 /**
  * A new club document. Only fields the web app cannot default are set: `ClubStore`
  * requires the three arrays, and supplies scoring defaults, laps and OOD scoring itself.
  */
-export function newClubDoc(registration: Pick<ClubRegistration, "contactName" | "contactEmail">, clubName: string) {
+export function newClubDoc(
+  registration: Pick<ClubRegistration, "contactName" | "contactEmail">,
+  clubName: string,
+  startedAt: Timestamp,
+) {
   return {
     name: clubName.trim(),
     contactName: registration.contactName.trim(),
@@ -60,8 +78,16 @@ export function newClubDoc(registration: Pick<ClubRegistration, "contactName" | 
     classes: [],
     seasons: [],
     supportedHandicapSchemes: ["PY"],
+    onboardingStatus: "awaiting-admin" as OnboardingStatus,
+    onboardingStartedAt: startedAt,
   };
 }
+
+/** Club doc fields set when the club's first administrator joins. */
+export const adminJoinedFields = (joinedAt: Timestamp) => ({
+  onboardingStatus: "setting-up" as OnboardingStatus,
+  adminJoinedAt: joinedAt,
+});
 
 /**
  * The first signed-in user whose verified email matches the registered contact email

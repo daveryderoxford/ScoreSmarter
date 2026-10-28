@@ -24,11 +24,13 @@ test("registrationNotificationEmail goes to the given address and replies to the
   assert.match(email.text, /https:\/\/westbay\.ro\.scoresmarter\.app/);
 });
 
-test("clubApprovedEmail links to the approved club id, which may differ from the request", () => {
-  const email = clubApprovedEmail(registration, "wbsc", "West Bay Sailing Club");
+test("clubApprovedEmail gives the approved club's address and the welcome link", () => {
+  const link = "https://wbsc.ro.scoresmarter.app/auth/welcome?code=abc";
+  const email = clubApprovedEmail(registration, "wbsc", "West Bay Sailing Club", link);
   assert.equal(email.from, "ScoreSmarter <support@scoresmarter.app>");
   assert.equal(email.to, "sec@westbay.org");
   assert.match(email.subject, /^West Bay Sailing Club is ready/);
-  assert.match(email.text, /https:\/\/wbsc\.ro\.scoresmarter\.app/);
-  assert.match(email.text, /\(sec@westbay\.org\)/);
+  assert.match(email.text, /at https:\/\/wbsc\.ro\.scoresmarter\.app\n/);
+  assert.match(email.text, /valid for 30 days/);
+  assert.ok(email.text.includes(`\n${link}\n`));
 });

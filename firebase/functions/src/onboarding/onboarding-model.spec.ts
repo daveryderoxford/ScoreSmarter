@@ -1,6 +1,7 @@
 import test from "node:test";
 import * as assert from "node:assert/strict";
-import { newClubDoc, shouldGrantFirstAdmin } from "./onboarding-model.js";
+import { Timestamp } from "firebase-admin/firestore";
+import { adminJoinedFields, newClubDoc, shouldGrantFirstAdmin } from "./onboarding-model.js";
 
 const onboarding = { adminEmail: "sec@westbay.org" };
 
@@ -21,8 +22,9 @@ test("shouldGrantFirstAdmin refuses once claimed, or when the club has no onboar
   assert.equal(shouldGrantFirstAdmin(undefined, { email: "sec@westbay.org", email_verified: true }), false);
 });
 
-test("newClubDoc has the arrays ClubStore requires and PY handicaps", () => {
-  const club = newClubDoc({ contactName: " Sam Sec ", contactEmail: " sec@westbay.org " }, " West Bay SC ");
+test("newClubDoc has the arrays ClubStore requires, PY handicaps and is awaiting its admin", () => {
+  const startedAt = Timestamp.fromMillis(1_790_000_000_000);
+  const club = newClubDoc({ contactName: " Sam Sec ", contactEmail: " sec@westbay.org " }, " West Bay SC ", startedAt);
   assert.deepEqual(club, {
     name: "West Bay SC",
     contactName: "Sam Sec",
@@ -31,5 +33,12 @@ test("newClubDoc has the arrays ClubStore requires and PY handicaps", () => {
     classes: [],
     seasons: [],
     supportedHandicapSchemes: ["PY"],
+    onboardingStatus: "awaiting-admin",
+    onboardingStartedAt: startedAt,
   });
+});
+
+test("adminJoinedFields moves the club on to setting up", () => {
+  const joinedAt = Timestamp.fromMillis(1_790_000_000_000);
+  assert.deepEqual(adminJoinedFields(joinedAt), { onboardingStatus: "setting-up", adminJoinedAt: joinedAt });
 });

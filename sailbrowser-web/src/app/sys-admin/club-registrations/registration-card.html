@@ -30,13 +30,20 @@
       <p>Club: <a [href]="url()" target="_blank" rel="noopener">{{ url() }}</a></p>
       <p>
         @if (r.adminClaimedAt) {
-          Club admin signed in {{ r.adminClaimedAt | date:'d MMM yyyy HH:mm' }}.
+          Club admin joined {{ r.adminClaimedAt | date:'d MMM yyyy HH:mm' }}.
         } @else {
-          Waiting for {{ r.contactEmail }} to sign in and become club admin.
+          Waiting for {{ r.contactEmail }} to open the welcome link and set up their account.
         }
       </p>
-      @if (!r.emailsSent?.approved) {
-        <p class="warning">The welcome email was not sent. Copy the message and send it to the contact.</p>
+      @if (!r.adminClaimedAt && !r.emailsSent?.approved) {
+        <p class="warning">
+          The welcome email was not sent.
+          @if (welcomeLink()) {
+            Copy the welcome message and send it to the contact.
+          } @else {
+            Resend it, or copy the welcome message after resending.
+          }
+        </p>
       }
     }
 
@@ -57,7 +64,12 @@
         <button matButton type="button" [disabled]="busy()" (click)="reopen()">Reopen</button>
       }
       @case ('approved') {
-        <button matButton type="button" (click)="copyWelcome()">Copy welcome message</button>
+        @if (!r.adminClaimedAt) {
+          <button matButton type="button" [disabled]="busy()" (click)="resendWelcome()">Resend welcome email</button>
+          @if (welcomeLink()) {
+            <button matButton type="button" (click)="copyWelcome()">Copy welcome message</button>
+          }
+        }
       }
     }
   </mat-card-actions>
