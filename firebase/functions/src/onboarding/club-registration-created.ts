@@ -5,12 +5,15 @@ import { POSTMARK_SECRET, sendEmail } from "../shared/postmark.js";
 import { registrationNotificationEmail, registrationReceivedEmail } from "./onboarding-emails.js";
 import { CLUB_REGISTRATIONS, type ClubRegistration, type RegistrationEmails } from "./onboarding-model.js";
 
+/** Secret Manager, not .env: the repository is public. */
+const NOTIFY_EMAIL_SECRET = "ONBOARDING_NOTIFY_EMAIL";
+
 /**
  * Acknowledges a new club registration to its contact and alerts the system
- * administrators at ONBOARDING_NOTIFY_EMAIL (set in firebase/functions/.env).
+ * administrators at the ONBOARDING_NOTIFY_EMAIL address.
  */
 export const clubRegistrationCreated = onDocumentCreated(
-  { document: `${CLUB_REGISTRATIONS}/{registrationId}`, secrets: [POSTMARK_SECRET] },
+  { document: `${CLUB_REGISTRATIONS}/{registrationId}`, secrets: [POSTMARK_SECRET, NOTIFY_EMAIL_SECRET] },
   async event => {
     const ref = getFirestore().doc(`${CLUB_REGISTRATIONS}/${event.params.registrationId}`);
     // Re-read rather than use the event snapshot, so a redelivered event sees emails already sent.
@@ -26,7 +29,7 @@ export const clubRegistrationCreated = onDocumentCreated(
     if (!sent.received) {
       sent.received = await sendEmail(registrationReceivedEmail(registration));
     }
-    const notifyTo = process.env.ONBOARDING_NOTIFY_EMAIL;
+    const notifyTo = process.env[NOTIFY_EMAIL_SECRET];
     if (!sent.notified) {
       if (notifyTo) {
         sent.notified = await sendEmail(registrationNotificationEmail(registration, notifyTo));
