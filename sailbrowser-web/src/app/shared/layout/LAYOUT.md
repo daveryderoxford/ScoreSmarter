@@ -35,7 +35,8 @@ sizes itself to the body (panes, `height: 100%` layouts) keeps its own internal 
 
 ## Recipe 2 — list and detail
 
-For master-detail screens: boats, fleets, seasons, classes and the results viewer.
+For master-detail screens: boats, fleets, seasons, classes, series and the results viewer.
+Series use `series-details/:id` for the item: `listDetailRoute({ editPath: 'series-details' })`.
 
 ```html
 <app-page-layout>

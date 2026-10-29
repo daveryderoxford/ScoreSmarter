@@ -19,12 +19,19 @@ export interface ListDetailRoute {
   showBack: Signal<boolean>;
 }
 
+export interface ListDetailRouteOptions {
+  /** Same as the page's `ListDetailLayout` breakpoint. Default `split`. */
+  breakpoint?: ListDetailBreakpoint;
+  /** First segment of the item detail route (`{editPath}/:id`). Default `edit`. */
+  editPath?: string;
+}
+
 /**
  * Route state for a list/detail page whose children are `''` (placeholder), `add`
- * and `edit/:id`. Call from a field initializer of the page component, and pass
- * the same `breakpoint` as its `ListDetailLayout`.
+ * and `edit/:id` (or `{editPath}/:id`). Call from a field initializer of the page
+ * component.
  */
-export function listDetailRoute(breakpoint: ListDetailBreakpoint = 'split'): ListDetailRoute {
+export function listDetailRoute({ breakpoint = 'split', editPath = 'edit' }: ListDetailRouteOptions = {}): ListDetailRoute {
   const router = inject(Router);
   const route = inject(ActivatedRoute);
   const isSplit = inject(AppBreakpoints).listDetailSplit(breakpoint);
@@ -43,7 +50,7 @@ export function listDetailRoute(breakpoint: ListDetailBreakpoint = 'split'): Lis
     const child = route.firstChild;
     const path = child?.snapshot.url[0]?.path;
     if (path === 'add') return { kind: 'add' };
-    if (path === 'edit') return { kind: 'edit', id: child!.snapshot.paramMap.get('id') ?? '' };
+    if (path === editPath) return { kind: 'edit', id: child!.snapshot.paramMap.get('id') ?? '' };
     return undefined;
   });
   const detailOpen = computed(() => !!selection());
