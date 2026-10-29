@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AppBreakpoints } from 'app/shared/services/breakpoints';
+import { AppBreakpoints, type ListDetailBreakpoint } from 'app/shared/services/breakpoints';
 import { ListDetailLayout } from './list-detail-layout';
 
 @Component({
@@ -12,7 +12,8 @@ import { ListDetailLayout } from './list-detail-layout';
       [detailOpen]="detailOpen()"
       [listCollapsed]="listCollapsed()"
       [listWidth]="listWidth"
-      [detailWidth]="detailWidth()">
+      [detailWidth]="detailWidth()"
+      [breakpoint]="breakpoint()">
       <div list data-testid="list">List</div>
       <div detail data-testid="detail">Detail</div>
     </app-list-detail-layout>
@@ -22,18 +23,40 @@ class HostComponent {
   readonly detailOpen = signal(false);
   readonly listCollapsed = signal(false);
   readonly detailWidth = signal<string | undefined>(undefined);
+  readonly breakpoint = signal<ListDetailBreakpoint>('split');
   listWidth = '320px';
 }
 
 describe('ListDetailLayout', () => {
+  /** Split width (tablet portrait and up) unless a test narrows it. */
+  const isSplitLayout = signal(true);
   const isWideLayout = signal(true);
 
   beforeEach(() => {
+    isSplitLayout.set(true);
     isWideLayout.set(true);
     TestBed.configureTestingModule({
       imports: [HostComponent],
-      providers: [{ provide: AppBreakpoints, useValue: { isWideLayout } }],
+      providers: [{
+        provide: AppBreakpoints,
+        useValue: {
+          isWideLayout,
+          isSplitLayout,
+          listDetailSplit: (bp: ListDetailBreakpoint) => bp === 'wide' ? isWideLayout : isSplitLayout,
+        },
+      }],
     });
+  });
+
+  it('splits from the split width by default, and only from the wide width when asked', () => {
+    isWideLayout.set(false);
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.detectChanges();
+    expect(layoutEl(fixture).classList.contains('wide')).toBe(true);
+
+    fixture.componentInstance.breakpoint.set('wide');
+    fixture.detectChanges();
+    expect(layoutEl(fixture).classList.contains('compact')).toBe(true);
   });
 
   function layoutEl(fixture: ReturnType<typeof TestBed.createComponent<HostComponent>>): HTMLElement {
@@ -79,7 +102,7 @@ describe('ListDetailLayout', () => {
   });
 
   it('does not collapse on compact screens', () => {
-    isWideLayout.set(false);
+    isSplitLayout.set(false);
     const fixture = TestBed.createComponent(HostComponent);
     fixture.componentInstance.listCollapsed.set(true);
     fixture.detectChanges();

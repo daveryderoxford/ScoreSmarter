@@ -1,5 +1,6 @@
-import { booleanAttribute, ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { booleanAttribute, ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
+import { ListDetailLayout } from './list-detail-layout';
 
 /**
  * Form or detail column. Replaces the `form-page` mixin when used inside
@@ -104,6 +105,7 @@ import { AppBreakpoints } from 'app/shared/services/breakpoints';
 })
 export class DetailPane {
   private readonly breakpoints = inject(AppBreakpoints);
+  private readonly layout = inject(ListDetailLayout, { optional: true });
 
   /** When true (default), the viewport scrolls if content overflows. */
   scrollable = input(true, { transform: booleanAttribute });
@@ -123,5 +125,7 @@ export class DetailPane {
    */
   fillHeight = input(false, { transform: booleanAttribute });
 
-  protected readonly isWide = this.breakpoints.isWideLayout;
+  /** Inside a list/detail layout, framed when list and detail are side by side. */
+  protected readonly isWide = computed(() =>
+    this.layout ? this.layout.isWide() : this.breakpoints.isWideLayout());
 }

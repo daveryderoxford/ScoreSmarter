@@ -5,13 +5,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { debounceTime, distinctUntilChanged, filter, map, startWith } from 'rxjs';
+import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { boatFilter, BoatsStore } from '../../services/boats.store';
 import { LoadingCentered } from "app/shared/components/loading-centered";
@@ -22,7 +22,7 @@ import { BoatsCsvService } from '../../services/boats-csv.service';
 import { ClubStore } from 'app/club-tenant';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getSchemesForTarget } from 'app/scoring/model/handicap-scheme-metadata';
-import { AppBreakpoints } from 'app/shared/services/breakpoints';
+import { listDetailRoute } from 'app/shared/layout/list-detail-route';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { ListDetailLayout } from 'app/shared/layout/list-detail-layout';
 import { ListPane } from 'app/shared/layout/list-pane';
@@ -75,40 +75,14 @@ export class BoatsPage {
   private clubStore = inject(ClubStore);
   private snackbar = inject(MatSnackBar);
   private boatsCsv = inject(BoatsCsvService);
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
-  private readonly breakpoints = inject(AppBreakpoints);
+  private readonly detail = listDetailRoute();
 
-  private readonly navUrl = toSignal(
-    this.router.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      map(() => this.router.url),
-      startWith(this.router.url),
-    ),
-    { initialValue: this.router.url },
-  );
-
-  private readonly detailChild = computed(() => {
-    this.navUrl();
-    const child = this.route.firstChild;
-    if (!child) return undefined;
-    const path = child.snapshot.url[0]?.path;
-    if (path === 'add') return { kind: 'add' as const };
-    if (path === 'edit') {
-      return { kind: 'edit' as const, id: child.snapshot.paramMap.get('id') ?? '' };
-    }
-    return undefined;
-  });
-
-  readonly detailOpen = computed(() => !!this.detailChild());
-  readonly selectedBoatId = computed(() => {
-    const child = this.detailChild();
-    return child?.kind === 'edit' ? child.id : null;
-  });
-  readonly showBack = computed(() => !this.breakpoints.isWideLayout() && this.detailOpen());
+  readonly detailOpen = this.detail.detailOpen;
+  readonly selectedBoatId = this.detail.selectedId;
+  readonly showBack = this.detail.showBack;
   readonly toolbarTitle = computed(() => {
-    if (this.breakpoints.isWideLayout()) return 'Boats';
-    const child = this.detailChild();
+    if (this.detail.isSplit()) return 'Boats';
+    const child = this.detail.selection();
     if (child?.kind === 'add') return 'Add Boat';
     if (child?.kind === 'edit') {
       const boat = this.bs.boats().find(b => b.id === child.id);

@@ -77,7 +77,7 @@ export class FleetEdit {
       this.discardChanges();
       await this.router.navigate(['/club/fleets']);
       this.snackbar.open("Fleet deleted", "Dismiss", { duration: 3000 });
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.snackbar.open("Error deleting fleet", "Dismiss", { duration: 3000 });
       console.error('Error deleting fleet:', error);
     } finally {

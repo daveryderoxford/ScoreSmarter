@@ -1,27 +1,21 @@
 import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { Toolbar } from 'app/shared/components/toolbar';
-import { DetailPane } from 'app/shared/layout/detail-pane';
-import { PageLayout } from 'app/shared/layout/page-layout';
+import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { ClubStore } from '../services/club-store';
 import { ClassForm } from './class-form/class-form';
 import { BoatClass } from '../model/boat-class';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 
+/** Detail fragment inside `ClassPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-class-add',
-  imports: [ClassForm, Toolbar, PageLayout, DetailPane],
+  imports: [ClassForm, DetailHeading],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-page-layout>
-      <app-toolbar title="Add Class" showBack/>
-      <app-detail-pane maxWidth="350px">
-        <app-class-form (submitted)="submitted($event)" [busy]="busy()"></app-class-form>
-      </app-detail-pane>
-    </app-page-layout>
+    <app-detail-heading>Add Class</app-detail-heading>
+    <app-class-form (submitted)="submitted($event)" [busy]="busy()"></app-class-form>
   `,
-  styles: [],
 })
 export class ClassAdd {
   private cs = inject(ClubStore);

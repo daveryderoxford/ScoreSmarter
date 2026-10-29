@@ -10,13 +10,13 @@ import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 import { LoadingCentered } from "app/shared/components/loading-centered";
 import { Toolbar } from 'app/shared/components/toolbar';
-import { debounceTime, distinctUntilChanged, filter, map, startWith } from 'rxjs';
+import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
 import { ClubStore } from '../../services/club-store';
-import { AppBreakpoints } from 'app/shared/services/breakpoints';
+import { listDetailRoute } from 'app/shared/layout/list-detail-route';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { ListDetailLayout } from 'app/shared/layout/list-detail-layout';
 import { ListPane } from 'app/shared/layout/list-pane';
@@ -63,40 +63,14 @@ export class FleetPage {
   cs = inject(ClubStore);
   private snackbar = inject(MatSnackBar);
   private fleetsCsv = inject(FleetsCsvService);
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
-  private readonly breakpoints = inject(AppBreakpoints);
+  private readonly detail = listDetailRoute();
 
-  private readonly navUrl = toSignal(
-    this.router.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      map(() => this.router.url),
-      startWith(this.router.url),
-    ),
-    { initialValue: this.router.url },
-  );
-
-  private readonly detailChild = computed(() => {
-    this.navUrl();
-    const child = this.route.firstChild;
-    if (!child) return undefined;
-    const path = child.snapshot.url[0]?.path;
-    if (path === 'add') return { kind: 'add' as const };
-    if (path === 'edit') {
-      return { kind: 'edit' as const, id: child.snapshot.paramMap.get('id') ?? '' };
-    }
-    return undefined;
-  });
-
-  readonly detailOpen = computed(() => !!this.detailChild());
-  readonly selectedFleetId = computed(() => {
-    const child = this.detailChild();
-    return child?.kind === 'edit' ? child.id : null;
-  });
-  readonly showBack = computed(() => !this.breakpoints.isWideLayout() && this.detailOpen());
+  readonly detailOpen = this.detail.detailOpen;
+  readonly selectedFleetId = this.detail.selectedId;
+  readonly showBack = this.detail.showBack;
   readonly toolbarTitle = computed(() => {
-    if (this.breakpoints.isWideLayout()) return 'Fleets';
-    const child = this.detailChild();
+    if (this.detail.isSplit()) return 'Fleets';
+    const child = this.detail.selection();
     if (child?.kind === 'add') return 'Add Fleet';
     if (child?.kind === 'edit') {
       const fleet = this.cs.club().fleets.find(f => f.id === child.id);

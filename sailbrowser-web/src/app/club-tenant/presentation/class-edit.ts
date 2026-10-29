@@ -1,29 +1,38 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
+import { DeleteButton } from 'app/shared/components/delete-button';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
-import { Toolbar } from 'app/shared/components/toolbar';
-import { DetailPane } from 'app/shared/layout/detail-pane';
-import { PageLayout } from 'app/shared/layout/page-layout';
+import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { ClubStore } from '../services/club-store';
 import { ClassRenameService } from '../services/class-rename.service';
 import { ClassForm } from './class-form/class-form';
 import { BoatClass } from '../model/boat-class';
 
+/** Detail fragment inside `ClassPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-class-edit',
-  imports: [ClassForm, Toolbar, PageLayout, DetailPane],
+  imports: [ClassForm, DetailHeading, DeleteButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-page-layout>
-      <app-toolbar [title]="'Edit Class - ' + boatClass()?.name" showBack/>
-      <app-detail-pane maxWidth="350px">
-        <app-class-form [boatClass]="boatClass()" (submitted)="submitted($event)" [busy]="busy()"></app-class-form>
-      </app-detail-pane>
-    </app-page-layout>
+    @if (boatClass(); as boatClass) {
+      <app-detail-heading>Edit Class - {{ boatClass.name }}</app-detail-heading>
+      @for (currentId of [id()]; track currentId) {
+        <app-class-form [boatClass]="boatClass" (submitted)="submitted($event)" [busy]="busy()"></app-class-form>
+      }
+      <div class="delete-row">
+        <app-delete-button [busy]="deleting()" (delete)="deleteClass(boatClass)">Delete class</app-delete-button>
+      </div>
+    }
   `,
-  styles: [],
+  styles: `
+    .delete-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+  `,
 })
 export class ClassEdit {
   private cs = inject(ClubStore);
@@ -37,8 +46,9 @@ export class ClassEdit {
   boatClass = computed(() => this.cs.club().classes.find(c => c.id === this.id()));
 
   busy = signal(false);
+  deleting = signal(false);
 
-  readonly form = viewChild.required(ClassForm);
+  readonly form = viewChild(ClassForm);
 
   async submitted(data: Partial<BoatClass>) {
     try {
@@ -81,7 +91,23 @@ export class ClassEdit {
     }
   }
 
+  async deleteClass(boatClass: BoatClass) {
+    if (!await this.dialogs.confirm('Delete class?', `${boatClass.name} will be deleted.`, { confirm: 'Delete' })) return;
+    try {
+      this.deleting.set(true);
+      await this.cs.removeClass(boatClass);
+      this.form()?.form.markAsPristine();
+      await this.router.navigate(['/club/classes']);
+      this.snackbar.open("Class deleted", "Dismiss", { duration: 3000 });
+    } catch (error: unknown) {
+      this.snackbar.open("Error deleting class", "Dismiss", { duration: 3000 });
+      console.error('Error deleting class:', error);
+    } finally {
+      this.deleting.set(false);
+    }
+  }
+
   canDeactivate(): boolean {
-    return this.form().canDeactivate();
+    return this.form()?.canDeactivate() ?? true;
   }
 }

@@ -74,7 +74,7 @@ export class BoatEdit {
       this.discardChanges();
       await this.router.navigate(['/boats']);
       this.snackbar.open("Boat deleted", "Dismiss", { duration: 3000 });
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.snackbar.open("Error deleting boat", "Dismiss", { duration: 3000 });
       console.error('Error deleting boat:', error);
     } finally {
