@@ -6,7 +6,9 @@ import { AppBreakpoints } from 'app/shared/services/breakpoints';
  * screens (boats, fleets, results viewer). Do not wrap single forms,
  * home, login, or settings in this component.
  *
- * Wide (desktop and tablet landscape): left navigation panel + detail panel.
+ * Wide (desktop and tablet landscape): left navigation panel + detail panel,
+ * separated by a small gutter. With `detailWidth`, both are centred on the page;
+ * without it the detail fills the remaining width (e.g. results tables).
  * Compact (phone and tablet portrait): shows either the list or the detail,
  * so the list screen navigates to a separate detail page.
  */
@@ -16,9 +18,11 @@ import { AppBreakpoints } from 'app/shared/services/breakpoints';
   host: {
     '[class.wide]': 'isWide()',
     '[class.compact]': '!isWide()',
+    '[class.centered]': '!!detailWidth()',
     '[class.detail-open]': 'detailOpen()',
     '[class.list-collapsed]': 'isWide() && listCollapsed()',
     '[style.--app-list-pane-width]': 'listWidth()',
+    '[style.--app-detail-pane-width]': 'detailWidth() || null',
   },
   template: `
     <div class="list-slot">
@@ -40,11 +44,18 @@ import { AppBreakpoints } from 'app/shared/services/breakpoints';
 
     :host.wide {
       grid-template-columns: var(--app-list-pane-width, 400px) 1fr;
+      column-gap: var(--app-list-detail-gap, 12px);
       transition: grid-template-columns 0.3s ease-in-out;
+    }
+
+    :host.wide.centered {
+      grid-template-columns: var(--app-list-pane-width, 400px) minmax(0, var(--app-detail-pane-width));
+      justify-content: center;
     }
 
     :host.wide.list-collapsed {
       grid-template-columns: 0 1fr;
+      column-gap: 0;
     }
 
     :host.compact {
@@ -84,6 +95,12 @@ export class ListDetailLayout {
 
   /** Width of the list column on wide screens. */
   listWidth = input('400px');
+
+  /**
+   * Wide layout only: width of the detail column. When set, list and detail are
+   * centred together on the page; when not, the detail fills the remaining width.
+   */
+  detailWidth = input<string | undefined>(undefined);
 
   protected readonly isWide = this.breakpoints.isWideLayout;
 }

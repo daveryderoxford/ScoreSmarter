@@ -11,7 +11,8 @@ import { ListDetailLayout } from './list-detail-layout';
     <app-list-detail-layout
       [detailOpen]="detailOpen()"
       [listCollapsed]="listCollapsed()"
-      [listWidth]="listWidth">
+      [listWidth]="listWidth"
+      [detailWidth]="detailWidth()">
       <div list data-testid="list">List</div>
       <div detail data-testid="detail">Detail</div>
     </app-list-detail-layout>
@@ -20,6 +21,7 @@ import { ListDetailLayout } from './list-detail-layout';
 class HostComponent {
   readonly detailOpen = signal(false);
   readonly listCollapsed = signal(false);
+  readonly detailWidth = signal<string | undefined>(undefined);
   listWidth = '320px';
 }
 
@@ -48,6 +50,18 @@ describe('ListDetailLayout', () => {
     expect(getComputedStyle(el).getPropertyValue('--app-list-pane-width').trim()).toBe('320px');
     expect(el.querySelector('[data-testid="list"]')?.textContent).toContain('List');
     expect(el.querySelector('[data-testid="detail"]')?.textContent).toContain('Detail');
+  });
+
+  it('fills the width by default and centres list and detail when detailWidth is set', () => {
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.detectChanges();
+    const el = layoutEl(fixture);
+    expect(el.classList.contains('centered')).toBe(false);
+
+    fixture.componentInstance.detailWidth.set('400px');
+    fixture.detectChanges();
+    expect(el.classList.contains('centered')).toBe(true);
+    expect(getComputedStyle(el).getPropertyValue('--app-detail-pane-width').trim()).toBe('400px');
   });
 
   it('marks detail-open when a detail page is active', () => {

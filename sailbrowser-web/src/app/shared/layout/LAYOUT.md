@@ -40,16 +40,19 @@ Only for true master-detail screens (boats, fleets, results viewer).
 ```html
 <app-page-layout>
   <app-toolbar />
-  <app-list-detail-layout [detailOpen]="detailOpen()">
+  <app-list-detail-layout [detailOpen]="detailOpen()" detailWidth="400px">
     <app-list-pane list>...</app-list-pane>
-    <app-detail-pane detail>
+    <app-detail-pane detail maxWidth="350px">
       <router-outlet />
     </app-detail-pane>
   </app-list-detail-layout>
 </app-page-layout>
 ```
 
-Wide: list and detail side by side. Compact: list **or** detail.
+Wide: list and detail side by side with a small gutter. Compact: list **or** detail.
+
+- With `detailWidth` (form details such as boats and fleets), list and detail are centred together on the page.
+- Without it (results viewer), the detail fills the rest of the width.
 
 Do not put `ListDetailLayout` on home, login, settings, or a single form.
 
