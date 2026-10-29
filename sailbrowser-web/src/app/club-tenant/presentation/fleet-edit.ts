@@ -4,7 +4,6 @@ import { Router } from '@angular/router';
 import { FleetForm } from './fleet-form/fleet-form';
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 import { ClubStore } from '../services/club-store';
-import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { DeleteButton } from 'app/shared/components/delete-button';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 
@@ -12,10 +11,9 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 @Component({
   selector: 'app-fleet-edit',
   standalone: true,
-  imports: [FleetForm, DetailHeading, DeleteButton],
+  imports: [FleetForm, DeleteButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-detail-heading>Edit Fleet - {{ getFleetName(fleet()) }}</app-detail-heading>
     @for (currentId of [id()]; track currentId) {
       @if (fleet()) {
         <app-fleet-form [fleet]="fleet()" (submitted)="submitted($event)"></app-fleet-form>

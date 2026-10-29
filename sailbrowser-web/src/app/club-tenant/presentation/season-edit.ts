@@ -3,7 +3,6 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { DeleteButton } from 'app/shared/components/delete-button';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
-import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { ClubStore } from '../services/club-store';
 import { SeasonForm } from './season-form/season-form';
 import { Season } from 'app/race-calender/model/season';
@@ -11,11 +10,10 @@ import { Season } from 'app/race-calender/model/season';
 /** Detail fragment inside `SeasonPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-season-edit',
-  imports: [SeasonForm, DetailHeading, DeleteButton],
+  imports: [SeasonForm, DeleteButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (season(); as season) {
-      <app-detail-heading>Edit Season - {{ season.name }}</app-detail-heading>
       @for (currentId of [id()]; track currentId) {
         <app-season-form [season]="season" (submitted)="submitted($event)" [busy]="busy()"></app-season-form>
       }

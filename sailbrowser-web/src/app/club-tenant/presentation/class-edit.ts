@@ -3,7 +3,6 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { DeleteButton } from 'app/shared/components/delete-button';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
-import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { ClubStore } from '../services/club-store';
 import { ClassRenameService } from '../services/class-rename.service';
@@ -13,11 +12,10 @@ import { BoatClass } from '../model/boat-class';
 /** Detail fragment inside `ClassPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-class-edit',
-  imports: [ClassForm, DetailHeading, DeleteButton],
+  imports: [ClassForm, DeleteButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (boatClass(); as boatClass) {
-      <app-detail-heading>Edit Class - {{ boatClass.name }}</app-detail-heading>
       @for (currentId of [id()]; track currentId) {
         <app-class-form [boatClass]="boatClass" (submitted)="submitted($event)" [busy]="busy()"></app-class-form>
       }

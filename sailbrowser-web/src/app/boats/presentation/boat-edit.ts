@@ -5,18 +5,16 @@ import { BoatForm } from './boat-form/boat-form';
 import { BoatsStore } from '../services/boats.store';
 import { DuplicateBoatCheck } from './duplicate-boat-check/duplicate-check-service';
 import { Boat } from '../model/boat';
-import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { DeleteButton } from 'app/shared/components/delete-button';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 
 /** Detail fragment inside `BoatsPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-boat-edit',
-  imports: [BoatForm, DetailHeading, DeleteButton],
+  imports: [BoatForm, DeleteButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (boat(); as boat) {
-      <app-detail-heading>Edit Boat - {{ boat.boatClass }}  {{ boat.sailNumber }}</app-detail-heading>
       @for (currentId of [id()]; track currentId) {
         <app-boat-form [boat]="boat" (submitted)="submitted($event)"></app-boat-form>
       }
