@@ -1,20 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatAutocompleteModule, type MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatRadioModule } from '@angular/material/radio';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { BoatClass } from '../../model/boat-class';
-import {
-  catalogClassLabel,
-  catalogClassPrefill,
-  normaliseClassName,
-  suggestCatalogClass,
-  type CatalogClass,
-} from '../../model/catalog-class';
+import { ryaPn } from '../../model/catalog-class';
+import { classKind, ryaConfigurationLabel } from '../../model/club-class';
 import { ClassCatalogueStore } from '../../services/class-catalogue-store';
 import { getHandicapValue } from 'app/scoring/model/handicap';
 import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-scheme';
@@ -26,8 +21,7 @@ import {
 import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inputs';
 import { ClubStore } from 'app/club-tenant';
 
-const MAX_CATALOGUE_OPTIONS = 30;
-
+/** Edits a club class. RYA classes take their name from the RYA list; local classes are named freely. */
 @Component({
   selector: 'app-class-form',
   templateUrl: './class-form.html',
@@ -41,13 +35,16 @@ const MAX_CATALOGUE_OPTIONS = 30;
       flex-direction: column;
     }
 
-    .catalogue-hint {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin: -8px 0 12px;
+    .rya-detail {
+      margin: 0 0 16px;
       font: var(--mat-sys-body-small);
       color: var(--mat-sys-on-surface-variant);
+    }
+
+    .py-choice {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 8px;
     }
 
     .button-row {
@@ -59,12 +56,11 @@ const MAX_CATALOGUE_OPTIONS = 30;
   `,
   imports: [
     ReactiveFormsModule,
-    MatAutocompleteModule,
     MatFormFieldModule,
-    MatIconModule,
     MatInputModule,
     MatButtonModule,
     MatCheckboxModule,
+    MatRadioModule,
     SubmitButton,
     HandicapSchemeInputs,
   ],
@@ -72,59 +68,46 @@ const MAX_CATALOGUE_OPTIONS = 30;
 })
 export class ClassForm {
   protected readonly clubStore = inject(ClubStore);
-  protected readonly catalogue = inject(ClassCatalogueStore);
-  protected readonly catalogClassLabel = catalogClassLabel;
+  private readonly catalogue = inject(ClassCatalogueStore);
 
-  boatClass = input<BoatClass | undefined>();
-
+  boatClass = input.required<BoatClass>();
   busy = input<boolean>(false);
   submitted = output<Partial<BoatClass>>();
 
   form: FormGroup = new FormGroup({
     name: new FormControl('', { validators: [Validators.required] }),
     isSinglehander: new FormControl(false, { nonNullable: true }),
-    catalogueId: new FormControl<number | null>(null),
+    pyChoice: new FormControl<'rya' | 'override'>('rya', { nonNullable: true }),
   });
 
-  /** Text typed in the catalogue search box. */
-  protected readonly catalogueSearch = signal('');
-  private readonly catalogueId = signal<number | null>(null);
+  private readonly changes = toSignal(this.form.valueChanges, { initialValue: null });
 
   readonly classSchemes = computed(() =>
     getSchemesForTarget(this.clubStore.club().supportedHandicapSchemes, 'boatClass')
   );
 
-  protected readonly linkedEntry = computed(() => {
-    const id = this.catalogueId();
-    return id === null ? undefined : this.catalogue.byId().get(id);
+  protected readonly isRya = computed(() => classKind(this.boatClass()) === 'rya');
+
+  protected readonly ryaEntry = computed(() => {
+    const id = this.boatClass().catalogueId;
+    return this.isRya() && id !== undefined ? this.catalogue.byId().get(id) : undefined;
   });
 
-  protected readonly catalogueOptions = computed(() => {
-    const term = normaliseClassName(this.catalogueSearch());
-    const classes = this.catalogue.classes();
-    const matches = term
-      ? classes.filter(c =>
-          [c.name, c.rya?.name ?? '', String(c.catalogueId), ...(c.aliases ?? [])].some(v =>
-            normaliseClassName(v).includes(term),
-          ),
-        )
-      : classes;
-    return matches.slice(0, MAX_CATALOGUE_OPTIONS);
+  protected readonly ryaPn = computed(() => ryaPn(this.ryaEntry()));
+
+  protected readonly ryaDetail = computed(() => {
+    const entry = this.ryaEntry();
+    const id = this.boatClass().catalogueId;
+    if (!entry) return `RYA ${id} · not in the current RYA list`;
+    const pn = this.ryaPn();
+    return `RYA ${id} · ${ryaConfigurationLabel(entry)} · ${pn ? `RYA PN ${pn}` : 'no RYA PN'}`;
   });
 
-  /** A linked class whose name differs from its catalogue entry's ScoreSmarter name. */
-  protected readonly catalogueNameDiffers = computed(() => {
-    const entry = this.linkedEntry();
-    return !!entry && this.nameValue() !== entry.name;
-  });
-
-  private readonly nameValue = signal('');
-
-  /** For an unlinked existing class, a catalogue entry matching its name. */
-  protected readonly suggestion = computed(() => {
-    const bc = this.boatClass();
-    if (!bc || this.catalogueId() !== null) return undefined;
-    return suggestCatalogClass(bc.name, this.catalogue.classes());
+  /** Schemes with an input: PY is hidden while an RYA class uses the RYA PN. */
+  protected readonly visibleSchemes = computed<HandicapScheme[]>(() => {
+    this.changes();
+    const usesRyaPy = this.isRya() && this.ryaPn() !== undefined && this.form.controls['pyChoice'].value === 'rya';
+    return this.classSchemes().filter(s => s !== 'PY' || !usesRyaPy);
   });
 
   constructor() {
@@ -141,82 +124,47 @@ export class ClassForm {
 
     effect(() => {
       const bc = this.boatClass();
-      if (!bc) return;
       const patch: Record<string, unknown> = {
         name: bc.name,
         isSinglehander: bc.isSinglehander === true,
-        catalogueId: bc.catalogueId ?? null,
+        pyChoice: bc.pyOverridden ? 'override' : 'rya',
       };
       for (const scheme of HANDICAP_SCHEMES) {
         const meta = getHandicapSchemeMetadata(scheme);
         patch[handicapControlName(scheme)] = getHandicapValue(bc.handicaps, scheme) ?? meta.defaultValue;
       }
       this.form.patchValue(patch);
-      this.catalogueId.set(bc.catalogueId ?? null);
+      this.form.markAsPristine();
     });
 
-    this.form.controls['name'].valueChanges.subscribe(v => this.nameValue.set(String(v ?? '')));
-
-    // A linked class takes its name from the catalogue; only unlinked classes are named freely.
+    // RYA classes take their name and crew from the RYA list.
     effect(() => {
-      const name = this.form.controls['name'];
-      if (this.catalogueId() !== null) name.disable({ emitEvent: false });
-      else name.enable({ emitEvent: false });
+      for (const control of ['name', 'isSinglehander']) {
+        if (this.isRya()) this.form.controls[control].disable({ emitEvent: false });
+        else this.form.controls[control].enable({ emitEvent: false });
+      }
     });
   }
 
-  protected onCatalogueSelected(event: MatAutocompleteSelectedEvent): void {
-    const entry = this.catalogue.byId().get(event.option.value as number);
-    if (entry) this.linkCatalogClass(entry);
-  }
-
-  /**
-   * Links the class to a catalogue entry, which sets its name to the catalogue's
-   * ScoreSmarter name (saving an existing class then renames it). Adding a class also
-   * takes the single-hander flag and the RYA PN as the PY handicap.
-   */
-  protected linkCatalogClass(entry: CatalogClass): void {
-    const prefill = catalogClassPrefill(entry);
-    const patch: Record<string, unknown> = { catalogueId: prefill.catalogueId, name: prefill.name };
-    if (!this.boatClass()) {
-      patch['isSinglehander'] = prefill.isSinglehander;
-      if (prefill.pyHandicap && this.classSchemes().includes('PY')) {
-        patch[handicapControlName('PY')] = prefill.pyHandicap;
-      }
-    }
-    this.form.patchValue(patch);
-    this.form.markAsDirty();
-    this.catalogueId.set(prefill.catalogueId);
-    this.catalogueSearch.set('');
-  }
-
-  protected useCatalogueName(): void {
-    const entry = this.linkedEntry();
-    if (!entry) return;
-    this.form.patchValue({ name: entry.name });
-    this.form.markAsDirty();
-  }
-
-  protected unlinkCatalogClass(): void {
-    this.form.patchValue({ catalogueId: null });
-    this.form.markAsDirty();
-    this.catalogueId.set(null);
+  protected formInvalid(): boolean {
+    this.changes();
+    const handicapsValid = this.visibleSchemes().every(s => this.form.controls[handicapControlName(s)]?.valid);
+    return !handicapsValid || (!this.isRya() && this.form.controls['name'].invalid);
   }
 
   submit() {
     const raw = this.form.getRawValue() as Record<string, number | string | boolean | null>;
+    const pn = this.ryaPn();
+    const usesRyaPy = this.isRya() && pn !== undefined && raw['pyChoice'] === 'rya';
     const handicaps = this.classSchemes().map((scheme: HandicapScheme) => {
+      if (scheme === 'PY' && usesRyaPy) return { scheme, value: pn! };
       const meta = getHandicapSchemeMetadata(scheme);
       const value = Number(raw[handicapControlName(scheme)] ?? meta.defaultValue);
       return { scheme, value: Number.isFinite(value) && value > 0 ? value : meta.defaultValue };
     });
-    const catalogueId = typeof raw['catalogueId'] === 'number' ? raw['catalogueId'] : undefined;
-    const output: Partial<BoatClass> = {
-      name: (raw['name'] as string) ?? '',
-      handicaps,
-      isSinglehander: raw['isSinglehander'] === true,
-      catalogueId,
-    };
+    const output: Partial<BoatClass> = this.isRya()
+      ? { handicaps, pyOverridden: pn !== undefined && !usesRyaPy && getHandicapValue(handicaps, 'PY') !== pn }
+      : { name: (raw['name'] as string) ?? '', handicaps, isSinglehander: raw['isSinglehander'] === true };
     this.submitted.emit(output);
     // Keep values (the parent may cancel, e.g. a rename confirmation); clear dirty so leaving after save is allowed.
     this.form.markAsPristine();

@@ -55,16 +55,13 @@ export class ClassEdit {
       this.busy.set(true);
       const oldClass = this.boatClass();
       if (oldClass) {
-        const { catalogueId: _previous, ...rest } = oldClass;
-        const newClass: BoatClass = {
-          ...rest,
-          name: normaliseWhitespace(data.name),
-          handicaps: data.handicaps!,
-          isSinglehander: data.isSinglehander ?? false,
-          ...(data.catalogueId !== undefined ? { catalogueId: data.catalogueId } : {}),
-        };
+        const newClass: BoatClass = { ...oldClass, handicaps: data.handicaps! };
+        if (data.pyOverridden !== undefined) newClass.pyOverridden = data.pyOverridden;
+        if (data.isSinglehander !== undefined) newClass.isSinglehander = data.isSinglehander;
+        if (data.name !== undefined) newClass.name = normaliseWhitespace(data.name);
 
         if (newClass.name !== oldClass.name) {
+          newClass.formerNames = [...new Set([...(oldClass.formerNames ?? []), oldClass.name])];
           const plan = await this.classRename.plan(oldClass.name);
           const records = plan.boats.length + plan.seriesEntries.length;
           if (records > 0) {

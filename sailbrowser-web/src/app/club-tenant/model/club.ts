@@ -38,6 +38,8 @@ export interface Club {
    longitude?: number;
    fleets: Fleet[];
    classes: BoatClass[];
+   /** Version of the RYA PY list last applied to the club's RYA classes, e.g. "Oct 26". */
+   ryaPyListVersion?: string;
    seasons: Season[];
    /** Firebase Storage object path (e.g. clubs/{clubId}/club-logo.jpg). */
    logoUrl?: string;
