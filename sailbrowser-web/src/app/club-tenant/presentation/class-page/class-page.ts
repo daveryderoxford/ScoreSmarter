@@ -24,6 +24,7 @@ import { classKind } from '../../model/club-class';
 import { getHandicapValue } from 'app/scoring/model/handicap';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { ClassesCsvService } from '../../services/classes-csv.service';
+import { ClassCatalogueStore } from '../../services/class-catalogue-store';
 
 import { ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
 import { ApplyRyaPyDialog } from './apply-rya-py-dialog';
@@ -85,6 +86,7 @@ export class ClassPage {
   private dialog = inject(MatDialog);
   private snackbar = inject(MatSnackBar);
   private classesCsv = inject(ClassesCsvService);
+  private catalogue = inject(ClassCatalogueStore);
 
   private readonly detail = listDetailRoute();
 
@@ -163,7 +165,7 @@ export class ClassPage {
     this.dialog.open(SyncSeriesHandicapsDialog, { data, width: '480px' });
   }
 
-  async importCsv(event: { event: Event, context: any }) {
+  async importCsv(event: { event: Event }) {
     const input = event.event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -171,16 +173,22 @@ export class ClassPage {
     try {
       const text = await file.text();
       const schemes = this.cs.club().supportedHandicapSchemes;
-      const parsed = this.classesCsv.parseCsv(text, schemes);
-      if (parsed.errors.length > 0) {
-        this.snackbar.open(`Import failed: ${parsed.errors[0]}`, 'Dismiss', { duration: 5000 });
+      const parsed = this.classesCsv.parseCsv(text, schemes, this.catalogue.byId());
+      const merged = this.classesCsv.merge(this.cs.club().classes, parsed.rows);
+      const errors = [...parsed.errors, ...merged.errors];
+      if (errors.length > 0) {
+        const more = errors.length > 1 ? ` (and ${errors.length - 1} more)` : '';
+        this.snackbar.open(`Import failed: ${errors[0]}${more}`, 'Dismiss', { duration: 8000 });
         return;
       }
 
-      await this.cs.update({ classes: parsed.classes as any });
-      this.snackbar.open(`Classes imported: ${parsed.classes.length} items.`, 'Dismiss', { duration: 3000 });
-    } catch (error: any) {
-      this.snackbar.open(`Import error: ${error.message}`, 'Dismiss', { duration: 5000 });
+      await this.cs.update({ classes: merged.classes });
+      this.snackbar.open(`Classes imported: ${merged.added} added, ${merged.updated} updated.`, 'Dismiss', {
+        duration: 4000,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.snackbar.open(`Import error: ${message}`, 'Dismiss', { duration: 5000 });
     } finally {
       input.value = '';
     }

@@ -65,6 +65,12 @@ export class AuthService {
     return clubs?.[this.clubId] === 'race-officer';
   });
 
+  /** Signed in as an entry kiosk (a race-officer token with a `kiosk` claim). */
+  isKiosk = computed<boolean>(() => this.idTokenResult()?.claims['kiosk'] === true);
+
+  /** Race officers and above can add classes to the club list; the entry kiosk can't. */
+  canAddClubClass = computed<boolean>(() => this.isRaceOfficer() && !this.isKiosk());
+
   /** Human-readable role for the current club from ID token claims. */
   readonly clubRoleLabel = computed(() => {
     if (this.isSysAdmin()) return 'System admin';

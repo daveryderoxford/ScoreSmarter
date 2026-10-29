@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, untracked } from '@angular/core';
+import { ADD_CLASS_OPTION, AddClassLauncher } from 'app/club-tenant/presentation/add-class-dialog';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -31,6 +32,9 @@ import { SailNumberInput } from '../sail-number-input';
         <mat-select formControlName="boatClass">
           @for (c of cs.club().classes; track c.id) {
             <mat-option [value]="c.name">{{ c.name }}</mat-option>
+          }
+          @if (addClass.canAdd()) {
+            <mat-option [value]="addClassOption" class="add-class-option">Add class…</mat-option>
           }
         </mat-select>
         <mat-error>Boat class required</mat-error>
@@ -100,11 +104,22 @@ import { SailNumberInput } from '../sail-number-input';
 })
 export class BoatCoreFields {
   protected readonly cs = inject(ClubStore);
+  protected readonly addClass = inject(AddClassLauncher);
+  protected readonly addClassOption = ADD_CLASS_OPTION;
   readonly personalBands = PERSONAL_HANDICAP_BANDS;
 
   form = input.required<FormGroup>();
   boatLevelSchemes = input.required<HandicapScheme[]>();
   showCrew = input(true);
+
+  constructor() {
+    effect(onCleanup => {
+      const control = this.form().controls['boatClass'];
+      if (!control) return;
+      const subscription = untracked(() => this.addClass.attach(control));
+      onCleanup(() => subscription.unsubscribe());
+    });
+  }
 
   supportsPersonalBand(): boolean {
     return this.boatLevelSchemes().includes('Personal');

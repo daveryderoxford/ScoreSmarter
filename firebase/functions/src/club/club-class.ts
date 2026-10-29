@@ -117,7 +117,7 @@ export function buildClubClass(
       catalogueId: entry.catalogueId,
       isSinglehander: entry.crew === 1,
       handicaps: py !== undefined ? [{ scheme: "PY", value: py }, ...others] : others,
-      pyOverridden: suppliedPy !== undefined && suppliedPy !== pn,
+      pyOverridden: suppliedPy !== undefined && pn !== undefined && suppliedPy !== pn,
     };
   }
 

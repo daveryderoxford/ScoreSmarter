@@ -4,6 +4,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BoatsStore } from 'app/boats/services/boats.store';
 import { ClubStore } from 'app/club-tenant';
+import { AddClassLauncher } from 'app/club-tenant/presentation/add-class-dialog';
 import { ScanRowEditDialog, ScanRowEditDialogData, ScanRowLookup } from './scan-row-edit-dialog';
 
 const lookups: Record<string, ScanRowLookup> = {
@@ -31,6 +32,7 @@ describe('ScanRowEditDialog', () => {
         { provide: MatDialogRef, useValue: { close } },
         { provide: ClubStore, useValue: { club: signal({ classes: [{ name: 'Solo', isSinglehander: true }] }) } },
         { provide: BoatsStore, useValue: { uniqueHelmNames: signal(['Zoe', 'Casey']) } },
+        { provide: AddClassLauncher, useValue: { canAdd: signal(false), attachUntilDestroyed: () => undefined } },
       ],
     });
     const fixture = TestBed.createComponent(ScanRowEditDialog);

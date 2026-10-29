@@ -15,6 +15,13 @@ export const addClubClass = onCall({ memory: "256MiB" }, async (request): Promis
     throw detailedHttpsError("invalid-argument", parsed, { stage: "validate_input", cause: "bad_request" });
   }
   assertCallerRole("race-officer", request.auth, parsed.clubId);
+  if (request.auth.token.kiosk === true) {
+    throw detailedHttpsError("permission-denied", "Classes can't be added from the entry kiosk.", {
+      stage: "assert_permissions",
+      cause: "kiosk",
+      clubId: parsed.clubId,
+    });
+  }
 
   const db = getFirestore();
   const catalogueSnap = await db.doc("system/public/reference/classCatalogue").get();

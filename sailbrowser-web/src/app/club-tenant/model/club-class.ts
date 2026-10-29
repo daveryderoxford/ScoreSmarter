@@ -25,7 +25,8 @@ export function ryaConfigurationLabel(entry: Pick<CatalogClass, 'crew' | 'spinna
 
 /**
  * A club class for an RYA catalogue entry. `handicaps` are the club's class handicaps;
- * PY is the RYA PN unless `pyOverride` is given.
+ * PY is the RYA PN unless `pyOverride` is given. A PY given when the RYA list has no PN
+ * isn't an override, so a later list with a PN can update it.
  */
 export function ryaClubClass(entry: CatalogClass, handicaps: readonly Handicap[], pyOverride?: number): BoatClass {
   if (!isRyaClass(entry)) throw new Error(`Catalogue class ${entry.catalogueId} is not an RYA class`);
@@ -39,7 +40,7 @@ export function ryaClubClass(entry: CatalogClass, handicaps: readonly Handicap[]
     catalogueId: entry.catalogueId,
     isSinglehander: entry.crew === 1,
     handicaps: py !== undefined ? [{ scheme: 'PY', value: py }, ...others] : others,
-    pyOverridden: pyOverride !== undefined && pyOverride !== pn,
+    pyOverridden: pyOverride !== undefined && pn !== undefined && pyOverride !== pn,
   };
 }
 

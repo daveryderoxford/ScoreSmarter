@@ -1,4 +1,5 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, DestroyRef, inject } from '@angular/core';
+import { ADD_CLASS_OPTION, AddClassLauncher } from 'app/club-tenant/presentation/add-class-dialog';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -60,8 +61,13 @@ const MAX_HELM_SUGGESTIONS = 20;
         <mat-form-field class="field">
           <mat-label>Class</mat-label>
           <mat-select formControlName="boatClass">
-            @for (name of data.classes; track name) {
+            @for (name of classes(); track name) {
               <mat-option [value]="name">{{ name }}</mat-option>
+            }
+            @if (addClass.canAdd()) {
+              <mat-option [value]="addClassOption" class="add-class-option">
+                Add class{{ unknownClass() ? ' "' + unknownClass() + '"' : '' }}…
+              </mat-option>
             }
           </mat-select>
           <mat-error>Class is required</mat-error>
@@ -134,6 +140,23 @@ export class ScanRowEditDialog {
   });
 
   private readonly value = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+
+  protected readonly addClass = inject(AddClassLauncher);
+  protected readonly addClassOption = ADD_CLASS_OPTION;
+  /** The scanned class, when the club doesn't have it. */
+  protected readonly unknownClass = computed(() => {
+    const scanned = this.data.boatClass?.trim();
+    return scanned && !this.clubStore.club().classes.some(c => c.name === scanned) ? scanned : undefined;
+  });
+  protected readonly classes = computed(() => {
+    const names = new Set(this.data.classes);
+    for (const c of this.clubStore.club().classes) names.add(c.name);
+    return [...names];
+  });
+
+  constructor() {
+    this.addClass.attachUntilDestroyed(this.form.controls.boatClass, inject(DestroyRef), () => this.unknownClass());
+  }
 
   private readonly identity = computed(() => {
     const boatClass = this.value().boatClass ?? '';

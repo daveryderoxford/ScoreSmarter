@@ -114,3 +114,9 @@ body {
 .warning {
   color: var(--mat-sys-error);
 }
+
+// "Add class…" at the end of a class dropdown (options render in an overlay).
+.mat-mdc-option.add-class-option {
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-primary);
+}
