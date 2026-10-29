@@ -12,7 +12,7 @@
  * `SeriesEntry` so optional clears (e.g. `personalHandicapBand: null`) are explicit.
  */
 import { inject, Injectable } from '@angular/core';
-import { Firestore, setDoc, writeBatch } from '@angular/fire/firestore';
+import { Firestore, type WriteBatch } from '@angular/fire/firestore';
 import { AuthService } from 'app/auth/auth.service';
 import { sailNumbersEqual } from 'app/boats/model/sail-number';
 import { divisionIdsEqual, entryDivisionIds } from 'app/race-calender/model/division';
@@ -21,6 +21,7 @@ import { Handicap } from 'app/scoring/model/handicap';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
+import { FIRESTORE_WRITES } from 'app/shared/firebase/firestore-writes';
 import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
 import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, firestoreWrite, withTimeout } from 'app/shared/utils/with-timeout';
 import { RaceCompetitor } from '../model/race-competitor';
@@ -134,9 +135,10 @@ export class RaceCompetitorMutator {
   private readonly seriesEntries = inject(SeriesEntryStore);
   private readonly raceCalendar = inject(RaceCalendarStore);
   private readonly auth = inject(AuthService);
+  private readonly writes = inject(FIRESTORE_WRITES);
 
-  private async runInBatch(work: (batch: ReturnType<typeof writeBatch>) => void | Promise<void>): Promise<void> {
-    const batch = writeBatch(this.firestore);
+  private async runInBatch(work: (batch: WriteBatch) => void | Promise<void>): Promise<void> {
+    const batch = this.writes.writeBatch(this.firestore);
     await Promise.resolve(work(batch));
     await withTimeout(batch.commit(), FIRESTORE_BULK_WRITE_TIMEOUT_MS, 'Saving race changes');
   }
@@ -152,7 +154,7 @@ export class RaceCompetitorMutator {
     if (Object.keys(mergePayload).length === 0) return;
 
     await firestoreWrite(
-      setDoc(
+      this.writes.setDoc(
         this.raceCompetitors.raceResultDocRef(competitorId),
         mergePayload as RaceCompetitor,
         { merge: true },

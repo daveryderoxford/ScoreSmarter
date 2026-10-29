@@ -8,6 +8,7 @@ import { RaceCompetitorMutator } from 'app/results-input/services/race-competito
 import { RaceCompetitorStore } from 'app/results-input/services/race-competitor-store';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
 import { EntryService } from './entry.service';
+import { provideTestAuth } from '@testing/auth-test-provider';
 
 function makeRace(over: Partial<Race> & Pick<Race, 'id' | 'seriesId'>): Race {
   return {
@@ -39,6 +40,7 @@ describe('EntryService.importEntries', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        provideTestAuth(),
         EntryService,
         { provide: RaceCompetitorStore, useValue: { addResult, selectedCompetitors: () => [] } },
         { provide: SeriesEntryStore, useValue: { selectedEntries: () => [] } },

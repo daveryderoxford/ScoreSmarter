@@ -9,6 +9,7 @@ import { RaceCompetitorMutator } from 'app/results-input/services/race-competito
 import { RaceCompetitorStore } from 'app/results-input/services/race-competitor-store';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
 import { EntryService } from './entry.service';
+import { provideTestAuth } from '@testing/auth-test-provider';
 
 function makeRace(): Race {
   return {
@@ -54,6 +55,7 @@ describe('EntryService.enterRaces resultCode', () => {
     added = [];
     TestBed.configureTestingModule({
       providers: [
+        provideTestAuth(),
         EntryService,
         {
           provide: RaceCompetitorStore,
