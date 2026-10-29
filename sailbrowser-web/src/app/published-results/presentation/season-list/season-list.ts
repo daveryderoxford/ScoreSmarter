@@ -29,8 +29,16 @@ type SeriesInfo = PublishedSeason['series'][number];
   ],
   templateUrl: './season-list.html',
   styles: `
+   /* Fill the list column, growing past it (and scrolling) when the list is longer. */
+   :host {
+      display: flex;
+      flex-direction: column;
+      flex: 1 0 auto;
+   }
+
    .container {
-      height: 100%;
+      flex: 1 0 auto;
+      box-sizing: border-box;
       background: var(--mat-sys-surface-variant);
       padding: 15px;
    }
