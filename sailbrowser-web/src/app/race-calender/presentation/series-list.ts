@@ -8,7 +8,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterModule } from '@angular/router';
 import { ClubStore } from '../../club-tenant';
 import { LoadingCentered } from "app/shared/components/loading-centered";
@@ -27,8 +26,8 @@ import { StatusPill } from './status-pill/status-pill';
 @Component({
   selector: 'app-series-list',
   imports: [Toolbar, MatListModule, MatButtonModule, MatIconModule, RouterModule,
-    MatDividerModule, MatTooltipModule, ReactiveFormsModule, MatFormFieldModule,
-    MatInputModule, DatePipe, LoadingCentered, MatDividerModule, PageLayout, ListPane, StatusPill],
+    MatDividerModule, ReactiveFormsModule, MatFormFieldModule,
+    MatInputModule, DatePipe, LoadingCentered, PageLayout, ListPane, StatusPill],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-page-layout>
@@ -56,17 +55,12 @@ import { StatusPill } from './status-pill/status-pill';
         } @else {
           <mat-list class="dense-list">
               @for (series of filteredSeries(); track series.id) {
-              <mat-list-item>
+              <mat-list-item [routerLink]="['/race-calender/series-details', series.id]">
                 <span matListItemTitle>{{series.name}} ({{this.getSeasonName(series.seasonId)}})</span>
                 <span matListItemLine>
                     {{getFleetName(series.primaryScoringConfiguration.fleet.id)}}
                     @if(series.startDate) { - {{series.startDate | date}} }
                     <app-status-pill class="series-status" [status]="statusBySeries().get(series.id) ?? 'Future'" />
-                </span>
-                <span matListItemMeta>
-                    <button matIconButton aria-label="Edit" [routerLink]="['/race-calender/series-details/'+series.id]">
-                      <mat-icon>edit</mat-icon>
-                    </button>
                 </span>
               </mat-list-item>
               <mat-divider />
