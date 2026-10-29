@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal, vi
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { DeleteButton } from 'app/shared/components/delete-button';
+import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { ClubStore } from '../services/club-store';
@@ -12,10 +13,11 @@ import { BoatClass } from '../model/boat-class';
 /** Detail fragment inside `ClassPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-class-edit',
-  imports: [ClassForm, DeleteButton],
+  imports: [ClassForm, DetailHeading, DeleteButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (boatClass(); as boatClass) {
+      <app-detail-heading>{{ boatClass.name }}</app-detail-heading>
       @for (currentId of [id()]; track currentId) {
         <app-class-form [boatClass]="boatClass" (submitted)="submitted($event)" [busy]="busy()"></app-class-form>
       }

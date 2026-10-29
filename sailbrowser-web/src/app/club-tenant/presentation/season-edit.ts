@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal, vi
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { DeleteButton } from 'app/shared/components/delete-button';
+import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { ClubStore } from '../services/club-store';
 import { SeasonForm } from './season-form/season-form';
@@ -10,10 +11,11 @@ import { Season } from 'app/race-calender/model/season';
 /** Detail fragment inside `SeasonPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-season-edit',
-  imports: [SeasonForm, DeleteButton],
+  imports: [SeasonForm, DetailHeading, DeleteButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (season(); as season) {
+      <app-detail-heading>{{ season.name }}</app-detail-heading>
       @for (currentId of [id()]; track currentId) {
         <app-season-form [season]="season" (submitted)="submitted($event)" [busy]="busy()"></app-season-form>
       }

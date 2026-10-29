@@ -5,15 +5,17 @@ import { FleetForm } from './fleet-form/fleet-form';
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 import { ClubStore } from '../services/club-store';
 import { DeleteButton } from 'app/shared/components/delete-button';
+import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 
 /** Detail fragment inside `FleetPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-fleet-edit',
   standalone: true,
-  imports: [FleetForm, DeleteButton],
+  imports: [FleetForm, DetailHeading, DeleteButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <app-detail-heading>{{ getFleetName(fleet()) }}</app-detail-heading>
     @for (currentId of [id()]; track currentId) {
       @if (fleet()) {
         <app-fleet-form [fleet]="fleet()" (submitted)="submitted($event)"></app-fleet-form>

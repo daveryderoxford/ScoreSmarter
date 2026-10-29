@@ -56,9 +56,8 @@ readonly showBack = this.detail.showBack;
 ```
 
 Routes: the page component with children `''` (`DetailPlaceholder` with a `message`), `add` and
-`edit/:id`. The add and edit children are detail fragments, not pages. Add details have a
-`DetailHeading` ("Add Boat"); edit details have none, because the selected row is highlighted
-when split and the toolbar shows the title when stacked.
+`edit/:id`. The add and edit children are detail fragments, not pages, each with a
+`DetailHeading`: "Add Boat" for add, and just the item ("ILCA 7 123") for edit.
 
 **When it splits.** List and detail sit side by side whenever the screen is wide enough for both,
 whatever the device or orientation: from 720px for form details (`breakpoint="split"`, the
