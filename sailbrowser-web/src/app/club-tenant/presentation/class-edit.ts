@@ -80,9 +80,9 @@ export class ClassEdit {
         await this.cs.updateClass(oldClass, newClass);
         this.router.navigate(["/club/classes"]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.snackbar.open("Error encountered updating class", "Dismiss", { duration: 3000 });
-      console.log('ClassEdit. Error updating class: ' + error.toString());
+      console.error('ClassEdit. Error updating class:', error);
     } finally {
       this.busy.set(false);
     }
