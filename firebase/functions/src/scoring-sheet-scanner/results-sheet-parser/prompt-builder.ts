@@ -19,7 +19,7 @@ function clubClassRules(ctx: ScannerContext): string {
   return `
 - CLUB_CLASSES (spelling guide): ${JSON.stringify(classes)}
 -- Use ONLY for rows with no ENTRY_LIST match and no CLASS_ALIASES match.
--- If the sheet class is clearly a misspelling or abbreviation of exactly ONE CLUB_CLASSES name (e.g. "Vario" → "RS Vareo"), set boatClass.value to that name, boatClass.confidence to MANUAL_CHECK, and put the sheet text in boatClass.alternatives.
+-- If the sheet class is clearly a misspelling or abbreviation of exactly ONE CLUB_CLASSES name (e.g. "Vario" → "Vareo"), set boatClass.value to that name, boatClass.confidence to MANUAL_CHECK, and put the sheet text in boatClass.alternatives.
 -- Otherwise keep the sheet text as written. Classes not in CLUB_CLASSES are allowed (visiting boats); never force a match.`;
 }
 

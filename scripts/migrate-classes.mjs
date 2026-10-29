@@ -20,6 +20,9 @@
  * --remove-class-id <id> (repeatable, needs --club-id) removes a class first, e.g. one of
  * two duplicates. Only the class is removed; boats and entries refer to classes by name.
  *
+ * --rename-boat-class <old>=<new> (repeatable, needs --club-id) also renames a class name
+ * that isn't a club class (e.g. a typo) wherever boats, entries and fleets use it.
+ *
  * Needs credentials, e.g. GOOGLE_APPLICATION_CREDENTIALS=~/private/scoresmarter/admin-key.json
  */
 import { createRequire } from 'node:module';
@@ -34,8 +37,11 @@ const renameToCatalogue = args.includes('--rename-to-catalogue');
 const clubIdx = args.indexOf('--club-id');
 const onlyClub = clubIdx >= 0 ? args[clubIdx + 1] : undefined;
 const removeIds = args.flatMap((a, i) => (a === '--remove-class-id' ? [args[i + 1]] : []));
-if (removeIds.length > 0 && !onlyClub) {
-  console.error('--remove-class-id needs --club-id');
+const boatClassFixes = new Map(
+  args.flatMap((a, i) => (a === '--rename-boat-class' ? [args[i + 1].split('=').map(s => s.trim())] : [])),
+);
+if ((removeIds.length > 0 || boatClassFixes.size > 0) && !onlyClub) {
+  console.error('--remove-class-id and --rename-boat-class need --club-id');
   process.exit(1);
 }
 
@@ -200,6 +206,16 @@ async function main() {
       report.push(`  REMOVED "${c.name}" (id "${c.id}", PY ${pyOf(c)})`);
     }
     const { migrated, renames } = migrateClasses(classes, catalogue, report);
+    for (const [from, to] of boatClassFixes) {
+      if (!from || !to || classes.some(c => c.name === from)) {
+        report.push(`  --rename-boat-class ${from}=${to} ignored: "${from}" is a club class or the option is malformed`);
+        continue;
+      }
+      const target = renames.get(to) ?? to;
+      if (!migrated.some(c => c.name === target)) report.push(`  NOTE "${target}" is not a club class`);
+      renames.set(from, target);
+      report.push(`  boats etc. using "${from}" will use "${target}"`);
+    }
     const changed = migrated.filter((c, i) => !same(c, classes[i]));
     console.log(`\nclubs/${club.id}: ${classes.length} classes, ${changed.length} to update`);
     for (const c of changed) {
