@@ -11,6 +11,7 @@ import { DetailPane } from './detail-pane';
     <app-detail-pane
       [scrollable]="scrollable()"
       [frameContent]="frameContent()"
+      [fillHeight]="fillHeight()"
       [maxWidth]="maxWidth">
       <span data-testid="body">Form</span>
     </app-detail-pane>
@@ -19,6 +20,7 @@ import { DetailPane } from './detail-pane';
 class HostComponent {
   readonly scrollable = signal(true);
   readonly frameContent = signal(true);
+  readonly fillHeight = signal(false);
   maxWidth = '350px';
 }
 
@@ -62,6 +64,16 @@ describe('DetailPane', () => {
     fixture.componentInstance.scrollable.set(false);
     fixture.detectChanges();
     expect(pane(fixture).classList.contains('scrollable')).toBe(false);
+  });
+
+  it('sizes content to its height unless fillHeight is set', () => {
+    const fixture = TestBed.createComponent(HostComponent);
+    fixture.detectChanges();
+    expect(pane(fixture).classList.contains('fill-height')).toBe(false);
+
+    fixture.componentInstance.fillHeight.set(true);
+    fixture.detectChanges();
+    expect(pane(fixture).classList.contains('fill-height')).toBe(true);
   });
 
   it('can disable form framing for full-width detail', () => {

@@ -5,12 +5,14 @@ import { FleetForm } from './fleet-form/fleet-form';
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 import { ClubStore } from '../services/club-store';
 import { DetailHeading } from 'app/shared/layout/detail-heading';
+import { DeleteButton } from 'app/shared/components/delete-button';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 
 /** Detail fragment inside `FleetPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-fleet-edit',
   standalone: true,
-  imports: [FleetForm, DetailHeading],
+  imports: [FleetForm, DetailHeading, DeleteButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-detail-heading>Edit Fleet - {{ getFleetName(fleet()) }}</app-detail-heading>
@@ -19,12 +21,25 @@ import { DetailHeading } from 'app/shared/layout/detail-heading';
         <app-fleet-form [fleet]="fleet()" (submitted)="submitted($event)"></app-fleet-form>
       }
     }
+    @if (fleet(); as fleet) {
+      <div class="delete-row">
+        <app-delete-button [busy]="deleting()" (delete)="deleteFleet(fleet)">Delete fleet</app-delete-button>
+      </div>
+    }
+  `,
+  styles: `
+    .delete-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
   `,
 })
 export class FleetEdit {
   private store = inject(ClubStore);
   private router = inject(Router);
   private snackbar = inject(MatSnackBar);
+  private ds = inject(DialogsService);
 
   id = input.required<string>();
 
@@ -32,6 +47,7 @@ export class FleetEdit {
   getFleetName = (f: Fleet | undefined) => f ? getFleetName(f) : '';
 
   busy = signal(false);
+  deleting = signal(false);
 
   readonly form = viewChild(FleetForm);
 
@@ -50,6 +66,22 @@ export class FleetEdit {
       console.error('UpdateFleet. Error updating fleet details: ', error);
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  async deleteFleet(fleet: Fleet) {
+    if (!await this.ds.confirm('Delete fleet?', `${getFleetName(fleet)} will be deleted.`, { confirm: 'Delete' })) return;
+    try {
+      this.deleting.set(true);
+      await this.store.removeFleet(fleet);
+      this.discardChanges();
+      await this.router.navigate(['/club/fleets']);
+      this.snackbar.open("Fleet deleted", "Dismiss", { duration: 3000 });
+    } catch (error: any) {
+      this.snackbar.open("Error deleting fleet", "Dismiss", { duration: 3000 });
+      console.error('Error deleting fleet:', error);
+    } finally {
+      this.deleting.set(false);
     }
   }
 

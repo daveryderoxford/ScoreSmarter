@@ -11,6 +11,7 @@ import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { BoatEdit } from './boat-edit';
 import { BoatForm } from './boat-form/boat-form';
 import { DuplicateBoatCheck } from './duplicate-boat-check/duplicate-check-service';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 
 const boatA: Boat = {
   id: 'boat-a',
@@ -41,6 +42,7 @@ describe('BoatEdit form reuse', () => {
         { provide: Router, useValue: { navigate: () => undefined } },
         { provide: MatSnackBar, useValue: { open: () => undefined } },
         { provide: DuplicateBoatCheck, useValue: { duplicateCheck: async () => true } },
+        { provide: DialogsService, useValue: { confirm: async () => false } },
         {
           provide: ClubStore,
           useValue: { club: signal({ supportedHandicapSchemes: [], classes: [] }) },
@@ -60,7 +62,7 @@ describe('BoatEdit form reuse', () => {
     fixture.componentRef.setInput('id', boatA.id);
     fixture.detectChanges();
 
-    const firstForm = fixture.componentInstance.form();
+    const firstForm = fixture.componentInstance.form()!;
     firstForm.form.controls['helm'].setValue('Changed');
     firstForm.form.markAsDirty();
     expect(firstForm.form.dirty).toBe(true);
@@ -71,11 +73,65 @@ describe('BoatEdit form reuse', () => {
     fixture.componentRef.setInput('id', boatB.id);
     fixture.detectChanges();
 
-    const secondForm = fixture.componentInstance.form();
+    const secondForm = fixture.componentInstance.form()!;
     expect(secondForm).not.toBe(firstForm);
     expect(secondForm.form.dirty).toBe(false);
     expect(secondForm.form.controls['helm'].value).toBe('Bob');
     expect(secondForm.form.controls['sailNumber'].value).toBe('222');
     expect(secondForm.canDeactivate()).toBe(true);
+  });
+});
+
+describe('BoatEdit delete', () => {
+  it('deletes the boat after confirmation and returns to the list', async () => {
+    const deleted: string[] = [];
+    const navigated: unknown[] = [];
+    TestBed.configureTestingModule({
+      imports: [BoatEdit],
+      providers: [
+        { provide: BoatsStore, useValue: { boats: signal([boatA]), delete: async (id: string) => { deleted.push(id); } } },
+        { provide: Router, useValue: { navigate: async (cmd: unknown) => { navigated.push(cmd); return true; } } },
+        { provide: MatSnackBar, useValue: { open: () => undefined } },
+        { provide: DuplicateBoatCheck, useValue: { duplicateCheck: async () => true } },
+        { provide: DialogsService, useValue: { confirm: async () => true } },
+        { provide: ClubStore, useValue: { club: signal({ supportedHandicapSchemes: [], classes: [] }) } },
+        { provide: AppBreakpoints, useValue: { isWideLayout: signal(true) } },
+      ],
+    }).overrideComponent(BoatForm, {
+      set: { template: '<form [formGroup]="form"></form>', imports: [ReactiveFormsModule] },
+    });
+    const fixture = TestBed.createComponent(BoatEdit);
+    fixture.componentRef.setInput('id', boatA.id);
+    fixture.detectChanges();
+
+    await fixture.componentInstance.deleteBoat(boatA);
+
+    expect(deleted).toEqual([boatA.id]);
+    expect(navigated).toEqual([['/boats']]);
+  });
+
+  it('keeps the boat when deletion is not confirmed', async () => {
+    const deleted: string[] = [];
+    TestBed.configureTestingModule({
+      imports: [BoatEdit],
+      providers: [
+        { provide: BoatsStore, useValue: { boats: signal([boatA]), delete: async (id: string) => { deleted.push(id); } } },
+        { provide: Router, useValue: { navigate: async () => true } },
+        { provide: MatSnackBar, useValue: { open: () => undefined } },
+        { provide: DuplicateBoatCheck, useValue: { duplicateCheck: async () => true } },
+        { provide: DialogsService, useValue: { confirm: async () => false } },
+        { provide: ClubStore, useValue: { club: signal({ supportedHandicapSchemes: [], classes: [] }) } },
+        { provide: AppBreakpoints, useValue: { isWideLayout: signal(true) } },
+      ],
+    }).overrideComponent(BoatForm, {
+      set: { template: '<form [formGroup]="form"></form>', imports: [ReactiveFormsModule] },
+    });
+    const fixture = TestBed.createComponent(BoatEdit);
+    fixture.componentRef.setInput('id', boatA.id);
+    fixture.detectChanges();
+
+    await fixture.componentInstance.deleteBoat(boatA);
+
+    expect(deleted).toEqual([]);
   });
 });

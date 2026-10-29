@@ -14,7 +14,6 @@ import { ActivatedRoute, NavigationEnd, Router, RouterModule } from '@angular/ro
 import { Fleet, getFleetName } from 'app/club-tenant/model/fleet';
 import { LoadingCentered } from "app/shared/components/loading-centered";
 import { Toolbar } from 'app/shared/components/toolbar';
-import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { debounceTime, distinctUntilChanged, filter, map, startWith } from 'rxjs';
 import { ClubStore } from '../../services/club-store';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
@@ -62,7 +61,6 @@ import { FleetsCsvService } from '../../services/fleets-csv.service';
 })
 export class FleetPage {
   cs = inject(ClubStore);
-  private ds = inject(DialogsService);
   private snackbar = inject(MatSnackBar);
   private fleetsCsv = inject(FleetsCsvService);
   private readonly router = inject(Router);
@@ -126,21 +124,6 @@ export class FleetPage {
   });
 
   getFleetName = getFleetName;
-
-  async deleteFleet(fleet: Fleet) {
-    if (await this.ds.confirm('Delete fleet?', `${getFleetName(fleet)} will be deleted.`, { confirm: 'Delete' })) {
-      try {
-        await this.cs.removeFleet(fleet);
-        if (this.selectedFleetId() === fleet.id) {
-          await this.router.navigate(['/club/fleets']);
-        }
-        this.snackbar.open("Fleet deleted", "Dismiss", { duration: 3000 });
-      } catch (error: any) {
-        this.snackbar.open("Error deleting fleet", "Dismiss", { duration: 3000 });
-        console.error('Error deleting fleet:', error);
-      }
-    }
-  }
 
   exportCsv() {
     const fleets = this.cs.club().fleets;

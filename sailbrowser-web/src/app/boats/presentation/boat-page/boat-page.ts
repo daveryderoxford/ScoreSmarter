@@ -15,7 +15,6 @@ import { debounceTime, distinctUntilChanged, filter, map, startWith } from 'rxjs
 import { Toolbar } from 'app/shared/components/toolbar';
 import { boatFilter, BoatsStore } from '../../services/boats.store';
 import { LoadingCentered } from "app/shared/components/loading-centered";
-import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Boat } from 'app/boats';
 import { groupBy } from 'app/shared/utils/group-by';
@@ -74,7 +73,6 @@ import { ImportExportMenuComponent } from 'app/shared/components/import-export-m
 export class BoatsPage {
   bs = inject(BoatsStore);
   private clubStore = inject(ClubStore);
-  private ds = inject(DialogsService);
   private snackbar = inject(MatSnackBar);
   private boatsCsv = inject(BoatsCsvService);
   private readonly router = inject(Router);
@@ -184,21 +182,6 @@ export class BoatsPage {
   private readonly boatHandicapSchemes = computed<HandicapScheme[]>(() =>
     getSchemesForTarget(this.clubStore.club().supportedHandicapSchemes, 'boat')
   );
-
-  async deleteBoat(boat: Boat) {
-    if (await this.ds.confirm('Delete boat?', `${boat.boatClass} ${this.boatSailLabel(boat)} will be deleted.`, { confirm: 'Delete' })) {
-      try {
-        await this.bs.delete(boat.id);
-        if (this.selectedBoatId() === boat.id) {
-          await this.router.navigate(['/boats']);
-        }
-        this.snackbar.open("Boat deleted", "Dismiss", { duration: 3000 });
-      } catch (error: any) {
-        this.snackbar.open("Error deleting boat", "Dismiss", { duration: 3000 });
-        console.error('Error deleting boat:', error);
-      }
-    }
-  }
 
   downloadCsv(): void {
     const csv = this.boatsCsv.buildCsv(this.bs.boats(), this.boatHandicapSchemes());
