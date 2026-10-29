@@ -1,5 +1,6 @@
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import type { CatalogClass } from 'app/club-tenant/model/catalog-class';
+import { classKind } from 'app/club-tenant/model/club-class';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import type { ResultCode } from 'app/scoring/model/result-code';
@@ -62,7 +63,7 @@ export interface PyReturnEntry {
   resultCode: ResultCode;
 }
 
-export type PyClassStatus = 'rya' | 'non-rya' | 'unlinked' | 'unknown-class';
+export type PyClassStatus = 'rya' | 'non-rya' | 'unknown-class';
 
 /** One club class seen in the selected races, for checking links before export. */
 export interface PyClassCheck {
@@ -118,9 +119,7 @@ export function buildPyReturn(
       const catalogueId = boatClass?.catalogueId;
       const status: PyClassStatus = !boatClass
         ? 'unknown-class'
-        : catalogueId === undefined
-          ? 'unlinked'
-          : catalogueId > 0 ? 'rya' : 'non-rya';
+        : classKind(boatClass) === 'rya' && (catalogueId ?? 0) > 0 ? 'rya' : 'non-rya';
       check = {
         className,
         status,
@@ -205,8 +204,7 @@ export function buildPyReturn(
   const classes = [...checks.values()].sort((a, b) => a.className.localeCompare(b.className));
   const issues: string[] = [];
   for (const c of classes) {
-    if (c.status === 'unlinked') issues.push(`${c.className} is not linked to the class catalogue; its boats are left out.`);
-    if (c.status === 'non-rya') issues.push(`${c.className} is not an RYA class; its boats are left out.`);
+    if (c.status === 'non-rya') issues.push(`${c.className} is a local class, not an RYA class; its boats are left out.`);
     if (c.status === 'unknown-class') issues.push(`${c.className} is not one of the club's classes; its boats are left out.`);
   }
 
@@ -237,11 +235,14 @@ export function sourceSeriesId(publishedSeriesId: string): string {
 
 /**
  * Club class for a class name stored on a result. Results keep the name the class had
- * when they were published, so a renamed class is found by its id (its original name).
+ * when they were published, so a renamed class is found by a former name, or by its id
+ * for classes whose id is still their original name.
  * Names are compared exactly; they are normalised when saved.
  */
 export function findClubClass(className: string, clubClasses: readonly BoatClass[]): BoatClass | undefined {
-  return clubClasses.find(c => c.name === className) ?? clubClasses.find(c => c.id === className);
+  return clubClasses.find(c => c.name === className)
+    ?? clubClasses.find(c => c.formerNames?.includes(className))
+    ?? clubClasses.find(c => c.id === className);
 }
 
 /** Sail numbers with letters and digits only. */

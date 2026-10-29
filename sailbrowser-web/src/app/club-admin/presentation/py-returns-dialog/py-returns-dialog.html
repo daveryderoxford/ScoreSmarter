@@ -74,8 +74,7 @@
               <td>
                 @switch (c.status) {
                   @case ('rya') { {{ c.catalogue?.rya?.name ?? '(not in catalogue)' }} }
-                  @case ('non-rya') { Not an RYA class }
-                  @case ('unlinked') { Not linked }
+                  @case ('non-rya') { Local class (not RYA) }
                   @case ('unknown-class') { Not a club class }
                 }
               </td>

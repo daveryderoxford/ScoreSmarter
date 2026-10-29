@@ -4,14 +4,18 @@
  * when the model returns sheet text like "Radial" instead of "ILCA 6".
  */
 export const defaultClassAliases = [
-  'A5', 'Aero 5',
-  'A6', 'Aero 6',
-  'A7', 'Aero 7',
-  'A9', 'Aero 9',
-  '5', 'Aero 5',
-  '6', 'Aero 6',
-  '7', 'Aero 7',
-  '9', 'Aero 9',
+  'A5', 'RS Aero 5',
+  'A6', 'RS Aero 6',
+  'A7', 'RS Aero 7',
+  'A9', 'RS Aero 9',
+  '5', 'RS Aero 5',
+  '6', 'RS Aero 6',
+  '7', 'RS Aero 7',
+  '9', 'RS Aero 9',
+  'Aero 5', 'RS Aero 5',
+  'Aero 6', 'RS Aero 6',
+  'Aero 7', 'RS Aero 7',
+  'Aero 9', 'RS Aero 9',
   'L', 'ILCA 7',
   'LR', 'ILCA 6',
   'L47', 'ILCA 4',
@@ -30,6 +34,14 @@ export const defaultClassAliases = [
   'RS Vario', 'RS Vareo',
   'Top', 'Topper',
   'T', 'Topper',
+  'Pico', 'Laser Pico',
+  'Vago', 'Laser Vago',
+  'Vision', 'RS Vision',
+  'Fusion', 'Fusion Pro',
+  'Fusion 2', 'Fusion II',
+  'Hadron', 'Hadron H2',
+  'Feva', 'RS Feva S',
+  'RS Feva', 'RS Feva S',
 ] as const;
 
 function pairsToAliasRecord(pairs: readonly string[]): Record<string, string> {

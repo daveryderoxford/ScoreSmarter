@@ -26,7 +26,7 @@ const COLUMN_PATTERNS: Record<Column, RegExp> = {
   crew: /CREW/,
   rig: /^RIG/,
   spinnaker: /SPINN/,
-  pn: /^(NUMBER|PN|PYNUMBER|PORTSMOUTHNUMBER)$/,
+  pn: /^(RYA)?(\d{2,4})?(NUMBER|PN|PY|PYNUMBER|PORTSMOUTHNUMBER|PORTSMOUTHYARDSTICK)(\d{2,4})?$/,
   notes: /NOTES/,
 };
 
@@ -84,6 +84,11 @@ export function parseRyaClassList(text: string): RyaClassListParse {
       pn: Number.isInteger(pn) && pn > 0 ? pn : undefined,
       notes: optional(cell(row, 'notes')),
     });
+  }
+  if (!columns.has('pn')) {
+    errors.push(`No PN column was found (columns: ${parsed.header.join(', ')}); classes will have no RYA PN.`);
+  } else if (rows.length > 0 && rows.every(r => r.pn === undefined)) {
+    errors.push(`The "${columns.get('pn')}" column has no PNs; classes will have no RYA PN.`);
   }
   return { rows, errors };
 }
