@@ -1,9 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, Signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
-import { Toolbar } from "app/shared/components/toolbar";
-import { ListPane } from 'app/shared/layout/list-pane';
-import { PageLayout } from 'app/shared/layout/page-layout';
 import { MatCardModule } from "@angular/material/card";
 import { MatListModule } from "@angular/material/list";
 import { MatIconModule } from '@angular/material/icon';
@@ -20,12 +17,13 @@ import { ClubStore } from 'app/club-tenant';
 import { getFleetName } from 'app/club-tenant/model/fleet';
 import { formatDiscardScheduleSummary } from 'app/scoring/model/discard-profile';
 
-/** Displays series details with a list of races 
- * Includes buttons to add/edit races and duplicate the series
+/**
+ * Series details with its races, and buttons to add/edit races and copy, edit or
+ * delete the series. Detail fragment inside `SeriesList`; do not wrap in `PageLayout`.
  */
 @Component({
    selector: 'app-series-details',
-   imports: [DatePipe, Toolbar, MatListModule, MatCardModule, MatIconModule, MatButtonModule, LoadingCentered, RaceListItem, PageLayout, ListPane, StatusPill],
+   imports: [DatePipe, MatListModule, MatCardModule, MatIconModule, MatButtonModule, LoadingCentered, RaceListItem, StatusPill],
    templateUrl: 'series-details.html',
    styles: [`
 
@@ -53,6 +51,7 @@ import { formatDiscardScheduleSummary } from 'app/scoring/model/discard-profile'
       align-items: center;
       gap: 8px;
     }
+    .subtitle span + span::before { content: ' · '; }
 
   `],
    changeDetection: ChangeDetectionStrategy.OnPush,
@@ -68,7 +67,7 @@ export class SeriesDetails {
    private snackbar = inject(MatSnackBar);
 
    // Reactive state derived from services
-   series = computed(() => this.rc.allSeries().find(s => s.id === this.id())!);
+   series = computed(() => this.rc.allSeries().find(s => s.id === this.id()));
    fleets = computed(() => this.clubStore.club().fleets);
    fleet = computed(() => this.fleets().find((f) => f.id === this.series()?.primaryScoringConfiguration?.fleet?.id));
    getFleetName = getFleetName;
@@ -121,7 +120,7 @@ export class SeriesDetails {
    }
 
    editRace(race: Race) {
-      this.router.navigate(['/race-calender/series-details', this.series().id, 'edit-race', race.id]);
+      this.router.navigate(['/race-calender/series-details', race.seriesId, 'edit-race', race.id]);
    }
 
    async deleteRace(race: Race) {
@@ -135,8 +134,6 @@ export class SeriesDetails {
          } finally {
             this.busy.set(false);
          }
-
-         this.router.navigate(['/race-calender', 'series']);
       }
    }
 
@@ -153,7 +150,7 @@ export class SeriesDetails {
             this.busy.set(false);
          }
 
-         this.router.navigate(['/series']);
+         this.router.navigate(['/race-calender']);
       }
    }
 }

@@ -5,7 +5,7 @@
     }
   </app-toolbar>
 
-  <app-list-detail-layout [detailOpen]="detailOpen()">
+  <app-list-detail-layout [detailOpen]="detailOpen()" detailWidth="400px">
     <app-list-pane list>
       <div listHeader class="search-bar">
         <mat-form-field class="search" subscriptSizing="dynamic">
@@ -54,15 +54,6 @@
                 <span matListItemLine>{{boat.name}}</span>
               }
             <span matListItemLine>{{ boatHandicapSummary(boat) }}</span>
-
-            <span matListItemMeta>
-              <button matIconButton aria-label="Edit" [routerLink]="['edit', boat.id]" (click)="$event.stopPropagation()">
-                <mat-icon class="green">edit</mat-icon>
-              </button>
-              <button matIconButton aria-label="Delete" (click)="deleteBoat(boat); $event.stopPropagation()">
-                <mat-icon class="warning">delete</mat-icon>
-              </button>
-            </span>
           <mat-divider />
 
           </mat-list-item>
@@ -76,7 +67,7 @@
       }
     </app-list-pane>
 
-    <app-detail-pane detail maxWidth="350px">
+    <app-detail-pane detail maxWidth="350px" fillHeight>
       <router-outlet />
     </app-detail-pane>
   </app-list-detail-layout>

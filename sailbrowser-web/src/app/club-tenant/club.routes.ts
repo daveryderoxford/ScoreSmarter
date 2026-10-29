@@ -27,10 +27,32 @@ export const CLUB_ROUTES: Routes = [
          { path: 'edit/:id', component: FleetEdit, canDeactivate: [pendingChangesGuard], canActivate: [authGuard] },
       ],
    },
-   { path: 'seasons', component: SeasonPage },
-   { path: 'seasons/add', component: SeasonAdd, canDeactivate: [pendingChangesGuard], canActivate: [authGuard] },
-   { path: 'seasons/edit/:id', component: SeasonEdit, canDeactivate: [pendingChangesGuard], canActivate: [authGuard] },
-   { path: 'classes', component: ClassPage },
-   { path: 'classes/add', component: ClassAdd, canDeactivate: [pendingChangesGuard], canActivate: [authGuard] },
-   { path: 'classes/edit/:id', component: ClassEdit, canDeactivate: [pendingChangesGuard], canActivate: [authGuard] },
+   {
+      path: 'seasons',
+      component: SeasonPage,
+      children: [
+         {
+            path: '',
+            pathMatch: 'full',
+            component: DetailPlaceholder,
+            data: { message: 'Select a season to edit, or create a new one.' },
+         },
+         { path: 'add', component: SeasonAdd, canDeactivate: [pendingChangesGuard], canActivate: [authGuard] },
+         { path: 'edit/:id', component: SeasonEdit, canDeactivate: [pendingChangesGuard], canActivate: [authGuard] },
+      ],
+   },
+   {
+      path: 'classes',
+      component: ClassPage,
+      children: [
+         {
+            path: '',
+            pathMatch: 'full',
+            component: DetailPlaceholder,
+            data: { message: 'Select a class to edit, or create a new one.' },
+         },
+         { path: 'add', component: ClassAdd, canDeactivate: [pendingChangesGuard], canActivate: [authGuard] },
+         { path: 'edit/:id', component: ClassEdit, canDeactivate: [pendingChangesGuard], canActivate: [authGuard] },
+      ],
+   },
 ];

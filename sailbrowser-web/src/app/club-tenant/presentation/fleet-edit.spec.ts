@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { ClubStore } from 'app/club-tenant';
 import type { Fleet } from 'app/club-tenant/model/fleet';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { FleetEdit } from './fleet-edit';
 import { FleetForm } from './fleet-form/fleet-form';
 
@@ -42,6 +43,7 @@ describe('FleetEdit form reuse', () => {
         },
         { provide: Router, useValue: { navigate: () => undefined } },
         { provide: MatSnackBar, useValue: { open: () => undefined } },
+        { provide: DialogsService, useValue: { confirm: async () => false } },
         { provide: AppBreakpoints, useValue: { isWideLayout: signal(true) } },
       ],
     }).overrideComponent(FleetForm, {
@@ -76,5 +78,38 @@ describe('FleetEdit form reuse', () => {
     expect(secondForm!.form.controls.type.value).toBe('BoatClass');
     expect(secondForm!.form.controls.boatClassId.value).toBe('ILCA 7');
     expect(secondForm!.canDeactivate()).toBe(true);
+  });
+});
+
+describe('FleetEdit delete', () => {
+  it('deletes the fleet after confirmation and returns to the list', async () => {
+    const removed: Fleet[] = [];
+    const navigated: unknown[] = [];
+    TestBed.configureTestingModule({
+      imports: [FleetEdit],
+      providers: [
+        {
+          provide: ClubStore,
+          useValue: {
+            club: signal({ supportedHandicapSchemes: ['PY'], classes: [], fleets: [fleetA] }),
+            removeFleet: async (fleet: Fleet) => { removed.push(fleet); },
+          },
+        },
+        { provide: Router, useValue: { navigate: async (cmd: unknown) => { navigated.push(cmd); return true; } } },
+        { provide: MatSnackBar, useValue: { open: () => undefined } },
+        { provide: DialogsService, useValue: { confirm: async () => true } },
+        { provide: AppBreakpoints, useValue: { isWideLayout: signal(true) } },
+      ],
+    }).overrideComponent(FleetForm, {
+      set: { template: '<form [formGroup]="form"></form>', imports: [ReactiveFormsModule] },
+    });
+    const fixture = TestBed.createComponent(FleetEdit);
+    fixture.componentRef.setInput('id', fleetA.id);
+    fixture.detectChanges();
+
+    await fixture.componentInstance.deleteFleet(fleetA);
+
+    expect(removed).toEqual([fleetA]);
+    expect(navigated).toEqual([['/club/fleets']]);
   });
 });

@@ -1,5 +1,6 @@
-import { booleanAttribute, ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { booleanAttribute, ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
+import { ListDetailLayout } from './list-detail-layout';
 
 /**
  * Form or detail column. Replaces the `form-page` mixin when used inside
@@ -16,6 +17,7 @@ import { AppBreakpoints } from 'app/shared/services/breakpoints';
     '[class.compact]': '!isWide()',
     '[class.scrollable]': 'scrollable()',
     '[class.framed]': 'frameContent()',
+    '[class.fill-height]': 'fillHeight()',
     '[style.--app-detail-max-width]': 'maxWidth()',
   },
   template: `
@@ -90,10 +92,20 @@ import { AppBreakpoints } from 'app/shared/services/breakpoints';
       margin: 0;
       padding: 16px;
     }
+
+    :host.fill-height .viewport {
+      display: flex;
+      flex-direction: column;
+    }
+
+    :host.fill-height .content {
+      flex: 1 0 auto;
+    }
   `,
 })
 export class DetailPane {
   private readonly breakpoints = inject(AppBreakpoints);
+  private readonly layout = inject(ListDetailLayout, { optional: true });
 
   /** When true (default), the viewport scrolls if content overflows. */
   scrollable = input(true, { transform: booleanAttribute });
@@ -107,5 +119,13 @@ export class DetailPane {
   /** Max width of framed form content on wide screens. */
   maxWidth = input('360px');
 
-  protected readonly isWide = this.breakpoints.isWideLayout;
+  /**
+   * When true, the content (the framed card on wide screens) stretches to the full
+   * height of the pane instead of its content's height. For list/detail screens.
+   */
+  fillHeight = input(false, { transform: booleanAttribute });
+
+  /** Inside a list/detail layout, framed when list and detail are side by side. */
+  protected readonly isWide = computed(() =>
+    this.layout ? this.layout.isWide() : this.breakpoints.isWideLayout());
 }

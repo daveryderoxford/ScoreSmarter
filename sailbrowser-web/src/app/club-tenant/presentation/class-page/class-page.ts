@@ -11,11 +11,13 @@ import { MatInputModule } from '@angular/material/input';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { ListDetailLayout } from 'app/shared/layout/list-detail-layout';
+import { listDetailRoute } from 'app/shared/layout/list-detail-route';
 import { ListPane } from 'app/shared/layout/list-pane';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { ClubStore } from '../../services/club-store';
 import { LoadingCentered } from "app/shared/components/loading-centered";
-import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BoatClass } from '../../model/boat-class';
 import { getHandicapValue } from 'app/scoring/model/handicap';
@@ -33,11 +35,17 @@ import {
   imports: [Toolbar, MatListModule,
     MatButtonModule, MatIconModule, RouterModule, MatDividerModule,
     ReactiveFormsModule, MatFormFieldModule, MatInputModule, LoadingCentered,
-    MatDividerModule, ImportExportMenuComponent, PageLayout, ListPane],
+    ImportExportMenuComponent, PageLayout, ListDetailLayout, ListPane, DetailPane],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './class-page.html',
   styles: `
-    /* Recipe 1: list then full-page form. Not boats-style ListDetailLayout. */
+    :host {
+      display: block;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
     .search-bar {
       display: flex;
       align-items: center;
@@ -57,10 +65,25 @@ import {
 })
 export class ClassPage {
   cs = inject(ClubStore);
-  private ds = inject(DialogsService);
   private dialog = inject(MatDialog);
   private snackbar = inject(MatSnackBar);
   private classesCsv = inject(ClassesCsvService);
+
+  private readonly detail = listDetailRoute();
+
+  readonly detailOpen = this.detail.detailOpen;
+  readonly selectedClassId = this.detail.selectedId;
+  readonly showBack = this.detail.showBack;
+  readonly toolbarTitle = computed(() => {
+    if (this.detail.isSplit()) return 'Classes';
+    const child = this.detail.selection();
+    if (child?.kind === 'add') return 'Add Class';
+    if (child?.kind === 'edit') {
+      const boatClass = this.cs.club().classes.find(c => c.id === child.id);
+      return boatClass ? `Edit Class - ${boatClass.name}` : 'Edit Class';
+    }
+    return 'Classes';
+  });
 
   searchControl = new FormControl('');
   searchTerm = toSignal(
@@ -80,18 +103,6 @@ export class ClassPage {
 
   pyHandicap(boatClass: BoatClass): number | undefined {
     return getHandicapValue(boatClass.handicaps, 'PY' as HandicapScheme);
-  }
-
-  async deleteClass(boatClass: BoatClass) {
-    if (await this.ds.confirm('Delete class?', `${boatClass.name} will be deleted.`, { confirm: 'Delete' })) {
-      try {
-        await this.cs.removeClass(boatClass);
-        this.snackbar.open("Class deleted", "Dismiss", { duration: 3000 });
-      } catch (error: any) {
-        this.snackbar.open("Error deleting class", "Dismiss", { duration: 3000 });
-        console.error('Error deleting class:', error);
-      }
-    }
   }
 
   exportCsv() {

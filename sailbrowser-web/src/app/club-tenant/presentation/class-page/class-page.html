@@ -1,50 +1,50 @@
 <app-page-layout>
-  <app-toolbar title="Classes">
-    <button matButton="tonal" type="button" (click)="openSyncSeriesHandicapsDialog()">
-      Update series handicaps
-    </button>
-    <app-import-export-menu context="classes" (exportCsv)="exportCsv()" (importFile)="importCsv($event)" />
+  <app-toolbar [title]="toolbarTitle()" [showBack]="showBack()">
+    @if (!showBack()) {
+      <button matButton="tonal" type="button" (click)="openSyncSeriesHandicapsDialog()">
+        Update series handicaps
+      </button>
+      <app-import-export-menu context="classes" (exportCsv)="exportCsv()" (importFile)="importCsv($event)" />
+    }
   </app-toolbar>
 
-  <app-list-pane maxWidth="450px">
-    <div listHeader class="search-bar">
-      <mat-form-field class="search">
-        <mat-label>Search Classes</mat-label>
-        <input matInput [formControl]="searchControl" placeholder="Search by name">
-        <mat-icon matSuffix>search</mat-icon>
-      </mat-form-field>
+  <app-list-detail-layout [detailOpen]="detailOpen()" detailWidth="400px">
+    <app-list-pane list>
+      <div listHeader class="search-bar">
+        <mat-form-field class="search">
+          <mat-label>Search Classes</mat-label>
+          <input matInput [formControl]="searchControl" placeholder="Search by name">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
 
-      <a matButton="tonal" class="right-justify" routerLink="add">
-         New
-      </a>
-    </div>
+        <a matButton="tonal" class="right-justify" routerLink="add">
+           New
+        </a>
+      </div>
 
-    @if (cs.isLoading()) {
-      <app-loading-centered />
-    } @else {
-      <mat-list class="dense-list">
-        @for (boatClass of filteredClasses(); track boatClass.id) {
-          <mat-list-item [routerLink]="['edit', boatClass.id]">
-            <span matListItemTitle>{{ boatClass.name }}</span>
-            <span matListItemLine>
-              Handicap(PY): {{ pyHandicap(boatClass) }}@if (boatClass.isSinglehander) { · Single-hander}
-            </span>
-            <span matListItemMeta>
-              <button matIconButton [routerLink]="['edit', boatClass.id]" (click)="$event.stopPropagation()">
-                <mat-icon class="green">edit</mat-icon>
-              </button>
-              <button matIconButton (click)="deleteClass(boatClass); $event.stopPropagation()">
-                <mat-icon class="warning">delete</mat-icon>
-              </button>
-            </span>
-          </mat-list-item>
-          <mat-divider></mat-divider>
-        } @empty {
-          <mat-list-item>
-            <span matListItemTitle>No classes found</span>
-          </mat-list-item>
-        }
-      </mat-list>
-    }
-  </app-list-pane>
+      @if (cs.isLoading()) {
+        <app-loading-centered />
+      } @else {
+        <mat-list class="dense-list">
+          @for (boatClass of filteredClasses(); track boatClass.id) {
+            <mat-list-item [routerLink]="['edit', boatClass.id]" [activated]="selectedClassId() === boatClass.id">
+              <span matListItemTitle>{{ boatClass.name }}</span>
+              <span matListItemLine>
+                Handicap(PY): {{ pyHandicap(boatClass) }}@if (boatClass.isSinglehander) { · Single-hander}
+              </span>
+            </mat-list-item>
+            <mat-divider></mat-divider>
+          } @empty {
+            <mat-list-item>
+              <span matListItemTitle>No classes found</span>
+            </mat-list-item>
+          }
+        </mat-list>
+      }
+    </app-list-pane>
+
+    <app-detail-pane detail maxWidth="350px" fillHeight>
+      <router-outlet />
+    </app-detail-pane>
+  </app-list-detail-layout>
 </app-page-layout>

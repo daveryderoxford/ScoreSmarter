@@ -1,27 +1,21 @@
 import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { Toolbar } from 'app/shared/components/toolbar';
-import { DetailPane } from 'app/shared/layout/detail-pane';
-import { PageLayout } from 'app/shared/layout/page-layout';
+import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { ClubStore } from '../services/club-store';
 import { SeasonForm } from './season-form/season-form';
 import { Season } from 'app/race-calender/model/season';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 
+/** Detail fragment inside `SeasonPage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-season-add',
-  imports: [SeasonForm, Toolbar, PageLayout, DetailPane],
+  imports: [SeasonForm, DetailHeading],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-page-layout>
-      <app-toolbar title="Add Season" showBack/>
-      <app-detail-pane maxWidth="350px">
-        <app-season-form (submitted)="submitted($event)" [busy]="busy()"></app-season-form>
-      </app-detail-pane>
-    </app-page-layout>
+    <app-detail-heading>Add Season</app-detail-heading>
+    <app-season-form (submitted)="submitted($event)" [busy]="busy()"></app-season-form>
   `,
-  styles: [],
 })
 export class SeasonAdd {
   private cs = inject(ClubStore);

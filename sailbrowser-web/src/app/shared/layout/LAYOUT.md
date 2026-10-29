@@ -8,7 +8,7 @@ Toolbar page with a list **or** a form. Do **not** add `ListDetailLayout`.
 
 ```html
 <app-page-layout>
-  <app-toolbar title="Classes" />
+  <app-toolbar title="Series" />
   <app-list-pane maxWidth="450px">
     <div listHeader>Search / New</div>
     <!-- list -->
@@ -18,9 +18,9 @@ Toolbar page with a list **or** a form. Do **not** add `ListDetailLayout`.
 
 ```html
 <app-page-layout>
-  <app-toolbar title="Add Class" showBack />
+  <app-toolbar title="Club settings" showBack />
   <app-detail-pane maxWidth="350px">
-    <app-class-form />
+    <app-club-settings-form />
   </app-detail-pane>
 </app-page-layout>
 ```
@@ -35,21 +35,43 @@ sizes itself to the body (panes, `height: 100%` layouts) keeps its own internal 
 
 ## Recipe 2 — list and detail
 
-Only for true master-detail screens (boats, fleets, results viewer).
+For master-detail screens: boats, fleets, seasons, classes, series and the results viewer.
+Series use `series-details/:id` for the item: `listDetailRoute({ editPath: 'series-details' })`.
 
 ```html
 <app-page-layout>
-  <app-toolbar />
-  <app-list-detail-layout [detailOpen]="detailOpen()">
+  <app-toolbar [title]="toolbarTitle()" [showBack]="showBack()" />
+  <app-list-detail-layout [detailOpen]="detailOpen()" detailWidth="400px">
     <app-list-pane list>...</app-list-pane>
-    <app-detail-pane detail>
+    <app-detail-pane detail maxWidth="350px" fillHeight>
       <router-outlet />
     </app-detail-pane>
   </app-list-detail-layout>
 </app-page-layout>
 ```
 
-Wide: list and detail side by side. Compact: list **or** detail.
+```ts
+private readonly detail = listDetailRoute();
+readonly detailOpen = this.detail.detailOpen;
+readonly showBack = this.detail.showBack;
+```
+
+Routes: the page component with children `''` (`DetailPlaceholder` with a `message`), `add` and
+`edit/:id`. The add and edit children are detail fragments, not pages, each with a
+`DetailHeading`: "Add Boat" for add, and just the item ("ILCA 7 123") for edit.
+
+**When it splits.** List and detail sit side by side whenever the screen is wide enough for both,
+whatever the device or orientation: from 720px for form details (`breakpoint="split"`, the
+default; tablets in portrait included), from 960px for details that need more room
+(`breakpoint="wide"`, the results viewer). Narrower, the list **or** the detail shows and the
+toolbar offers Back. `DetailPane` and `DetailHeading` inside the layout follow it; pass the same
+breakpoint to `listDetailRoute()` on the page.
+
+- With `detailWidth` (form details), list and detail are centred together with a small gutter, and
+  share any shortfall in width. Without it (results viewer), the detail fills the rest of the width.
+- `fillHeight` stretches the detail card to the full height.
+- The list shows the items only: no edit or delete icons. Selecting an item opens it; delete is a
+  `DeleteButton` on the edit detail.
 
 Do not put `ListDetailLayout` on home, login, settings, or a single form.
 
@@ -57,6 +79,5 @@ Do not put `ListDetailLayout` on home, login, settings, or a single form.
 
 - Entry kiosk (`/entry/kiosk`) — custom full-viewport chrome, no toolbar
 - Phone capture (`/results-sheet-phone-capture/...`) — no toolbar
-- Nested detail children (`BoatAdd`, `BoatEdit`, `FleetAdd`, `FleetEdit`) — already inside the parent layout
-
-Classes and seasons stay list-then-full-page-form (recipe 1). They are not boats-style split screens.
+- Nested detail children (`BoatAdd`, `BoatEdit`, `FleetAdd`, `FleetEdit`, `SeasonAdd`,
+  `SeasonEdit`, `ClassAdd`, `ClassEdit`) — already inside the parent layout

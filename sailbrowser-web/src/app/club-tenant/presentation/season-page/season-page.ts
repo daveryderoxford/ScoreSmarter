@@ -10,12 +10,13 @@ import { MatInputModule } from '@angular/material/input';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
 import { Toolbar } from 'app/shared/components/toolbar';
+import { DetailPane } from 'app/shared/layout/detail-pane';
+import { ListDetailLayout } from 'app/shared/layout/list-detail-layout';
+import { listDetailRoute } from 'app/shared/layout/list-detail-route';
 import { ListPane } from 'app/shared/layout/list-pane';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { ClubStore } from '../../services/club-store';
 import { LoadingCentered } from "app/shared/components/loading-centered";
-import { DialogsService } from 'app/shared/dialogs/dialogs.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Season } from 'app/race-calender/model/season';
 
 @Component({
@@ -23,11 +24,17 @@ import { Season } from 'app/race-calender/model/season';
   imports: [Toolbar, MatListModule,
     MatButtonModule, MatIconModule, RouterModule, MatDividerModule,
     ReactiveFormsModule, MatFormFieldModule, MatInputModule, LoadingCentered,
-    MatDividerModule, PageLayout, ListPane],
+    PageLayout, ListDetailLayout, ListPane, DetailPane],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './season-page.html',
   styles: `
-    /* Recipe 1: list then full-page form. Not boats-style ListDetailLayout. */
+    :host {
+      display: block;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
     .search-bar {
       display: flex;
       align-items: center;
@@ -47,8 +54,22 @@ import { Season } from 'app/race-calender/model/season';
 })
 export class SeasonPage {
   cs = inject(ClubStore);
-  private ds = inject(DialogsService);
-  private snackbar = inject(MatSnackBar);
+
+  private readonly detail = listDetailRoute();
+
+  readonly detailOpen = this.detail.detailOpen;
+  readonly selectedSeasonId = this.detail.selectedId;
+  readonly showBack = this.detail.showBack;
+  readonly toolbarTitle = computed(() => {
+    if (this.detail.isSplit()) return 'Seasons';
+    const child = this.detail.selection();
+    if (child?.kind === 'add') return 'Add Season';
+    if (child?.kind === 'edit') {
+      const season = this.cs.club().seasons.find(s => s.id === child.id);
+      return season ? `Edit Season - ${season.name}` : 'Edit Season';
+    }
+    return 'Seasons';
+  });
 
   searchControl = new FormControl('');
   searchTerm = toSignal(
@@ -61,20 +82,8 @@ export class SeasonPage {
 
   filteredSeasons = computed(() => {
     const filter = this.searchTerm()?.toLowerCase() || '';
-    return this.cs.club().seasons.filter((season: Season) => 
+    return this.cs.club().seasons.filter((season: Season) =>
       season.name.toLowerCase().includes(filter)
     ).sort((a, b) => a.name.localeCompare(b.name));
   });
-
-  async deleteSeason(season: Season) {
-    if (await this.ds.confirm('Delete season?', `${season.name} will be deleted.`, { confirm: 'Delete' })) {
-      try {
-        await this.cs.removeSeason(season);
-        this.snackbar.open("Season deleted", "Dismiss", { duration: 3000 });
-      } catch (error: any) {
-        this.snackbar.open("Error deleting season", "Dismiss", { duration: 3000 });
-        console.error('Error deleting season:', error);
-      }
-    }
-  }
 }
