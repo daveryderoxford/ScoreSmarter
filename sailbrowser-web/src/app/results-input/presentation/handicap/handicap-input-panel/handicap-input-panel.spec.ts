@@ -127,8 +127,10 @@ describe('HandicapInputPanel competitor switch', () => {
   it('moves on without rewriting the result when Done is pressed with nothing changed', async () => {
     const fixture = render();
     const panel = fixture.componentInstance;
-    const laps = lapsInput(fixture.nativeElement as HTMLElement);
+    const root = fixture.nativeElement as HTMLElement;
+    const laps = lapsInput(root);
     expect(laps.getAttribute('enterkeyhint')).toBe('done');
+    expect(root.querySelector('app-race-time-input input')?.getAttribute('enterkeyhint')).toBe('done');
 
     laps.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     await fixture.whenStable();
