@@ -263,3 +263,40 @@ test('only sys-admins can read registrations, and may only reject or reopen them
   await assertFails(admin.doc(path).update({ clubId: 'westbay', updatedAt: now }));
   await assertSucceeds(admin.doc(path).update({ status: 'rejected', notes: 'Duplicate', updatedAt: now }));
 });
+
+const topper = { id: 'rya-379', name: 'Topper', kind: 'rya', catalogueId: 379, handicaps: [{ scheme: 'PY', value: 1369 }] };
+const dory = { id: 'local-dory', name: 'Dory', kind: 'local', isSinglehander: false, handicaps: [] };
+
+async function seedClubClasses() {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc(`clubs/${CLUB_ID}`).set({ name: 'Test club', classes: [topper] });
+  });
+}
+
+test('race officer can append one class to the club list', async () => {
+  await seedClubClasses();
+  const db = authedDb(RO_UID, clubUserClaims('race-officer'));
+  await assertSucceeds(
+    db.doc(`clubs/${CLUB_ID}`).set({ classes: firebase.firestore.FieldValue.arrayUnion(dory) }, { merge: true }),
+  );
+});
+
+test('race officer cannot edit, remove or reorder classes, or change other club fields', async () => {
+  await seedClubClasses();
+  const club = authedDb(RO_UID, clubUserClaims('race-officer')).doc(`clubs/${CLUB_ID}`);
+  await assertFails(club.update({ classes: [{ ...topper, handicaps: [] }] }));
+  await assertFails(club.update({ classes: [] }));
+  await assertFails(club.update({ classes: [dory, topper] }));
+  await assertFails(club.update({ classes: [topper, dory], name: 'Renamed' }));
+  await assertFails(club.update({ classes: [topper, { ...dory, kind: 'other' }] }));
+  await assertFails(club.update({ classes: [topper, { ...dory, extra: true }] }));
+});
+
+test('kiosk and regular users cannot add classes', async () => {
+  await seedClubClasses();
+  const append = { classes: firebase.firestore.FieldValue.arrayUnion(dory) };
+  const kiosk = authedDb('kiosk_device_1', { ...clubUserClaims('race-officer'), kiosk: true });
+  await assertFails(kiosk.doc(`clubs/${CLUB_ID}`).set(append, { merge: true }));
+  const user = authedDb(USER_UID, clubUserClaims('user'));
+  await assertFails(user.doc(`clubs/${CLUB_ID}`).set(append, { merge: true }));
+});

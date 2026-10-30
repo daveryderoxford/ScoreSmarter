@@ -5,6 +5,7 @@ import {
   applyRyaPyUpdates,
   classKind,
   localClassId,
+  newClubClass,
   ryaClassId,
   ryaClubClass,
   ryaConfigurationLabel,
@@ -88,5 +89,42 @@ describe('ryaPyUpdatePlan', () => {
     expect(updated[0].handicaps).toEqual([{ scheme: 'PY', value: 1095 }]);
     expect(updated[1]).toBe(classes[1]);
     expect(updated[2]).toBe(classes[2]);
+  });
+});
+
+describe('newClubClass', () => {
+  const catalogue = [ilca7, rs200, localDory];
+  const existing: BoatClass[] = [
+    { id: 'rya-379', name: 'Topper', kind: 'rya', catalogueId: 379, handicaps: [] },
+    { id: 'local-punt', name: 'Punt', kind: 'local', handicaps: [] },
+  ];
+
+  it('builds an RYA class from the catalogue, with the RYA PN unless a PY is given', () => {
+    expect(newClubClass({ kind: 'rya', catalogueId: 191, handicaps: [] }, existing, catalogue)).toEqual({
+      id: 'rya-191', name: 'ILCA 7', kind: 'rya', catalogueId: 191, isSinglehander: true,
+      handicaps: [{ scheme: 'PY', value: 1100 }], pyOverridden: false,
+    });
+    const overridden = newClubClass({ kind: 'rya', catalogueId: 191, handicaps: [{ scheme: 'PY', value: 1090 }] }, existing, catalogue);
+    expect(overridden).toMatchObject({ handicaps: [{ scheme: 'PY', value: 1090 }], pyOverridden: true });
+  });
+
+  it('refuses unknown, local-catalogue and duplicate RYA classes', () => {
+    expect(newClubClass({ kind: 'rya', catalogueId: 999, handicaps: [] }, existing, catalogue)).toMatch(/not in the RYA list/);
+    expect(newClubClass({ kind: 'rya', catalogueId: -1, handicaps: [] }, existing, catalogue)).toMatch(/not in the RYA list/);
+    const withIlca = [...existing, { id: 'ILCA 7', name: 'ILCA 7', catalogueId: 191, handicaps: [] }];
+    expect(newClubClass({ kind: 'rya', catalogueId: 191, handicaps: [] }, withIlca, catalogue)).toMatch(/already/);
+  });
+
+  it('builds local classes with unique ids', () => {
+    expect(newClubClass({ kind: 'local', name: '  Dory  Junior ', isSinglehander: true, handicaps: [] }, existing, catalogue))
+      .toEqual({ id: 'local-dory-junior', name: 'Dory Junior', kind: 'local', isSinglehander: true, handicaps: [] });
+    const clash = [...existing, { id: 'local-dory', name: 'Other', handicaps: [] }];
+    expect(newClubClass({ kind: 'local', name: 'Dory!', handicaps: [] }, clash, catalogue)).toMatchObject({ id: 'local-dory-2' });
+  });
+
+  it('refuses local classes clashing with club or RYA names', () => {
+    expect(newClubClass({ kind: 'local', name: 'topper', handicaps: [] }, existing, catalogue)).toMatch(/already has/);
+    expect(newClubClass({ kind: 'local', name: 'ilca 7', handicaps: [] }, existing, catalogue)).toMatch(/RYA list/);
+    expect(newClubClass({ kind: 'local', name: '  ', handicaps: [] }, existing, catalogue)).toMatch(/Enter/);
   });
 });

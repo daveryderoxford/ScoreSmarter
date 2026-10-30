@@ -1,6 +1,7 @@
 import { getHandicapValue, Handicap } from 'app/scoring/model/handicap';
 import type { BoatClass, ClassKind } from './boat-class';
-import { type CatalogClass, isRyaClass, ryaPn } from './catalog-class';
+import { normaliseWhitespace } from 'app/shared/utils/string-utils';
+import { type CatalogClass, isRyaClass, normaliseClassName, ryaPn } from './catalog-class';
 
 export const ryaClassId = (catalogueId: number) => `rya-${catalogueId}`;
 
@@ -42,6 +43,58 @@ export function ryaClubClass(entry: CatalogClass, handicaps: readonly Handicap[]
     handicaps: py !== undefined ? [{ scheme: 'PY', value: py }, ...others] : others,
     pyOverridden: pyOverride !== undefined && pn !== undefined && pyOverride !== pn,
   };
+}
+
+export interface NewClubClass {
+  kind: ClassKind;
+  /** RYA Class ID, for an RYA class. */
+  catalogueId?: number;
+  /** Name, for a local class. */
+  name?: string;
+  /** For a local class; an RYA class takes it from the RYA list. */
+  isSinglehander?: boolean;
+  /** Club handicaps. For an RYA class a PY differing from the RYA PN is an override. */
+  handicaps: Handicap[];
+}
+
+const MAX_CLASS_NAME_LENGTH = 60;
+const classNameKey = (name: string) => normaliseWhitespace(name).toLowerCase();
+
+/**
+ * The class to add to a club with `existing` classes, or a message saying why it can't be
+ * added. RYA classes are built from `catalogue`, which also stops RYA classes being added
+ * as local ones.
+ */
+export function newClubClass(
+  request: NewClubClass,
+  existing: readonly BoatClass[],
+  catalogue: readonly CatalogClass[],
+): BoatClass | string {
+  const names = new Set(existing.map(c => classNameKey(c.name)));
+
+  if (request.kind === 'rya') {
+    const entry = catalogue.find(c => c.catalogueId === request.catalogueId && isRyaClass(c));
+    if (!entry) return `RYA Class ID ${request.catalogueId} is not in the RYA list.`;
+    if (existing.some(c => c.id === ryaClassId(entry.catalogueId) || c.catalogueId === entry.catalogueId)) {
+      return `${entry.name} is already one of the club's classes.`;
+    }
+    if (names.has(classNameKey(entry.name))) return `The club already has a class called ${entry.name}.`;
+    const py = getHandicapValue(request.handicaps, 'PY');
+    return ryaClubClass(entry, request.handicaps, py);
+  }
+
+  const name = normaliseWhitespace(request.name);
+  if (!name) return 'Enter a class name.';
+  if (name.length > MAX_CLASS_NAME_LENGTH) return `Class names can be at most ${MAX_CLASS_NAME_LENGTH} characters.`;
+  if (names.has(classNameKey(name))) return `The club already has a class called ${name}.`;
+  const rya = catalogue.find(c => isRyaClass(c) && normaliseClassName(c.name) === normaliseClassName(name));
+  if (rya) return `${rya.name} is in the RYA list; add it as an RYA class.`;
+
+  const ids = new Set(existing.map(c => c.id));
+  const base = localClassId(name);
+  let id = base;
+  for (let n = 2; ids.has(id); n++) id = `${base}-${n}`;
+  return { id, name, kind: 'local', isSinglehander: request.isSinglehander === true, handicaps: request.handicaps };
 }
 
 export interface RyaPyChange {

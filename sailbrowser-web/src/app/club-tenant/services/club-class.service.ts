@@ -1,36 +1,23 @@
 import { inject, Injectable } from '@angular/core';
-import { FirebaseApp } from '@angular/fire/app';
-import type { Handicap } from 'app/scoring/model/handicap';
-import { cloudCallable } from 'app/shared/firebase/cloud-functions';
-import type { BoatClass, ClassKind } from '../model/boat-class';
+import type { BoatClass } from '../model/boat-class';
+import { newClubClass, type NewClubClass } from '../model/club-class';
+import { ClassCatalogueStore } from './class-catalogue-store';
 import { ClubStore } from './club-store';
 
-export interface AddClassRequest {
-  kind: ClassKind;
-  /** RYA Class ID, for an RYA class. */
-  catalogueId?: number;
-  /** Name, for a local class. */
-  name?: string;
-  /** For a local class; an RYA class takes it from the RYA list. */
-  isSinglehander?: boolean;
-  /** For an RYA class, a PY here is an override of the RYA PN. */
-  handicaps: Handicap[];
-}
-
-/** Adds classes to the club list through the `addClubClass` callable (race officers and above). */
+/**
+ * Adds classes to the club list. Race officers can add (Firestore rules let them append
+ * one class) but not edit classes; the entry kiosk can't add.
+ */
 @Injectable({ providedIn: 'root' })
 export class ClubClassService {
-  private readonly app = inject(FirebaseApp);
   private readonly clubStore = inject(ClubStore);
+  private readonly catalogue = inject(ClassCatalogueStore);
 
-  /** The added class. Rejects with the callable's message, e.g. when the class already exists. */
-  async add(request: AddClassRequest): Promise<BoatClass> {
-    const addClubClass = await cloudCallable<AddClassRequest & { clubId: string }, BoatClass>(
-      'addClubClass',
-      undefined,
-      this.app,
-    );
-    const result = await addClubClass({ ...request, clubId: this.clubStore.club().id });
-    return result.data;
+  /** The added class. Rejects with a message saying why, e.g. when the class already exists. */
+  async add(request: NewClubClass): Promise<BoatClass> {
+    const boatClass = newClubClass(request, this.clubStore.club().classes, this.catalogue.classes());
+    if (typeof boatClass === 'string') throw new Error(boatClass);
+    await this.clubStore.addClass(boatClass);
+    return boatClass;
   }
 }
