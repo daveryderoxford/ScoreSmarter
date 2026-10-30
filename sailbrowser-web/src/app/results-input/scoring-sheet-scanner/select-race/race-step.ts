@@ -13,6 +13,10 @@ const SCANNER_RACE_FILTERS: readonly RacesPanelFilter[] = ['past', 'hideComplete
   selector: 'app-race-step',
   imports: [MatCardModule, MatChipsModule, MatIconModule, RacesPanel, RaceTitlePipe],
   template: `
+    <p class="selection-hint">
+      Select the race on the scoring sheet. A handicap race is scanned on its own; a Level Rating
+      sheet may include several races.
+    </p>
     @if (raceSelection.isLevelRatingSelection()) {
       <mat-chip-set class="selected-races" aria-label="Races on the scoring sheet">
         @for (race of raceSelection.selectedRaces(); track race.id) {
@@ -35,10 +39,6 @@ const SCANNER_RACE_FILTERS: readonly RacesPanelFilter[] = ['past', 'hideComplete
       @if (raceSelection.error()) {
         <p class="selection-error">{{ raceSelection.error() }}</p>
       }
-      <p class="selection-hint">
-        Select the race on the scoring sheet. A handicap race is scanned on its own; a Level Rating
-        sheet may include several races.
-      </p>
     </mat-card>
   `,
   styleUrl: './race-step.scss',
