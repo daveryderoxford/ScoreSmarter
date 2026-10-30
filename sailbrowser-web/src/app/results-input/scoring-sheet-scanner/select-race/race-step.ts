@@ -1,16 +1,31 @@
 import { Component, computed, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatIconModule } from '@angular/material/icon';
 import { RacesPanel } from 'app/race-calender/presentation/races-panel/races-panel';
 import type { RacesPanelFilter } from 'app/race-calender/presentation/races-panel/races-panel-utils';
+import { RaceTitlePipe } from 'app/shared/pipes/race-title-pipe';
 import { ScanSelectedRace } from './race-selection.store';
 
 const SCANNER_RACE_FILTERS: readonly RacesPanelFilter[] = ['past', 'hideCompleted'];
 
 @Component({
   selector: 'app-race-step',
-  imports: [MatCardModule, RacesPanel],
+  imports: [MatCardModule, MatChipsModule, MatIconModule, RacesPanel, RaceTitlePipe],
   template: `
     <mat-card appearance="outlined" class="form-card">
+      @if (raceSelection.isLevelRatingSelection()) {
+        <mat-chip-set class="selected-races" aria-label="Races on the scoring sheet">
+          @for (race of raceSelection.selectedRaces(); track race.id) {
+            <mat-chip-row removable (removed)="remove(race.id)">
+              <span matChipContent>{{ race | racetitle }}</span>
+              <button matChipRemove type="button" [attr.aria-label]="'Remove ' + (race | racetitle)">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip-row>
+          }
+        </mat-chip-set>
+      }
       <app-races-panel
         [races]="raceSelection.raceOptions()"
         [selectedRaceIds]="selectedRaceIds()"
@@ -21,10 +36,8 @@ const SCANNER_RACE_FILTERS: readonly RacesPanelFilter[] = ['past', 'hideComplete
         <p class="selection-error">{{ raceSelection.error() }}</p>
       }
       <p class="selection-hint">
-        Select the race(s) on the scoring sheet.
-        @if (raceSelection.isLevelRatingSelection()) {
-          Level Rating sheets may include several races.
-        }
+        Select the race on the scoring sheet. A handicap race is scanned on its own; a Level Rating
+        sheet may include several races.
       </p>
     </mat-card>
   `,
@@ -38,5 +51,9 @@ export class RaceStep {
 
   onSelectionChange(ids: string[]): void {
     this.raceSelection.selectMany(ids);
+  }
+
+  protected remove(raceId: string): void {
+    this.raceSelection.selectMany(this.raceSelection.selectedRaceIds().filter(id => id !== raceId));
   }
 }
