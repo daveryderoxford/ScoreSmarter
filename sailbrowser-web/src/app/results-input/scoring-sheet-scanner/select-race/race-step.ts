@@ -13,19 +13,19 @@ const SCANNER_RACE_FILTERS: readonly RacesPanelFilter[] = ['past', 'hideComplete
   selector: 'app-race-step',
   imports: [MatCardModule, MatChipsModule, MatIconModule, RacesPanel, RaceTitlePipe],
   template: `
+    @if (raceSelection.isLevelRatingSelection()) {
+      <mat-chip-set class="selected-races" aria-label="Races on the scoring sheet">
+        @for (race of raceSelection.selectedRaces(); track race.id) {
+          <mat-chip-row removable (removed)="remove(race.id)">
+            <span matChipContent>{{ race | racetitle }}</span>
+            <button matChipRemove type="button" [attr.aria-label]="'Remove ' + (race | racetitle)">
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip-row>
+        }
+      </mat-chip-set>
+    }
     <mat-card appearance="outlined" class="form-card">
-      @if (raceSelection.isLevelRatingSelection()) {
-        <mat-chip-set class="selected-races" aria-label="Races on the scoring sheet">
-          @for (race of raceSelection.selectedRaces(); track race.id) {
-            <mat-chip-row removable (removed)="remove(race.id)">
-              <span matChipContent>{{ race | racetitle }}</span>
-              <button matChipRemove type="button" [attr.aria-label]="'Remove ' + (race | racetitle)">
-                <mat-icon>cancel</mat-icon>
-              </button>
-            </mat-chip-row>
-          }
-        </mat-chip-set>
-      }
       <app-races-panel
         [races]="raceSelection.raceOptions()"
         [selectedRaceIds]="selectedRaceIds()"
