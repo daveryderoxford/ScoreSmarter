@@ -1,6 +1,7 @@
 /**
  * Global class catalogue entry. `catalogueId` is the RYA Class ID when positive; a
- * negative id is a class the RYA does not list, allocated by a sys-admin.
+ * negative id is a class the RYA does not list, allocated by a sys-admin. Entries are
+ * fixed once published; ratings come from separate, dated rating lists.
  */
 export interface CatalogClass {
   catalogueId: number;
@@ -19,8 +20,6 @@ export interface CatalogClass {
 
 export interface RyaClassDetails {
   name: string;
-  /** RYA Portsmouth Number for the current list. */
-  pn?: number;
   notes?: string;
 }
 
@@ -36,12 +35,6 @@ export const CLASS_CATALOGUE_PATH = ['system', 'public', 'reference', 'classCata
 
 export function isRyaClass(entry: Pick<CatalogClass, 'catalogueId'>): boolean {
   return entry.catalogueId > 0;
-}
-
-/** The entry's RYA PN; stored lists can hold `null` for a missing PN. */
-export function ryaPn(entry: Pick<CatalogClass, 'rya'> | undefined): number | undefined {
-  const pn = entry?.rya?.pn;
-  return typeof pn === 'number' && pn > 0 ? pn : undefined;
 }
 
 /** Case, spacing and punctuation insensitive key for matching class names. */
@@ -64,27 +57,4 @@ export function suggestCatalogClass(
   if (!key) return undefined;
   const names = (c: CatalogClass) => [c.name, c.rya?.name ?? '', ...(c.aliases ?? [])];
   return classes.find(c => names(c).some(n => normaliseClassName(n) === key));
-}
-
-/** Values a club class takes when added from a catalogue entry. */
-export interface CatalogClassPrefill {
-  catalogueId: number;
-  name: string;
-  isSinglehander: boolean;
-  /** RYA PN, to pre-fill the PY handicap when the club uses PY. */
-  pyHandicap?: number;
-}
-
-export function catalogClassPrefill(entry: CatalogClass): CatalogClassPrefill {
-  return {
-    catalogueId: entry.catalogueId,
-    name: entry.name,
-    isSinglehander: entry.crew === 1,
-    ...(ryaPn(entry) ? { pyHandicap: ryaPn(entry) } : {}),
-  };
-}
-
-/** Label for pickers, e.g. "ILCA 7 (RYA 191)" or "Local Dory (non-RYA)". */
-export function catalogClassLabel(entry: CatalogClass): string {
-  return isRyaClass(entry) ? `${entry.name} (RYA ${entry.catalogueId})` : `${entry.name} (non-RYA)`;
 }

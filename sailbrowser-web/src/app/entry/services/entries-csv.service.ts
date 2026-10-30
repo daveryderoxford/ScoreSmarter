@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import type { RatingList } from 'app/club-tenant/model/rating-list';
 import { isValidSailNumber, normalizeSailNumber } from 'app/boats/model/sail-number';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import type { Division } from 'app/race-calender/model/division';
@@ -42,6 +43,7 @@ export interface EntriesCsvContext {
   series: readonly Series[];
   races: readonly Race[];
   classes: readonly BoatClass[];
+  ratingLists: readonly RatingList[];
   existingEntriesBySeriesId: ReadonlyMap<string, readonly SeriesEntry[]>;
 }
 
@@ -173,6 +175,7 @@ export class EntriesCsvService {
           personalHandicapUnknown: true,
         },
         [...context.classes],
+        context.ratingLists,
       );
 
       const planned: EntriesCsvPlannedEntry = {

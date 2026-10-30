@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { catalogClassPrefill, nextNegativeCatalogueId, suggestCatalogClass, type CatalogClass } from './catalog-class';
-import { cleanRyaClassName, mergeRyaClassList, parseRyaClassList } from './rya-class-list';
+import { nextNegativeCatalogueId, suggestCatalogClass, type CatalogClass } from './catalog-class';
+import { cleanRyaClassName, mergeRyaClassList, parseRyaClassList, pyRatingsFromRyaList } from './rya-class-list';
 
 const RYA_CSV = [
   'RYA PN LIST - Dinghy,,,,,,,',
@@ -35,9 +35,26 @@ describe('parseRyaClassList', () => {
     }
   });
 
-  it('warns when there is no PN column or it has no PNs', () => {
-    expect(parseRyaClassList('RYA Class ID,Class Name,Crew\n303,RS200,2').errors[0]).toMatch(/No PN column/);
-    expect(parseRyaClassList('RYA Class ID,Class Name,PN\n303,RS200,').errors[0]).toMatch(/has no PNs/);
+});
+
+describe('pyRatingsFromRyaList', () => {
+  const catalogue: CatalogClass[] = [
+    { catalogueId: 191, name: 'ILCA 7', crew: 1, rya: { name: 'ILCA 7 / Laser' } },
+    { catalogueId: 303, name: 'RS200', crew: 2, rya: { name: 'RS200' } },
+  ];
+
+  it('keys PNs by catalogue id and lists RYA ids not in the catalogue', () => {
+    const result = pyRatingsFromRyaList(parseRyaClassList(RYA_CSV), catalogue);
+    expect(result.ratings).toEqual({ 191: 1103, 303: 1053 });
+    expect(result.unknownIds).toEqual([22, 254]);
+    expect(result.errors).toEqual([]);
+  });
+
+  it('reports a list without a PN column or without PNs', () => {
+    const noColumn = parseRyaClassList('RYA Class ID,Class Name,Crew\n303,RS200,2');
+    expect(pyRatingsFromRyaList(noColumn, catalogue).errors).toEqual(['No PN column was found.']);
+    const empty = parseRyaClassList('RYA Class ID,Class Name,PN\n303,RS200,');
+    expect(pyRatingsFromRyaList(empty, catalogue).errors).toEqual(['The PN column has no PNs.']);
   });
 });
 
@@ -52,38 +69,35 @@ describe('cleanRyaClassName', () => {
 
 describe('mergeRyaClassList', () => {
   const existing: CatalogClass[] = [
-    { catalogueId: 191, name: 'ILCA 7', crew: 1, rig: 'U', spinnaker: '0', rya: { name: 'ILCA 7 / Laser', pn: 1100 }, aliases: ['Laser'] },
+    { catalogueId: 191, name: 'ILCA 7', crew: 1, rig: 'U', spinnaker: '0', rya: { name: 'ILCA 7 / Laser' }, aliases: ['Laser'] },
+    { catalogueId: 303, name: 'RS200', crew: 1, rig: 'S', spinnaker: 'A', rya: { name: 'RS200' } },
     { catalogueId: 999, name: 'Retired class', crew: 2, rya: { name: 'RETIRED' } },
     { catalogueId: -1, name: 'Local Dory', crew: 2 },
   ];
 
-  it('updates RYA details by id, keeping the ScoreSmarter name and aliases', () => {
-    const { rows } = parseRyaClassList(RYA_CSV);
-    const result = mergeRyaClassList(existing, rows);
-    const ilca = result.classes.find(c => c.catalogueId === 191)!;
+  it('keeps published entries unchanged and reports rows that differ', () => {
+    const result = mergeRyaClassList(existing, parseRyaClassList(RYA_CSV).rows);
 
-    expect(ilca.name).toBe('ILCA 7');
-    expect(ilca.aliases).toEqual(['Laser']);
-    expect(ilca.rya?.pn).toBe(1103);
-    expect(result.updated).toBe(1);
-    expect(result.added).toBe(3);
+    expect(result.classes.slice(0, 4)).toEqual(existing);
+    expect(result.unchanged).toBe(1);
+    expect(result.differences).toEqual([{ entry: existing[1], changes: ['crew 1 → 2'] }]);
   });
 
-  it('adds new RYA classes with a cleaned name and keeps non-RYA and delisted entries', () => {
-    const { rows } = parseRyaClassList(RYA_CSV);
-    const result = mergeRyaClassList(existing, rows);
+  it('adds new RYA classes with a cleaned name and lists delisted entries', () => {
+    const result = mergeRyaClassList(existing, parseRyaClassList(RYA_CSV).rows);
 
-    expect(result.classes.find(c => c.catalogueId === 22)?.name).toBe('Albacore');
-    expect(result.classes.some(c => c.catalogueId === -1)).toBe(true);
+    expect(result.added).toBe(2);
+    expect(result.classes.find(c => c.catalogueId === 22)).toEqual({
+      catalogueId: 22, name: 'Albacore', crew: 2, rig: 'S', spinnaker: '0', rya: { name: 'ALBACORE' },
+    });
     expect(result.notInList.map(c => c.catalogueId)).toEqual([999]);
   });
 
   it('counts an identical re-import as unchanged', () => {
     const { rows } = parseRyaClassList(RYA_CSV);
-    const first = mergeRyaClassList([], rows).classes;
-    const second = mergeRyaClassList(first, rows);
+    const second = mergeRyaClassList(mergeRyaClassList([], rows).classes, rows);
 
-    expect(second).toMatchObject({ added: 0, updated: 0, unchanged: 4 });
+    expect(second).toMatchObject({ added: 0, unchanged: 4, differences: [] });
   });
 });
 
@@ -97,14 +111,6 @@ describe('catalogue helpers', () => {
   it('allocates the next negative id below the lowest, never reusing ids', () => {
     expect(nextNegativeCatalogueId(classes)).toBe(-5);
     expect(nextNegativeCatalogueId([])).toBe(-1);
-  });
-
-  it('pre-fills a new club class with the clean name, single-hander flag and RYA PN', () => {
-    const ilca: CatalogClass = { catalogueId: 191, name: 'ILCA 7', crew: 1, rya: { name: 'ILCA 7 / Laser', pn: 1103 } };
-    const dory: CatalogClass = { catalogueId: -1, name: 'Local Dory', crew: 2 };
-
-    expect(catalogClassPrefill(ilca)).toEqual({ catalogueId: 191, name: 'ILCA 7', isSinglehander: true, pyHandicap: 1103 });
-    expect(catalogClassPrefill(dory)).toEqual({ catalogueId: -1, name: 'Local Dory', isSinglehander: false });
   });
 
   it('suggests an entry by name, RYA name or alias ignoring case and punctuation', () => {

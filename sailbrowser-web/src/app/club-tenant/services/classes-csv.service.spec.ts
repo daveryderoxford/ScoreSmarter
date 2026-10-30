@@ -2,14 +2,18 @@ import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { BoatClass } from '../model/boat-class';
 import type { CatalogClass } from '../model/catalog-class';
+import type { RatingList } from '../model/rating-list';
 import { ClassesCsvService } from './classes-csv.service';
 
-const ilca7: CatalogClass = { catalogueId: 191, name: 'ILCA 7', crew: 1, rya: { name: 'ILCA 7 / LASER', pn: 1100 } };
-const rs200: CatalogClass = { catalogueId: 303, name: 'RS200', crew: 2, rya: { name: 'RS200', pn: 1053 } };
+const ilca7: CatalogClass = { catalogueId: 191, name: 'ILCA 7', crew: 1, rya: { name: 'ILCA 7 / LASER' } };
+const rs200: CatalogClass = { catalogueId: 303, name: 'RS200', crew: 2, rya: { name: 'RS200' } };
 const catalogue = new Map([[191, ilca7], [303, rs200]]);
+const ratingLists: RatingList[] = [
+  { id: 'pn-2026', scheme: 'PY', issuer: 'RYA', name: 'PN 2026', effectiveFrom: new Date('2026-03-01'), ratings: { 191: 1100, 303: 1053 } },
+];
 
 const rows = (service: ClassesCsvService, csv: string, schemes = ['PY'] as const) =>
-  service.parseCsv(csv, [...schemes], catalogue);
+  service.parseCsv(csv, [...schemes], catalogue, ratingLists);
 
 describe('ClassesCsvService', () => {
   let service: ClassesCsvService;
@@ -21,12 +25,12 @@ describe('ClassesCsvService', () => {
 
   it('round-trips RYA and local classes', () => {
     const classes: BoatClass[] = [
-      { id: 'rya-191', name: 'ILCA 7', kind: 'rya', catalogueId: 191, isSinglehander: true, pyOverridden: true,
+      { id: 'rya-191', name: 'ILCA 7', kind: 'rya', catalogueId: 191, isSinglehander: true, overriddenSchemes: ['PY'],
         handicaps: [{ scheme: 'PY', value: 1090 }] },
       { id: 'local-dory', name: 'Dory', kind: 'local', isSinglehander: false, handicaps: [{ scheme: 'PY', value: 1300 }] },
     ];
 
-    const parsed = rows(service, service.buildCsv(classes, ['PY']));
+    const parsed = rows(service, service.buildCsv(classes, ['PY'], ratingLists));
 
     expect(parsed.errors).toEqual([]);
     expect(parsed.rows.map(r => r.boatClass)).toEqual(classes);
@@ -36,8 +40,8 @@ describe('ClassesCsvService', () => {
     const parsed = rows(service, 'name,catalogueId,handicapPY\nRS200,303,\nILCA 7,191,1090\n');
 
     expect(parsed.errors).toEqual([]);
-    expect(parsed.rows[0].boatClass).toMatchObject({ id: 'rya-303', kind: 'rya', handicaps: [{ scheme: 'PY', value: 1053 }], pyOverridden: false });
-    expect(parsed.rows[1].boatClass).toMatchObject({ id: 'rya-191', isSinglehander: true, handicaps: [{ scheme: 'PY', value: 1090 }], pyOverridden: true });
+    expect(parsed.rows[0].boatClass).toMatchObject({ id: 'rya-303', kind: 'rya', handicaps: [{ scheme: 'PY', value: 1053 }], overriddenSchemes: [] });
+    expect(parsed.rows[1].boatClass).toMatchObject({ id: 'rya-191', isSinglehander: true, handicaps: [{ scheme: 'PY', value: 1090 }], overriddenSchemes: ['PY'] });
   });
 
   it('rejects RYA rows not in the RYA list or with a different name', () => {
@@ -61,13 +65,29 @@ describe('ClassesCsvService', () => {
     ]);
   });
 
+  it('reads overridden schemes, and the older pyOverridden column', () => {
+    const parsed = rows(service, 'name,catalogueId,overriddenSchemes,handicapPY\nILCA 7,191,,1090\nRS200,303,PY,1053\n');
+    expect(parsed.rows.map(r => [r.boatClass.handicaps, r.boatClass.overriddenSchemes])).toEqual([
+      [[{ scheme: 'PY', value: 1100 }], []],
+      [[{ scheme: 'PY', value: 1053 }], ['PY']],
+    ]);
+    const legacy = rows(service, 'name,catalogueId,pyOverridden,handicapPY\nILCA 7,191,true,1090\n');
+    expect(legacy.rows[0].boatClass.overriddenSchemes).toEqual(['PY']);
+    expect(rows(service, 'name,catalogueId,overriddenSchemes,handicapPY\nILCA 7,191,XYZ,1090\n').errors[0]).toMatch(/unknown schemes: XYZ/);
+  });
+
+  it('exports the PY in force today', () => {
+    const csv = service.buildCsv([{ id: 'rya-191', name: 'ILCA 7', kind: 'rya', catalogueId: 191, handicaps: [{ scheme: 'PY', value: 1111 }] }], ['PY'], ratingLists);
+    expect(csv).toContain('rya-191,ILCA 7,rya,191,false,,1100');
+  });
+
   it('rejects duplicate rows', () => {
     const parsed = rows(service, 'name,handicapPY\nDory,1300\ndory,1301\n');
     expect(parsed.errors).toEqual(['Line 3: dory appears more than once']);
   });
 
   it('rejects CSV missing handicap columns for supported schemes', () => {
-    const parsed = service.parseCsv('id,name\nILCA 7,ILCA 7\n', ['PY', 'Level Rating'], catalogue);
+    const parsed = service.parseCsv('id,name\nILCA 7,ILCA 7\n', ['PY', 'Level Rating'], catalogue, ratingLists);
 
     expect(parsed.rows).toEqual([]);
     expect(parsed.errors).toEqual(['Missing required columns: handicapPY, handicapLevelRating']);

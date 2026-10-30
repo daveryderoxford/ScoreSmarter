@@ -1,3 +1,4 @@
+import { provideFakeRatingLists } from 'app/club-tenant/services/rating-list-store.testing';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClubStore } from 'app/club-tenant';
@@ -79,6 +80,7 @@ describe('EntryService.enterRaces resultCode', () => {
           provide: RaceCalendarStore,
           useValue: { allSeries: () => [makeSeries()], allRaces: () => [] },
         },
+        provideFakeRatingLists(),
         {
           provide: ClubStore,
           useValue: { club: () => ({ classes: [] }) },

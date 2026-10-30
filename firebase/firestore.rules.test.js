@@ -300,3 +300,12 @@ test('kiosk and regular users cannot add classes', async () => {
   const user = authedDb(USER_UID, clubUserClaims('user'));
   await assertFails(user.doc(`clubs/${CLUB_ID}`).set(append, { merge: true }));
 });
+
+test('anyone can read rating lists; only sys-admins can write them', async () => {
+  const path = 'system/public/ratingLists/pn-2027';
+  const list = { scheme: 'PY', issuer: 'RYA', name: 'PN 2027', effectiveFrom: new Date('2027-03-01'), ratings: { 191: 1095 } };
+  await assertSucceeds(authedDb(SYS_ADMIN_UID).doc(path).set(list));
+  await assertSucceeds(testEnv.unauthenticatedContext().firestore().doc(path).get());
+  await assertFails(authedDb(RO_UID, clubUserClaims('club-admin')).doc(path).set(list));
+  await assertFails(testEnv.unauthenticatedContext().firestore().doc(path).delete());
+});

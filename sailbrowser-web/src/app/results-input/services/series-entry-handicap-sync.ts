@@ -1,4 +1,5 @@
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
+import type { RatingList } from 'app/club-tenant/model/rating-list';
 import { resolveHandicapsForSeries } from 'app/entry/services/entry-helpers';
 import type { Series } from 'app/race-calender/model/series';
 import type { Handicap } from 'app/scoring/model/handicap';
@@ -27,13 +28,15 @@ export function handicapsEqual(a: Handicap[] | undefined, b: Handicap[] | undefi
 }
 
 /**
- * Recomputes handicaps from club class defaults (no entry overrides).
+ * Recomputes handicaps from the class ratings for the series (no entry overrides), so
+ * ratings come from the lists in force when the series started.
  * Returns `null` when `entry.boatClass` is not in the club catalog.
  */
 export function recomputeEntryHandicapsFromClass(
   series: Series,
   entry: SeriesEntry,
   clubClasses: BoatClass[],
+  ratingLists: readonly RatingList[],
 ): Handicap[] | null {
   const classMatch = clubClasses.some(c => c.name === entry.boatClass);
   if (!classMatch) return null;
@@ -46,6 +49,7 @@ export function recomputeEntryHandicapsFromClass(
       personalHandicapUnknown: !entry.personalHandicapBand,
     },
     clubClasses,
+    ratingLists,
   );
 }
 
@@ -53,6 +57,7 @@ export function planSeriesEntryHandicapSync(
   series: Series,
   entries: SeriesEntry[],
   clubClasses: BoatClass[],
+  ratingLists: readonly RatingList[],
 ): SeriesEntryHandicapSyncPlan {
   const updated: SeriesEntryHandicapSyncUpdate[] = [];
   let unchanged = 0;
@@ -60,7 +65,7 @@ export function planSeriesEntryHandicapSync(
   const unknownClassNames = new Set<string>();
 
   for (const entry of entries) {
-    const recomputed = recomputeEntryHandicapsFromClass(series, entry, clubClasses);
+    const recomputed = recomputeEntryHandicapsFromClass(series, entry, clubClasses, ratingLists);
     if (recomputed === null) {
       skippedUnknownClass++;
       unknownClassNames.add(entry.boatClass);

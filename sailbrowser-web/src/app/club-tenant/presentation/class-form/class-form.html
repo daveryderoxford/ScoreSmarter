@@ -9,6 +9,9 @@
         <mat-radio-button value="override">Override</mat-radio-button>
       </mat-radio-group>
     }
+    @if (upcomingPn(); as upcoming) {
+      <p class="rya-detail">{{ upcoming }}</p>
+    }
   } @else {
     <mat-form-field>
       <mat-label>Name</mat-label>

@@ -15,6 +15,7 @@ import { RaceCalendarCsvService } from 'app/race-calender/services/race-calendar
 import { RaceCalendarICalService } from 'app/race-calender/services/race-calendar-ical.service';
 import { BoatsCsvService } from 'app/boats/services/boats-csv.service';
 import { FleetsCsvService } from 'app/club-tenant/services/fleets-csv.service';
+import { RatingListStore } from 'app/club-tenant/services/rating-list-store';
 import { ClassesCsvService } from 'app/club-tenant/services/classes-csv.service';
 import { ClubStore } from 'app/club-tenant';
 import { BoatsStore } from 'app/boats/services/boats.store';
@@ -56,6 +57,7 @@ export class ClubAdminSwitchboard {
   private readonly boatsCsv = inject(BoatsCsvService);
   private readonly fleetsCsv = inject(FleetsCsvService);
   private readonly classesCsv = inject(ClassesCsvService);
+  private readonly ratingLists = inject(RatingListStore);
   private readonly clubStore = inject(ClubStore);
   private readonly boatsStore = inject(BoatsStore);
   private readonly dialog = inject(MatDialog);
@@ -159,7 +161,7 @@ export class ClubAdminSwitchboard {
     this.dialog.open(PyReturnsDialog, { width: '760px', maxWidth: '95vw' });
   }
 
-  handleExport(action: string, context?: ImportExportContext) {
+  async handleExport(action: string, context?: ImportExportContext) {
     if (action === 'iCal' && this.raceCalendarStore.allRaces()) {
       const ical = this.raceCalendarICal.buildICal(this.raceCalendarStore.allRaces());
       this.downloadFile(ical, 'race-calendar.ics', 'text/calendar');
@@ -185,7 +187,11 @@ export class ClubAdminSwitchboard {
           filename = 'fleets.csv';
           break;
         case 'classes':
-          csv = this.classesCsv.buildCsv(this.clubStore.club().classes ?? [], this.clubStore.club().supportedHandicapSchemes);
+          csv = this.classesCsv.buildCsv(
+            this.clubStore.club().classes ?? [],
+            this.clubStore.club().supportedHandicapSchemes,
+            await this.ratingLists.load(),
+          );
           filename = 'classes.csv';
           break;
       }

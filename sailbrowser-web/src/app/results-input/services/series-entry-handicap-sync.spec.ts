@@ -83,7 +83,7 @@ describe('handicapsEqual', () => {
 describe('recomputeEntryHandicapsFromClass', () => {
   it('returns class PY when entry overrides differ', () => {
     const series = minimalSeries();
-    const out = recomputeEntryHandicapsFromClass(series, entry(), clubClasses);
+    const out = recomputeEntryHandicapsFromClass(series, entry(), clubClasses, []);
     expect(out).toEqual([{ scheme: 'PY', value: 1100 }]);
   });
 
@@ -93,6 +93,7 @@ describe('recomputeEntryHandicapsFromClass', () => {
       series,
       entry({ boatClass: 'Mystery' }),
       clubClasses,
+      [],
     );
     expect(out).toBeNull();
   });
@@ -106,6 +107,7 @@ describe('recomputeEntryHandicapsFromClass', () => {
         personalHandicapBand: 'Band2',
       }),
       clubClasses,
+      [],
     );
     expect(out).toEqual([
       {
@@ -127,6 +129,7 @@ describe('planSeriesEntryHandicapSync', () => {
         entry({ id: 'se-3', boatClass: 'Mystery', handicaps: [] }),
       ],
       clubClasses,
+      [],
     );
 
     expect(plan.updated).toHaveLength(1);

@@ -1,7 +1,9 @@
 import { getHandicapValue, Handicap } from 'app/scoring/model/handicap';
+import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import type { BoatClass, ClassKind } from './boat-class';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
-import { type CatalogClass, isRyaClass, normaliseClassName, ryaPn } from './catalog-class';
+import { type CatalogClass, isRyaClass, normaliseClassName } from './catalog-class';
+import { listRating, ratingListFor, type RatingList } from './rating-list';
 
 export const ryaClassId = (catalogueId: number) => `rya-${catalogueId}`;
 
@@ -17,6 +19,33 @@ export function classKind(c: Pick<BoatClass, 'kind' | 'catalogueId'>): ClassKind
 
 export const classPy = (c: Pick<BoatClass, 'handicaps'>) => getHandicapValue(c.handicaps, 'PY');
 
+/** The club sets `scheme`'s rating for the class rather than using the published list. */
+export function isSchemeOverridden(
+  c: Pick<BoatClass, 'overriddenSchemes' | 'pyOverridden'>,
+  scheme: HandicapScheme,
+): boolean {
+  if (c.overriddenSchemes) return c.overriddenSchemes.includes(scheme);
+  return scheme === 'PY' && c.pyOverridden === true;
+}
+
+/**
+ * The class's `scheme` rating for a series using the lists in force on `date`: the
+ * published rating for an RYA class that doesn't override the scheme, otherwise (or when
+ * the list has no rating for the class) the club's value.
+ */
+export function classRating(
+  boatClass: BoatClass,
+  scheme: HandicapScheme,
+  lists: readonly RatingList[],
+  date: Date,
+): number | undefined {
+  if (classKind(boatClass) === 'rya' && !isSchemeOverridden(boatClass, scheme)) {
+    const published = listRating(ratingListFor(lists, scheme, date), boatClass.catalogueId);
+    if (published !== undefined) return published;
+  }
+  return getHandicapValue(boatClass.handicaps, scheme);
+}
+
 /** RYA crew and spinnaker, e.g. "Single-handed" or "2 crew, asymmetric spinnaker". */
 export function ryaConfigurationLabel(entry: Pick<CatalogClass, 'crew' | 'spinnaker'>): string {
   const crew = entry.crew === 1 ? 'Single-handed' : `${entry.crew} crew`;
@@ -26,14 +55,19 @@ export function ryaConfigurationLabel(entry: Pick<CatalogClass, 'crew' | 'spinna
 
 /**
  * A club class for an RYA catalogue entry. `handicaps` are the club's class handicaps;
- * PY is the RYA PN unless `pyOverride` is given. A PY given when the RYA list has no PN
- * isn't an override, so a later list with a PN can update it.
+ * PY is `pn` (the current RYA PN) unless `pyOverride` is given. A PY given when there is
+ * no PN isn't an override, so a later list with a PN applies to it.
  */
-export function ryaClubClass(entry: CatalogClass, handicaps: readonly Handicap[], pyOverride?: number): BoatClass {
+export function ryaClubClass(
+  entry: CatalogClass,
+  handicaps: readonly Handicap[],
+  pn: number | undefined,
+  pyOverride?: number,
+): BoatClass {
   if (!isRyaClass(entry)) throw new Error(`Catalogue class ${entry.catalogueId} is not an RYA class`);
-  const pn = ryaPn(entry);
   const py = pyOverride ?? pn;
   const others = handicaps.filter(h => h.scheme !== 'PY');
+  const overridden = pyOverride !== undefined && pn !== undefined && pyOverride !== pn;
   return {
     id: ryaClassId(entry.catalogueId),
     name: entry.name,
@@ -41,8 +75,13 @@ export function ryaClubClass(entry: CatalogClass, handicaps: readonly Handicap[]
     catalogueId: entry.catalogueId,
     isSinglehander: entry.crew === 1,
     handicaps: py !== undefined ? [{ scheme: 'PY', value: py }, ...others] : others,
-    pyOverridden: pyOverride !== undefined && pn !== undefined && pyOverride !== pn,
+    overriddenSchemes: overridden ? ['PY'] : [],
   };
+}
+
+/** The current RYA PN for a catalogue entry, from the PY lists. */
+export function currentPn(lists: readonly RatingList[], catalogueId: number, today = new Date()): number | undefined {
+  return listRating(ratingListFor(lists, 'PY', today), catalogueId);
 }
 
 export interface NewClubClass {
@@ -62,13 +101,14 @@ const classNameKey = (name: string) => normaliseWhitespace(name).toLowerCase();
 
 /**
  * The class to add to a club with `existing` classes, or a message saying why it can't be
- * added. RYA classes are built from `catalogue`, which also stops RYA classes being added
- * as local ones.
+ * added. RYA classes are built from `catalogue` and the current PY list, and `catalogue`
+ * also stops RYA classes being added as local ones.
  */
 export function newClubClass(
   request: NewClubClass,
   existing: readonly BoatClass[],
   catalogue: readonly CatalogClass[],
+  ratingLists: readonly RatingList[],
 ): BoatClass | string {
   const names = new Set(existing.map(c => classNameKey(c.name)));
 
@@ -80,7 +120,7 @@ export function newClubClass(
     }
     if (names.has(classNameKey(entry.name))) return `The club already has a class called ${entry.name}.`;
     const py = getHandicapValue(request.handicaps, 'PY');
-    return ryaClubClass(entry, request.handicaps, py);
+    return ryaClubClass(entry, request.handicaps, currentPn(ratingLists, entry.catalogueId), py);
   }
 
   const name = normaliseWhitespace(request.name);
@@ -95,44 +135,4 @@ export function newClubClass(
   let id = base;
   for (let n = 2; ids.has(id); n++) id = `${base}-${n}`;
   return { id, name, kind: 'local', isSinglehander: request.isSinglehander === true, handicaps: request.handicaps };
-}
-
-export interface RyaPyChange {
-  boatClass: BoatClass;
-  current: number | undefined;
-  rya: number;
-}
-
-export interface RyaPyUpdatePlan {
-  /** Classes whose PY moves to the RYA PN. */
-  updates: RyaPyChange[];
-  /** Overridden classes whose PY differs from the RYA PN; left unchanged. */
-  overridden: RyaPyChange[];
-}
-
-/** What applying the catalogue's current RYA PNs to the club's RYA classes would change. */
-export function ryaPyUpdatePlan(
-  classes: readonly BoatClass[],
-  catalogue: ReadonlyMap<number, CatalogClass>,
-): RyaPyUpdatePlan {
-  const plan: RyaPyUpdatePlan = { updates: [], overridden: [] };
-  for (const boatClass of classes) {
-    if (classKind(boatClass) !== 'rya' || boatClass.catalogueId === undefined) continue;
-    const rya = ryaPn(catalogue.get(boatClass.catalogueId));
-    const current = classPy(boatClass);
-    if (rya === undefined || current === rya) continue;
-    (boatClass.pyOverridden ? plan.overridden : plan.updates).push({ boatClass, current, rya });
-  }
-  return plan;
-}
-
-/** `classes` with the plan's updates applied (PY set to the RYA PN). */
-export function applyRyaPyUpdates(classes: readonly BoatClass[], plan: RyaPyUpdatePlan): BoatClass[] {
-  const newPy = new Map(plan.updates.map(u => [u.boatClass.id, u.rya]));
-  return classes.map(c => {
-    const py = newPy.get(c.id);
-    if (py === undefined) return c;
-    const others = c.handicaps.filter(h => h.scheme !== 'PY');
-    return { ...c, handicaps: [{ scheme: 'PY', value: py }, ...others] };
-  });
 }

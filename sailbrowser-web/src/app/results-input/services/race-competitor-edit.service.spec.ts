@@ -1,3 +1,4 @@
+import { provideFakeRatingLists } from 'app/club-tenant/services/rating-list-store.testing';
 import { TestBed } from '@angular/core/testing';
 import {
   installMutatorWriteBatchHarness,
@@ -99,6 +100,7 @@ describe('RaceCompetitorEditService', () => {
         { provide: RaceCompetitorStore, useValue: raceCompetitors },
         { provide: SeriesEntryStore, useValue: seriesEntries },
         { provide: RaceCalendarStore, useClass: FakeRaceCalendarStore },
+        provideFakeRatingLists(),
         { provide: ClubStore, useClass: FakeClubStore },
         provideMutatorTestFirestore(),
         RaceCompetitorMutator,

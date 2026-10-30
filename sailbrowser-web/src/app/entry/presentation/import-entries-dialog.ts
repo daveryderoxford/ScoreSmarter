@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { RatingListStore } from 'app/club-tenant/services/rating-list-store';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
@@ -193,6 +194,7 @@ import { EntryService } from '../services/entry.service';
 export class ImportEntriesDialog {
   protected readonly dialogRef = inject(MatDialogRef<ImportEntriesDialog, boolean>);
   private readonly csv = inject(EntriesCsvService);
+  private readonly ratingLists = inject(RatingListStore);
   private readonly entryService = inject(EntryService);
   private readonly calendar = inject(RaceCalendarStore);
   private readonly club = inject(ClubStore);
@@ -219,6 +221,7 @@ export class ImportEntriesDialog {
         series: this.calendar.allSeries(),
         races: this.calendar.allRaces(),
         classes: this.club.club().classes,
+        ratingLists: this.ratingLists.lists(),
         existingEntriesBySeriesId: this.existingBySeries(),
       },
     );
@@ -230,6 +233,7 @@ export class ImportEntriesDialog {
   });
 
   constructor() {
+    this.ratingLists.preload();
     effect((onCleanup) => {
       const ids = [...new Set(this.mappings().map(m => m.seriesId).filter(Boolean))];
       let cancelled = false;

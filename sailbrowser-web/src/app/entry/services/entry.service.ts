@@ -9,6 +9,7 @@ import {
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
 import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
 import { ClubStore } from '../../club-tenant';
+import { RatingListStore } from '../../club-tenant/services/rating-list-store';
 import { Race } from '../../race-calender/model/race';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { SeriesEntry } from '../../results-input/model/series-entry';
@@ -94,6 +95,7 @@ export interface EntryConflict {
 })
 export class EntryService {
   private clubStore = inject(ClubStore);
+  private ratingLists = inject(RatingListStore);
   private raceResultsStore = inject(RaceCompetitorStore);
   private seriesEntryStore = inject(SeriesEntryStore);
   private raceCalanderStore = inject(RaceCalendarStore);
@@ -121,6 +123,7 @@ export class EntryService {
     }
 
     const created: RaceCompetitor[] = [];
+    const ratingLists = await this.ratingLists.load();
     for (const race of details.races) {
       const series = this.raceCalanderStore.allSeries().find(s => s.id === race.seriesId);
       if (!series) {
@@ -134,7 +137,7 @@ export class EntryService {
         handicaps: details.handicaps,
         personalHandicapBand: details.personalHandicapBand,
         personalHandicapUnknown: !details.personalHandicapBand,
-      }, this.clubStore.club().classes);
+      }, this.clubStore.club().classes, ratingLists);
 
       const seriesEntryId =
         await this.findOrCreateSeriesEntry(race, details, handicapsForEntry);

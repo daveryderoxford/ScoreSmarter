@@ -48,7 +48,7 @@ service cloud.firestore {
 
     function isValidNewClubClass(c) {
       return c.keys().hasAll(['id', 'name', 'kind', 'handicaps'])
-        && c.keys().hasOnly(['id', 'name', 'kind', 'handicaps', 'isSinglehander', 'catalogueId', 'pyOverridden'])
+        && c.keys().hasOnly(['id', 'name', 'kind', 'handicaps', 'isSinglehander', 'catalogueId', 'overriddenSchemes'])
         && c.id is string && c.id.size() > 0
         && c.name is string && c.name.size() > 0
         && c.kind in ['rya', 'local']
@@ -351,6 +351,12 @@ service cloud.firestore {
 
     // Global reference data, e.g. the class catalogue (classCatalogue).
     match /system/public/reference/{docId} {
+      allow read: if true;
+      allow write: if isSysAdmin();
+    }
+
+    // Published, dated class rating lists (e.g. the yearly RYA PY list).
+    match /system/public/ratingLists/{listId} {
       allow read: if true;
       allow write: if isSysAdmin();
     }

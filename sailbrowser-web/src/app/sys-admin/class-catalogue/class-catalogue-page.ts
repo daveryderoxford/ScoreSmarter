@@ -14,8 +14,18 @@ import {
   normaliseClassName,
   type CatalogClass,
 } from 'app/club-tenant/model/catalog-class';
-import { mergeRyaClassList, parseRyaClassList, type RyaMergeResult } from 'app/club-tenant/model/rya-class-list';
+import { currentPn } from 'app/club-tenant/model/club-class';
+import {
+  mergeRyaClassList,
+  parseRyaClassList,
+  pyRatingsFromRyaList,
+  type PyRatingsImport,
+  type RyaMergeResult,
+} from 'app/club-tenant/model/rya-class-list';
+import type { RatingList } from 'app/club-tenant/model/rating-list';
 import { ClassCatalogueStore } from 'app/club-tenant/services/class-catalogue-store';
+import { RatingListStore } from 'app/club-tenant/services/rating-list-store';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { PageLayout } from 'app/shared/layout/page-layout';
@@ -26,7 +36,22 @@ interface PendingImport {
   errors: string[];
 }
 
-/** Sys-admin maintenance of the global class catalogue (RYA list import, names, aliases, non-RYA classes). */
+interface PendingPyList extends PyRatingsImport {
+  fileName: string;
+}
+
+const MAX_DIFFERENCES_SHOWN = 20;
+
+/** `YYYY-MM-DD` for a date input, in local time. */
+function dateInputValue(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/**
+ * Sys-admin maintenance of the global class catalogue (RYA class list import, names,
+ * aliases, non-RYA classes) and the published, dated PY lists.
+ */
 @Component({
   selector: 'app-class-catalogue-page',
   imports: [
@@ -47,7 +72,11 @@ interface PendingImport {
 })
 export class ClassCataloguePage {
   protected readonly store = inject(ClassCatalogueStore);
+  protected readonly ratingLists = inject(RatingListStore);
   private readonly snackbar = inject(MatSnackBar);
+  private readonly dialogs = inject(DialogsService);
+
+  protected readonly maxDifferencesShown = MAX_DIFFERENCES_SHOWN;
 
   protected readonly isRyaClass = isRyaClass;
 
@@ -55,6 +84,28 @@ export class ClassCataloguePage {
   readonly busy = signal(false);
   readonly pendingImport = signal<PendingImport | null>(null);
   readonly listVersion = signal('');
+
+  readonly pendingPyList = signal<PendingPyList | null>(null);
+  readonly pyListName = signal('');
+  readonly pyEffectiveFrom = signal(dateInputValue(new Date()));
+  protected readonly pyEffectiveInPast = computed(() => this.pyEffectiveFrom() < dateInputValue(new Date()));
+
+  /** Published lists, newest first. */
+  readonly publishedLists = computed(() =>
+    [...this.ratingLists.lists()].sort((a, b) => b.effectiveFrom.getTime() - a.effectiveFrom.getTime()),
+  );
+
+  constructor() {
+    this.ratingLists.preload();
+  }
+
+  protected currentPn(entry: CatalogClass): number | undefined {
+    return currentPn(this.ratingLists.lists(), entry.catalogueId);
+  }
+
+  protected ratingCount(list: Pick<RatingList, 'ratings'>): number {
+    return Object.keys(list.ratings).length;
+  }
 
   /** Entry being edited (by catalogueId) and its draft values. */
   readonly editingId = signal<number | null>(null);
@@ -102,10 +153,69 @@ export class ClassCataloguePage {
     if (await this.save(pending.merge.classes, version)) {
       this.pendingImport.set(null);
       this.snackbar.open(
-        `RYA list imported: ${pending.merge.added} added, ${pending.merge.updated} updated.`,
+        `RYA class list imported: ${pending.merge.added} added.`,
         undefined,
         { duration: 4000 },
       );
+    }
+  }
+
+  async onPyFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    const result = pyRatingsFromRyaList(parseRyaClassList(await file.text()), this.store.classes());
+    if (Object.keys(result.ratings).length === 0) {
+      this.snackbar.open(result.errors[0] ?? 'No PNs found in the file.', 'Dismiss', { duration: 6000 });
+      return;
+    }
+    this.pendingPyList.set({ ...result, fileName: file.name });
+  }
+
+  cancelPyList(): void {
+    this.pendingPyList.set(null);
+  }
+
+  async savePyList(): Promise<void> {
+    const pending = this.pendingPyList();
+    const name = normaliseWhitespace(this.pyListName());
+    const day = this.pyEffectiveFrom();
+    if (!pending || !name || !day) return;
+    const effectiveFrom = new Date(`${day}T00:00:00`);
+    if (this.ratingLists.lists().some(l => l.scheme === 'PY' && dateInputValue(l.effectiveFrom) === day)) {
+      this.snackbar.open('A PY list already takes effect on that date.', 'Dismiss', { duration: 5000 });
+      return;
+    }
+    this.busy.set(true);
+    try {
+      await this.ratingLists.add({ scheme: 'PY', issuer: 'RYA', name, effectiveFrom, ratings: pending.ratings });
+      this.pendingPyList.set(null);
+      this.pyListName.set('');
+      this.snackbar.open(`${name} published.`, undefined, { duration: 4000 });
+    } catch (e: unknown) {
+      console.error('ClassCataloguePage: saving PY list failed', e);
+      this.snackbar.open(e instanceof Error ? e.message : 'Could not save the PY list.', 'Dismiss', { duration: 6000 });
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async deleteList(list: RatingList): Promise<void> {
+    const ok = await this.dialogs.confirm(
+      'Delete PY list?',
+      `${list.name} will be deleted. Entries made from now on use the previous list, or the club's own PY.`,
+      { confirm: 'Delete' },
+    );
+    if (!ok) return;
+    this.busy.set(true);
+    try {
+      await this.ratingLists.remove(list.id);
+    } catch (e: unknown) {
+      console.error('ClassCataloguePage: deleting PY list failed', e);
+      this.snackbar.open('Could not delete the PY list.', 'Dismiss', { duration: 6000 });
+    } finally {
+      this.busy.set(false);
     }
   }
 

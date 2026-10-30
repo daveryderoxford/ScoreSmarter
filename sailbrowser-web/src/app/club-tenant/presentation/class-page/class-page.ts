@@ -20,14 +20,13 @@ import { ClubStore } from '../../services/club-store';
 import { LoadingCentered } from "app/shared/components/loading-centered";
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BoatClass } from '../../model/boat-class';
-import { classKind } from '../../model/club-class';
-import { getHandicapValue } from 'app/scoring/model/handicap';
-import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { classKind, classRating, isSchemeOverridden } from '../../model/club-class';
+import { listRating, nextRatingList } from '../../model/rating-list';
+import { RatingListStore } from '../../services/rating-list-store';
 import { ClassesCsvService } from '../../services/classes-csv.service';
 import { ClassCatalogueStore } from '../../services/class-catalogue-store';
 
 import { ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
-import { ApplyRyaPyDialog } from './apply-rya-py-dialog';
 import {
   SyncSeriesHandicapsDialog,
   type SyncSeriesHandicapsDialogData,
@@ -87,6 +86,11 @@ export class ClassPage {
   private snackbar = inject(MatSnackBar);
   private classesCsv = inject(ClassesCsvService);
   private catalogue = inject(ClassCatalogueStore);
+  private ratingLists = inject(RatingListStore);
+
+  constructor() {
+    this.ratingLists.preload();
+  }
 
   private readonly detail = listDetailRoute();
 
@@ -123,13 +127,26 @@ export class ClassPage {
   readonly kindOf = classKind;
 
   pyHandicap(boatClass: BoatClass): number | undefined {
-    return getHandicapValue(boatClass.handicaps, 'PY' as HandicapScheme);
+    return classRating(boatClass, 'PY', this.ratingLists.lists(), new Date());
+  }
+
+  pyOverridden(boatClass: BoatClass): boolean {
+    return classKind(boatClass) === 'rya' && isSchemeOverridden(boatClass, 'PY');
+  }
+
+  /** E.g. "1095 from 1 Mar 2027" when a published later PY list changes the class's PY. */
+  upcomingPy(boatClass: BoatClass): string | undefined {
+    if (classKind(boatClass) !== 'rya' || isSchemeOverridden(boatClass, 'PY')) return undefined;
+    const next = nextRatingList(this.ratingLists.lists(), 'PY', new Date());
+    const py = listRating(next, boatClass.catalogueId);
+    if (!next || py === undefined || py === this.pyHandicap(boatClass)) return undefined;
+    return `${py} from ${next.effectiveFrom.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
   }
 
   exportCsv() {
     const classes = this.cs.club().classes;
     const schemes = this.cs.club().supportedHandicapSchemes;
-    const csv = this.classesCsv.buildCsv(classes, schemes);
+    const csv = this.classesCsv.buildCsv(classes, schemes, this.ratingLists.lists());
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -137,18 +154,6 @@ export class ClassPage {
     a.download = `classes-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-  }
-
-  openApplyRyaPyDialog(): void {
-    this.dialog
-      .open<ApplyRyaPyDialog, unknown, number | undefined>(ApplyRyaPyDialog, { width: '480px' })
-      .afterClosed()
-      .subscribe(n => {
-        if (n === undefined) return;
-        this.snackbar.open(n === 1 ? 'Updated the PY of 1 class.' : `Updated the PY of ${n} classes.`, 'Dismiss', {
-          duration: 4000,
-        });
-      });
   }
 
   openSyncSeriesHandicapsDialog(): void {
@@ -173,7 +178,8 @@ export class ClassPage {
     try {
       const text = await file.text();
       const schemes = this.cs.club().supportedHandicapSchemes;
-      const parsed = this.classesCsv.parseCsv(text, schemes, this.catalogue.byId());
+      const ratingLists = await this.ratingLists.load();
+      const parsed = this.classesCsv.parseCsv(text, schemes, this.catalogue.byId(), ratingLists);
       const merged = this.classesCsv.merge(this.cs.club().classes, parsed.rows);
       const errors = [...parsed.errors, ...merged.errors];
       if (errors.length > 0) {

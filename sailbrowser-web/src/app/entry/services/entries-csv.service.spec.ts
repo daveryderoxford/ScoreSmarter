@@ -67,6 +67,7 @@ function context(over: Partial<EntriesCsvContext> = {}): EntriesCsvContext {
       makeRace({ id: 'r3', seriesId: 's2', index: 1 }),
     ],
     classes: over.classes ?? [ilca],
+    ratingLists: over.ratingLists ?? [],
     existingEntriesBySeriesId: over.existingEntriesBySeriesId ?? new Map(),
   };
 }
