@@ -13,6 +13,10 @@
  *   node scripts/migrate-tag-fleets.mjs --club-id ibrsc            # dry run
  *   node scripts/migrate-tag-fleets.mjs --club-id ibrsc --apply
  *
+ * --add-division <seriesId>:<tag>:<name> (repeatable) also adds a division to a series
+ * whose tag-fleet configuration is already gone, e.g. `s-wednesday-x:youth:Youth`, and
+ * puts the entries tagged `<tag>` in it.
+ *
  * Needs credentials, e.g. GOOGLE_APPLICATION_CREDENTIALS=~/private/scoresmarter/admin-key.json
  */
 import { createRequire } from 'node:module';
@@ -25,6 +29,15 @@ const args = process.argv.slice(2);
 const apply = args.includes('--apply');
 const clubIdx = args.indexOf('--club-id');
 const clubId = clubIdx >= 0 ? args[clubIdx + 1] : undefined;
+const extraDivisions = args.flatMap((a, i) => {
+  if (a !== '--add-division') return [];
+  const [seriesId, tag, name] = (args[i + 1] ?? '').split(':');
+  if (!seriesId || !tag || !name) {
+    console.error(`--add-division needs <seriesId>:<tag>:<name>, got "${args[i + 1]}"`);
+    process.exit(1);
+  }
+  return [{ seriesId, tag, name }];
+});
 if (!clubId) {
   console.error('Usage: node scripts/migrate-tag-fleets.mjs --club-id <club> [--apply]');
   process.exit(1);
@@ -64,6 +77,9 @@ async function main() {
       const tag = config.fleet && config.fleet.type !== 'Tag' ? undefined : tagFleets.get(fleetId);
       if (tag) tagged.push({ config, tag, recovered: !config.fleet });
       else kept.push(config);
+    }
+    for (const extra of extraDivisions.filter(e => e.seriesId === doc.id)) {
+      tagged.push({ config: { name: `(requested) ${extra.name}`, handicapScheme: series.primaryScoringConfiguration?.handicapScheme }, tag: { name: extra.name, value: extra.tag }, recovered: false });
     }
     if (config0Tag(series.primaryScoringConfiguration, tagFleets)) {
       console.log(`\n  ${series.name} (${doc.id}): PRIMARY scoring is on a tag fleet; left for you to fix`);
