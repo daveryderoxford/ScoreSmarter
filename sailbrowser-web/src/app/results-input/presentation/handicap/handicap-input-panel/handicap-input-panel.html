@@ -56,7 +56,7 @@
     <mat-label>Finish Time</mat-label>
     <app-race-time-input formControlName="finishTime" [mode]="timeInputContext().mode"
       [baseTime]="timeInputContext().baseTime" [scheduledStart]="race().scheduledStart"
-      enterKeyHint="done" (keydown.enter)="save(); $event.preventDefault()">
+      (keydown.enter)="save(); $event.preventDefault()">
     </app-race-time-input>
     @if (form.controls.finishTime.hasError('timeGreaterThan')) {
       <mat-error>Finish time must be after start time</mat-error>

@@ -35,7 +35,7 @@ import { merge, of } from 'rxjs';
     }
   ],
   template: `
-    <input [formControl]="inputControl" [appTimeInput]="innerFormat()" [attr.enterkeyhint]="enterKeyHint()" />
+    <input [formControl]="inputControl" [appTimeInput]="innerFormat()" />
   `,
   styles: [`
     :host { display: block; }
@@ -68,8 +68,6 @@ export class RaceTimeInput extends FormFieldBase<Date> implements Validator, OnI
   scheduledStart = input.required<Date>();
   /** When false, skip "must be after baseTime" validation (e.g. editable start time). */
   validateGreaterThanBase = input(true);
-  /** On-screen keyboard Enter key, e.g. `done` so it acts as Enter instead of moving to the next field. */
-  enterKeyHint = input<'done' | 'next' | 'enter' | undefined>(undefined);
 
   readonly innerFormat = computed(() => (this.mode() === 'elapsed' ? 'mss' : 'hms'));
   inputControl = new FormControl<number | null>(null);
