@@ -13,6 +13,17 @@ const SCANNER_RACE_FILTERS: readonly RacesPanelFilter[] = ['past', 'hideComplete
   selector: 'app-race-step',
   imports: [MatCardModule, MatChipsModule, MatIconModule, RacesPanel, RaceTitlePipe],
   template: `
+    <mat-card appearance="outlined" class="form-card">
+      <app-races-panel
+        [races]="raceSelection.raceOptions()"
+        [selectedRaceIds]="selectedRaceIds()"
+        [maxSelections]="20"
+        [availableFilters]="filters"
+        (selectedRaceIdsChange)="onSelectionChange($event)" />
+      @if (raceSelection.error()) {
+        <p class="selection-error">{{ raceSelection.error() }}</p>
+      }
+    </mat-card>
     @if (raceSelection.isLevelRatingSelection()) {
       <mat-chip-set class="selected-races" aria-label="Races on the scoring sheet">
         @for (race of raceSelection.selectedRaces(); track race.id) {
@@ -25,17 +36,6 @@ const SCANNER_RACE_FILTERS: readonly RacesPanelFilter[] = ['past', 'hideComplete
         }
       </mat-chip-set>
     }
-    <mat-card appearance="outlined" class="form-card">
-      <app-races-panel
-        [races]="raceSelection.raceOptions()"
-        [selectedRaceIds]="selectedRaceIds()"
-        [maxSelections]="20"
-        [availableFilters]="filters"
-        (selectedRaceIdsChange)="onSelectionChange($event)" />
-      @if (raceSelection.error()) {
-        <p class="selection-error">{{ raceSelection.error() }}</p>
-      }
-    </mat-card>
     <p class="selection-hint">
       Selection of multiple Level Rating races, or a single handicap or pursuit race, is supported.
     </p>
