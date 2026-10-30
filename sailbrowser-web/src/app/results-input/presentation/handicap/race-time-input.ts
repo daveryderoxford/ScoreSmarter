@@ -39,6 +39,8 @@ import { merge, of } from 'rxjs';
   `,
   styles: [`
     :host { display: block; }
+    /* Like matInput: the placeholder shows only while the label floats, so they don't overlap. */
+    :host(:not(.floating)) input::placeholder { color: transparent; }
     input {
       width: 100%;
       border: none;

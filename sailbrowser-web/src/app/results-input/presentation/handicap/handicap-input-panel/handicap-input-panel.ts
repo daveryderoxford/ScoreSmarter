@@ -35,7 +35,7 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { DurationPipe } from 'app/shared/pipes/duration.pipe';
 import { formatEntrySearchLabel, entrySearchHaystack } from 'app/boats/model/boat-display';
 import { normaliseString } from 'app/shared/utils/string-utils';
-import { firstValueFrom, startWith } from 'rxjs';
+import { firstValueFrom, map, startWith } from 'rxjs';
 import { manualRaceTableSort, ManualResultsService } from '../../../services/manual-results.service';
 import { ClubStore } from 'app/club-tenant';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
@@ -112,6 +112,9 @@ export class HandicapInputPanel {
   });
 
   readonly hasSelectedCompetitor = computed(() => this.selectedCompetitor() != null);
+
+  /** The result has been changed since the competitor was selected. */
+  readonly formDirty = toSignal(this.form.events.pipe(map(() => this.form.dirty)), { initialValue: false });
 
   readonly editResultDraft = computed((): RaceResultDraft | undefined => {
     const c = this.selectedCompetitor();
@@ -340,7 +343,13 @@ export class HandicapInputPanel {
   }
 
   private async saveCurrentSelection(clearAfterSave: boolean): Promise<boolean> {
-    if (!this.hasSelectedCompetitor() || this.form.invalid) return false;
+    if (!this.hasSelectedCompetitor()) return false;
+    // Nothing changed (e.g. "Go" on the on-screen keyboard): move on without rewriting the result.
+    if (!this.form.dirty) {
+      if (clearAfterSave) this.finishWithSelection();
+      return true;
+    }
+    if (this.form.invalid) return false;
     const { finishTime, laps, resultCode } = this.form.getRawValue();
     const competitor = this.selectedCompetitor();
     if (!competitor) return false;
@@ -366,10 +375,13 @@ export class HandicapInputPanel {
     }
 
     if (laps) this.lastEnteredLaps.set(laps);
-    if (clearAfterSave) {
-      this.selectedCompetitor.set(undefined);
-      this.searchInput()?.nativeElement.focus();
-    }
+    if (clearAfterSave) this.finishWithSelection();
     return true;
+  }
+
+  /** Clears the selection and returns to the competitor search for the next finisher. */
+  private finishWithSelection(): void {
+    this.selectedCompetitor.set(undefined);
+    this.searchInput()?.nativeElement.focus();
   }
 }
