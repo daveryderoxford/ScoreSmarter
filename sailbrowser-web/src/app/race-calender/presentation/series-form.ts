@@ -1,6 +1,7 @@
 import { Component, effect, inject, input, output, computed, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,6 +15,7 @@ import { ClubStore } from 'app/club-tenant';
 import { RaceCalendarStore } from '../services/full-race-calander';
 import { Division } from '../model/division';
 import { Series } from '../model/series';
+import { displayGroupSuggestions, distinctDisplayGroups } from '../model/series-display-group';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
 import { SeriesScoringScheme, seriesScoringSchemeDetails } from 'app/scoring/model/scoring-algotirhm';
 import { getConfigName, ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
@@ -37,6 +39,7 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatAutocompleteModule,
     MatButtonModule,
     MatCheckboxModule,
     MatIconModule,
@@ -56,6 +59,17 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
       <mat-form-field>
         <mat-label>Series Name</mat-label>
         <input matInput formControlName="name" placeholder="e.g., Spring Series">
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Group (optional)</mat-label>
+        <input matInput formControlName="displayGroup" [matAutocomplete]="groupOptions" placeholder="e.g., Opens">
+        <mat-autocomplete #groupOptions="matAutocomplete">
+          @for (group of displayGroupOptions(); track group) {
+            <mat-option [value]="group">{{ group }}</mat-option>
+          }
+        </mat-autocomplete>
+        <mat-hint>Results can be filtered by group</mat-hint>
       </mat-form-field>
 
       <mat-form-field>
@@ -292,6 +306,7 @@ export class SeriesForm {
     id: new FormControl('', { nonNullable: true }),
     seasonId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     name: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    displayGroup: new FormControl('', { nonNullable: true }),
     fleetId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     primaryHandicapScheme: new FormControl<HandicapScheme>('Level Rating', {
       nonNullable: true,
@@ -317,6 +332,13 @@ export class SeriesForm {
       map(() => this.form.invalid),
     ),
     { initialValue: this.form.invalid },
+  );
+
+  private readonly displayGroupValue = toSignal(this.form.controls.displayGroup.valueChanges, { initialValue: '' });
+
+  /** Groups already used by series in the race calendar, matching what's typed. */
+  protected readonly displayGroupOptions = computed(() =>
+    displayGroupSuggestions(distinctDisplayGroups(this.calendarStore.allSeries()), this.displayGroupValue()),
   );
 
   scoringSchemes = seriesScoringSchemeDetails;
@@ -376,6 +398,7 @@ export class SeriesForm {
       id: series.id,
       seasonId: series.seasonId,
       name: series.name,
+      displayGroup: series.displayGroup ?? '',
       fleetId: series.primaryScoringConfiguration?.fleet.id,
       primaryHandicapScheme: series.primaryScoringConfiguration?.handicapScheme || 'Level Rating',
       archived: series.archived,
@@ -563,6 +586,7 @@ export class SeriesForm {
       id: formValue.id,
       seasonId: formValue.seasonId,
       name: formValue.name,
+      displayGroup: formValue.displayGroup,
       archived: formValue.archived,
       scoringAlgorithm: formValue.scoringAlgorithm,
       entryAlgorithm: formValue.entryAlgorithm as Series['entryAlgorithm'],

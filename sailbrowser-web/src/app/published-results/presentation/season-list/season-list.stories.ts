@@ -70,3 +70,15 @@ export const RecentRaceBadge: Story = {
     seasons: recentBadgeSeasons,
   },
 };
+
+/** Series with display groups show the Group filter. */
+export const DisplayGroups: Story = {
+  args: {
+    seasons: [
+      {
+        ...recentBadgeSeasons[0],
+        series: recentBadgeSeasons[0].series.map((s, i) => ({ ...s, displayGroup: i === 0 ? 'Opens' : 'Cups' })),
+      },
+    ],
+  },
+};

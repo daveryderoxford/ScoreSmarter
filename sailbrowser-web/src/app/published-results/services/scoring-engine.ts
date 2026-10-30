@@ -48,6 +48,29 @@ export function publishedCancelledRaces(races: readonly Race[]): PublishedCancel
     .map(r => ({ raceId: r.id, index: r.index, scheduledStart: r.scheduledStart }));
 }
 
+/** The season summary entry for one published series of a calendar series. */
+export function publishedSeriesInfo(
+  series: Series,
+  publishedSeriesId: string,
+  publishedSeriesName: string,
+  config: ScoringConfiguration,
+  counts: { raceCount: number; recentRaceCount6d: number; lastPublishedRaceStart?: Date },
+): SeriesInfo {
+  return {
+    id: publishedSeriesId,
+    baseSeriesId: series.id,
+    name: publishedSeriesName,
+    ...(series.displayGroup ? { displayGroup: series.displayGroup } : {}),
+    fleetId: config.fleet.id,
+    handicapScheme: config.handicapScheme,
+    startDate: series.startDate || new Date(),
+    endDate: series.endDate || new Date(),
+    raceCount: counts.raceCount,
+    recentRaceCount6d: counts.recentRaceCount6d,
+    ...(counts.lastPublishedRaceStart ? { lastPublishedRaceStart: counts.lastPublishedRaceStart } : {}),
+  };
+}
+
 /** A published series built from a calendar series: one per scoring configuration, plus separately scored divisions. */
 export interface PublishedSeriesTarget {
   config: ScoringConfiguration;
@@ -491,20 +514,11 @@ export class ScoringEngine {
     const seasonData = updates.get(series.seasonId);
     if (!seasonData) throw new Error(`ScoringEngine: season ${series.seasonId} not loaded`);
 
-    const seriesInfo: SeriesInfo = {
-      id: publishedSeriesId,
-      baseSeriesId: series.id,
-      name: publishedSeriesName,
-      fleetId: config.fleet.id,
-      handicapScheme: config.handicapScheme,
-      startDate: series.startDate || new Date(),
-      endDate: series.endDate || new Date(),
-      raceCount: raceCount,
+    const seriesInfo = publishedSeriesInfo(series, publishedSeriesId, publishedSeriesName, config, {
+      raceCount,
       recentRaceCount6d,
-    };
-    if (lastPublishedRaceStart) {
-      seriesInfo.lastPublishedRaceStart = lastPublishedRaceStart;
-    }
+      lastPublishedRaceStart,
+    });
 
     const existingIndex = seasonData.series.findIndex(s => s.id === publishedSeriesId);
     if (existingIndex === -1) {

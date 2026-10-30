@@ -7,6 +7,8 @@ export interface Series {
    id: string;
    seasonId: string;
    name: string;
+   /** Free text grouping series in lists, e.g. "Opens" or "Cups"; results can be filtered by it. */
+   displayGroup?: string;
    startDate?: Date | null;
    endDate?: Date | null;
    archived: boolean;
