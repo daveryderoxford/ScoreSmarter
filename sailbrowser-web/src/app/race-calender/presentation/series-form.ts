@@ -140,6 +140,7 @@ import { DialogsService } from 'app/shared/dialogs/dialogs.service';
                     <mat-option [value]="fleet.id">{{ getFleetName(fleet) }}</mat-option>
                   }
                 </mat-select>
+                <mat-error>Choose a fleet, or remove this scoring</mat-error>
               </mat-form-field>
 
               @if (showSecondaryHandicap(i)) {
@@ -407,6 +408,8 @@ export class SeriesForm {
     });
     this.form.markAsPristine();
     this.form.markAsUntouched();
+    // Show what needs fixing straight away; otherwise Save is disabled with no visible reason.
+    if (this.form.invalid) this.form.markAllAsTouched();
   }
 
   async editDiscardSchedule(): Promise<void> {
@@ -500,10 +503,15 @@ export class SeriesForm {
     return this.getAvailableSchemes(this.secondaryConfigs.at(index).get('fleetId')?.value);
   }
 
+  private offeredFleetId(fleetId: string | undefined): string {
+    return fleetId && this.fleets().some(f => f.id === fleetId) ? fleetId : '';
+  }
+
   addSecondaryConfig(config?: ScoringConfiguration) {
     const group = new FormGroup({
       id: new FormControl(config?.id || crypto.randomUUID(), { nonNullable: true, validators: [Validators.required] }),
-      fleetId: new FormControl(config?.fleet?.id || '', { nonNullable: true, validators: [Validators.required] }),
+      // A fleet the club no longer has loads empty, so the row must be fixed before saving.
+      fleetId: new FormControl(this.offeredFleetId(config?.fleet?.id), { nonNullable: true, validators: [Validators.required] }),
       handicapScheme: new FormControl<HandicapScheme>(config?.handicapScheme || 'Level Rating', {
         nonNullable: true,
         validators: [Validators.required],
