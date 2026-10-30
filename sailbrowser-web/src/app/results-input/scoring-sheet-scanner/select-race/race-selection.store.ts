@@ -4,12 +4,30 @@ import { Race } from 'app/race-calender/model/race';
 import { CurrentRaces } from '../../services/current-races-store';
 
 /**
+ * The selection after the race list changes from `previousIds` to `nextIds`. A handicap
+ * or pursuit sheet is scanned for one race, so adding one selects just that race. A
+ * Level Rating sheet may hold several races, so adding a Level Rating race keeps the
+ * other Level Rating races and drops any other type.
+ */
+export function scanRaceSelection(
+  previousIds: readonly string[],
+  nextIds: readonly string[],
+  races: readonly Pick<Race, 'id' | 'type'>[],
+): string[] {
+  const next = [...new Set(nextIds.filter(Boolean))];
+  const added = next.filter(id => !previousIds.includes(id));
+  const lastAdded = added.at(-1);
+  if (!lastAdded) return next;
+  const isLevelRating = (id: string) => races.find(r => r.id === id)?.type === 'Level Rating';
+  return isLevelRating(lastAdded) ? next.filter(isLevelRating) : [lastAdded];
+}
+
+/**
  * Area 1 — owns selected race(s) for the scanner flow.
  * Container-scoped; provided by the scanner container so all steps share one
  * instance and state resets when the scanner is left.
  *
- * Any number of races may be selected for both Level Rating and handicap scans
- * (`races` is always populated). Handicap multi-race parsing may come later.
+ * One handicap or pursuit race, or several Level Rating races (see `scanRaceSelection`).
  */
 @Injectable()
 export class ScanSelectedRace {
@@ -41,7 +59,7 @@ export class ScanSelectedRace {
   });
 
   selectMany(raceIds: string[]): void {
-    const unique = [...new Set(raceIds.filter(Boolean))];
+    const unique = scanRaceSelection(this._selectedRaceIds(), raceIds, this.raceCalendarStore.allRaces());
     this.error.set(null);
     this._selectedRaceIds.set(unique);
     for (const id of unique) {

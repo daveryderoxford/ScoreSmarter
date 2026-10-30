@@ -2,6 +2,8 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
+import { RaceCalendarStore } from 'app/race-calender';
+import type { Race } from 'app/race-calender/model/race';
 import { CameraCaptureDialog } from '../../capture/camera-capture-dialog/camera-capture-dialog';
 import {
   AcquisitionEvent,
@@ -22,6 +24,11 @@ import { firstValueFrom } from 'rxjs';
 import { ScanRunRequest } from '../model/scan-model';
 import { ScanSelectedRace } from '../select-race/race-selection.store';
 
+/** Selected races not yet linked to the sheet image at `storagePath`. */
+export function racesToLinkToSheet(races: readonly Race[], storagePath: string): Race[] {
+  return races.filter(r => (r.resultsSheetImage?.trim() ?? '') !== storagePath);
+}
+
 interface CameraCaptureResult {
   base64: string;
   preview: string;
@@ -39,6 +46,7 @@ export class SheetCaptureStore {
   private readonly capture = inject(ResultsSheetCaptureService);
   private readonly dialog = inject(MatDialog);
   private readonly clubTenant = inject(ClubTenant);
+  private readonly raceCalendar = inject(RaceCalendarStore);
 
   private readonly captureImage = signal<CaptureImage | null>(null);
   /** User chose "Capture new image" instead of the race's stored sheet for this visit. */
@@ -161,13 +169,17 @@ export class SheetCaptureStore {
     this.captureImage.set(null);
   }
 
-  /** Upload inline captures to the race's canonical storage path when confirming. */
+  /**
+   * Upload inline captures to the race's canonical storage path when confirming, and link
+   * the sheet image to every selected race (a Level Rating sheet may hold several).
+   */
   async persistIfNeeded(): Promise<{ storagePath: string } | null> {
     const img = this.captureImage();
     const raceId = this.raceSelection.selectedRaceId();
     if (!img || !raceId) return null;
 
     if (img.kind === 'storagePath') {
+      await this.linkSheetImageToRaces(img.path);
       return { storagePath: img.path };
     }
 
@@ -179,7 +191,19 @@ export class SheetCaptureStore {
     });
     this.dismissedStoredRaceSheet.set(false);
     this.captureImage.set({ kind: 'storagePath', path: storagePath });
+    await this.linkSheetImageToRaces(storagePath);
     return { storagePath };
+  }
+
+  /** Points the selected races at the stored sheet image; a failure doesn't stop the scan. */
+  private async linkSheetImageToRaces(storagePath: string): Promise<void> {
+    const races = racesToLinkToSheet(this.raceSelection.selectedRaces(), storagePath);
+    if (races.length === 0) return;
+    try {
+      await this.raceCalendar.updateRaces(races.map(r => ({ id: r.id, data: { resultsSheetImage: storagePath } })));
+    } catch (error: unknown) {
+      console.error('SheetCaptureStore: linking the sheet image to the selected races failed', error);
+    }
   }
 
   toScanRunFields(): Pick<ScanRunRequest, 'useStoredRaceSheet' | 'imageBase64' | 'imageMimeType'> {

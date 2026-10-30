@@ -20,6 +20,12 @@
    display: block;
 }
 
+.selected-races {
+   display: block;
+   max-width: 500px;
+   margin-top: 12px;
+}
+
 .selection-error {
    color: var(--mat-sys-error);
    font-size: 0.875rem;
@@ -29,5 +35,6 @@
 .selection-hint {
    color: var(--mat-sys-on-surface-variant);
    font-size: 0.8125rem;
-   margin: 0;
+   max-width: 500px;
+   margin: 0 0 12px;
 }
