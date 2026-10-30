@@ -50,14 +50,16 @@ const race = {
 
 describe('HandicapInputPanel competitor switch', () => {
   let promptUnsavedChanges: ReturnType<typeof vi.fn>;
+  let recordResult: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     promptUnsavedChanges = vi.fn(async () => 'discard');
+    recordResult = vi.fn(async () => undefined);
     TestBed.configureTestingModule({
       imports: [HandicapInputPanel],
       providers: [
         { provide: DialogsService, useValue: { promptUnsavedChanges } },
-        { provide: ManualResultsService, useValue: { calculateStats: () => null } },
+        { provide: ManualResultsService, useValue: { calculateStats: () => null, recordResult } },
         { provide: ClubStore, useValue: { club: () => ({ classes: [] }) } },
         { provide: RaceCompetitorEditService, useValue: {} },
         { provide: MatSnackBar, useValue: { open: () => undefined } },
@@ -120,5 +122,39 @@ describe('HandicapInputPanel competitor switch', () => {
 
     expect(promptUnsavedChanges).toHaveBeenCalledOnce();
     expect(panel.selectedCompetitor()?.id).toBe('b');
+  });
+
+  it('moves on without rewriting the result when Done is pressed with nothing changed', async () => {
+    const fixture = render();
+    const panel = fixture.componentInstance;
+    const laps = lapsInput(fixture.nativeElement as HTMLElement);
+    expect(laps.getAttribute('enterkeyhint')).toBe('done');
+
+    laps.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await fixture.whenStable();
+
+    expect(recordResult).not.toHaveBeenCalled();
+    expect(panel.selectedCompetitor()).toBeUndefined();
+  });
+
+  it('saves when Done is pressed after a change, and enables Save only then', async () => {
+    const fixture = render();
+    const panel = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    const saveButton = () => root.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(saveButton().disabled).toBe(true);
+
+    const laps = lapsInput(root);
+    laps.value = '4';
+    laps.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+    expect(saveButton().disabled).toBe(false);
+
+    laps.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await fixture.whenStable();
+
+    expect(recordResult).toHaveBeenCalledOnce();
+    expect(recordResult.mock.calls[0][2]).toMatchObject({ laps: 4 });
+    expect(panel.selectedCompetitor()).toBeUndefined();
   });
 });
