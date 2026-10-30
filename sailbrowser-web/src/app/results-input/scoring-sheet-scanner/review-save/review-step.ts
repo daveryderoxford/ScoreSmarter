@@ -87,6 +87,24 @@ export function matchedScanText(
   return equal ? null : reportedTrimmed;
 }
 
+/**
+ * Icon for a row that needs the user to act; undefined for rows that simply match a race
+ * entry or will be entered from a series entry, a boat or a fixed row.
+ */
+export function scanRowStatusIcon(vm: Pick<ScanGridRowVm, 'status' | 'lowConfidence' | 'nearMissSail'>): string | undefined {
+  switch (vm.status) {
+    case 'matched':
+    case 'new-entry':
+      return vm.nearMissSail || vm.lowConfidence ? 'warning' : undefined;
+    case 'choose-helm':
+      return 'person_search';
+    case 'conflict':
+      return 'error';
+    case 'no-match':
+      return 'help';
+  }
+}
+
 export interface AcceptanceChangedEvent {
   rowIndex: number;
   accepted: boolean;
@@ -156,19 +174,8 @@ export class ReviewStep {
     this.review.setNotOnSheetAction(competitorId, value as NotOnSheetAction);
   }
 
-  statusIcon(vm: ScanGridRowVm): string {
-    switch (vm.status) {
-      case 'matched':
-        return vm.nearMissSail || vm.lowConfidence ? 'warning' : 'check_circle';
-      case 'new-entry':
-        return vm.nearMissSail || vm.lowConfidence ? 'warning' : 'add_circle';
-      case 'choose-helm':
-        return 'person_search';
-      case 'conflict':
-        return 'error';
-      case 'no-match':
-        return 'help';
-    }
+  statusIcon(vm: ScanGridRowVm): string | undefined {
+    return scanRowStatusIcon(vm);
   }
 
   statusTone(vm: ScanGridRowVm): 'ok' | 'warn' | 'error' {
