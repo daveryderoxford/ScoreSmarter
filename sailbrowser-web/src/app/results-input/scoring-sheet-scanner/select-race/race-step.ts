@@ -13,6 +13,9 @@ const SCANNER_RACE_FILTERS: readonly RacesPanelFilter[] = ['past', 'hideComplete
   selector: 'app-race-step',
   imports: [MatCardModule, MatChipsModule, MatIconModule, RacesPanel, RaceTitlePipe],
   template: `
+    <p class="selection-hint">
+      Selection of multiple Level Rating races, or a single Handicap or Pursuit race, is supported.
+    </p>
     <mat-card appearance="outlined" class="form-card">
       <app-races-panel
         [races]="raceSelection.raceOptions()"
@@ -36,9 +39,6 @@ const SCANNER_RACE_FILTERS: readonly RacesPanelFilter[] = ['past', 'hideComplete
         }
       </mat-chip-set>
     }
-    <p class="selection-hint">
-      Selection of multiple Level Rating races, or a single handicap or pursuit race, is supported.
-    </p>
   `,
   styleUrl: './race-step.scss',
 })
