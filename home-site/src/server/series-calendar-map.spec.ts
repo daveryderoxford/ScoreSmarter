@@ -86,6 +86,25 @@ describe('series-calendar-map', () => {
     });
   });
 
+  it('mapCalendarSeries includes the display group only when set', () => {
+    const raw = {
+      name: 'Spring',
+      startDate: new Date('2026-03-01T10:00:00.000Z'),
+      endDate: new Date('2026-06-01T10:00:00.000Z'),
+      scoringAlgorithm: 'long',
+      ...primaryConfig('f1'),
+    };
+    expect(
+      mapCalendarSeries('s1', {...raw, displayGroup: ' Opens '}, 'ibrsc', {includeRaces: false})?.displayGroup,
+    ).toBe('Opens');
+    expect(mapCalendarSeries('s1', {...raw, displayGroup: ''}, 'ibrsc', {includeRaces: false})).not.toHaveProperty(
+      'displayGroup',
+    );
+    expect(mapCalendarSeries('s1', {...raw, displayGroup: null}, 'ibrsc', {includeRaces: false})).not.toHaveProperty(
+      'displayGroup',
+    );
+  });
+
   it('mapCalendarSeries includes races only when requested', () => {
     const raw = {
       name: 'Spring',

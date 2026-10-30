@@ -52,6 +52,12 @@ describe('series and series entry normalisation on save', () => {
     });
   });
 
+  it('trims the series display group and clears an empty one', () => {
+    expect(normaliseSeriesNames({ displayGroup: '  Club   Opens ' }).displayGroup).toBe('Club Opens');
+    expect(normaliseSeriesNames({ displayGroup: '  ' }).displayGroup).toBeNull();
+    expect(normaliseSeriesNames({ name: 'Spring' })).not.toHaveProperty('displayGroup');
+  });
+
   it('normalises series entry names and leaves cleared fields alone', () => {
     expect(
       tidySeriesEntryStrings({ helm: ' Jane   Smith ', crew: null, club: ' IBRSC ', boatName: ' Sea  Dog', sailNumber: 'gbr 123' }),

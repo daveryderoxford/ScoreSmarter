@@ -64,6 +64,7 @@ import { StatusPill } from './status-pill/status-pill';
                   [activated]="selectedSeriesId() === series.id">
                   <span matListItemTitle>{{series.name}} ({{this.getSeasonName(series.seasonId)}})</span>
                   <span matListItemLine>
+                      @if (series.displayGroup) { {{series.displayGroup}} · }
                       {{getFleetName(series.primaryScoringConfiguration.fleet.id)}}
                       @if(series.startDate) { - {{series.startDate | date}} }
                       <app-status-pill class="series-status" [status]="statusBySeries().get(series.id) ?? 'Future'" />
@@ -140,6 +141,7 @@ export class SeriesList {
     return this.rcs.allSeries().filter((s: Series) =>
       !term
       || normaliseString(s.name).includes(term)
+      || normaliseString(s.displayGroup).includes(term)
       || normaliseString(this.getSeasonName(s.seasonId)).includes(term));
   });
 

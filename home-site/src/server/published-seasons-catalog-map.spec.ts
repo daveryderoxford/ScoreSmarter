@@ -73,6 +73,19 @@ describe('published-seasons-catalog-map', () => {
     });
   });
 
+  it('mapSeriesInfo includes the display group only when set', () => {
+    const raw = {
+      id: 'abc123',
+      name: 'Spring Series',
+      fleetId: 'fleet1',
+      startDate: new Date('2026-03-01T00:00:00.000Z'),
+      endDate: new Date('2026-06-01T00:00:00.000Z'),
+    };
+    expect(mapSeriesInfo({...raw, displayGroup: 'Opens'}, 'ibrsc')?.displayGroup).toBe('Opens');
+    expect(mapSeriesInfo({...raw, displayGroup: '  '}, 'ibrsc')).not.toHaveProperty('displayGroup');
+    expect(mapSeriesInfo(raw, 'ibrsc')).not.toHaveProperty('displayGroup');
+  });
+
   it('mapSeriesInfo omits baseSeriesId when equal to id', () => {
     const mapped = mapSeriesInfo(
       {

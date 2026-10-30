@@ -10,6 +10,9 @@
         <app-status-pill [status]="status()" />
       </mat-card-title>
       <mat-card-subtitle class="subtitle">
+        @if (s.displayGroup) {
+          <span>{{ s.displayGroup }}</span>
+        }
         @if (fleet()) {
           <span>{{getFleetName(fleet()!)}}</span>
         }

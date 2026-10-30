@@ -1,5 +1,6 @@
 import {
   buildSeriesResultsUrl,
+  optionalText,
   toIsoString,
 } from './published-seasons-catalog-map';
 
@@ -31,6 +32,8 @@ export interface CalendarRace {
 export interface CalendarSeries {
   seriesId: string;
   name: string;
+  /** The series' display group (e.g. "Opens"); absent when it has none. */
+  displayGroup?: string;
   fleetId: string;
   startDate: string;
   endDate: string;
@@ -118,6 +121,11 @@ export function mapCalendarSeries(
     scoringAlgorithm,
     resultsUrl: buildSeriesResultsUrl(clubId, seriesId),
   };
+
+  const displayGroup = optionalText(raw['displayGroup']);
+  if (displayGroup) {
+    series.displayGroup = displayGroup;
+  }
 
   if (options.includeRaces) {
     series.races = options.races ?? [];

@@ -6,6 +6,8 @@ export interface CatalogSeries {
   /** Present only when this entry is a secondary series (differs from id). */
   baseSeriesId?: string;
   name: string;
+  /** The series' display group (e.g. "Opens"); absent when it has none. */
+  displayGroup?: string;
   fleetId: string;
   startDate: string;
   endDate: string;
@@ -55,6 +57,11 @@ export function parseBooleanQuery(value: unknown): boolean {
 /** Canonical deep link to a published series results page. */
 export function buildSeriesResultsUrl(clubId: string, seriesId: string): string {
   return `https://${clubId}${RESULTS_VIEWER_HOST_SUFFIX}/results/viewer/${encodeURIComponent(seriesId)}`;
+}
+
+/** A trimmed non-empty string, or undefined. */
+export function optionalText(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
 }
 
 /** Convert Firestore Timestamp, Date, or ISO-ish value to an ISO string. */
@@ -125,6 +132,10 @@ export function mapSeriesInfo(
     baseSeriesId !== raw['id']
   ) {
     series.baseSeriesId = baseSeriesId;
+  }
+  const displayGroup = optionalText(raw['displayGroup']);
+  if (displayGroup) {
+    series.displayGroup = displayGroup;
   }
   const lastPublished = toIsoString(raw['lastPublishedRaceStart']);
   if (lastPublished) {

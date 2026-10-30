@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
-import { deleteDoc, getDocs, query, setDoc, where, writeBatch, Firestore } from '@angular/fire/firestore';
+import { deleteDoc, getDoc, getDocs, query, setDoc, where, writeBatch, Firestore } from '@angular/fire/firestore';
+import { PublishedSeriesMetadata } from 'app/published-results/services/published-series-metadata';
 import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, firestoreWrite, withTimeout } from 'app/shared/utils/with-timeout';
 import { Race } from '../model/race';
 import { Series } from '../model/series';
@@ -19,6 +20,7 @@ export interface RaceSeriesDetails {
 export class RaceCalendarStoreBase {
   protected readonly firestore = inject(Firestore);
   private readonly tenant = inject(FirestoreTenantService);
+  private readonly publishedMetadata = inject(PublishedSeriesMetadata);
 
   protected ref = (id: string) => this.tenant.docRef<Series>('series', id);
   protected seriesCollection = this.tenant.collectionRef<Series>('series');
@@ -51,6 +53,19 @@ export class RaceCalendarStoreBase {
     }
 
     await firestoreWrite(setDoc(this.ref(id), data, { merge: true }), 'Updating series');
+
+    if ('displayGroup' in data) await this.publishMetadata(id, data);
+  }
+
+  /** Shows a changed display group in published results straight away; a failure doesn't fail the save. */
+  private async publishMetadata(id: string, data: Partial<Series>): Promise<void> {
+    try {
+      const seasonId = data.seasonId ?? (await getDoc(this.ref(id))).data()?.seasonId;
+      if (!seasonId) return;
+      await this.publishedMetadata.publish({ id, seasonId, displayGroup: data.displayGroup ?? undefined });
+    } catch (error: unknown) {
+      console.error('RaceCalendarStore: updating published series metadata failed', error);
+    }
   }
 
   async deleteSeries(id: string) {
@@ -86,10 +101,14 @@ export class RaceCalendarStoreBase {
   }
 }
 
-/** Series and division names are stored with whitespace normalised. */
+/** Series and division names and the display group are stored with whitespace normalised. */
 export function normaliseSeriesNames(series: Partial<Series>): Partial<Series> {
   const out: Partial<Series> = { ...series };
   if (typeof out.name === 'string') out.name = normaliseWhitespace(out.name);
+  if ('displayGroup' in out) {
+    // null clears the field on merge writes.
+    out.displayGroup = normaliseWhitespace(out.displayGroup ?? '') || (null as unknown as undefined);
+  }
   if (out.divisions) out.divisions = out.divisions.map(d => ({ ...d, name: normaliseWhitespace(d.name) }));
   return out;
 }

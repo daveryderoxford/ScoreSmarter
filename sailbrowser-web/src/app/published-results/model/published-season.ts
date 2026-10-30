@@ -5,6 +5,8 @@ export interface SeriesInfo {
    /** Calendar series id. Equal to `id` for the primary published series; secondary scoring and division series differ. */
    baseSeriesId?: string;
    name: string;
+   /** The calendar series' display group, e.g. "Opens". */
+   displayGroup?: string;
    fleetId: string;
    /** Scheme of the scoring configuration it was published with. Absent on series published before this field was added. */
    handicapScheme?: HandicapScheme;

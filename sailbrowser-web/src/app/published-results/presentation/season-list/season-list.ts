@@ -2,18 +2,20 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import { MatIconButton } from '@angular/material/button';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
+import { MatSelectModule } from '@angular/material/select';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { PublishedSeason } from 'app/published-results';
-import { FleetSelect } from 'app/shared/components/fleet-select';
+import { distinctDisplayGroups } from 'app/race-calender/model/series-display-group';
 import { startOfDay, subDays } from 'date-fns';
 
 type SeriesInfo = PublishedSeason['series'][number];
 
 /**
- * Displays published series grouped by season, with optional fleet filter and
- * a 6-day recent-races badge.
+ * Displays published series grouped by season, with a filter by series display group
+ * (shown when any series has one) and a 6-day recent-races badge.
  */
 @Component({
   selector: 'app-season-list',
@@ -25,7 +27,8 @@ type SeriesInfo = PublishedSeason['series'][number];
     MatListModule,
     RouterLink,
     RouterLinkActive,
-    FleetSelect,
+    MatFormFieldModule,
+    MatSelectModule,
   ],
   templateUrl: './season-list.html',
   styles: `
@@ -87,13 +90,22 @@ export class SeasonList {
   /** Shown in the wide split view so the list pane can be collapsed. */
   showCollapseButton = input(false);
 
-  /** Fleet filter for published series list. Empty means "all fleets". */
-  protected fleetFilter = signal('');
+  /** Display group to show. Empty means all series. */
+  protected displayGroupFilter = signal('');
 
   /** All primary series across seasons */
   private allSeries = computed(() =>
     this.seasons().flatMap(s => s.series).filter(s => !s.baseSeriesId || s.id === s.baseSeriesId),
   );
+
+  /** Display groups of the published series, for the filter. */
+  protected displayGroups = computed(() => distinctDisplayGroups(this.allSeries()));
+
+  /** The selected group, or empty when it's no longer one of the groups. */
+  private selectedDisplayGroup = computed(() => {
+    const selected = this.displayGroupFilter();
+    return this.displayGroups().includes(selected) ? selected : '';
+  });
 
   /**
    * Ordering key: prefer the scheduled start of the latest published race in
@@ -104,19 +116,13 @@ export class SeasonList {
   }
 
   protected filteredSeasons = computed(() => {
-    const selectedFleetId = this.fleetFilter();
+    const group = this.selectedDisplayGroup();
 
     return this.seasons().map(season => ({
       ...season,
       series: season.series
         .filter(s => !s.baseSeriesId || s.id === s.baseSeriesId)
-        .filter(primarySeries => {
-          if (!selectedFleetId) return true;
-          const alternatives = season.series.filter(
-            s => s.baseSeriesId === primarySeries.id || s.id === primarySeries.id,
-          );
-          return alternatives.some(s => s.fleetId === selectedFleetId);
-        })
+        .filter(primarySeries => !group || primarySeries.displayGroup === group)
         .sort((a, b) => this.seriesOrderDate(b).getTime() - this.seriesOrderDate(a).getTime()),
     }));
   });
