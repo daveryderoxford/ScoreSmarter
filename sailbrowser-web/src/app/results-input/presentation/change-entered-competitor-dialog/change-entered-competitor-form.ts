@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   input,
   OnInit,
@@ -20,6 +21,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ClubStore } from 'app/club-tenant';
+import { ADD_CLASS_OPTION, AddClassLauncher } from 'app/club-tenant/presentation/add-class-dialog';
 import { normalizeSailNumber, sailNumberValidator } from 'app/boats/model/sail-number';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
 import { SailNumberInput } from 'app/boats/presentation/sail-number-input';
@@ -86,9 +88,17 @@ export class ChangeEnteredCompetitorForm implements OnInit {
   readonly compareBoatClass = (a: string, b: string): boolean =>
     (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase();
 
+  protected readonly addClass = inject(AddClassLauncher);
+  protected readonly addClassOption = ADD_CLASS_OPTION;
+
   constructor() {
     this.form.controls.boatClass.valueChanges.subscribe(v => {
       this.boatClassValue.set(v ?? '');
+    });
+    this.addClass.attachUntilDestroyed(this.form.controls.boatClass, inject(DestroyRef), () => {
+      const entered = this.competitor().boatClass.trim();
+      const known = this.clubStore.club().classes.some(c => c.name.toLowerCase() === entered.toLowerCase());
+      return known ? undefined : entered;
     });
   }
 

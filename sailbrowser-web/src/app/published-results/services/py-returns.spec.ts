@@ -107,7 +107,7 @@ describe('buildPyReturn', () => {
     expect(build.ret.series.map(s => s.eventName)).toEqual(['Summer (2025)', 'Summer (2026)']);
   });
 
-  it('reports non-RYA and unlinked classes, and leaves their boats out', () => {
+  it('reports local classes, including older classes never linked to the catalogue, and leaves their boats out', () => {
     const build = buildPyReturn(
       [race('r1', [...goodResults(), result('Mystery', 3000)])],
       clubClasses,
@@ -115,7 +115,7 @@ describe('buildPyReturn', () => {
     );
 
     expect(build.classes.find(c => c.className === 'Dory')?.status).toBe('non-rya');
-    expect(build.classes.find(c => c.className === 'Mystery')?.status).toBe('unlinked');
+    expect(build.classes.find(c => c.className === 'Mystery')?.status).toBe('non-rya');
     expect(build.classes.find(c => c.className === 'ILCA 7')).toMatchObject({ status: 'rya', entries: 2 });
     expect(build.issues.some(i => i.includes('Mystery'))).toBe(true);
   });
@@ -176,6 +176,13 @@ describe('PY return helpers', () => {
     expect(findClubClass('RS Vareo', classes)?.id).toBe('RS Vaero');
     expect(findClubClass('RS Vaero', classes)?.name).toBe('RS Vareo');
     expect(findClubClass('rs vareo', classes)).toBeUndefined();
+  });
+
+  it('finds a renamed class by a former name', () => {
+    const classes: BoatClass[] = [
+      { id: 'rya-311', name: 'RS Aero 5', kind: 'rya', catalogueId: 311, handicaps: [], formerNames: ['Aero 5'] },
+    ];
+    expect(findClubClass('Aero 5', classes)?.id).toBe('rya-311');
   });
 
   it('strips symbols from sail numbers', () => {

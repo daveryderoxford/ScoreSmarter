@@ -26,6 +26,19 @@ describe('parseRyaClassList', () => {
   it('reports a file without an RYA Class ID column', () => {
     expect(parseRyaClassList('Name,PN\nFoo,1000').errors).toHaveLength(1);
   });
+
+  it('reads PN columns headed with a year', () => {
+    for (const header of ['PN 2026', '2026 Number', 'RYA PN', 'Portsmouth Number']) {
+      const { rows, errors } = parseRyaClassList(`RYA Class ID,Class Name,${header}\n303,RS200,1053`);
+      expect(errors, header).toEqual([]);
+      expect(rows[0].pn, header).toBe(1053);
+    }
+  });
+
+  it('warns when there is no PN column or it has no PNs', () => {
+    expect(parseRyaClassList('RYA Class ID,Class Name,Crew\n303,RS200,2').errors[0]).toMatch(/No PN column/);
+    expect(parseRyaClassList('RYA Class ID,Class Name,PN\n303,RS200,').errors[0]).toMatch(/has no PNs/);
+  });
 });
 
 describe('cleanRyaClassName', () => {

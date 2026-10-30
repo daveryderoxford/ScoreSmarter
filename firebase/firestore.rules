@@ -42,6 +42,29 @@ service cloud.firestore {
       return isClubAdmin(clubId) || (isAuthenticated() && getClubRole(clubId) == 'race-officer');
     }
 
+    function isKiosk() {
+      return request.auth.token.get('kiosk', false) == true;
+    }
+
+    function isValidNewClubClass(c) {
+      return c.keys().hasAll(['id', 'name', 'kind', 'handicaps'])
+        && c.keys().hasOnly(['id', 'name', 'kind', 'handicaps', 'isSinglehander', 'catalogueId', 'pyOverridden'])
+        && c.id is string && c.id.size() > 0
+        && c.name is string && c.name.size() > 0
+        && c.kind in ['rya', 'local']
+        && c.handicaps is list;
+    }
+
+    // Appends one class to the end of the club's class list and changes nothing else.
+    function isClubClassAppend() {
+      let before = resource.data.get('classes', []);
+      let after = request.resource.data.get('classes', []);
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['classes'])
+        && after.size() == before.size() + 1
+        && after[0:before.size()] == before
+        && isValidNewClubClass(after[before.size()]);
+    }
+
     function isAuthorisedUser(clubId) {
       return isRO(clubId) || (isAuthenticated() && getClubRole(clubId) != null);
     }
@@ -231,6 +254,8 @@ service cloud.firestore {
     match /clubs/{clubId} {
       allow read: if true;
       allow write: if isClubAdmin(clubId);
+      // Race officers can add a missing class (e.g. while entering a boat) but not edit classes.
+      allow update: if isRO(clubId) && !isKiosk() && isClubClassAppend();
 
       match /boats/{boatId} {
         allow read: if true;

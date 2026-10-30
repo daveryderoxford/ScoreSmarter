@@ -1,61 +1,30 @@
 <form (ngSubmit)="submit()" [formGroup]="form" novalidate>
 
-  <mat-form-field>
-    <mat-label>{{ boatClass() ? 'Catalogue class' : 'Add from catalogue' }}</mat-label>
-    <mat-icon matPrefix>search</mat-icon>
-    <input
-      matInput
-      [matAutocomplete]="catalogueAuto"
-      [value]="catalogueSearch()"
-      (input)="catalogueSearch.set($any($event.target).value)"
-      placeholder="Class name or RYA number">
-    <mat-autocomplete #catalogueAuto="matAutocomplete" (optionSelected)="onCatalogueSelected($event)">
-      @for (entry of catalogueOptions(); track entry.catalogueId) {
-        <mat-option [value]="entry.catalogueId">{{ catalogClassLabel(entry) }}</mat-option>
-      }
-    </mat-autocomplete>
-    @if (!boatClass()) {
-      <mat-hint>Fills in the name, single-hander and PY number</mat-hint>
-    }
-  </mat-form-field>
+  @if (isRya()) {
+    <p class="rya-detail">{{ ryaDetail() }}@if (boatClass().isSinglehander) { · Single-hander }</p>
 
-  @if (linkedEntry(); as entry) {
-    <div class="catalogue-hint">
-      <mat-icon inline>link</mat-icon>
-      <span>Linked to {{ catalogClassLabel(entry) }}@if (entry.rya) { · RYA name: {{ entry.rya.name }} }</span>
-      <button matButton type="button" (click)="unlinkCatalogClass()">Unlink</button>
-    </div>
-  } @else if (suggestion(); as entry) {
-    <div class="catalogue-hint">
-      <span>Not linked. Suggested: {{ catalogClassLabel(entry) }}</span>
-      <button matButton type="button" (click)="linkCatalogClass(entry)">Link</button>
-    </div>
-  } @else if (boatClass()) {
-    <div class="catalogue-hint">Not linked to the class catalogue (needed for RYA PY returns).</div>
+    @if (ryaPn() !== undefined && classSchemes().includes('PY')) {
+      <mat-radio-group class="py-choice" formControlName="pyChoice" aria-label="PY">
+        <mat-radio-button value="rya">Use RYA PY ({{ ryaPn() }})</mat-radio-button>
+        <mat-radio-button value="override">Override</mat-radio-button>
+      </mat-radio-group>
+    }
+  } @else {
+    <mat-form-field>
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name">
+      <mat-error>Class name is required</mat-error>
+    </mat-form-field>
   }
 
-  <mat-form-field>
-    <mat-label>Name</mat-label>
-    <input matInput formControlName="name">
-    @if (linkedEntry()) {
-      <mat-hint>Set by the class catalogue</mat-hint>
-    }
-    <mat-error>Class name is required</mat-error>
-  </mat-form-field>
+  <app-handicap-scheme-inputs [form]="form" [schemes]="visibleSchemes()" />
 
-  @if (catalogueNameDiffers()) {
-    <div class="catalogue-hint">
-      <span>Catalogue name is "{{ linkedEntry()!.name }}"</span>
-      <button matButton type="button" (click)="useCatalogueName()">Use catalogue name</button>
-    </div>
+  @if (!isRya()) {
+    <mat-checkbox formControlName="isSinglehander">Single-hander</mat-checkbox>
   }
-
-  <app-handicap-scheme-inputs [form]="form" [schemes]="classSchemes()" />
-
-  <mat-checkbox formControlName="isSinglehander">Single-hander</mat-checkbox>
 
   <div class="button-row">
-    <app-submit-button [disabled]="form.invalid || !form.dirty" [busy]="busy()">
+    <app-submit-button [disabled]="formInvalid() || !form.dirty" [busy]="busy()">
       Save
     </app-submit-button>
   </div>

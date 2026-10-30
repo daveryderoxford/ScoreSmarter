@@ -38,6 +38,12 @@ export function isRyaClass(entry: Pick<CatalogClass, 'catalogueId'>): boolean {
   return entry.catalogueId > 0;
 }
 
+/** The entry's RYA PN; stored lists can hold `null` for a missing PN. */
+export function ryaPn(entry: Pick<CatalogClass, 'rya'> | undefined): number | undefined {
+  const pn = entry?.rya?.pn;
+  return typeof pn === 'number' && pn > 0 ? pn : undefined;
+}
+
 /** Case, spacing and punctuation insensitive key for matching class names. */
 export function normaliseClassName(name: string): string {
   return name.toUpperCase().replace(/[^A-Z0-9]+/g, '');
@@ -74,7 +80,7 @@ export function catalogClassPrefill(entry: CatalogClass): CatalogClassPrefill {
     catalogueId: entry.catalogueId,
     name: entry.name,
     isSinglehander: entry.crew === 1,
-    ...(entry.rya?.pn ? { pyHandicap: entry.rya.pn } : {}),
+    ...(ryaPn(entry) ? { pyHandicap: ryaPn(entry) } : {}),
   };
 }
 

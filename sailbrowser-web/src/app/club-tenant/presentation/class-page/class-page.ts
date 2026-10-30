@@ -20,11 +20,14 @@ import { ClubStore } from '../../services/club-store';
 import { LoadingCentered } from "app/shared/components/loading-centered";
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BoatClass } from '../../model/boat-class';
+import { classKind } from '../../model/club-class';
 import { getHandicapValue } from 'app/scoring/model/handicap';
 import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { ClassesCsvService } from '../../services/classes-csv.service';
+import { ClassCatalogueStore } from '../../services/class-catalogue-store';
 
 import { ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
+import { ApplyRyaPyDialog } from './apply-rya-py-dialog';
 import {
   SyncSeriesHandicapsDialog,
   type SyncSeriesHandicapsDialogData,
@@ -61,6 +64,21 @@ import {
     .right-justify {
       flex: 0 0 auto;
     }
+
+    .kind {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 0 6px;
+      border-radius: 4px;
+      font: var(--mat-sys-label-small);
+      background: var(--mat-sys-primary-container);
+      color: var(--mat-sys-on-primary-container);
+    }
+
+    .kind.local {
+      background: var(--mat-sys-surface-container-highest);
+      color: var(--mat-sys-on-surface-variant);
+    }
   `
 })
 export class ClassPage {
@@ -68,6 +86,7 @@ export class ClassPage {
   private dialog = inject(MatDialog);
   private snackbar = inject(MatSnackBar);
   private classesCsv = inject(ClassesCsvService);
+  private catalogue = inject(ClassCatalogueStore);
 
   private readonly detail = listDetailRoute();
 
@@ -101,6 +120,8 @@ export class ClassPage {
     ).sort((a, b) => a.name.localeCompare(b.name));
   });
 
+  readonly kindOf = classKind;
+
   pyHandicap(boatClass: BoatClass): number | undefined {
     return getHandicapValue(boatClass.handicaps, 'PY' as HandicapScheme);
   }
@@ -118,6 +139,18 @@ export class ClassPage {
     window.URL.revokeObjectURL(url);
   }
 
+  openApplyRyaPyDialog(): void {
+    this.dialog
+      .open<ApplyRyaPyDialog, unknown, number | undefined>(ApplyRyaPyDialog, { width: '480px' })
+      .afterClosed()
+      .subscribe(n => {
+        if (n === undefined) return;
+        this.snackbar.open(n === 1 ? 'Updated the PY of 1 class.' : `Updated the PY of ${n} classes.`, 'Dismiss', {
+          duration: 4000,
+        });
+      });
+  }
+
   openSyncSeriesHandicapsDialog(): void {
     const data: SyncSeriesHandicapsDialogData = {
       onApplied: plan => {
@@ -132,7 +165,7 @@ export class ClassPage {
     this.dialog.open(SyncSeriesHandicapsDialog, { data, width: '480px' });
   }
 
-  async importCsv(event: { event: Event, context: any }) {
+  async importCsv(event: { event: Event }) {
     const input = event.event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -140,16 +173,22 @@ export class ClassPage {
     try {
       const text = await file.text();
       const schemes = this.cs.club().supportedHandicapSchemes;
-      const parsed = this.classesCsv.parseCsv(text, schemes);
-      if (parsed.errors.length > 0) {
-        this.snackbar.open(`Import failed: ${parsed.errors[0]}`, 'Dismiss', { duration: 5000 });
+      const parsed = this.classesCsv.parseCsv(text, schemes, this.catalogue.byId());
+      const merged = this.classesCsv.merge(this.cs.club().classes, parsed.rows);
+      const errors = [...parsed.errors, ...merged.errors];
+      if (errors.length > 0) {
+        const more = errors.length > 1 ? ` (and ${errors.length - 1} more)` : '';
+        this.snackbar.open(`Import failed: ${errors[0]}${more}`, 'Dismiss', { duration: 8000 });
         return;
       }
 
-      await this.cs.update({ classes: parsed.classes as any });
-      this.snackbar.open(`Classes imported: ${parsed.classes.length} items.`, 'Dismiss', { duration: 3000 });
-    } catch (error: any) {
-      this.snackbar.open(`Import error: ${error.message}`, 'Dismiss', { duration: 5000 });
+      await this.cs.update({ classes: merged.classes });
+      this.snackbar.open(`Classes imported: ${merged.added} added, ${merged.updated} updated.`, 'Dismiss', {
+        duration: 4000,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.snackbar.open(`Import error: ${message}`, 'Dismiss', { duration: 5000 });
     } finally {
       input.value = '';
     }

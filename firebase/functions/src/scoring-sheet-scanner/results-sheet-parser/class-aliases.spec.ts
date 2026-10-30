@@ -29,11 +29,19 @@ test("resolveClassAlias maps Radial and Laser R case-insensitively", () => {
   assert.equal(resolveClassAlias("ILCA 6"), "ILCA 6");
 });
 
-test("resolveClassAlias maps Vareo misspellings to RS Vareo", () => {
-  assert.equal(resolveClassAlias("Vario"), "RS Vareo");
-  assert.equal(resolveClassAlias("RS Vario"), "RS Vareo");
-  assert.equal(resolveClassAlias("rsvario"), "RS Vareo");
-  assert.equal(resolveClassAlias("Vareo"), "RS Vareo");
+test("resolveClassAlias maps Vareo misspellings and the RS name to Vareo", () => {
+  assert.equal(resolveClassAlias("Vario"), "Vareo");
+  assert.equal(resolveClassAlias("RS Vario"), "Vareo");
+  assert.equal(resolveClassAlias("rsvario"), "Vareo");
+  assert.equal(resolveClassAlias("RS Vareo"), "Vareo");
+});
+
+test("resolveClassAlias maps manufacturer-prefixed names to the ScoreSmarter names", () => {
+  assert.equal(resolveClassAlias("RS Aero 7"), "Aero 7");
+  assert.equal(resolveClassAlias("A7"), "Aero 7");
+  assert.equal(resolveClassAlias("Laser Pico"), "Pico");
+  assert.equal(resolveClassAlias("RS Feva"), "Feva S");
+  assert.equal(resolveClassAlias("Hadron"), "Hadron H2");
 });
 
 test("normalizeBoatClasses rewrites value and keeps sheet text in alternatives", () => {
