@@ -1,3 +1,4 @@
+import { provideFakeRatingLists } from 'app/club-tenant/services/rating-list-store.testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
@@ -86,6 +87,7 @@ function baseProviders(overrides: Record<string, unknown> = {}) {
         ...(overrides['raceCalendar'] as object),
       },
     },
+    provideFakeRatingLists(),
     {
       provide: ClubStore,
       useValue: {

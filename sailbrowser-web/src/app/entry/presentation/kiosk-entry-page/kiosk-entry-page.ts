@@ -28,6 +28,7 @@ import {
 import { BoatCoreFields } from 'app/boats/presentation/boat-form/boat-core-fields';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
 import { ClubStore } from 'app/club-tenant';
+import { RatingListStore } from 'app/club-tenant/services/rating-list-store';
 import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 import { DutiesService } from 'app/duties';
 import { DutiesTeamPanel } from 'app/duties/presentation/duties-team-panel';
@@ -143,6 +144,7 @@ export class KioskEntryPage {
   private readonly boatsStore = inject(BoatsStore);
   private readonly raceCalendar = inject(RaceCalendarStore);
   private readonly clubStore = inject(ClubStore);
+  private readonly ratingLists = inject(RatingListStore);
   private readonly duties = inject(DutiesService);
   private readonly currentRaces = inject(CurrentRaces);
   private readonly dialog = inject(MatDialog);
@@ -352,6 +354,7 @@ export class KioskEntryPage {
           personalHandicapUnknown: !boat.personalHandicapBand,
         },
         this.clubStore.club().classes,
+        this.ratingLists.lists(),
       );
       return meetsPrimaryFleetEligibility(series, {
         boatClass: boat.boatClass,
@@ -435,6 +438,7 @@ export class KioskEntryPage {
   }
 
   constructor() {
+    this.ratingLists.preload();
     for (const scheme of this.visitorBoatSchemes()) {
       if (scheme === 'Personal') continue;
       const meta = getHandicapSchemeMetadata(scheme);

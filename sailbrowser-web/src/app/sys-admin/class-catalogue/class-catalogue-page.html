@@ -20,17 +20,28 @@
     </mat-card>
 
     <mat-card appearance="outlined" class="card">
-      <mat-card-header><mat-card-title>Import RYA list</mat-card-title></mat-card-header>
+      <mat-card-header><mat-card-title>Import RYA class list</mat-card-title></mat-card-header>
       <mat-card-content>
         <p class="meta">
-          Save the RYA class configuration / PN spreadsheet as CSV. Classes are matched by RYA Class ID:
-          RYA names and PNs are updated, ScoreSmarter names and aliases are kept.
+          Save the RYA class configuration / PN spreadsheet as CSV. New RYA Class IDs are added.
+          Published classes are fixed: rows that differ from them are listed but not applied.
+          PNs are imported separately, as a PY list.
         </p>
         @if (pendingImport(); as pending) {
           <div class="import-summary">
             <strong>{{ pending.fileName }}</strong>:
-            {{ pending.merge.added }} added, {{ pending.merge.updated }} updated,
-            {{ pending.merge.unchanged }} unchanged.
+            {{ pending.merge.added }} added, {{ pending.merge.unchanged }} unchanged,
+            {{ pending.merge.differences.length }} differ from the published class.
+            @if (pending.merge.differences.length > 0) {
+              <ul class="meta">
+                @for (difference of pending.merge.differences.slice(0, maxDifferencesShown); track difference.entry.catalogueId) {
+                  <li>{{ difference.entry.catalogueId }} {{ difference.entry.name }}: {{ difference.changes.join('; ') }}</li>
+                }
+                @if (pending.merge.differences.length > maxDifferencesShown) {
+                  <li>and {{ pending.merge.differences.length - maxDifferencesShown }} more</li>
+                }
+              </ul>
+            }
             @if (pending.merge.notInList.length > 0) {
               <div class="meta">
                 Not in this list (kept so club links stay valid):
@@ -54,6 +65,82 @@
           <button matButton="outlined" type="button" [disabled]="busy()" (click)="fileInput.click()">
             <mat-icon>upload_file</mat-icon>
             Choose CSV
+          </button>
+        }
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="card">
+      <mat-card-header><mat-card-title>PY lists</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <p class="meta">
+          Clubs' RYA classes that aren't overridden use the PY list in force on each series' start date,
+          so series already running keep the PY they started with.
+        </p>
+        @if (publishedLists().length > 0) {
+          <table class="catalogue lists">
+            <thead>
+              <tr><th>Name</th><th>Effective from</th><th>PNs</th><th></th></tr>
+            </thead>
+            <tbody>
+              @for (list of publishedLists(); track list.id) {
+                <tr>
+                  <td>{{ list.name }}</td>
+                  <td>{{ list.effectiveFrom | date:'d MMM y' }}</td>
+                  <td>{{ ratingCount(list) }}</td>
+                  <td class="row-actions">
+                    <button matIconButton type="button" aria-label="Delete" [disabled]="busy()" (click)="deleteList(list)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="meta">No PY lists published yet.</p>
+        }
+
+        @if (pendingPyList(); as pending) {
+          <div class="import-summary">
+            <strong>{{ pending.fileName }}</strong>: {{ ratingCount(pending) }} PNs.
+            @if (pending.unknownIds.length > 0) {
+              <div class="meta">
+                {{ pending.unknownIds.length }} RYA Class IDs aren't in the catalogue and are skipped
+                (import the class list first): {{ pending.unknownIds.slice(0, 20).join(', ') }}
+              </div>
+            }
+            @for (error of pending.errors; track error) {
+              <div class="error">{{ error }}</div>
+            }
+          </div>
+          <div class="add-row">
+            <mat-form-field class="grow">
+              <mat-label>Name</mat-label>
+              <input matInput [ngModel]="pyListName()" (ngModelChange)="pyListName.set($event)" placeholder="e.g. PN 2027">
+            </mat-form-field>
+            <mat-form-field class="grow">
+              <mat-label>Effective from</mat-label>
+              <input matInput type="date" [ngModel]="pyEffectiveFrom()" (ngModelChange)="pyEffectiveFrom.set($event)">
+            </mat-form-field>
+          </div>
+          <p class="meta">
+            Clubs' RYA classes that aren't overridden will use these PNs for series starting on or after this date.
+            @if (pyEffectiveInPast()) {
+              Series that have started since then keep the PY their entries already have.
+            }
+          </p>
+          <div class="actions">
+            <button matButton="filled" type="button" [disabled]="busy() || !pyListName().trim() || !pyEffectiveFrom()" (click)="savePyList()">
+              Publish PY list
+            </button>
+            <button matButton type="button" [disabled]="busy()" (click)="cancelPyList()">Cancel</button>
+          </div>
+        } @else {
+          <input #pyFileInput type="file" accept=".csv,text/csv" hidden (change)="onPyFileSelected($event)">
+          <button matButton="outlined" type="button" [disabled]="busy()" (click)="pyFileInput.click()">
+            <mat-icon>upload_file</mat-icon>
+            Import PY list (CSV)
           </button>
         }
       </mat-card-content>
@@ -95,7 +182,7 @@
           <th>ScoreSmarter name</th>
           <th>RYA name</th>
           <th>Crew / rig / spin</th>
-          <th>PN</th>
+          <th>Current PN</th>
           <th>Aliases</th>
           <th></th>
         </tr>
@@ -110,7 +197,7 @@
               </td>
               <td>{{ entry.rya?.name ?? '—' }}</td>
               <td>{{ entry.crew }} / {{ entry.rig ?? '—' }} / {{ entry.spinnaker ?? '—' }}</td>
-              <td>{{ entry.rya?.pn ?? '—' }}</td>
+              <td>{{ currentPn(entry) ?? '—' }}</td>
               <td>
                 <input class="inline" [ngModel]="draftAliases()" (ngModelChange)="draftAliases.set($event)" aria-label="Aliases">
               </td>
@@ -126,7 +213,7 @@
               <td>{{ entry.name }}</td>
               <td>{{ entry.rya?.name ?? '—' }}</td>
               <td>{{ entry.crew }} / {{ entry.rig ?? '—' }} / {{ entry.spinnaker ?? '—' }}</td>
-              <td>{{ entry.rya?.pn ?? '—' }}</td>
+              <td>{{ currentPn(entry) ?? '—' }}</td>
               <td>{{ (entry.aliases ?? []).join(', ') }}</td>
               <td class="row-actions">
                 <button matIconButton type="button" aria-label="Edit" (click)="startEdit(entry)">
@@ -136,7 +223,7 @@
             }
           </tr>
         } @empty {
-          <tr><td colspan="7" class="meta">No classes. Import the RYA list to get started.</td></tr>
+          <tr><td colspan="7" class="meta">No classes. Import the RYA class list to get started.</td></tr>
         }
       </tbody>
     </table>

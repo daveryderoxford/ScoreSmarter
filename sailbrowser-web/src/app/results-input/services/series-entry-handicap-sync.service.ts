@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Firestore, writeBatch } from '@angular/fire/firestore';
 import { ClubStore } from 'app/club-tenant/services/club-store';
+import { RatingListStore } from 'app/club-tenant/services/rating-list-store';
 import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
 import { SeriesEntryStore } from './series-entry-store';
 import {
@@ -18,6 +19,7 @@ export class SeriesEntryHandicapSyncService {
   private readonly raceCalendar = inject(RaceCalendarStore);
   private readonly seriesEntries = inject(SeriesEntryStore);
   private readonly clubStore = inject(ClubStore);
+  private readonly ratingLists = inject(RatingListStore);
 
   async plan(seriesId: string): Promise<SeriesEntryHandicapSyncPlan | null> {
     const series = await this.raceCalendar.getSeriesById(seriesId);
@@ -25,7 +27,8 @@ export class SeriesEntryHandicapSyncService {
 
     const entries = await this.seriesEntries.getSeriesEntries(seriesId);
     const clubClasses = this.clubStore.club().classes;
-    return planSeriesEntryHandicapSync(series, entries, clubClasses);
+    const ratingLists = await this.ratingLists.load();
+    return planSeriesEntryHandicapSync(series, entries, clubClasses, ratingLists);
   }
 
   async apply(seriesId: string): Promise<SeriesEntryHandicapSyncPlan | null> {

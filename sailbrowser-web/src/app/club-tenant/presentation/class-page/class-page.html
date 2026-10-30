@@ -1,9 +1,6 @@
 <app-page-layout>
   <app-toolbar [title]="toolbarTitle()" [showBack]="showBack()">
     @if (!showBack()) {
-      <button matButton="tonal" type="button" (click)="openApplyRyaPyDialog()">
-        Apply RYA PY list
-      </button>
       <button matButton="tonal" type="button" (click)="openSyncSeriesHandicapsDialog()">
         Update series handicaps
       </button>
@@ -34,7 +31,7 @@
               <span matListItemTitle>{{ boatClass.name }}</span>
               <span matListItemLine>
                 <span class="kind" [class.local]="kindOf(boatClass) === 'local'">{{ kindOf(boatClass) === 'rya' ? 'RYA' : 'Local' }}</span>
-                PY {{ pyHandicap(boatClass) }}@if (boatClass.pyOverridden) { (override)}@if (boatClass.isSinglehander) { · Single-hander}
+                PY {{ pyHandicap(boatClass) }}@if (pyOverridden(boatClass)) { (override)}@if (upcomingPy(boatClass); as upcoming) { · {{ upcoming }}}@if (boatClass.isSinglehander) { · Single-hander}
               </span>
             </mat-list-item>
             <mat-divider></mat-divider>

@@ -8,9 +8,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { BoatClass } from '../../model/boat-class';
-import { ryaPn } from '../../model/catalog-class';
-import { classKind, ryaConfigurationLabel } from '../../model/club-class';
+import { classKind, isSchemeOverridden, ryaConfigurationLabel } from '../../model/club-class';
+import { listRating, nextRatingList, ratingListFor } from '../../model/rating-list';
 import { ClassCatalogueStore } from '../../services/class-catalogue-store';
+import { RatingListStore } from '../../services/rating-list-store';
 import { getHandicapValue } from 'app/scoring/model/handicap';
 import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import {
@@ -69,6 +70,7 @@ import { ClubStore } from 'app/club-tenant';
 export class ClassForm {
   protected readonly clubStore = inject(ClubStore);
   private readonly catalogue = inject(ClassCatalogueStore);
+  private readonly ratingLists = inject(RatingListStore);
 
   boatClass = input.required<BoatClass>();
   busy = input<boolean>(false);
@@ -93,14 +95,31 @@ export class ClassForm {
     return this.isRya() && id !== undefined ? this.catalogue.byId().get(id) : undefined;
   });
 
-  protected readonly ryaPn = computed(() => ryaPn(this.ryaEntry()));
+  /** The PY list in force today. */
+  private readonly pyList = computed(() => ratingListFor(this.ratingLists.lists(), 'PY', new Date()));
+
+  protected readonly ryaPn = computed(() =>
+    this.isRya() ? listRating(this.pyList(), this.boatClass().catalogueId) : undefined,
+  );
+
+  protected readonly pyListName = computed(() => this.pyList()?.name ?? '');
+
+  /** A PY list already published for a later date that changes this class's PN. */
+  protected readonly upcomingPn = computed(() => {
+    if (!this.isRya()) return undefined;
+    const next = nextRatingList(this.ratingLists.lists(), 'PY', new Date());
+    const pn = listRating(next, this.boatClass().catalogueId);
+    if (!next || pn === undefined || pn === this.ryaPn()) return undefined;
+    const from = next.effectiveFrom.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return `Series starting on or after ${from} use PY ${pn} (${next.name}).`;
+  });
 
   protected readonly ryaDetail = computed(() => {
     const entry = this.ryaEntry();
     const id = this.boatClass().catalogueId;
     if (!entry) return `RYA ${id} · not in the current RYA list`;
     const pn = this.ryaPn();
-    return `RYA ${id} · ${ryaConfigurationLabel(entry)} · ${pn ? `RYA PN ${pn}` : 'no RYA PN'}`;
+    return `RYA ${id} · ${ryaConfigurationLabel(entry)} · ${pn ? `RYA PN ${pn} (${this.pyListName()})` : 'no RYA PN'}`;
   });
 
   /** Schemes with an input: PY is hidden while an RYA class uses the RYA PN. */
@@ -111,6 +130,7 @@ export class ClassForm {
   });
 
   constructor() {
+    this.ratingLists.preload();
     const clubSchemes = this.clubStore.club().supportedHandicapSchemes;
     for (const scheme of getSchemesForTarget(clubSchemes, 'boatClass')) {
       const meta = getHandicapSchemeMetadata(scheme);
@@ -127,7 +147,7 @@ export class ClassForm {
       const patch: Record<string, unknown> = {
         name: bc.name,
         isSinglehander: bc.isSinglehander === true,
-        pyChoice: bc.pyOverridden ? 'override' : 'rya',
+        pyChoice: isSchemeOverridden(bc, 'PY') ? 'override' : 'rya',
       };
       for (const scheme of HANDICAP_SCHEMES) {
         const meta = getHandicapSchemeMetadata(scheme);
@@ -163,11 +183,16 @@ export class ClassForm {
       return { scheme, value: Number.isFinite(value) && value > 0 ? value : meta.defaultValue };
     });
     const output: Partial<BoatClass> = this.isRya()
-      ? { handicaps, pyOverridden: pn !== undefined && !usesRyaPy && getHandicapValue(handicaps, 'PY') !== pn }
+      ? { handicaps, overriddenSchemes: this.overriddenSchemes(pn !== undefined && !usesRyaPy && getHandicapValue(handicaps, 'PY') !== pn) }
       : { name: (raw['name'] as string) ?? '', handicaps, isSinglehander: raw['isSinglehander'] === true };
     this.submitted.emit(output);
     // Keep values (the parent may cancel, e.g. a rename confirmation); clear dirty so leaving after save is allowed.
     this.form.markAsPristine();
+  }
+
+  private overriddenSchemes(pyOverridden: boolean): HandicapScheme[] {
+    const others = (this.boatClass().overriddenSchemes ?? []).filter(s => s !== 'PY');
+    return pyOverridden ? [...others, 'PY'] : others;
   }
 
   public canDeactivate(): boolean {

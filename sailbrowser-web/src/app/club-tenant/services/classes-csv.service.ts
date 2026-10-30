@@ -1,15 +1,16 @@
 import { Injectable } from '@angular/core';
 import { BoatClass, ClassKind } from '../model/boat-class';
-import { type CatalogClass, ryaPn } from '../model/catalog-class';
-import { classKind, localClassId, ryaClubClass } from '../model/club-class';
+import type { CatalogClass } from '../model/catalog-class';
+import { classKind, classRating, currentPn, isSchemeOverridden, localClassId, ryaClubClass } from '../model/club-class';
+import type { RatingList } from '../model/rating-list';
 import { Handicap, getHandicapValue } from 'app/scoring/model/handicap';
-import { HandicapScheme } from 'app/scoring/model/handicap-scheme';
+import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getHandicapSchemeMetadata } from 'app/scoring/model/handicap-scheme-metadata';
 import { parseCsv, toCsv } from 'app/shared/utils/csv';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 
 const REQUIRED_COLUMNS = ['name'] as const;
-const EXPORT_COLUMNS = ['id', 'name', 'kind', 'catalogueId', 'isSinglehander', 'pyOverridden'] as const;
+const EXPORT_COLUMNS = ['id', 'name', 'kind', 'catalogueId', 'isSinglehander', 'overriddenSchemes'] as const;
 
 /** A class read from a CSV row. RYA rows are complete classes built from the RYA list. */
 export interface ClassCsvRow {
@@ -35,7 +36,9 @@ const nameKey = (name: string) => normaliseWhitespace(name).toLowerCase();
 
 @Injectable({ providedIn: 'root' })
 export class ClassesCsvService {
-  buildCsv(classes: BoatClass[], schemes: HandicapScheme[]): string {
+  /** Ratings are those in force today, from `ratingLists` unless overridden. */
+  buildCsv(classes: BoatClass[], schemes: HandicapScheme[], ratingLists: readonly RatingList[]): string {
+    const today = new Date();
     const handicapColumns = schemes.map(s => this.handicapColumn(s));
     const columns = [...EXPORT_COLUMNS, ...handicapColumns];
     const rows = classes.map(cls => {
@@ -46,10 +49,10 @@ export class ClassesCsvService {
         kind,
         catalogueId: kind === 'rya' && cls.catalogueId ? String(cls.catalogueId) : '',
         isSinglehander: cls.isSinglehander === true ? 'true' : 'false',
-        pyOverridden: cls.pyOverridden === true ? 'true' : 'false',
+        overriddenSchemes: kind === 'rya' ? HANDICAP_SCHEMES.filter(s => isSchemeOverridden(cls, s)).join(';') : '',
       };
       for (const scheme of schemes) {
-        const value = getHandicapValue(cls.handicaps, scheme);
+        const value = classRating(cls, scheme, ratingLists, today);
         row[this.handicapColumn(scheme)] = value == null ? '' : String(value);
       }
       return row;
@@ -57,11 +60,15 @@ export class ClassesCsvService {
     return toCsv(columns, rows);
   }
 
-  /** Reads classes from CSV. RYA rows (kind `rya` or an RYA Class ID) are checked against `catalogue`. */
+  /**
+   * Reads classes from CSV. RYA rows (kind `rya` or an RYA Class ID) are checked against
+   * `catalogue`; their PY is the current RYA PN unless overridden.
+   */
   parseCsv(
     content: string,
     schemes: HandicapScheme[],
     catalogue: ReadonlyMap<number, CatalogClass>,
+    ratingLists: readonly RatingList[],
   ): ClassesCsvParseResult {
     const parsed = parseCsv(content);
     const errors: string[] = [...parsed.errors];
@@ -81,7 +88,7 @@ export class ClassesCsvService {
     const names = new Set<string>();
     for (let i = 0; i < parsed.rows.length; i++) {
       const line = i + 2;
-      const result = this.parseClassRecord(parsed.rows[i], schemes, catalogue, line);
+      const result = this.parseClassRecord(parsed.rows[i], schemes, catalogue, ratingLists, line);
       if (typeof result === 'string') {
         errors.push(result);
         continue;
@@ -145,7 +152,10 @@ export class ClassesCsvService {
   private updateClass(target: BoatClass, imported: BoatClass): BoatClass {
     const next: BoatClass = { ...target, handicaps: imported.handicaps };
     if (classKind(target) === 'rya') {
-      if (classKind(imported) === 'rya') next.pyOverridden = imported.pyOverridden === true;
+      if (classKind(imported) === 'rya') {
+        next.overriddenSchemes = imported.overriddenSchemes ?? [];
+        delete next.pyOverridden;
+      }
     } else {
       next.isSinglehander = imported.isSinglehander === true;
     }
@@ -162,6 +172,7 @@ export class ClassesCsvService {
     record: Record<string, string>,
     schemes: HandicapScheme[],
     catalogue: ReadonlyMap<number, CatalogClass>,
+    ratingLists: readonly RatingList[],
     line: number,
   ): ClassCsvRow | string {
     const rowErrors: string[] = [];
@@ -193,7 +204,8 @@ export class ClassesCsvService {
     }
 
     const kind: ClassKind = kindRaw === 'rya' || (!kindRaw && (catalogueId ?? 0) > 0) ? 'rya' : 'local';
-    const pyOverriddenRaw = (record['pyOverridden'] ?? '').trim();
+    const overridden = this.parseOverriddenSchemes(record);
+    if (typeof overridden === 'string') rowErrors.push(overridden);
 
     if (kind === 'rya' && rowErrors.length === 0) {
       const entry = catalogueId !== undefined && catalogueId > 0 ? catalogue.get(catalogueId) : undefined;
@@ -203,10 +215,12 @@ export class ClassesCsvService {
         rowErrors.push(`the RYA class ${catalogueId} is called ${entry.name}`);
       } else {
         const py = getHandicapValue(handicaps, 'PY');
-        const pn = ryaPn(entry);
-        const overridden = pyOverriddenRaw ? this.parseBoolean(pyOverriddenRaw) : py !== undefined && py !== pn;
+        const pn = currentPn(ratingLists, entry.catalogueId);
+        const schemes = overridden as HandicapScheme[] | undefined;
+        const pyOverridden = schemes ? schemes.includes('PY') : py !== undefined && py !== pn;
         const others = handicaps.filter(h => h.scheme !== 'PY');
-        const boatClass = ryaClubClass(entry, others, overridden || pn === undefined ? py : undefined);
+        const boatClass = ryaClubClass(entry, others, pn, pyOverridden || pn === undefined ? py : undefined);
+        boatClass.overriddenSchemes = schemes ?? boatClass.overriddenSchemes ?? [];
         return { line, idGiven: !!id, boatClass };
       }
     }
@@ -226,6 +240,18 @@ export class ClassesCsvService {
         isSinglehander: this.parseBoolean(record['isSinglehander']),
       },
     };
+  }
+
+  /** Overridden schemes from `overriddenSchemes` (e.g. `PY;IRC`) or the older `pyOverridden` column; undefined when neither is given. */
+  private parseOverriddenSchemes(record: Record<string, string>): HandicapScheme[] | string | undefined {
+    if ('overriddenSchemes' in record) {
+      const names = (record['overriddenSchemes'] ?? '').split(';').map(s => s.trim()).filter(Boolean);
+      const unknown = names.filter(n => !(HANDICAP_SCHEMES as readonly string[]).includes(n));
+      if (unknown.length > 0) return `overriddenSchemes has unknown schemes: ${unknown.join(', ')}`;
+      return names as HandicapScheme[];
+    }
+    const legacy = (record['pyOverridden'] ?? '').trim();
+    return legacy ? (this.parseBoolean(legacy) ? ['PY'] : []) : undefined;
   }
 
   private handicapColumn(scheme: HandicapScheme): string {

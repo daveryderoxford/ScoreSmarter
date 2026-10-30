@@ -56,7 +56,10 @@ export class ClassEdit {
       const oldClass = this.boatClass();
       if (oldClass) {
         const newClass: BoatClass = { ...oldClass, handicaps: data.handicaps! };
-        if (data.pyOverridden !== undefined) newClass.pyOverridden = data.pyOverridden;
+        if (data.overriddenSchemes !== undefined) {
+          newClass.overriddenSchemes = data.overriddenSchemes;
+          delete newClass.pyOverridden;
+        }
         if (data.isSinglehander !== undefined) newClass.isSinglehander = data.isSinglehander;
         if (data.name !== undefined) newClass.name = normaliseWhitespace(data.name);
 

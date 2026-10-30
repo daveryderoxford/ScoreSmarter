@@ -1,4 +1,6 @@
 import type { BoatClass } from '../../club-tenant/model/boat-class';
+import { classRating } from '../../club-tenant/model/club-class';
+import { seriesRatingDate, type RatingList } from '../../club-tenant/model/rating-list';
 import type { Series } from '../../race-calender/model/series';
 import type { Handicap } from '../../scoring/model/handicap';
 import { getHandicapValue } from '../../scoring/model/handicap';
@@ -44,17 +46,22 @@ export function entryClubForCategory(
 /**
  * Resolves the `Handicap[]` for a given series using:
  * 1) source overrides,
- * 2) club class defaults,
+ * 2) the class rating: from the rating list in force on the series start date for RYA
+ *    classes that don't override the scheme, otherwise the club's value,
  * 3) per-scheme metadata defaults.
  */
 export function resolveHandicapsForSeries(
   series: Series,
   source: EntryHandicapSource,
-  clubClasses: BoatClass[]
+  clubClasses: BoatClass[],
+  ratingLists: readonly RatingList[],
 ): Handicap[] {
   const boatClass = clubClasses.find(c => c.name === source.boatClassName);
   const schemes = handicapSchemesRequiredForSeries(series);
-  const classPy = getHandicapValue(boatClass?.handicaps, 'PY');
+  const date = seriesRatingDate(series);
+  const classValue = (scheme: HandicapScheme) =>
+    boatClass ? classRating(boatClass, scheme, ratingLists, date) : undefined;
+  const classPy = classValue('PY');
   const sourcePy = getHandicapValue(source.handicaps, 'PY') ?? classPy;
 
   return schemes.map((scheme: HandicapScheme) => {
@@ -74,7 +81,7 @@ export function resolveHandicapsForSeries(
     const entry = source.handicaps?.find(h => h.scheme === scheme);
     const overrideValid = entry && entry.value > 0 ? entry.value : undefined;
     const overridePresentButInvalid = entry !== undefined && !(entry.value > 0);
-    const fromClass = getHandicapValue(boatClass?.handicaps, scheme);
+    const fromClass = classValue(scheme);
 
     let chosen: number;
     if (overrideValid !== undefined) {

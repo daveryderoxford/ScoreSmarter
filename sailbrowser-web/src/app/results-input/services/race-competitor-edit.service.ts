@@ -2,6 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { sailNumbersEqual } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
 import { resolveHandicapsForSeries } from 'app/entry/services/entry-helpers';
+import type { RatingList } from 'app/club-tenant/model/rating-list';
+import { RatingListStore } from 'app/club-tenant/services/rating-list-store';
 import { divisionIdsEqual, entryDivisionIds } from 'app/race-calender/model/division';
 import { RaceCalendarStore, Series } from 'app/race-calender';
 import { Handicap } from 'app/scoring/model/handicap';
@@ -64,6 +66,7 @@ export class RaceCompetitorEditService {
   private readonly seriesEntries = inject(SeriesEntryStore);
   private readonly raceCalendar = inject(RaceCalendarStore);
   private readonly clubStore = inject(ClubStore);
+  private readonly ratingLists = inject(RatingListStore);
   private readonly mutator = inject(RaceCompetitorMutator);
 
   async applyChangeEnteredCompetitor(command: ChangeEnteredCompetitorCommand): Promise<void> {
@@ -84,8 +87,9 @@ export class RaceCompetitorEditService {
     this.assertIdentityAllowedInRace(target, entry, series, proposed);
 
     const boatClassChanged = !boatClassEqual(entry.boatClass, boatClass);
+    const ratingLists = boatClassChanged ? await this.ratingLists.load() : [];
     const handicapsForCreate = boatClassChanged
-      ? this.recomputeHandicapsForClass(series, boatClass, entry)
+      ? this.recomputeHandicapsForClass(series, boatClass, entry, ratingLists)
       : entry.handicaps;
 
     let workingEntry = entry;
@@ -115,7 +119,7 @@ export class RaceCompetitorEditService {
     }
 
     if (boatClassChanged) {
-      const recomputed = this.recomputeHandicapsForClass(series, boatClass, workingEntry);
+      const recomputed = this.recomputeHandicapsForClass(series, boatClass, workingEntry, ratingLists);
       const entryUpdate: Partial<SeriesEntry> = { boatClass, handicaps: recomputed };
       if (
         !boatClassEqual(workingEntry.boatClass, boatClass) ||
@@ -211,6 +215,7 @@ export class RaceCompetitorEditService {
         personalHandicapBand === null ? undefined : personalHandicapBand;
     }
     if (bandChanged) {
+      const ratingLists = await this.ratingLists.load();
       const recomputed = resolveHandicapsForSeries(
         series,
         {
@@ -220,6 +225,7 @@ export class RaceCompetitorEditService {
           personalHandicapUnknown: !personalHandicapBand,
         },
         this.clubStore.club().classes,
+        ratingLists,
       );
       if (!handicapsEqual(workingEntry.handicaps, recomputed)) {
         entryUpdate.handicaps = recomputed;
@@ -348,6 +354,7 @@ export class RaceCompetitorEditService {
     series: Series,
     boatClass: string,
     template: SeriesEntry,
+    ratingLists: readonly RatingList[],
   ): Handicap[] {
     return resolveHandicapsForSeries(
       series,
@@ -358,6 +365,7 @@ export class RaceCompetitorEditService {
         personalHandicapUnknown: !template.personalHandicapBand,
       },
       this.clubStore.club().classes,
+      ratingLists,
     );
   }
 }

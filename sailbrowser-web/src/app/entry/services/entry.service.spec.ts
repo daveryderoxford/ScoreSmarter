@@ -1,3 +1,4 @@
+import { provideFakeRatingLists } from 'app/club-tenant/services/rating-list-store.testing';
 import {
   installMutatorWriteBatchHarness,
   MutatorTestRaceCompetitorStore,
@@ -115,6 +116,7 @@ describe('EntryService.findEntryConflicts', () => {
         { provide: RaceCompetitorStore, useValue: raceCompetitors },
         { provide: SeriesEntryStore, useValue: seriesEntries },
         { provide: RaceCalendarStore, useClass: FakeRaceCalendarStore },
+        provideFakeRatingLists(),
         { provide: ClubStore, useClass: FakeClubStore },
         provideMutatorTestFirestore(),
         RaceCompetitorMutator,
@@ -230,6 +232,7 @@ describe('EntryService.swapAndEnter', () => {
         { provide: RaceCompetitorStore, useValue: raceCompetitors },
         { provide: SeriesEntryStore, useValue: seriesEntries },
         { provide: RaceCalendarStore, useClass: FakeRaceCalendarStore },
+        provideFakeRatingLists(),
         { provide: ClubStore, useClass: FakeClubStore },
         provideMutatorTestFirestore(),
         RaceCompetitorMutator,

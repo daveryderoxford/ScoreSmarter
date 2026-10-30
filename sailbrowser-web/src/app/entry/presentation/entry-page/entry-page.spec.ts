@@ -1,3 +1,4 @@
+import { provideFakeRatingLists } from 'app/club-tenant/services/rating-list-store.testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
@@ -122,6 +123,7 @@ describe('EntryPage self-entry flows', () => {
           provide: ClubTenant,
           useValue: { clubId: 'test-club' },
         },
+        provideFakeRatingLists(),
         {
           provide: ClubStore,
           useValue: {

@@ -18,11 +18,12 @@ import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inpu
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import type { BoatClass, ClassKind } from '../../model/boat-class';
-import { isRyaClass, normaliseClassName, ryaPn, suggestCatalogClass, type CatalogClass } from '../../model/catalog-class';
-import { ryaConfigurationLabel } from '../../model/club-class';
+import { isRyaClass, normaliseClassName, suggestCatalogClass, type CatalogClass } from '../../model/catalog-class';
+import { currentPn, ryaConfigurationLabel } from '../../model/club-class';
 import { ClassCatalogueStore } from '../../services/class-catalogue-store';
 import { ClubClassService } from '../../services/club-class.service';
 import { ClubStore } from '../../services/club-store';
+import { RatingListStore } from '../../services/rating-list-store';
 
 const MAX_OPTIONS = 30;
 
@@ -152,6 +153,7 @@ export class AddClassForm {
   private readonly clubStore = inject(ClubStore);
   private readonly catalogue = inject(ClassCatalogueStore);
   private readonly classService = inject(ClubClassService);
+  private readonly ratingLists = inject(RatingListStore);
 
   /** Pre-fills the search and local name, e.g. with a class name the club doesn't have. */
   initialName = input('');
@@ -184,7 +186,10 @@ export class AddClassForm {
     const value = this.form.controls['search'].value as string | CatalogClass;
     return typeof value === 'string' ? undefined : value;
   });
-  protected readonly selectedPn = computed(() => ryaPn(this.selected()));
+  protected readonly selectedPn = computed(() => {
+    const entry = this.selected();
+    return entry ? this.pn(entry) : undefined;
+  });
 
   protected readonly options = computed(() => {
     this.changes();
@@ -235,6 +240,7 @@ export class AddClassForm {
     typeof value === 'string' ? value : (value?.name ?? '');
 
   constructor() {
+    this.ratingLists.preload();
     for (const scheme of this.classSchemes()) {
       const meta = getHandicapSchemeMetadata(scheme);
       this.form.addControl(
@@ -267,8 +273,12 @@ export class AddClassForm {
     return this.clubCatalogueIds().has(entry.catalogueId);
   }
 
+  private pn(entry: CatalogClass): number | undefined {
+    return currentPn(this.ratingLists.lists(), entry.catalogueId);
+  }
+
   protected entryDetail(entry: CatalogClass): string {
-    const pn = ryaPn(entry);
+    const pn = this.pn(entry);
     return `RYA ${entry.catalogueId} · ${ryaConfigurationLabel(entry)}${pn ? ` · PN ${pn}` : ''}`;
   }
 

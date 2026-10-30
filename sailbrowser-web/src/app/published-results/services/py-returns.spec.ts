@@ -20,8 +20,8 @@ const clubClasses: BoatClass[] = [
 ];
 
 const catalogue = new Map<number, CatalogClass>([
-  [191, { catalogueId: 191, name: 'ILCA 7', crew: 1, rig: 'U', spinnaker: '0', rya: { name: 'ILCA 7 / Laser', pn: 1103 } }],
-  [303, { catalogueId: 303, name: 'RS200', crew: 2, rig: 'S', spinnaker: 'A', rya: { name: 'RS200', pn: 1053 } }],
+  [191, { catalogueId: 191, name: 'ILCA 7', crew: 1, rig: 'U', spinnaker: '0', rya: { name: 'ILCA 7 / Laser' } }],
+  [303, { catalogueId: 303, name: 'RS200', crew: 2, rig: 'S', spinnaker: 'A', rya: { name: 'RS200' } }],
   [-1, { catalogueId: -1, name: 'Dory', crew: 2 }],
 ]);
 

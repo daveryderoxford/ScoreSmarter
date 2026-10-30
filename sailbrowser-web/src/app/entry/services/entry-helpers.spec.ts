@@ -1,4 +1,5 @@
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
+import type { RatingList } from 'app/club-tenant/model/rating-list';
 import type { Fleet } from 'app/club-tenant/model/fleet';
 import type { Series } from 'app/race-calender';
 import { DEFAULT_SHORT_DISCARDS } from 'app/scoring/model/discard-profile';
@@ -67,7 +68,8 @@ describe('resolveHandicapsForSeries', () => {
     const out = resolveHandicapsForSeries(
       series,
       { boatClassName: 'Laser', handicaps: [{ scheme: 'PY', value: 1050 }] },
-      classes
+      classes,
+      [],
     );
     expect(out).toEqual([{ scheme: 'PY', value: 1050 }]);
   });
@@ -77,7 +79,7 @@ describe('resolveHandicapsForSeries', () => {
     const classes: BoatClass[] = [
       { id: 'c1', name: 'Laser', handicaps: [{ scheme: 'PY', value: 1122 }] },
     ];
-    const out = resolveHandicapsForSeries(series, { boatClassName: 'Laser' }, classes);
+    const out = resolveHandicapsForSeries(series, { boatClassName: 'Laser' }, classes, []);
     expect(out).toEqual([{ scheme: 'PY', value: 1122 }]);
   });
 
@@ -88,7 +90,7 @@ describe('resolveHandicapsForSeries', () => {
     const classes: BoatClass[] = [
       { id: 'c1', name: 'Laser', handicaps: [{ scheme: 'PY', value: 1000 }] },
     ];
-    const out = resolveHandicapsForSeries(series, { boatClassName: 'Laser' }, classes);
+    const out = resolveHandicapsForSeries(series, { boatClassName: 'Laser' }, classes, []);
     expect(out).toEqual([{ scheme: 'IRC', value: getHandicapSchemeMetadata('IRC').defaultValue }]);
   });
 
@@ -100,7 +102,7 @@ describe('resolveHandicapsForSeries', () => {
     const classes: BoatClass[] = [
       { id: 'c1', name: 'Laser', handicaps: [{ scheme: 'PY', value: 1005 }] },
     ];
-    const out = resolveHandicapsForSeries(series, { boatClassName: 'Laser' }, classes);
+    const out = resolveHandicapsForSeries(series, { boatClassName: 'Laser' }, classes, []);
     const py = out.find(h => h.scheme === 'PY');
     const irc = out.find(h => h.scheme === 'IRC');
     expect(py?.value).toBe(1005);
@@ -115,9 +117,24 @@ describe('resolveHandicapsForSeries', () => {
     const out = resolveHandicapsForSeries(
       series,
       { boatClassName: 'Laser', handicaps: [{ scheme: 'PY', value: 0 }] },
-      classes
+      classes,
+      [],
     );
     expect(out).toEqual([{ scheme: 'PY', value: getHandicapSchemeMetadata('PY').defaultValue }]);
+  });
+
+  it('uses the PY list in force on the series start date for RYA classes', () => {
+    const ilca: BoatClass = { id: 'rya-191', name: 'ILCA 7', kind: 'rya', catalogueId: 191, handicaps: [{ scheme: 'PY', value: 1110 }] };
+    const lists: RatingList[] = [
+      { id: 'pn-2026', scheme: 'PY', issuer: 'RYA', name: 'PN 2026', effectiveFrom: new Date('2026-03-01'), ratings: { 191: 1100 } },
+      { id: 'pn-2027', scheme: 'PY', issuer: 'RYA', name: 'PN 2027', effectiveFrom: new Date('2027-03-01'), ratings: { 191: 1095 } },
+    ];
+    const winter = minimalSeries({ startDate: new Date('2026-10-04') });
+    const summer = minimalSeries({ startDate: new Date('2027-04-04') });
+    expect(resolveHandicapsForSeries(winter, { boatClassName: 'ILCA 7' }, [ilca], lists)).toEqual([{ scheme: 'PY', value: 1100 }]);
+    expect(resolveHandicapsForSeries(summer, { boatClassName: 'ILCA 7' }, [ilca], lists)).toEqual([{ scheme: 'PY', value: 1095 }]);
+    const overridden = { ...ilca, overriddenSchemes: ['PY' as const] };
+    expect(resolveHandicapsForSeries(summer, { boatClassName: 'ILCA 7' }, [overridden], lists)).toEqual([{ scheme: 'PY', value: 1110 }]);
   });
 
   it('includes Level Rating from LevelRating primary', () => {
@@ -125,7 +142,7 @@ describe('resolveHandicapsForSeries', () => {
     const classes: BoatClass[] = [
       { id: 'c1', name: 'Laser', handicaps: [{ scheme: 'Level Rating', value: 1.05 }] },
     ];
-    const out = resolveHandicapsForSeries(series, { boatClassName: 'Laser' }, classes);
+    const out = resolveHandicapsForSeries(series, { boatClassName: 'Laser' }, classes, []);
     expect(out).toEqual([{ scheme: 'Level Rating', value: 1.05 }]);
   });
 });
