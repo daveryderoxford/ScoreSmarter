@@ -17,22 +17,16 @@
 }
 
 <ng-template #items>
-  <button mat-menu-item type="button" (click)="openChangeCompetitor()">
+  <button mat-menu-item type="button" (click)="openEntryEdit()">
     <span class="menu-item-body">
-      <span class="menu-item-title">Race Entry</span>
-      <span class="menu-item-hint">Change class, sail number, or helm for race</span>
+      <span class="menu-item-title">Edit entry</span>
+      <span class="menu-item-hint">Helm, boat, crew, handicaps and divisions</span>
     </span>
   </button>
   <button mat-menu-item type="button" (click)="openRaceResultData()">
     <span class="menu-item-body">
       <span class="menu-item-title">Race Results</span>
       <span class="menu-item-hint">Override race result data</span>
-    </span>
-  </button>
-  <button mat-menu-item type="button" (click)="openSeriesTypo()">
-    <span class="menu-item-body">
-      <span class="menu-item-title">Series data</span>
-      <span class="menu-item-hint">Changes apply to all races in series</span>
     </span>
   </button>
   <div class="delete-container">

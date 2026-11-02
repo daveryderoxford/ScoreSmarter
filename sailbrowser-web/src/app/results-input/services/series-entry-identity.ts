@@ -50,6 +50,20 @@ export function findAllMatchingEntries(
   return entries.filter(e => entriesMatchIdentity(e, identity));
 }
 
+/**
+ * Which part of the per-hull identity an edit changes. When several change, the
+ * most significant is reported: class (alters handicaps), then helm, then sail number.
+ * Capitalisation-only edits are `'none'`.
+ */
+export type IdentityChange = 'none' | 'class' | 'helm' | 'sailNumber';
+
+export function identityChange(current: PerHullIdentity, proposed: PerHullIdentity): IdentityChange {
+  if (norm(current.boatClass) !== norm(proposed.boatClass)) return 'class';
+  if (norm(current.helm) !== norm(proposed.helm)) return 'helm';
+  if (!sailNumbersEqual(current.sailNumber, proposed.sailNumber)) return 'sailNumber';
+  return 'none';
+}
+
 export function describeIdentity(identity: PerHullIdentity): string {
   return `${identity.helm} / ${identity.boatClass} #${identity.sailNumber}`;
 }

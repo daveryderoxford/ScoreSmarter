@@ -1,0 +1,109 @@
+<form class="competitor-edit-form" (submit)="onSubmit($event)">
+  @switch (change()) {
+    @case ('class') {
+      <p class="scope-lead">
+        Change <strong>{{ oldClass() }}</strong> to <strong>{{ newClass() }}</strong> for this race.
+        {{ oldHelm() }}'s other {{ otherCount() }} {{ racesWord(otherCount()) }} stay {{ oldClass() }}
+        with their current handicap.
+      </p>
+      @if (handicapText()) {
+        <p class="merge-hint">Handicap for this race: {{ handicapText() }}</p>
+      }
+      <mat-radio-group class="scope-options" [value]="scope()" (change)="scope.set($event.value)"
+        aria-label="Which races to change">
+        <mat-radio-button value="race">
+          <span class="option-title">This race only</span>
+          <span class="option-hint">{{ raceOnlyEffect() }}</span>
+        </mat-radio-button>
+        <mat-radio-button value="series">
+          <span class="option-title">Also change the other {{ otherCount() }} {{ racesWord(otherCount()) }}</span>
+          <span class="option-hint">Every race on this entry becomes {{ newClass() }}.</span>
+        </mat-radio-button>
+      </mat-radio-group>
+      @if (scope() === 'series') {
+        <div class="scope-warning" role="alert">
+          <p>Handicaps for these races will be recalculated for {{ newClass() }} and their results will change.</p>
+          <mat-checkbox [checked]="allRacesConfirmed()" (change)="allRacesConfirmed.set($event.checked)">
+            Change all {{ otherCount() + 1 }} races to {{ newClass() }}
+          </mat-checkbox>
+        </div>
+      }
+    }
+    @case ('helm') {
+      <p class="scope-lead">
+        This entry is used by {{ otherCount() }} other {{ racesWord(otherCount()) }}. Is
+        <strong>{{ newHelm() }}</strong> a correction to <strong>{{ oldHelm() }}</strong>, or did someone else
+        sail this race?
+      </p>
+      <mat-radio-group class="scope-options" [value]="scope()" (change)="scope.set($event.value)"
+        aria-label="Helm change">
+        <mat-radio-button value="series">
+          <span class="option-title">Correct the helm name</span>
+          <span class="option-hint">
+            Changes {{ oldHelm() }} to {{ newHelm() }} in all {{ otherCount() + 1 }} races on this entry.
+          </span>
+        </mat-radio-button>
+        <mat-radio-button value="race">
+          <span class="option-title">{{ newHelm() }} sailed this race instead</span>
+          <span class="option-hint">
+            {{ oldHelm() }}'s other {{ otherCount() }} {{ racesWord(otherCount()) }} are unchanged.
+            {{ raceOnlyEffect() }}
+          </span>
+        </mat-radio-button>
+      </mat-radio-group>
+    }
+    @case ('sailNumber') {
+      <p class="scope-lead">
+        This entry is used by {{ otherCount() }} other {{ racesWord(otherCount()) }}. Change the sail number for
+        which races?
+      </p>
+      <mat-radio-group class="scope-options" [value]="scope()" (change)="scope.set($event.value)"
+        aria-label="Sail number change">
+        <mat-radio-button value="series">
+          <span class="option-title">Correct the sail number in all {{ otherCount() + 1 }} races</span>
+          <span class="option-hint">
+            {{ competitor().sailNumber }} becomes {{ command().sailNumber }} for every race on this entry.
+          </span>
+        </mat-radio-button>
+        <mat-radio-button value="race">
+          <span class="option-title">This race only</span>
+          <span class="option-hint">
+            The other {{ otherCount() }} {{ racesWord(otherCount()) }} stay {{ competitor().sailNumber }}.
+            {{ raceOnlyEffect() }}
+          </span>
+        </mat-radio-button>
+      </mat-radio-group>
+    }
+  }
+
+  @if (existingEntry(); as existing) {
+    @if (scope() === 'race') {
+      <p class="merge-hint">
+        {{ existing.helm }} already has an entry on {{ existing.boatClass }} {{ existing.sailNumber }}. This race joins it
+        and uses its crew, club and handicaps.
+      </p>
+    } @else if (scope() === 'series') {
+      <p class="merge-hint">
+        {{ existing.helm }} already has an entry on {{ existing.boatClass }} {{ existing.sailNumber }}. All
+        {{ otherCount() + 1 }} races join it, and the two entries are merged.
+      </p>
+    }
+  }
+
+  <div class="other-races">
+    <span class="other-races-title">Other races on this entry</span>
+    <ul>
+      @for (race of listedRaces(); track race.id) {
+        <li>{{ race | racetitle }}</li>
+      }
+      @if (unlistedCount() > 0) {
+        <li>and {{ unlistedCount() }} more</li>
+      }
+    </ul>
+  </div>
+
+  <div class="actions">
+    <button mat-button type="button" (click)="back.emit()">Back</button>
+    <app-submit-button [disabled]="!canSave()" [busy]="busy()">Save</app-submit-button>
+  </div>
+</form>

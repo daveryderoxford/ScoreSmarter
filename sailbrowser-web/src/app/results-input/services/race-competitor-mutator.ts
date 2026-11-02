@@ -345,6 +345,43 @@ export class RaceCompetitorMutator {
     await this.raceCalendar.ensureRaceDirty(competitor.raceId);
   }
 
+  /**
+   * Points every race row on `fromEntryId` at `intoEntryId` and deletes `fromEntryId`,
+   * in one batch. Callers must already have checked that the two entries never share a race.
+   */
+  async mergeSeriesEntryInto(fromEntryId: string, intoEntryId: string): Promise<void> {
+    const [from, into] = await Promise.all([
+      this.seriesEntries.getSeriesEntry(fromEntryId),
+      this.seriesEntries.getSeriesEntry(intoEntryId),
+    ]);
+    if (!from || !into) {
+      throw new ScoreSmarterError(
+        `RaceCompetitorMutator: cannot merge ${fromEntryId} into ${intoEntryId}; series entry not found.`,
+      );
+    }
+    if (from.seriesId !== into.seriesId) {
+      throw new ScoreSmarterError(
+        `RaceCompetitorMutator: cannot merge entries from different series (${from.seriesId}, ${into.seriesId}).`,
+      );
+    }
+
+    const refs = await this.raceCompetitors.getCompetitorsForSeriesEntry(fromEntryId);
+    await this.runInBatch(batch => {
+      for (const comp of refs) {
+        batch.set(
+          this.raceCompetitors.raceResultDocRef(comp.id),
+          { seriesEntryId: intoEntryId } as RaceCompetitor,
+          { merge: true },
+        );
+      }
+      batch.delete(this.seriesEntries.seriesEntryDocRef(fromEntryId));
+    });
+
+    for (const raceId of new Set(refs.map(c => c.raceId))) {
+      await this.raceCalendar.ensureRaceDirty(raceId);
+    }
+  }
+
   /** Deletes a series-entry doc if no race-results still reference it. */
   async cleanupOrphanedSeriesEntry(seriesEntryId: string, options?: { excludeCompetitorId?: string }): Promise<void> {
     const comps = await this.raceCompetitors.getCompetitorsForSeriesEntry(seriesEntryId);
