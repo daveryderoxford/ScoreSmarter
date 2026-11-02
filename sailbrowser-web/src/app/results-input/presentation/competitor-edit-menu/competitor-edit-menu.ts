@@ -10,15 +10,11 @@ import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-co
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { firstValueFrom } from 'rxjs';
 import { RaceCompetitorEditService } from '../../services/race-competitor-edit.service';
-import {
-  ChangeEnteredCompetitorDialog,
-  ChangeEnteredCompetitorDialogData,
-} from '../change-entered-competitor-dialog/change-entered-competitor-dialog';
+import { EntryEditDialog, EntryEditDialogData } from '../entry-edit-dialog/entry-edit-dialog';
 import {
   RaceResultDataDialog,
   RaceResultDataDialogData,
 } from '../race-result-data-dialog/race-result-data-dialog';
-import { SeriesEditDialog, SeriesEditDialogData } from '../series-edit-dialog/series-edit-dialog';
 
 
 const DIALOG_WIDTH = 'min(calc(100vw - 24px), 460px)';
@@ -46,12 +42,12 @@ export class CompetitorEditMenuComponent {
   private readonly dialogs = inject(DialogsService);
   private readonly editService = inject(RaceCompetitorEditService);
 
-  async openChangeCompetitor(): Promise<void> {
+  async openEntryEdit(): Promise<void> {
     const ref = this.dialog.open<
-      ChangeEnteredCompetitorDialog,
-      ChangeEnteredCompetitorDialogData,
+      EntryEditDialog,
+      EntryEditDialogData,
       boolean | undefined
-    >(ChangeEnteredCompetitorDialog, {
+    >(EntryEditDialog, {
       maxWidth: '100vw',
       maxHeight: '90vh',
       width: DIALOG_WIDTH,
@@ -74,20 +70,6 @@ export class CompetitorEditMenuComponent {
         race: this.race(),
         draft: this.resultDraft(),
       },
-    });
-    if (await firstValueFrom(ref.afterClosed())) this.changed.emit();
-  }
-
-  async openSeriesTypo(): Promise<void> {
-    const ref = this.dialog.open<
-      SeriesEditDialog,
-      SeriesEditDialogData,
-      boolean | undefined
-    >(SeriesEditDialog, {
-      maxWidth: '100vw',
-      maxHeight: '90vh',
-      width: DIALOG_WIDTH,
-      data: { competitor: this.competitor() },
     });
     if (await firstValueFrom(ref.afterClosed())) this.changed.emit();
   }
