@@ -84,7 +84,8 @@ export class HandicapInputPanel {
 
   /** Two-way bound from parent so the results table can highlight the selected row. */
   selectedCompetitor = model<ResolvedRaceCompetitor | undefined>(undefined);
-  readonly addEntryRequested = output<void>();
+  /** Emits the current search text so the new entry can start from it. */
+  readonly addEntryRequested = output<string>();
 
   protected readonly formatEntrySearchLabel = formatEntrySearchLabel;
 
@@ -285,7 +286,7 @@ export class HandicapInputPanel {
   }
 
   requestAddEntry(): void {
-    this.addEntryRequested.emit();
+    this.addEntryRequested.emit(this.searchControl.value);
   }
 
   async setSelectedCompetitor(next: ResolvedRaceCompetitor | undefined): Promise<void> {

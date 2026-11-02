@@ -1,0 +1,436 @@
+import { provideFakeRatingLists } from 'app/club-tenant/services/rating-list-store.testing';
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { describe, expect, it, vi } from 'vitest';
+import { AuthService } from 'app/auth/auth.service';
+import { BoatsStore, type Boat } from 'app/boats';
+import { ClubStore, ClubTenant } from 'app/club-tenant';
+import type { BoatClass } from 'app/club-tenant/model/boat-class';
+import { RaceCalendarStore, type Race, type Series } from 'app/race-calender';
+import { CurrentRaces } from 'app/results-input';
+import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
+import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import { UserDataService, type UserData } from 'app/user';
+import { EntryService } from '../../services/entry.service';
+import { EntryWizard, type EntryWizardResult } from './entry-wizard';
+
+const testBoat1: Boat = {
+  id: 'b1',
+  boatClass: 'ILCA 7',
+  sailNumber: '1234',
+  helm: 'Alice Smith',
+  crew: '',
+  name: 'Lightning',
+  isClub: false,
+};
+
+const testBoat2: Boat = {
+  id: 'b2',
+  boatClass: 'RS Aero',
+  sailNumber: '5678',
+  helm: 'Alice Smith',
+  crew: '',
+  name: 'Breeze',
+  isClub: false,
+};
+
+const clubClasses: BoatClass[] = [
+  { id: 'ILCA 7', name: 'ILCA 7', handicaps: [], isSinglehander: true },
+  { id: 'RS Aero', name: 'RS Aero', handicaps: [], isSinglehander: true },
+];
+
+const testSeries: Series = {
+  id: 's1',
+  seasonId: 'season-1',
+  name: 'Spring Series',
+  archived: false,
+  scoringAlgorithm: 'short',
+  entryAlgorithm: 'helm',
+  discards: [],
+  primaryScoringConfiguration: {
+    id: 'cfg-py',
+    name: 'PY',
+    type: 'Handicap',
+    handicapScheme: 'PY',
+    fleet: { type: 'GeneralHandicap', id: 'f-gen', name: 'General Handicap' },
+  },
+};
+
+describe('EntryWizard self-entry flows', () => {
+  let isRaceOfficerSig: ReturnType<typeof signal<boolean>>;
+  let loggedInSig: ReturnType<typeof signal<boolean>>;
+  let userSig: ReturnType<typeof signal<UserData | undefined>>;
+  let racesSig: ReturnType<typeof signal<Race[]>>;
+  let enterRaces: ReturnType<typeof vi.fn>;
+  let entered: EntryWizardResult[];
+
+  function setupTestBed(options: {
+    isRO?: boolean;
+    loggedIn?: boolean;
+    userBoats?: Boat[];
+    races?: Race[];
+    inputs?: Partial<Record<'scopedRaceId' | 'oodHelm' | 'initialSearch', string>>;
+  } = {}) {
+    enterRaces = vi.fn(async () => {});
+    entered = [];
+    isRaceOfficerSig = signal(options.isRO ?? false);
+    loggedInSig = signal(options.loggedIn ?? true);
+    userSig = signal<UserData | undefined>(
+      options.userBoats !== undefined
+        ? ({
+            id: 'u1',
+            role: 'user',
+            tenantId: 't1',
+            updatedBy: 'u1',
+            updatedAt: new Date().toISOString(),
+            firstname: 'Alice',
+            surname: 'Smith',
+            boats: options.userBoats,
+          } as UserData)
+        : undefined,
+    );
+    racesSig = signal<Race[]>(options.races ?? []);
+
+    TestBed.configureTestingModule({
+      imports: [EntryWizard],
+      providers: [
+        {
+          provide: AuthService,
+          useValue: {
+            isRaceOfficer: isRaceOfficerSig,
+            loggedIn: loggedInSig,
+            user: signal({ uid: 'u1' }),
+          },
+        },
+        {
+          provide: UserDataService,
+          useValue: {
+            user: userSig,
+            recordRecentBoat: async () => {},
+          },
+        },
+        {
+          provide: BoatsStore,
+          useValue: {
+            boats: signal([testBoat1, testBoat2]),
+            add: async () => {},
+          },
+        },
+        {
+          provide: ClubTenant,
+          useValue: { clubId: 'test-club' },
+        },
+        provideFakeRatingLists(),
+        {
+          provide: ClubStore,
+          useValue: {
+            club: signal({
+              classes: clubClasses,
+              supportedHandicapSchemes: ['PY'],
+            }),
+          },
+        },
+        {
+          provide: RaceCalendarStore,
+          useValue: {
+            allRaces: racesSig,
+            allSeries: signal([testSeries]),
+          },
+        },
+        {
+          provide: CurrentRaces,
+          useValue: {
+            addRaceId: () => {},
+            todaysRaces: signal([]),
+          },
+        },
+        {
+          provide: SeriesEntryStore,
+          useValue: {
+            getSeriesEntries: async () => [],
+            selectedEntries: signal([]),
+          },
+        },
+        {
+          provide: EntryService,
+          useValue: {
+            findEntryConflicts: () => [],
+            enterRaces,
+            swapAndEnter: async () => {},
+          },
+        },
+        {
+          provide: DialogsService,
+          useValue: {
+            promptEntryConflict: async () => 'cancel',
+          },
+        },
+        {
+          provide: MatSnackBar,
+          useValue: { open: () => {} },
+        },
+        {
+          provide: MatDialog,
+          useValue: { open: () => ({ afterClosed: () => signal(undefined) }) },
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(EntryWizard);
+    for (const [name, value] of Object.entries(options.inputs ?? {})) {
+      fixture.componentRef.setInput(name, value);
+    }
+    fixture.componentInstance.entered.subscribe(result => entered.push(result));
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('starts on "recent" step for a normal user with stored boats', () => {
+    const fixture = setupTestBed({
+      isRO: false,
+      userBoats: [testBoat1, testBoat2],
+    });
+    const component = fixture.componentInstance;
+    expect(component.hasRecentBoats()).toBe(true);
+    expect(component.step()).toBe('recent');
+    expect(component.recentBoats()).toEqual([testBoat1, testBoat2]);
+  });
+
+  it('starts on "category" step for a normal user with no stored boats', () => {
+    const fixture = setupTestBed({
+      isRO: false,
+      userBoats: [],
+    });
+    const component = fixture.componentInstance;
+    expect(component.hasRecentBoats()).toBe(false);
+    expect(component.step()).toBe('category');
+  });
+
+  it('starts on "category" step for a race officer even if boats exist', () => {
+    const fixture = setupTestBed({
+      isRO: true,
+      userBoats: [testBoat1],
+    });
+    const component = fixture.componentInstance;
+    expect(component.hasRecentBoats()).toBe(false);
+    expect(component.step()).toBe('category');
+  });
+
+  it('selecting a recent boat sets selectedBoat and transitions to "races" step', () => {
+    const fixture = setupTestBed({
+      isRO: false,
+      userBoats: [testBoat1, testBoat2],
+    });
+    const component = fixture.componentInstance;
+    component.selectRecentBoat(testBoat1);
+    expect(component.selectedBoat()).toEqual(testBoat1);
+    expect(component.step()).toBe('races');
+  });
+
+  it('selecting "...another boat" transitions to "category" step with cleared boat', () => {
+    const fixture = setupTestBed({
+      isRO: false,
+      userBoats: [testBoat1],
+    });
+    const component = fixture.componentInstance;
+    component.chooseAnotherBoat();
+    expect(component.selectedBoat()).toBeNull();
+    expect(component.step()).toBe('category');
+  });
+
+  it('goBack from races step returns to recent step if started from recent boat', () => {
+    const fixture = setupTestBed({
+      isRO: false,
+      userBoats: [testBoat1],
+    });
+    const component = fixture.componentInstance;
+    component.selectRecentBoat(testBoat1);
+    expect(component.step()).toBe('races');
+
+    component.goBack();
+    expect(component.step()).toBe('recent');
+  });
+
+  it('goBack from category step returns to recent step when user has recent boats', () => {
+    const fixture = setupTestBed({
+      isRO: false,
+      userBoats: [testBoat1],
+    });
+    const component = fixture.componentInstance;
+    component.chooseAnotherBoat();
+    expect(component.step()).toBe('category');
+
+    component.goBack();
+    expect(component.step()).toBe('recent');
+  });
+
+  it('clears the member search and its filter when going back to the entry type buttons', () => {
+    const fixture = setupTestBed({ isRO: false, userBoats: [] });
+    const component = fixture.componentInstance;
+    component.startMember();
+    component.boatSearch.set('Aero');
+    expect(component.filteredBoats().map(b => b.id)).toEqual(['b2']);
+
+    component.goBack();
+    component.startMember();
+
+    expect(component.boatSearch()).toBe('');
+    expect(component.filteredBoats().map(b => b.id)).toEqual(['b1', 'b2']);
+  });
+
+  it('sets racePanelInitialPeriod to null when races exist today, and "future" when no races exist today', () => {
+    const now = new Date();
+    const todayRace: Race = {
+      id: 'r-today',
+      seriesId: 's1',
+      seriesName: 'Spring Series',
+      fleetId: 'f-gen',
+      index: 1,
+      raceOfDay: 1,
+      scheduledStart: now,
+      type: 'Handicap',
+      status: 'Future',
+      isDiscardable: true,
+      isAverageLap: false,
+      resultsSheetImage: '',
+      dirty: false,
+    };
+
+    const futureRace: Race = {
+      id: 'r-future',
+      seriesId: 's1',
+      seriesName: 'Spring Series',
+      fleetId: 'f-gen',
+      index: 2,
+      raceOfDay: 1,
+      scheduledStart: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
+      type: 'Handicap',
+      status: 'Future',
+      isDiscardable: true,
+      isAverageLap: false,
+      resultsSheetImage: '',
+      dirty: false,
+    };
+
+    // Case 1: Today + Future race available -> initial period should be null (today)
+    const fixture = setupTestBed({
+      isRO: false,
+      userBoats: [testBoat1],
+      races: [todayRace, futureRace],
+    });
+    const comp = fixture.componentInstance;
+    comp.selectRecentBoat(testBoat1);
+    fixture.detectChanges();
+    expect(comp.racePanelInitialPeriod()).toBeNull();
+
+    // Case 2: Only Future race available -> initial period should be 'future'
+    racesSig.set([futureRace]);
+    fixture.detectChanges();
+    expect(comp.racePanelInitialPeriod()).toBe('future');
+  });
+
+  describe('initial search from manual results', () => {
+    it('seeds the member and club boat search but leaves the first step unchanged', () => {
+      const fixture = setupTestBed({ isRO: true, inputs: { initialSearch: ' 5678 ' } });
+      const comp = fixture.componentInstance;
+
+      expect(comp.step()).toBe('category');
+      expect(comp.boatSearch()).toBe('');
+
+      comp.startMember();
+      expect(comp.boatSearch()).toBe('5678');
+      expect(comp.filteredBoats().map(b => b.id)).toEqual(['b2']);
+
+      comp.goBack();
+      comp.startClub();
+      expect(comp.boatSearch()).toBe('5678');
+    });
+
+    it('pre-fills the visitor sail number when the search looks like a sail number', () => {
+      const fixture = setupTestBed({ isRO: true, inputs: { initialSearch: 'GBR 999' } });
+      const comp = fixture.componentInstance;
+      comp.startVisitor();
+      expect(comp.visitorForm.controls['sailNumber'].value).toBe('GBR 999');
+    });
+
+    it('does not pre-fill the visitor sail number from a name', () => {
+      const fixture = setupTestBed({ isRO: true, inputs: { initialSearch: 'Smith' } });
+      const comp = fixture.componentInstance;
+      comp.startVisitor();
+      expect(comp.visitorForm.controls['sailNumber'].value).toBe('');
+    });
+  });
+
+  describe('isDirty', () => {
+    it('is false initially and true once a boat is selected', () => {
+      const fixture = setupTestBed({ isRO: true });
+      const comp = fixture.componentInstance;
+      expect(comp.isDirty()).toBe(false);
+
+      comp.startMember();
+      comp.selectedBoat.set(testBoat1);
+      expect(comp.isDirty()).toBe(true);
+    });
+  });
+
+  describe('OOD entry from duty check-in', () => {
+    const oodInputs = { oodHelm: 'Alice SMITH' };
+
+    function todayRace(): Race {
+      return {
+        id: 'r-today',
+        seriesId: 's1',
+        seriesName: 'Spring Series',
+        fleetId: 'f-gen',
+        index: 1,
+        raceOfDay: 1,
+        scheduledStart: new Date(),
+        type: 'Handicap',
+        status: 'Future',
+        isDiscardable: true,
+        isAverageLap: false,
+        resultsSheetImage: '',
+        dirty: false,
+      };
+    }
+
+    it('starts on the member boat picker searched by the duty member surname', () => {
+      const fixture = setupTestBed({ userBoats: [testBoat1], inputs: oodInputs });
+      const comp = fixture.componentInstance;
+
+      expect(comp.step()).toBe('details');
+      expect(comp.boatCategory()).toBe('member');
+      expect(comp.boatSearch()).toBe('SMITH');
+    });
+
+    it('enters races with the OOD result code and emits the entered races', async () => {
+      const race = todayRace();
+      const fixture = setupTestBed({ userBoats: [], races: [race], inputs: oodInputs });
+      const comp = fixture.componentInstance;
+      comp.selectedBoat.set(testBoat1);
+      comp.raceSelectionGroup.controls.enteredRaces.setValue([race]);
+      fixture.detectChanges();
+
+      await comp.onSubmit();
+
+      expect(enterRaces).toHaveBeenCalledWith(expect.objectContaining({ resultCode: 'OOD', helm: 'Alice Smith' }));
+      expect(entered).toEqual([{ races: [race] }]);
+      expect(comp.isDirty()).toBe(false);
+    });
+
+    it('does not set a result code for a normal entry', async () => {
+      const race = todayRace();
+      const fixture = setupTestBed({ userBoats: [], races: [race] });
+      const comp = fixture.componentInstance;
+      comp.selectedBoat.set(testBoat1);
+      comp.raceSelectionGroup.controls.enteredRaces.setValue([race]);
+      fixture.detectChanges();
+
+      await comp.onSubmit();
+
+      expect(enterRaces).toHaveBeenCalledWith(expect.objectContaining({ resultCode: undefined }));
+    });
+  });
+});

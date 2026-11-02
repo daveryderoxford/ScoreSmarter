@@ -127,7 +127,8 @@ export class PositionBasedInputPanel implements AfterViewInit {
 
   race = input.required<Race>();
   competitors = input.required<ResolvedRaceCompetitor[]>();
-  readonly addEntryRequested = output<void>();
+  /** Emits the current search text so the new entry can start from it. */
+  readonly addEntryRequested = output<string>();
 
   readonly isMobile = toSignal(
     this.breakpoint.observe('(max-width: 1023px)').pipe(map(r => r.matches)),
@@ -315,7 +316,7 @@ export class PositionBasedInputPanel implements AfterViewInit {
   }
 
   requestAddEntry(): void {
-    this.addEntryRequested.emit();
+    this.addEntryRequested.emit(this.searchText());
   }
 
   private zoneFromContainer(container: CdkDropList<string[]>): string {

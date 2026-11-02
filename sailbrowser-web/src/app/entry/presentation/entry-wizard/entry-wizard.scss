@@ -1,0 +1,236 @@
+:host {
+  display: block;
+}
+
+.form-card {
+  padding: 15px 25px;
+}
+
+.race-selection-card app-races-panel {
+  --races-panel-list-min-height: 336px;
+  --races-panel-list-max-height: 336px;
+  display: block;
+}
+
+.boat-step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.boat-step-header .step-instruction {
+  margin: 0;
+  flex: 0 1 auto;
+}
+
+.selected-boat-line {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  font: var(--mat-sys-body-medium);
+  font-weight: 500;
+  color: var(--mat-sys-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.boat-picker-toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.boat-picker-toolbar .search-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.new-boat-btn {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+
+.boat-picker-list {
+  height: 360px;
+  margin-top: 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  background: var(--mat-sys-surface-container);
+  box-sizing: border-box;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.boat-picker-list--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.boat-picker-helm {
+  position: static;
+  background: transparent;
+  padding: 10px 16px 2px;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
+  min-height: auto;
+}
+
+/* Indent via leading space (not margin) so 100%-wide options don't force horizontal scroll. */
+.boat-picker-boat {
+  --mat-list-list-item-leading-space: 32px;
+}
+
+.boat-picker-empty {
+  margin: 0;
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
+}
+
+.actions {
+  margin-top: 10px;
+  margin-right: 10px;
+  margin-left: 10px;
+  display: flex;
+  gap: 12px;
+}
+.details-step-actions {
+  align-items: center;
+}
+.details-step-actions .step-next {
+  margin-left: auto;
+}
+.race-step-actions {
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.category-grid {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  min-height: 280px;
+}
+
+.category-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.category-btn {
+  min-height: 88px;
+  width: 100%;
+}
+
+.category-btn-member {
+  align-self: center;
+  width: calc((100% - 16px) / 2);
+}
+
+.category-back-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.recent-boats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 280px;
+}
+
+.recent-boats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recent-boat-btn {
+  min-height: 52px;
+  padding: 10px 16px;
+  text-align: left;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.recent-boat-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.recent-boat-title {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.recent-boat-helm, .recent-boat-badge {
+  font-size: 0.8125rem;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.another-boat-btn {
+  margin-top: 8px;
+  min-height: 48px;
+  width: 100%;
+}
+
+.step-instruction {
+  margin: 0 0 16px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-title-medium);
+}
+
+.ood-banner {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+  font: var(--mat-sys-title-small);
+}
+
+.visitor-form mat-form-field {
+  display: block;
+  width: 100%;
+}
+
+.helm-crew-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 12px 0 8px;
+}
+
+.helm-crew-row mat-form-field {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.divisions-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+.divisions-block-title {
+  font-weight: 500;
+  color: var(--mat-sys-on-surface-variant);
+}
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
