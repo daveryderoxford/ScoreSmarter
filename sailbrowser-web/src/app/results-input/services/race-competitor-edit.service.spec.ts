@@ -227,6 +227,30 @@ describe('RaceCompetitorEditService', () => {
         }),
       ).rejects.toThrowError(/already entered in this race/);
     });
+
+    it('saves a capitalisation-only helm change in place on the same series entry', async () => {
+      raceCalendar.series = [pySeries('s1')];
+      raceCalendar.races = [testRace('r1', 's1'), testRace('r2', 's1')];
+      entryStore.entries = [
+        { id: 'se-1', seriesId: 's1', helm: 'fred bloggs', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], divisions: [] },
+      ];
+      compStore.comps = [
+        new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
+        new RaceCompetitor({ id: 'c2', seriesId: 's1', raceId: 'r2', seriesEntryId: 'se-1' }),
+      ];
+
+      await service.applyChangeEnteredCompetitor({
+        competitorId: 'c1',
+        helm: 'Fred Bloggs',
+        boatClass: 'ILCA 7',
+        sailNumber: '100',
+      });
+
+      expect(entryStore.entries.map(e => e.id)).toEqual(['se-1']);
+      expect(entryStore.entries[0].helm).toBe('Fred Bloggs');
+      expect(compStore.comps.every(c => c.seriesEntryId === 'se-1')).toBe(true);
+      expect(raceCalendar.races.every(r => r.dirty)).toBe(true);
+    });
   });
 
   describe('applyRaceResultData', () => {
@@ -328,6 +352,22 @@ describe('RaceCompetitorEditService', () => {
       expect(entryStore.entries[0].crew).toBe('Crew A');
       expect(raceCalendar.races.find(r => r.id === 'r1')!.dirty).toBe(true);
       expect(raceCalendar.races.find(r => r.id === 'r2')!.dirty).toBe(true);
+    });
+
+    it('saves a capitalisation-only helm change', async () => {
+      raceCalendar.series = [pySeries('s1')];
+      raceCalendar.races = [testRace('r1', 's1')];
+      entryStore.entries = [
+        { id: 'se-1', seriesId: 's1', helm: 'fred bloggs', boatClass: 'ILCA 7', sailNumber: '100', handicaps: [], divisions: [] },
+      ];
+      compStore.comps = [
+        new RaceCompetitor({ id: 'c1', seriesId: 's1', raceId: 'r1', seriesEntryId: 'se-1' }),
+      ];
+
+      await service.applySeriesTypo({ competitorId: 'c1', helm: 'Fred Bloggs' });
+
+      expect(entryStore.entries[0].helm).toBe('Fred Bloggs');
+      expect(raceCalendar.races[0].dirty).toBe(true);
     });
 
     it('refuses in-place helm rename when another series entry already has that identity', async () => {

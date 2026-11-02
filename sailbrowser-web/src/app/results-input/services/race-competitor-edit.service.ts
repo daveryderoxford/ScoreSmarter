@@ -84,6 +84,13 @@ export class RaceCompetitorEditService {
       return;
     }
 
+    if (entriesMatchIdentity(entry, proposed)) {
+      const next: SeriesEntry = { ...entry, helm, boatClass, sailNumber };
+      await this.mutator.updateSeriesEntryFromEdit(entry, next);
+      await this.markRaceDirty(target.raceId);
+      return;
+    }
+
     this.assertIdentityAllowedInRace(target, entry, series, proposed);
 
     const boatClassChanged = !boatClassEqual(entry.boatClass, boatClass);
