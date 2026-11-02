@@ -1,10 +1,6 @@
-<app-page-layout>
-<app-toolbar title="Enter"></app-toolbar>
-<app-list-pane maxWidth="480px">
-<div class="content">
-  @if (isOodEntry) {
+  @if (isOodEntry()) {
     <p class="ood-banner" role="status">
-      Entering as Officer of the Day{{ oodHelm ? ' for ' + oodHelm : '' }}
+      Entering as Officer of the Day{{ oodHelm() ? ' for ' + oodHelm() : '' }}
     </p>
   }
   @switch (step()) {
@@ -43,7 +39,7 @@
 
     @case ('category') {
       <div class="category-grid">
-        <button matButton="filled" type="button" class="category-btn category-btn-member" (click)="startMember()">
+        <button matButton="filled" type="button" class="category-btn category-btn-member" cdkFocusInitial (click)="startMember()">
           Member's Boats
         </button>
         <div class="category-row">
@@ -106,6 +102,7 @@
               <mat-icon matPrefix>search</mat-icon>
               <input
                 #boatSearchInput
+                cdkFocusInitial
                 matInput
                 [value]="boatSearch()"
                 (input)="boatSearch.set($any($event.target).value)"
@@ -229,6 +226,3 @@
       </form>
     }
   }
-</div>
-</app-list-pane>
-</app-page-layout>

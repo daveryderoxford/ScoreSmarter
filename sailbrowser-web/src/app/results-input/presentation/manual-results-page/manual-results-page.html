@@ -121,7 +121,7 @@
   </div>
   <div class="input-section mat-elevation-z2">
     <app-handicap-input-panel [race]="race" [competitors]="sortedCompetitors()" [handicapScheme]="handicapScheme()"
-      [(selectedCompetitor)]="handicapSelectedCompetitor" (addEntryRequested)="addEntryForSelectedRace()" />
+      [(selectedCompetitor)]="handicapSelectedCompetitor" (addEntryRequested)="addEntryForSelectedRace($event)" />
   </div>
 </div>
 } @else {
@@ -129,7 +129,7 @@
   <div class="position-workspace mat-elevation-z1">
     <h3 class="position-workspace-title">Record result (finish order)</h3>
     <app-position-based-input-panel [race]="race" [competitors]="sortedCompetitors()"
-      (addEntryRequested)="addEntryForSelectedRace()" />
+      (addEntryRequested)="addEntryForSelectedRace($event)" />
   </div>
 </div>
 }

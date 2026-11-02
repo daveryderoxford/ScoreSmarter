@@ -10,6 +10,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
+import { openEntryDialog } from 'app/entry/presentation/entry-dialog/entry-dialog';
 import { ScoringEngine } from 'app/published-results';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { RacePickerDialog, type RacePickerDialogData } from 'app/race-calender/presentation/race-picker-dialog/race-picker-dialog';
@@ -265,16 +266,14 @@ export class ManualResultsPage {
     this.raceIds.set([]);
   }
 
-  async addEntryForSelectedRace(): Promise<void> {
+  addEntryForSelectedRace(search = ''): void {
     const race = this.selectedRace();
     if (!race) return;
-    this.currentRacesStore.addRaceId(race.id);
-    await this.router.navigate(['entry', 'enter'], {
-      queryParams: {
-        raceId: race.id,
-        returnTo: 'results-input',
-      },
-    });
+    openEntryDialog(
+      this.dialog,
+      { raceId: race.id, initialSearch: search.trim() || undefined },
+      this.isMobile(),
+    );
   }
 
   async viewResultsForSelectedRace(): Promise<void> {
