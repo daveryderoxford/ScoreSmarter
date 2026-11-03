@@ -13,7 +13,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { SubmitButton } from "app/shared/components/submit-button";
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { Race, RaceCalendarStore } from 'app/race-calender';
+import { Race, RaceCalendarStore } from 'app/race-calendar';
 import { TimeInput } from 'app/shared/components/time-input/time-input';
 import { dateAtSecondsOfDay, secondsSinceStartOfDay } from 'app/shared/utils/time-utils';
 
@@ -112,7 +112,7 @@ export class RaceEdit {
         this.busy.set(true);
         await this.rcs.updateRace(race.id, update);
         this.form.reset();
-        this.router.navigate(['/race-calender/series-details/', race.seriesId]);
+        this.router.navigate(['/race-calendar/series-details/', race.seriesId]);
       } catch (error: any) {
         this.snackbar.open("Error encountered updating race", "Dismiss", { duration: 3000 });
         console.log('RaceEdit: Error updating race ' + error.toString());

@@ -8,7 +8,7 @@ import { BoatsStore } from 'app/boats';
 import { ClubStore, ClubTenant } from 'app/club-tenant';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import { DutiesService } from 'app/duties';
-import { RaceCalendarStore } from 'app/race-calender';
+import { RaceCalendarStore } from 'app/race-calendar';
 import { CurrentRaces } from 'app/results-input';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';

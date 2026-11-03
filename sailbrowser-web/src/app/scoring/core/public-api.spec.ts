@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { scoreSeriesSnapshot } from './public-api';
 import { score } from 'app/scoring/services/scorer';
-import type { Race } from 'app/race-calender/model/race';
+import type { Race } from 'app/race-calendar/model/race';
 import { RaceCompetitor } from 'app/results-input/model/race-competitor';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
 import type { ScoringConfig } from 'app/scoring/services/series-scorer';

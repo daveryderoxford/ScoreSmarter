@@ -1,6 +1,6 @@
-import { entryDivisionIds } from '../../race-calender/model/division';
+import { entryDivisionIds } from '../../race-calendar/model/division';
 import { hasRaceRank, RaceResult, UNRANKED_RACE_RANK } from '../../published-results/model/published-race';
-import { Race, RaceType } from '../../race-calender';
+import { Race, RaceType } from '../../race-calendar';
 import { RaceCompetitor, SeriesEntry } from '../../results-input';
 import { ScoreSmarterError } from '../../shared/utils/scoresmarter-error';
 import { getHandicapValue } from '../model/handicap';

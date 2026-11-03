@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from '@storybook/angular';
-import type { Division } from 'app/race-calender/model/division';
+import type { Division } from 'app/race-calendar/model/division';
 import { SeriesResultsTable } from './series-results-table';
 import { PUBLIC_SERIES_MOCK } from '@testing/mocks/published-results/published-series-mocks';
 import { MERGED_BOAT_CLASS_SEPARATOR } from 'app/scoring/services/series-scorer';

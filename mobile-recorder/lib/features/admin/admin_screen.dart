@@ -12,7 +12,7 @@ class AdminScreen extends StatelessWidget {
       route: AppRoute.boats.name
     ),
     (
-      name: 'Race calander',
+      name: 'Race calendar',
       description: 'Seres and races',
       route: AppRoute.series.name
     ),

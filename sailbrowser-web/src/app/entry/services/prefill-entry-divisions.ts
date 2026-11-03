@@ -1,7 +1,7 @@
-import type { Race } from 'app/race-calender/model/race';
-import type { Division } from 'app/race-calender/model/division';
-import { entryDivisionIds } from 'app/race-calender/model/division';
-import type { Series } from 'app/race-calender/model/series';
+import type { Race } from 'app/race-calendar/model/race';
+import type { Division } from 'app/race-calendar/model/division';
+import { entryDivisionIds } from 'app/race-calendar/model/division';
+import type { Series } from 'app/race-calendar/model/series';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
 import {
   entriesMatchIdentity,

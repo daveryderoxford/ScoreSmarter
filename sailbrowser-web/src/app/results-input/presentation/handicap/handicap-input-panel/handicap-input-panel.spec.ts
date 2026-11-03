@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ClubStore } from 'app/club-tenant';
-import { Race } from 'app/race-calender';
+import { Race } from 'app/race-calendar';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RaceCompetitor } from '../../../model/race-competitor';
 import { ResolvedRaceCompetitor } from '../../../model/resolved-race-competitor';

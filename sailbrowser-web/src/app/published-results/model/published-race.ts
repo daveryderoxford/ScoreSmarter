@@ -1,7 +1,7 @@
 import type { SailNumber } from 'app/boats/model/sail-number';
-import { RaceType } from '../../race-calender/model/race-type';
-import type { Division } from 'app/race-calender/model/division';
-import type { ResultsState } from 'app/race-calender/model/results-state';
+import { RaceType } from '../../race-calendar/model/race-type';
+import type { Division } from 'app/race-calendar/model/division';
+import type { ResultsState } from 'app/race-calendar/model/results-state';
 import type { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { ResultCode } from 'app/scoring/model/result-code';
 

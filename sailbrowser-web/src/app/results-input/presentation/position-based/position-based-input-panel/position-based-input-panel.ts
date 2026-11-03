@@ -24,7 +24,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Race } from 'app/race-calender';
+import { Race } from 'app/race-calendar';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { sailNumberMatchesSearch, sailNumbersEqual } from 'app/boats/model/sail-number';
 import { normaliseString } from 'app/shared/utils/string-utils';

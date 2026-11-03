@@ -2,8 +2,8 @@ import { Component, computed, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
-import { RacesPanel } from 'app/race-calender/presentation/races-panel/races-panel';
-import type { RacesPanelFilter } from 'app/race-calender/presentation/races-panel/races-panel-utils';
+import { RacesPanel } from 'app/race-calendar/presentation/races-panel/races-panel';
+import type { RacesPanelFilter } from 'app/race-calendar/presentation/races-panel/races-panel-utils';
 import { RaceTitlePipe } from 'app/shared/pipes/race-title-pipe';
 import { ScanSelectedRace } from './race-selection.store';
 

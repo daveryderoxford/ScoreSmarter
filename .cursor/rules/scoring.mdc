@@ -1,0 +1,13 @@
+---
+description: How races are scored and which race types can share a results sheet
+globs: sailbrowser-web/src/app/scoring/**/*.ts,sailbrowser-web/src/app/results-input/**/*.ts
+alwaysApply: false
+---
+
+# Scoring
+
+- Race types are `Handicap` (corrected time), `Pursuit` (finish position; the handicap is in the start), and `Level Rating` (finish position). Defined in `race-calendar/model/race-type.ts`.
+- A scoring sheet is either time-based (`Handicap` and `Level Rating`) or position-based (`Pursuit` and `Level Rating`). Do not put `Pursuit` and `Handicap` on one sheet.
+- Durations are stored in seconds. Display them with `DurationPipe`.
+- Score a series by calling `score` from `app/scoring` (`scoring/services/scorer.ts`). It is a pure function. Do not reimplement points math in a component or a Cloud Function.
+- `docs/scoring-logic.md` is the product spec. If it disagrees with `app/scoring`, the code is right; update the spec.

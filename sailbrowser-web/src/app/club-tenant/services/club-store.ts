@@ -13,7 +13,7 @@ import { firstValueFrom, filter } from 'rxjs';
 import { Club, ScoringDefaults } from '../model/club';
 import { Fleet, getFleetName, isSupportedFleet } from 'app/club-tenant/model/fleet';
 import { BoatClass } from '../model/boat-class';
-import { Season, SeasonStatus } from 'app/race-calender/model/season';
+import { Season, SeasonStatus } from 'app/race-calendar/model/season';
 
 function normalizeSeasonStatus(value: SeasonStatus | string | undefined): SeasonStatus {
   return value === 'archived' ? 'archived' : 'current';

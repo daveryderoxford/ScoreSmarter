@@ -1,4 +1,4 @@
-import { Season } from 'app/race-calender/model/season';
+import { Season } from 'app/race-calendar/model/season';
 import { BoatClass } from './boat-class';
 import { Fleet } from 'app/club-tenant/model/fleet';
 import { HandicapScheme } from '../../scoring/model/handicap-scheme';

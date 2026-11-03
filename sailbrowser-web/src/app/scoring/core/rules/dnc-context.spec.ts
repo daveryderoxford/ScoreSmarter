@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildDncContext } from './dnc-context';
-import type { Race } from 'app/race-calender/model/race';
+import type { Race } from 'app/race-calendar/model/race';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
 import { RaceCompetitor } from 'app/results-input/model/race-competitor';
 import type { HandicapConfiguration } from 'app/scoring/model/scoring-configuration';

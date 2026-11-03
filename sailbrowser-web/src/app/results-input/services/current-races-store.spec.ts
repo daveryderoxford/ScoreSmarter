@@ -1,10 +1,10 @@
 import { Injectable, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Race } from 'app/race-calender';
-import type { Series } from 'app/race-calender';
+import type { Race } from 'app/race-calendar';
+import type { Series } from 'app/race-calendar';
 import { DEFAULT_SHORT_DISCARDS } from 'app/scoring/model/discard-profile';
-import { RaceCalendarStore } from '../../race-calender/services/full-race-calander';
+import { RaceCalendarStore } from '../../race-calendar/services/full-race-calander';
 import { CurrentRaces } from './current-races-store';
 
 const FIXED_NOW = new Date('2026-04-06T12:00:00.000Z');

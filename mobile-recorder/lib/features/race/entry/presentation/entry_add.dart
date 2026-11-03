@@ -9,7 +9,7 @@ import 'package:sailbrowser_flutter/features/club/domain/boat.dart';
 import 'package:sailbrowser_flutter/features/club/domain/boats_service.dart';
 import 'package:sailbrowser_flutter/features/club/domain/clubs_service.dart';
 import 'package:sailbrowser_flutter/features/club/presentation/widgets/boat_form_fields.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series_service.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series_service.dart';
 import 'package:sailbrowser_flutter/features/race/domain/race_competitor.dart';
 import 'package:sailbrowser_flutter/features/race/domain/race_competitor_service.dart';
 import 'package:sailbrowser_flutter/features/results/scoring/rating_system.dart';

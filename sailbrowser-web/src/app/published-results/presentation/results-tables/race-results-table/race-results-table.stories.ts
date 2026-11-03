@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/angular';
-import type { Division } from 'app/race-calender/model/division';
+import type { Division } from 'app/race-calendar/model/division';
 import { RaceResultsTable } from './race-results-table';
 import { PUBLISHED_RACES_MOCKS } from '@testing/mocks/published-results/published-races-mocks';
 

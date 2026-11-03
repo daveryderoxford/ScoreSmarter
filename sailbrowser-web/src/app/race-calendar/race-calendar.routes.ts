@@ -10,7 +10,7 @@ import { SeriesEdit } from './presentation/series-edit';
 import { SeriesList } from './presentation/series-list';
 import { SeriesDetails } from './presentation/series.details/series-details';
 
-export const RACE_CALENDER_ROUTES: Routes = [
+export const RACE_CALENDAR_ROUTES: Routes = [
    {
       path: '',
       component: SeriesList,

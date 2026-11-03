@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { Firestore, writeBatch } from '@angular/fire/firestore';
 import { ClubStore } from 'app/club-tenant/services/club-store';
 import { RatingListStore } from 'app/system-data';
-import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
+import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calander';
 import { SeriesEntryStore } from './series-entry-store';
 import {
   planSeriesEntryHandicapSync,

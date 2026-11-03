@@ -10,7 +10,7 @@ import { RaceListItem } from "../race-list-item/race-list-item";
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { seriesScoringSchemeDetails } from 'app/scoring/model/scoring-algotirhm';
 import { seriesEntryGroupingDetails } from 'app/scoring';
-import { hasResults, Race, RaceCalendarStore, Series, seriesStatus } from 'app/race-calender';
+import { hasResults, Race, RaceCalendarStore, Series, seriesStatus } from 'app/race-calendar';
 import { StatusPill } from '../status-pill/status-pill';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { ClubStore } from 'app/club-tenant';
@@ -108,19 +108,19 @@ export class SeriesDetails {
    busy = signal(false);
 
    copySeries(series: Series) {
-      this.router.navigate(['/race-calender', 'copy', series.id]);
+      this.router.navigate(['/race-calendar', 'copy', series.id]);
    }
 
    editSeries(id: string) {
-      this.router.navigate(['/race-calender', 'edit', id]);
+      this.router.navigate(['/race-calendar', 'edit', id]);
    }
 
    addRace(seriesId: string) {
-      this.router.navigate(['/race-calender/series-details', seriesId, 'add-race']);
+      this.router.navigate(['/race-calendar/series-details', seriesId, 'add-race']);
    }
 
    editRace(race: Race) {
-      this.router.navigate(['/race-calender/series-details', race.seriesId, 'edit-race', race.id]);
+      this.router.navigate(['/race-calendar/series-details', race.seriesId, 'edit-race', race.id]);
    }
 
    async deleteRace(race: Race) {
@@ -150,7 +150,7 @@ export class SeriesDetails {
             this.busy.set(false);
          }
 
-         this.router.navigate(['/race-calender']);
+         this.router.navigate(['/race-calendar']);
       }
    }
 }

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { legendDivisions, type Division } from 'app/race-calender/model/division';
+import { legendDivisions, type Division } from 'app/race-calendar/model/division';
 
 @Component({
   selector: 'app-division-legend',

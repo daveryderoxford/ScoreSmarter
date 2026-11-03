@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { ClubStore } from '../services/club-store';
 import { SeasonForm } from './season-form/season-form';
-import { Season } from 'app/race-calender/model/season';
+import { Season } from 'app/race-calendar/model/season';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 
 /** Detail fragment inside `SeasonPage`. Do not wrap in `PageLayout`. */

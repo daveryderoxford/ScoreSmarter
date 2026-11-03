@@ -28,8 +28,8 @@ import { DivisionValuePicker } from 'app/club-tenant/presentation/divisions/divi
 import { normalizeSailNumber, sailNumberValidator } from 'app/boats/model/sail-number';
 import { HelmNameAutocomplete } from 'app/boats/presentation/helm-name-autocomplete';
 import { SailNumberInput } from 'app/boats/presentation/sail-number-input';
-import { entryDivisionIds } from 'app/race-calender/model/division';
-import { Series } from 'app/race-calender/model/series';
+import { entryDivisionIds } from 'app/race-calendar/model/division';
+import { Series } from 'app/race-calendar/model/series';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
 import { Handicap } from 'app/scoring/model/handicap';
 import { handicapSchemesRequiredForSeries } from 'app/scoring/model/handicap-race-requirements';

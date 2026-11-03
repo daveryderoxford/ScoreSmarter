@@ -1,8 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ScoringEngine } from 'app/published-results/services/scoring-engine';
-import { canMarkFinal, RaceCalendarStore, resultsStateLabel, type ResultsState } from 'app/race-calender';
-import { Race } from 'app/race-calender/model/race';
+import { canMarkFinal, RaceCalendarStore, resultsStateLabel, type ResultsState } from 'app/race-calendar';
+import { Race } from 'app/race-calendar/model/race';
 
 /** Club admin review: marks a race's results final or provisional, then republishes its series. */
 @Injectable({ providedIn: 'root' })

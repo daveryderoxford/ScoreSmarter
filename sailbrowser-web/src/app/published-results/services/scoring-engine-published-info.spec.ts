@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Race } from 'app/race-calender/model/race';
-import type { Series } from 'app/race-calender/model/series';
+import { Race } from 'app/race-calendar/model/race';
+import type { Series } from 'app/race-calendar/model/series';
 import type { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import { publishedCancelledRaces, publishedRaceStarts, publishedSeriesResultsState, publishedSeriesTargets } from './scoring-engine';
 

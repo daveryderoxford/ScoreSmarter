@@ -3,7 +3,7 @@ import { MatListModule } from '@angular/material/list';
 import { DatePipe } from '@angular/common';
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from '@angular/material/button';
-import { Race } from 'app/race-calender';
+import { Race } from 'app/race-calendar';
 import { StatusPill } from '../status-pill/status-pill';
 
 @Component({

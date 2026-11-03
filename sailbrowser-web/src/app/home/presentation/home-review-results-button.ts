@@ -3,8 +3,8 @@ import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
-import { racesAwaitingReview } from 'app/race-calender/model/results-review';
-import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
+import { racesAwaitingReview } from 'app/race-calendar/model/results-review';
+import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calander';
 
 /** Club admin shortcut to the results review page, badged with the races awaiting review. */
 @Component({

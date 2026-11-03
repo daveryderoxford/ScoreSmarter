@@ -3,7 +3,7 @@ import {
   divisionById,
   markerDivisionIds,
   type Division,
-} from 'app/race-calender/model/division';
+} from 'app/race-calendar/model/division';
 
 /** Colour dots for marker-style divisions beside a helm name. */
 @Component({

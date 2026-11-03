@@ -16,7 +16,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from 'app/auth/auth.service';
 import { ClubStore } from 'app/club-tenant';
-import { publishedDivisionDefinitions } from 'app/race-calender/model/division';
+import { publishedDivisionDefinitions } from 'app/race-calendar/model/division';
 import { getFleetName } from 'app/club-tenant/model/fleet';
 import { CurrentRaces } from 'app/results-input';
 import { CenteredText } from 'app/shared/components/centered-text';

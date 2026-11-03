@@ -1,9 +1,9 @@
 import { signal } from '@angular/core';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { applicationConfig, Meta, StoryObj } from '@storybook/angular';
-import { Race } from 'app/race-calender';
-import { Series } from 'app/race-calender/model/series';
-import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
+import { Race } from 'app/race-calendar';
+import { Series } from 'app/race-calendar/model/series';
+import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calander';
 import { ScoringEngine } from 'app/published-results';
 import { CurrentRaces, RaceCompetitor, RaceCompetitorStore, SeriesEntryStore } from 'app/results-input';
 import { SeriesEntry } from 'app/results-input/model/series-entry';

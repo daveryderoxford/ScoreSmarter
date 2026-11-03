@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from "@angular/core";
-import { Race } from 'app/race-calender';
+import { Race } from 'app/race-calendar';
 
 const formatter = new Intl.DateTimeFormat('en-GB', {
   day: '2-digit',

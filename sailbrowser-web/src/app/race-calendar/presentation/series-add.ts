@@ -40,7 +40,7 @@ export class SeriesAdd {
     } finally  {
       this.busy.set(false);
     }
-    this.router.navigate(['/race-calender']);
+    this.router.navigate(['/race-calendar']);
   }
 
   canDeactivate = () => this.form().canDeactivate();

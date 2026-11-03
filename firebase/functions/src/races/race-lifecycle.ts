@@ -1,4 +1,4 @@
-/** Mirrors `RaceStatus` / `ResultsState` in sailbrowser-web/src/app/race-calender/model. */
+/** Mirrors `RaceStatus` / `ResultsState` in sailbrowser-web/src/app/race-calendar/model. */
 export type RaceStatus = "Future" | "In progress" | "Completed" | "Canceled";
 export type ResultsState = "provisional" | "final";
 export type ComputedRaceStatus = Exclude<RaceStatus, "Canceled">;

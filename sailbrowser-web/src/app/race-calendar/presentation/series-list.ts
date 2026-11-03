@@ -50,7 +50,7 @@ import { StatusPill } from './status-pill/status-pill';
                 }
             </mat-form-field>
 
-            <a matButton="tonal" class="right-justify" [routerLink]="['/race-calender/add']">
+            <a matButton="tonal" class="right-justify" [routerLink]="['/race-calendar/add']">
               New
             </a>
           </div>
@@ -60,7 +60,7 @@ import { StatusPill } from './status-pill/status-pill';
           } @else {
             <mat-list class="dense-list">
                 @for (series of filteredSeries(); track series.id) {
-                <mat-list-item [routerLink]="['/race-calender/series-details', series.id]"
+                <mat-list-item [routerLink]="['/race-calendar/series-details', series.id]"
                   [activated]="selectedSeriesId() === series.id">
                   <span matListItemTitle>{{series.name}} ({{this.getSeasonName(series.seasonId)}})</span>
                   <span matListItemLine>

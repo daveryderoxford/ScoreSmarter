@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Race } from '../../race-calender/model/race';
-import { Series } from '../../race-calender/model/series';
+import { Race } from '../../race-calendar/model/race';
+import { Series } from '../../race-calendar/model/series';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { SeriesEntry } from '../../results-input/model/series-entry';
 import { ResultCode } from '../model/result-code';

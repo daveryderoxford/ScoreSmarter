@@ -26,7 +26,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Race } from 'app/race-calender';
+import { Race } from 'app/race-calendar';
 import { ResolvedRaceCompetitor } from 'app/results-input';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { requiresTime } from 'app/scoring/model/result-code-scoring';

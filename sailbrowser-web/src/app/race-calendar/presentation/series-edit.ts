@@ -46,7 +46,7 @@ export class SeriesEdit {
     } finally {
       this.busy.set(false);
     }
-    this.router.navigate(['race-calender/series-details', this.id()]);
+    this.router.navigate(['race-calendar/series-details', this.id()]);
   }
 
   canDeactivate = () => this.form()?.canDeactivate() ?? true;

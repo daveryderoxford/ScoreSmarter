@@ -15,10 +15,10 @@ import {
   resultsStateOf,
   sortRaces,
   type ResultsState,
-} from 'app/race-calender';
-import { Race } from 'app/race-calender/model/race';
-import { StatusPill } from 'app/race-calender/presentation/status-pill/status-pill';
-import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
+} from 'app/race-calendar';
+import { Race } from 'app/race-calendar/model/race';
+import { StatusPill } from 'app/race-calendar/presentation/status-pill/status-pill';
+import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calander';
 import { RaceDayActions } from 'app/results-input/services/race-day-actions';
 import { ResultsStateService } from 'app/results-input/services/results-state.service';
 import { Toolbar } from 'app/shared/components/toolbar';

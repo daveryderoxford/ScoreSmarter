@@ -1,5 +1,5 @@
 import type { Fleet } from 'app/club-tenant/model/fleet';
-import type { RaceStart } from 'app/race-calender/model/race-start';
+import type { RaceStart } from 'app/race-calendar/model/race-start';
 import { isInFleet } from 'app/scoring/app-bridge/fleet';
 import type { SeriesEntry } from '../model/series-entry';
 

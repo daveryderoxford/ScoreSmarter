@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
-import type { Series } from 'app/race-calender/model/series';
-import type { Race } from 'app/race-calender/model/race';
+import type { Series } from 'app/race-calendar/model/series';
+import type { Race } from 'app/race-calendar/model/race';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
 import {
   EntriesCsvService,

@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { normalizeSailNumber } from 'app/boats/model/sail-number';
-import { Race, RaceCalendarStore } from 'app/race-calender';
+import { Race, RaceCalendarStore } from 'app/race-calendar';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
 import { Handicap } from 'app/scoring/model/handicap';
 import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';

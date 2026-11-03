@@ -1,8 +1,8 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
-import { RaceCalendarStore } from 'app/race-calender';
-import type { Race } from 'app/race-calender/model/race';
+import { RaceCalendarStore } from 'app/race-calendar';
+import type { Race } from 'app/race-calendar/model/race';
 import { CurrentRaces } from '../../services/current-races-store';
 import { ScanSelectedRace } from './race-selection.store';
 import { RaceStep } from './race-step';

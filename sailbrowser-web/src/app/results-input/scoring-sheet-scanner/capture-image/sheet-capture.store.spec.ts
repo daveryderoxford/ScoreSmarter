@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Race } from 'app/race-calender/model/race';
+import type { Race } from 'app/race-calendar/model/race';
 import { racesToLinkToSheet } from './sheet-capture.store';
 
 const race = (id: string, resultsSheetImage: string) => ({ id, resultsSheetImage }) as Race;
