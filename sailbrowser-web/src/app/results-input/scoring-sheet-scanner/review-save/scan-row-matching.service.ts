@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Race } from 'app/race-calender/model/race';
+import { Race } from 'app/race-calendar/model/race';
 import { RESULT_CODES, ResultCode } from 'app/scoring/model/result-code-scoring';
 import type { ScannerTimeFormat } from '@shared/scanner-context';
 import { normaliseString } from 'app/shared/utils/string-utils';

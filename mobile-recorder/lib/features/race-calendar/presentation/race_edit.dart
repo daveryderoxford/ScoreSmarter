@@ -10,10 +10,10 @@ import 'package:sailbrowser_flutter/common_widgets/continue_cancel_dialog.dart';
 import 'package:sailbrowser_flutter/common_widgets/delete_button.dart';
 import 'package:sailbrowser_flutter/common_widgets/responsive_center.dart';
 import 'package:sailbrowser_flutter/common_widgets/will_pop_form.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series_service.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series_service.dart';
 
-import 'race_calander_controller.dart';
+import 'race_calendar_controller.dart';
 
 class EditRace extends ConsumerStatefulWidget {
   final String id;
@@ -185,7 +185,7 @@ class _EditSeriesState extends ConsumerState<EditRace> with UiLoggy {
   List<Widget> _buildFormChildren() {
     final DateTime? s = (race == null) ? null : race!.scheduledStart;
     final initialDate = race == null
-        ? ref.read(raceCalanderController).defaultRaceStartTime(series!.races)
+        ? ref.read(raceCalendarController).defaultRaceStartTime(series!.races)
         : DateTime(s!.year, s.month, s.day);
 
     return [

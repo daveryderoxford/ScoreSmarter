@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Fleet } from 'app/club-tenant/model/fleet';
-import type { Series } from 'app/race-calender';
-import type { Race } from 'app/race-calender';
+import type { Series } from 'app/race-calendar';
+import type { Race } from 'app/race-calendar';
 import type { HandicapConfiguration, LevelRatingConfiguration } from './scoring-configuration';
 import {
   handicapSchemesRequiredForRaces,

@@ -8,7 +8,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { PublishedSeason } from 'app/published-results';
-import { distinctDisplayGroups } from 'app/race-calender/model/series-display-group';
+import { distinctDisplayGroups } from 'app/race-calendar/model/series-display-group';
 import { startOfDay, subDays } from 'date-fns';
 
 type SeriesInfo = PublishedSeason['series'][number];

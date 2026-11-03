@@ -1,5 +1,5 @@
 import { PublishedRace, RaceResult } from '../../published-results/model/published-race';
-import { Race } from '../../race-calender/model/race';
+import { Race } from '../../race-calendar/model/race';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { SeriesEntry } from '../../results-input/model/series-entry';
 import { ScoringConfiguration } from '../model/scoring-configuration';

@@ -1,6 +1,6 @@
 import { CdkTableModule } from '@angular/cdk/table';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { doesRaceRequireHandicap, type RaceType } from 'app/race-calender/model/race-type';
+import { doesRaceRequireHandicap, type RaceType } from 'app/race-calendar/model/race-type';
 import {
   markerDivisionIds,
   publishedDivisionDefinitions,
@@ -8,7 +8,7 @@ import {
   textDivisionNames,
   withOptionalDivisionColumn,
   type Division,
-} from 'app/race-calender/model/division';
+} from 'app/race-calendar/model/division';
 import { isRankedRaceResult, RaceResult } from 'app/published-results/model/published-race';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { competitorColumns, nameColumnWidth as computeNameColumnWidth, withOptionalClubColumn } from '../results-table-shared';

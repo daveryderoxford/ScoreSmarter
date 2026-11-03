@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Race } from 'app/race-calender/model/race';
+import type { Race } from 'app/race-calendar/model/race';
 import { scanRaceSelection } from './race-selection.store';
 
 const races: Pick<Race, 'id' | 'type'>[] = [

@@ -1,7 +1,7 @@
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import type { RatingList } from 'app/system-data';
 import { resolveHandicapsForSeries } from 'app/entry/services/entry-helpers';
-import type { Series } from 'app/race-calender/model/series';
+import type { Series } from 'app/race-calendar/model/series';
 import type { Handicap } from 'app/scoring/model/handicap';
 import type { SeriesEntry } from '../model/series-entry';
 

@@ -3,7 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatRadioModule } from '@angular/material/radio';
 import type { SeriesEntryMatchingStrategy } from 'app/entry/model/entry-grouping';
-import { Race } from 'app/race-calender';
+import { Race } from 'app/race-calendar';
 import { ResolvedRaceCompetitor } from 'app/results-input/model/resolved-race-competitor';
 import { SeriesEntry } from 'app/results-input/model/series-entry';
 import { Handicap } from 'app/scoring/model/handicap';

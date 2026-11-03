@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Auth } from '@angular/fire/auth';
-import { divisionIdsEqual, entryDivisionIds } from 'app/race-calender/model/division';
-import { RaceCalendarStore } from 'app/race-calender';
+import { divisionIdsEqual, entryDivisionIds } from 'app/race-calendar/model/division';
+import { RaceCalendarStore } from 'app/race-calendar';
 import {
   RaceCompetitorMutator,
   SeriesEntryIdentityConflictError,
@@ -10,7 +10,7 @@ import { SeriesEntryStore } from 'app/results-input/services/series-entry-store'
 import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
 import { ClubStore } from '../../club-tenant';
 import { RatingListStore } from 'app/system-data';
-import { Race } from '../../race-calender/model/race';
+import { Race } from '../../race-calendar/model/race';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { SeriesEntry } from '../../results-input/model/series-entry';
 import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
@@ -98,7 +98,7 @@ export class EntryService {
   private ratingLists = inject(RatingListStore);
   private raceResultsStore = inject(RaceCompetitorStore);
   private seriesEntryStore = inject(SeriesEntryStore);
-  private raceCalanderStore = inject(RaceCalendarStore);
+  private raceCalendarStore = inject(RaceCalendarStore);
   private mutator = inject(RaceCompetitorMutator);
   private auth = inject(Auth);
 
@@ -125,7 +125,7 @@ export class EntryService {
     const created: RaceCompetitor[] = [];
     const ratingLists = await this.ratingLists.load();
     for (const race of details.races) {
-      const series = this.raceCalanderStore.allSeries().find(s => s.id === race.seriesId);
+      const series = this.raceCalendarStore.allSeries().find(s => s.id === race.seriesId);
       if (!series) {
         const msg = 'EntryService: Series not found for race: ' + race.toString();
         console.error(msg);
@@ -180,7 +180,7 @@ export class EntryService {
     const conflicts: EntryConflict[] = [];
 
     for (const race of details.races) {
-      const series = this.raceCalanderStore.allSeries().find(s => s.id === race.seriesId);
+      const series = this.raceCalendarStore.allSeries().find(s => s.id === race.seriesId);
       // Default to the strictest strategy if the series can't be located so
       // we never silently downgrade conflict detection.
       const strategy = series?.entryAlgorithm ?? 'classSailNumberHelm';

@@ -1,4 +1,4 @@
-import type { Race } from 'app/race-calender/model/race';
+import type { Race } from 'app/race-calendar/model/race';
 import type { Race as ScoringRace } from 'app/scoring/model/race';
 
 /**

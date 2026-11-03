@@ -7,12 +7,12 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { PageLayout } from 'app/shared/layout/page-layout';
-import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
-import { racesAwaitingReview } from 'app/race-calender/model/results-review';
+import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calendar';
+import { racesAwaitingReview } from 'app/race-calendar/model/results-review';
 import { differenceInDays, isFuture } from 'date-fns';
 import { ImportExportContext, ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
-import { RaceCalendarCsvService } from 'app/race-calender/services/race-calendar-csv.service';
-import { RaceCalendarICalService } from 'app/race-calender/services/race-calendar-ical.service';
+import { RaceCalendarCsvService } from 'app/race-calendar/services/race-calendar-csv.service';
+import { RaceCalendarICalService } from 'app/race-calendar/services/race-calendar-ical.service';
 import { BoatsCsvService } from 'app/boats/services/boats-csv.service';
 import { FleetsCsvService } from 'app/club-tenant/services/fleets-csv.service';
 import { RatingListStore } from 'app/system-data';
@@ -95,7 +95,7 @@ export class ClubAdminSwitchboard {
       icon: 'calendar_month',
       resources: [
         { label: 'Seasons', route: '/club/seasons' },
-        { label: 'Series', route: '/race-calender' },
+        { label: 'Series', route: '/race-calendar' },
       ],
       importExportContexts: ['race-calendar']
     },

@@ -1,0 +1,12 @@
+---
+description: Where Cloud Functions are registered and what they must not take over from the client
+globs: firebase/functions/**/*.ts
+alwaysApply: false
+---
+
+# Cloud Functions
+
+- Add every new function to the exports in `firebase/functions/src/index.ts`. Unexported functions are not deployed.
+- Region is `europe-west1`. Callable App Check is on by default in `global-function-options.ts`. An endpoint that must opt out sets that on its own options and authenticates another way.
+- `raceResultsChanged` updates race status from `clubs/{clubId}/race-results`. `seriesCreated` and `seriesChanged` copy series metadata onto the published series document. Neither function scores a race.
+- Leave scoring in `sailbrowser-web/src/app/scoring` unless the task explicitly moves it.

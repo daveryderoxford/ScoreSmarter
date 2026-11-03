@@ -2,9 +2,9 @@ import { provideFakeRatingLists } from 'app/system-data/services/rating-list-sto
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClubStore } from 'app/club-tenant';
-import { RaceCalendarStore } from 'app/race-calender';
-import type { Race } from 'app/race-calender/model/race';
-import type { Series } from 'app/race-calender/model/series';
+import { RaceCalendarStore } from 'app/race-calendar';
+import type { Race } from 'app/race-calendar/model/race';
+import type { Series } from 'app/race-calendar/model/series';
 import type { RaceCompetitor } from 'app/results-input/model/race-competitor';
 import { RaceCompetitorMutator } from 'app/results-input/services/race-competitor-mutator';
 import { RaceCompetitorStore } from 'app/results-input/services/race-competitor-store';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series.dart';
-import 'package:sailbrowser_flutter/features/race-calander/presentation/series_detail.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/presentation/series_detail.dart';
 import 'package:sailbrowser_flutter/util/date_time_extensions.dart';
 
 

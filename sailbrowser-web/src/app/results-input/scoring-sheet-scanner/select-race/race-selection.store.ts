@@ -1,6 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { RaceCalendarStore } from 'app/race-calender';
-import { Race } from 'app/race-calender/model/race';
+import { RaceCalendarStore } from 'app/race-calendar';
+import { Race } from 'app/race-calendar/model/race';
 import { CurrentRaces } from '../../services/current-races-store';
 
 /**

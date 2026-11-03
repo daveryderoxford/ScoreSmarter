@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { Race } from 'app/race-calender';
+import { Race } from 'app/race-calendar';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { RaceTimeInput } from '../handicap/race-time-input';
 import { ResultCodeSelect } from '../result-code-select';

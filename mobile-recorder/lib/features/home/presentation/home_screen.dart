@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sailbrowser_flutter/common_widgets/responsive_center.dart';
 import 'package:sailbrowser_flutter/features/authentication/data/firebase_auth_repository.dart';
 import 'package:sailbrowser_flutter/features/home/presentation/home_race_list_item.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series_service.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series_service.dart';
 import 'package:sailbrowser_flutter/features/race/domain/selected_races.dart';
 import 'package:sailbrowser_flutter/routing/app_router.dart';
 

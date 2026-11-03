@@ -1,19 +1,19 @@
 import { Injectable, inject } from '@angular/core';
 import { Firestore, WriteBatch, getDoc, getDocs, writeBatch } from '@angular/fire/firestore';
-import { RaceCalendarStore, Series } from 'app/race-calender';
-import { Race } from 'app/race-calender/model/race';
-import { resultsStateOf, type ResultsState } from 'app/race-calender/model/results-state';
+import { RaceCalendarStore, Series } from 'app/race-calendar';
+import { Race } from 'app/race-calendar/model/race';
+import { resultsStateOf, type ResultsState } from 'app/race-calendar/model/results-state';
 import { RaceCompetitor, SeriesEntry, SeriesEntryStore } from 'app/results-input';
 import { RaceCompetitorStore } from 'app/results-input/services/race-competitor-store';
 import { scoreSeriesSnapshot } from 'app/scoring/core/public-api';
 import { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import { discardsForRaceIndex } from 'app/scoring/model/discard-profile';
-import { doesRaceRequireHandicap } from 'app/race-calender/model/race-type';
+import { doesRaceRequireHandicap } from 'app/race-calendar/model/race-type';
 import {
   buildDivisionSnapshot,
   rowDivisionIds,
-} from 'app/race-calender/model/division';
-import type { Division } from 'app/race-calender/model/division';
+} from 'app/race-calendar/model/division';
+import type { Division } from 'app/race-calendar/model/division';
 import { groupBy } from 'app/shared/utils/group-by';
 import { PublishedRace } from '../model/published-race';
 import { PublishedSeason, SeriesInfo } from '../model/published-season';

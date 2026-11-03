@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { SeriesEntry } from '../../results-input/model/series-entry';
 import { ResultCode } from '../model/result-code';
-import { Race } from '../../race-calender/model/race';
+import { Race } from '../../race-calendar/model/race';
 import { scoreRace, buildRaceResults, calculateRacePoints } from './race-scorer';
 import { ScoreSmarterError } from '../../shared/utils/scoresmarter-error';
 import { HandicapScheme } from '../model/handicap-scheme';

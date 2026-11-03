@@ -1,4 +1,4 @@
-import type { Series } from 'app/race-calender/model/series';
+import type { Series } from 'app/race-calendar/model/series';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import type { SeriesInfo } from './published-season';
 

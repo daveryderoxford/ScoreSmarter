@@ -6,7 +6,7 @@ import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { ClubStore } from '../services/club-store';
 import { SeasonForm } from './season-form/season-form';
-import { Season } from 'app/race-calender/model/season';
+import { Season } from 'app/race-calendar/model/season';
 
 /** Detail fragment inside `SeasonPage`. Do not wrap in `PageLayout`. */
 @Component({

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ClubStore } from 'app/club-tenant';
-import { Race, RaceCalendarStore } from 'app/race-calender';
-import type { RaceStart } from 'app/race-calender/model/race-start';
+import { Race, RaceCalendarStore } from 'app/race-calendar';
+import type { RaceStart } from 'app/race-calendar/model/race-start';
 import { ResultCode } from 'app/scoring/model/result-code';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';
 import { differenceInSeconds } from 'date-fns';

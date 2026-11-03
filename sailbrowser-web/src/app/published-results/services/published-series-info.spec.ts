@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Series } from 'app/race-calender/model/series';
+import type { Series } from 'app/race-calendar/model/series';
 import type { HandicapConfiguration } from 'app/scoring/model/scoring-configuration';
 import { publishedSeriesInfo } from './scoring-engine';
 

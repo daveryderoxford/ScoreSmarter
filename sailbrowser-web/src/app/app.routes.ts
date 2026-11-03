@@ -5,7 +5,7 @@ export const APP_ROUTES: Routes = [
    { path: "home", title: 'Home', loadComponent: () => import('./home/presentation/home-page').then(c => c.HomePage) },
    { path: "entry", loadChildren: () => import('./entry/entries.routes').then(r => r.ENTERIES_ROUTES) },
    { path: "boats", loadChildren: () => import('./boats/boats.routes').then(r => r.BOATS_ROUTES) },
-   { path: "race-calender", loadChildren: () => import('./race-calender/race-calender.routes').then(r => r.RACE_CALENDER_ROUTES) },
+   { path: "race-calendar", loadChildren: () => import('./race-calendar/race-calendar.routes').then(r => r.RACE_CALENDAR_ROUTES) },
    { path: "results-input", loadChildren: () => import('./results-input/race-results.routes').then(r => r.RESULTS_ENTRY_ROUTES) },
    {
       path: "results-sheet-phone-capture",

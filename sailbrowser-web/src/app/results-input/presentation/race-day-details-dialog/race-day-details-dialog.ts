@@ -7,9 +7,9 @@ import { MatInputModule } from '@angular/material/input';
 import { DutiesService, dutyRaceOfficer } from 'app/duties';
 import { raceDayDateId } from 'app/duties/services/duties.service';
 import { ScoringEngine } from 'app/published-results/services/scoring-engine';
-import { RaceCalendarStore } from 'app/race-calender';
-import { Race } from 'app/race-calender/model/race';
-import { racesOnSameDay } from 'app/race-calender/model/races-on-same-day';
+import { RaceCalendarStore } from 'app/race-calendar';
+import { Race } from 'app/race-calendar/model/race';
+import { racesOnSameDay } from 'app/race-calendar/model/races-on-same-day';
 import { format } from 'date-fns';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 

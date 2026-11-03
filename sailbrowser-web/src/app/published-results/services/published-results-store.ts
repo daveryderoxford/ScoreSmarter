@@ -5,7 +5,7 @@ import { PublishedSeason } from '../model/published-season';
 import { PublishedSeries } from '../model/published-series';
 import { PublishedRace } from '../model/published-race';
 import { publishedSeriesConverter } from '../model/published-series-storage';
-import { publishedDivisionDefinitions } from 'app/race-calender/model/division';
+import { publishedDivisionDefinitions } from 'app/race-calendar/model/division';
 import { FirestoreTenantService } from 'app/club-tenant/services/firestore-tenant';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
 

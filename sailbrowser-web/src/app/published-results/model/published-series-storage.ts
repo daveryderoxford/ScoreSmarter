@@ -5,7 +5,7 @@ import type {
   QueryDocumentSnapshot,
   SetOptions,
 } from '@angular/fire/firestore';
-import { publishedDivisionDefinitions } from 'app/race-calender/model/division';
+import { publishedDivisionDefinitions } from 'app/race-calendar/model/division';
 import { dataObjectConverter, toAppModel } from 'app/shared/firebase/firestore-helper';
 import type { PublishedSeries, PublishedSeriesResult } from './published-series';
 

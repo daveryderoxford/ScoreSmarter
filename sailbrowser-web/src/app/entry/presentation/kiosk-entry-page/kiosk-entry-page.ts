@@ -33,7 +33,7 @@ import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 import { DutiesService } from 'app/duties';
 import { DutiesTeamPanel } from 'app/duties/presentation/duties-team-panel';
 import type { RaceDayDutyMember } from '@shared/race-day';
-import { RaceCalendarStore } from 'app/race-calender';
+import { RaceCalendarStore } from 'app/race-calendar';
 import { DivisionValuePicker } from 'app/club-tenant/presentation/divisions/division-value-picker';
 import { CurrentRaces } from 'app/results-input';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';

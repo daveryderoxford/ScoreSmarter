@@ -14,7 +14,7 @@ import { PageLayout } from 'app/shared/layout/page-layout';
 import { Router } from '@angular/router';
 import { addDays, isAfter, startOfDay } from 'date-fns';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Race, RaceCalendarStore } from 'app/race-calender';
+import { Race, RaceCalendarStore } from 'app/race-calendar';
 import { NumberField } from 'app/shared/components/number-field/number-field';
 import { TimeInput } from 'app/shared/components/time-input/time-input';
 import { dateAtSecondsOfDay } from 'app/shared/utils/time-utils';
@@ -160,7 +160,7 @@ export class RaceAdd {
       this.detailsForm.reset();
       this.schedForm.reset();
 
-      this.router.navigate(['/race-calender/series-details/', this.seriesId()]);
+      this.router.navigate(['/race-calendar/series-details/', this.seriesId()]);
     }
   }
 

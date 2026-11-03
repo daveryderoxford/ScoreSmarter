@@ -3,7 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterTestingModule } from '@angular/router/testing';
 import { applicationConfig, Meta, StoryObj } from '@storybook/angular';
-import type { Division } from 'app/race-calender/model/division';
+import type { Division } from 'app/race-calendar/model/division';
 import type { PublishedRace } from 'app/published-results/model/published-race';
 import type { PublishedSeries } from 'app/published-results/model/published-series';
 import { PUBLISHED_RACES_MOCKS } from '@testing/mocks/published-results/published-races-mocks';

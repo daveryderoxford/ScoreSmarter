@@ -1,5 +1,5 @@
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
-import type { Season } from 'app/race-calender/model/season';
+import type { Season } from 'app/race-calendar/model/season';
 import type { BoatClass } from './boat-class';
 import type { Club } from './club';
 import type { Fleet } from './fleet';

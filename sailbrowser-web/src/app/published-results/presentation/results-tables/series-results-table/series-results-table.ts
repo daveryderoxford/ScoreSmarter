@@ -3,7 +3,7 @@ import { CdkTableModule } from '@angular/cdk/table';
 import { PublishedSeries, PublishedSeriesResult } from 'app/published-results';
 import { format } from 'date-fns';
 import { competitorColumns, nameColumnWidth as computeNameColumnWidth, withOptionalClubColumn } from '../results-table-shared';
-import { withOptionalDivisionColumn, publishedDivisionDefinitions, rowDivisionIds, markerDivisionIds, textDivisionNames } from 'app/race-calender/model/division';
+import { withOptionalDivisionColumn, publishedDivisionDefinitions, rowDivisionIds, markerDivisionIds, textDivisionNames } from 'app/race-calendar/model/division';
 import { HighlightPosition } from "../highlighted-position";
 import { HorizontalScrollIndicator } from 'app/shared/components/horizontal-scroll-indicator/horizontal-scroll-indicator';
 import { DivisionLegend } from '../division-legend';

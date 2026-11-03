@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
-import type { Race } from 'app/race-calender';
+import type { Race } from 'app/race-calendar';
 import { Subject } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 import { EntryWizard } from '../entry-wizard/entry-wizard';

@@ -2,8 +2,8 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatDialog } from '@angular/material/dialog';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
-import { RaceCalendarStore } from 'app/race-calender';
-import type { Race } from 'app/race-calender/model/race';
+import { RaceCalendarStore } from 'app/race-calendar';
+import type { Race } from 'app/race-calendar/model/race';
 import { CameraCaptureDialog } from '../../capture/camera-capture-dialog/camera-capture-dialog';
 import {
   AcquisitionEvent,

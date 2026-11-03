@@ -7,7 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatChipsModule } from '@angular/material/chips';
 import { RouterLink, Router } from '@angular/router';
 import { PublishedResultsReader } from 'app/published-results/services/published-results-store';
-import { publishedDivisionDefinitions, type Division } from 'app/race-calender/model/division';
+import { publishedDivisionDefinitions, type Division } from 'app/race-calendar/model/division';
 import type { PublishedRace } from 'app/published-results/model/published-race';
 import { getConfigName } from 'app/scoring/model/scoring-configuration';
 import { LoadingCentered } from 'app/shared/components/loading-centered';
@@ -26,7 +26,7 @@ import { ListDetailLayout } from 'app/shared/layout/list-detail-layout';
 import { ListPane } from 'app/shared/layout/list-pane';
 import { DetailPane } from 'app/shared/layout/detail-pane';
 import { InfoPopover } from 'app/shared/components/info-popover';
-import { StatusPill } from 'app/race-calender/presentation/status-pill/status-pill';
+import { StatusPill } from 'app/race-calendar/presentation/status-pill/status-pill';
 import { DutyRaceOfficerLookup } from 'app/duties';
 import { seriesScoringSchemeDetails } from 'app/scoring/model/scoring-algotirhm';
 

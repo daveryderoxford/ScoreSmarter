@@ -1,5 +1,5 @@
 import type { PublishedRace } from 'app/published-results/model/published-race';
-import type { Race } from 'app/race-calender/model/race';
+import type { Race } from 'app/race-calendar/model/race';
 import type { RaceCompetitor } from 'app/results-input/model/race-competitor';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
 import type { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';

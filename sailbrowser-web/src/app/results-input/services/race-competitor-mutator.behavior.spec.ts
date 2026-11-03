@@ -6,8 +6,8 @@ import {
   provideMutatorTestFirestore,
 } from '@testing/race-competitor-mutator-test-harness';
 import { provideTestAuth } from '@testing/auth-test-provider';
-import { RaceCalendarStore } from 'app/race-calender';
-import { Race } from 'app/race-calender/model/race';
+import { RaceCalendarStore } from 'app/race-calendar';
+import { Race } from 'app/race-calendar/model/race';
 import { afterEach } from 'vitest';
 import { RaceCompetitor } from '../model/race-competitor';
 import type { SeriesEntry } from '../model/series-entry';

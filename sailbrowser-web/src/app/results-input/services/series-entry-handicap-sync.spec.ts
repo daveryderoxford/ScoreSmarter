@@ -1,5 +1,5 @@
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
-import type { Series } from 'app/race-calender';
+import type { Series } from 'app/race-calendar';
 import { DEFAULT_SHORT_DISCARDS } from 'app/scoring/model/discard-profile';
 import type { HandicapConfiguration } from 'app/scoring/model/scoring-configuration';
 import { calculatePersonalHandicapFromPy } from 'app/scoring/model/personal-handicap';

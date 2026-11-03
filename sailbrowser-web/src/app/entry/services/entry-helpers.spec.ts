@@ -1,7 +1,7 @@
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import type { RatingList } from 'app/system-data';
 import type { Fleet } from 'app/club-tenant/model/fleet';
-import type { Series } from 'app/race-calender';
+import type { Series } from 'app/race-calendar';
 import { DEFAULT_SHORT_DISCARDS } from 'app/scoring/model/discard-profile';
 import { describe, expect, it } from 'vitest';
 import { getHandicapSchemeMetadata } from '../../scoring/model/handicap-scheme-metadata';

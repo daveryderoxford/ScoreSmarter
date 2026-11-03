@@ -5,7 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { SubmitButton } from 'app/shared/components/submit-button';
-import { Season, SeasonStatus } from 'app/race-calender/model/season';
+import { Season, SeasonStatus } from 'app/race-calendar/model/season';
 
 @Component({
   selector: 'app-season-form',

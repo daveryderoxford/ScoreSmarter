@@ -132,7 +132,7 @@ export class SeriesCopy {
       this.form.reset();
 
       // Navigate back to the series list
-      this.router.navigate(['./race-calender']);
+      this.router.navigate(['./race-calendar']);
     } catch (error: unknown) {
       console.log('SeriesCopy:  Error saving new series ' +  error);
       this.snackbar.open('Error adding Series', 'Dismiss', { duration: 3000 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { normaliseSeriesNames } from 'app/race-calender/services/race-calendar-store-base';
+import { normaliseSeriesNames } from 'app/race-calendar/services/race-calendar-store-base';
 import { tidySeriesEntryStrings } from 'app/results-input/services/series-entry-store';
-import type { Division } from 'app/race-calender/model/division';
+import type { Division } from 'app/race-calendar/model/division';
 import { normaliseBoatClass, normaliseClubUpdate, normaliseFleet, normaliseSeason } from './club-normalise';
 
 describe('club normalisation on save', () => {

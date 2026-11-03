@@ -4,8 +4,8 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loggy/loggy.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series_service.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series_service.dart';
 import 'package:sailbrowser_flutter/features/race/domain/race_competitor_service.dart';
 import 'package:sailbrowser_flutter/features/race/start/domain/start_sequence.dart';
 

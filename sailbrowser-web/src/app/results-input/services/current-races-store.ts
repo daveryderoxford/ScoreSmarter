@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { sortRaces, type Race } from 'app/race-calender';
-import { isWithinNextDays } from 'app/race-calender/presentation/races-panel/races-panel-utils';
-import { RaceCalendarStore } from '../../race-calender/services/full-race-calander';
+import { sortRaces, type Race } from 'app/race-calendar';
+import { isWithinNextDays } from 'app/race-calendar/presentation/races-panel/races-panel-utils';
+import { RaceCalendarStore } from '../../race-calendar/services/full-race-calander';
 
 /** Inclusive window matching self-entry eligibility (today through today + N days). */
 export const UPCOMING_RACE_DAYS = 7;

@@ -1,0 +1,23 @@
+---
+description: Repo map. Where each app lives and which folder to edit. Update this file when the map changes.
+alwaysApply: true
+---
+
+# Architecture
+
+Do not scan the repo to rediscover this map. Open the feature `index.ts` or the file you will edit.
+
+## Packages
+
+- `sailbrowser-web` — Angular app. Routes in `src/app/app.routes.ts`. Features live in `src/app/<feature>` (`model`, `services`, `presentation`). Import models and services through the barrel `app/<feature>`. Import a presentation component from its own file, never from the barrel.
+- `firebase/functions` — Cloud Functions. Register exports in `src/index.ts`. Defaults in `src/global-function-options.ts` (`europe-west1`, App Check).
+- `home-site` — public site. `shared/contracts` — types shared across apps (`@shared/...`).
+- Firestore data is club-scoped: `clubs/{clubId}/...`.
+
+## Web routes
+
+These paths load the folder of the same name: `home`, `entry`, `boats`, `race-calendar`, `results-input`, `results-sheet-phone-capture`, `sys-admin`, `club-admin`, `auth`, `user`. `results` loads `published-results`. `club` loads `club-tenant`. `scoring`, `shared`, `duties`, and `system-data` are libraries with no `APP_ROUTES` entry. Series scoring runs in the client (`app/scoring`, function `score`). Cloud Functions do not score races.
+
+## Keep this file current
+
+When a change adds or removes a package, feature folder, `APP_ROUTES` entry, function export, Firestore collection, or race type, update the matching file under `.cursor/rules/` in that same change. Do not add another architecture markdown file. If code and a rule disagree, change the rule to match the code.

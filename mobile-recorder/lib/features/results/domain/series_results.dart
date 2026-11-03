@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series.dart';
 import 'package:sailbrowser_flutter/features/race/domain/result_code.dart';
 import 'package:sailbrowser_flutter/features/results/domain/race_result.dart';
 import 'package:sailbrowser_flutter/features/results/scoring/series_scoring_data.dart';

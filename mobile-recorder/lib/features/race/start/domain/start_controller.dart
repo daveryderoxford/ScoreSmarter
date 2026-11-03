@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series_service.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series_service.dart';
 import 'package:sailbrowser_flutter/features/race/domain/selected_races.dart';
 
 typedef StartRecord = ({DateTime date, int order, List<Race> races});

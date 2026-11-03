@@ -17,7 +17,7 @@ import { ListPane } from 'app/shared/layout/list-pane';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { ClubStore } from '../../services/club-store';
 import { LoadingCentered } from "app/shared/components/loading-centered";
-import { Season } from 'app/race-calender/model/season';
+import { Season } from 'app/race-calendar/model/season';
 
 @Component({
   selector: 'app-season-page',

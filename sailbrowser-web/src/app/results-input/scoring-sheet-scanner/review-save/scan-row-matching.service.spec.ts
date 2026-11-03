@@ -1,7 +1,7 @@
 import { boatClassesMatch, GridRowContext, ScanRowMatchingService } from './scan-row-matching.service';
 import type { HelmCandidate, ScanRowIdentityPlan } from './scan-row-provision';
 import { ScannedResultRow } from '../model/scan-model';
-import { Race } from 'app/race-calender/model/race';
+import { Race } from 'app/race-calendar/model/race';
 import { ResolvedRaceCompetitor } from '../../model/resolved-race-competitor';
 import { RaceCompetitor } from '../../model/race-competitor';
 import { SeriesEntry } from '../../model/series-entry';

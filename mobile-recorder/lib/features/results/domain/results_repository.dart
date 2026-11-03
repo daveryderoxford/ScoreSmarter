@@ -5,7 +5,7 @@ import 'package:loggy/loggy.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:sailbrowser_flutter/common_widgets/snackbar_service.dart';
 import 'package:sailbrowser_flutter/features/club/domain/clubs_service.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series.dart';
 import 'package:sailbrowser_flutter/features/race/domain/selected_races.dart';
 import 'package:sailbrowser_flutter/features/results/domain/series_results.dart';
 

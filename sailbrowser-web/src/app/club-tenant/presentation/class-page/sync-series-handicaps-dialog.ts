@@ -9,7 +9,7 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { RaceCalendarStore } from 'app/race-calender/services/full-race-calander';
+import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calander';
 import type { SeriesEntryHandicapSyncPlan } from 'app/results-input/services/series-entry-handicap-sync';
 import { SeriesEntryHandicapSyncService } from 'app/results-input/services/series-entry-handicap-sync.service';
 

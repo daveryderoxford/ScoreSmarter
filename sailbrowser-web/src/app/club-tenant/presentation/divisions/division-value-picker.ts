@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { MatChipsModule, MatChipListboxChange } from '@angular/material/chips';
-import type { Division } from 'app/race-calender/model/division';
+import type { Division } from 'app/race-calendar/model/division';
 import { readableForegroundFor } from './division-chip-style';
 
 /**

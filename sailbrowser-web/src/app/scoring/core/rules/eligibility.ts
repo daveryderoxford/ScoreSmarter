@@ -1,7 +1,7 @@
-import type { Race } from 'app/race-calender/model/race';
-import { doesRaceRequireHandicap } from 'app/race-calender/model/race-type';
+import type { Race } from 'app/race-calendar/model/race';
+import { doesRaceRequireHandicap } from 'app/race-calendar/model/race-type';
 import type { RaceCompetitor, SeriesEntry } from 'app/results-input';
-import { entryDivisionIds } from 'app/race-calender/model/division';
+import { entryDivisionIds } from 'app/race-calendar/model/division';
 import type { ScoringConfiguration } from 'app/scoring/model/scoring-configuration';
 import type { ResultCode } from 'app/scoring/model/result-code';
 import { getHandicapValue } from 'app/scoring/model/handicap';

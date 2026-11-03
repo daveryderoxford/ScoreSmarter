@@ -6,11 +6,11 @@ import 'package:sailbrowser_flutter/common_widgets/responsive_center.dart';
 import 'package:sailbrowser_flutter/constants/app_sizes.dart';
 import 'package:sailbrowser_flutter/features/club/domain/clubs_service.dart';
 import 'package:sailbrowser_flutter/features/club/domain/fleet.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series_service.dart';
-import 'package:sailbrowser_flutter/features/race-calander/presentation/copy_series.dart';
-import 'package:sailbrowser_flutter/features/race-calander/presentation/race_edit.dart';
-import 'package:sailbrowser_flutter/features/race-calander/presentation/series_edit.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series_service.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/presentation/copy_series.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/presentation/race_edit.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/presentation/series_edit.dart';
 import 'package:sailbrowser_flutter/util/date_time_extensions.dart';
 
 class SeriesDetailScreen extends ConsumerWidget {

@@ -4,8 +4,8 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { DutiesService } from 'app/duties';
 import { raceDayDateId } from 'app/duties/services/duties.service';
 import { ScoringEngine } from 'app/published-results/services/scoring-engine';
-import { RaceCalendarStore } from 'app/race-calender';
-import { Race } from 'app/race-calender/model/race';
+import { RaceCalendarStore } from 'app/race-calendar';
+import { Race } from 'app/race-calendar/model/race';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RaceDayDetailsDialog } from './race-day-details-dialog';
 

@@ -1,14 +1,14 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series.dart';
 
-// Business functionality related to race calander user interface
-class RaceCalanderController {
-  RaceCalanderController(this.ref);
+// Business functionality related to race calendar user interface
+class RaceCalendarController {
+  RaceCalendarController(this.ref);
 
   final ProviderRef ref;
 
-  // TODO add other handers to race calander controller
+  // TODO add other handers to race calendar controller
 
   /// Returns default start date based on
   ///  * Current date if no races exist
@@ -32,4 +32,4 @@ class RaceCalanderController {
   }
 }
 
-final raceCalanderController = Provider((ref) => RaceCalanderController(ref));
+final raceCalendarController = Provider((ref) => RaceCalendarController(ref));

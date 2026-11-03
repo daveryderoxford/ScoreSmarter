@@ -38,15 +38,15 @@ import { BoatCoreFields } from 'app/boats/presentation/boat-form/boat-core-field
 import { ClubStore } from 'app/club-tenant';
 import { RatingListStore } from 'app/system-data';
 import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
-import { Race, RaceCalendarStore } from 'app/race-calender';
+import { Race, RaceCalendarStore } from 'app/race-calendar';
 import { DivisionValuePicker } from 'app/club-tenant/presentation/divisions/division-value-picker';
-import { RacesPanel } from 'app/race-calender/presentation/races-panel/races-panel';
+import { RacesPanel } from 'app/race-calendar/presentation/races-panel/races-panel';
 import {
   isScheduledToday,
   isWithinNextDays,
   type RacesPanelFilter,
   type RacesPanelPeriod,
-} from 'app/race-calender/presentation/races-panel/races-panel-utils';
+} from 'app/race-calendar/presentation/races-panel/races-panel-utils';
 import { CurrentRaces } from 'app/results-input';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
 import { prefillDivisionsFromExistingEntry, divisionCatalogForRaces } from '../../services/prefill-entry-divisions';

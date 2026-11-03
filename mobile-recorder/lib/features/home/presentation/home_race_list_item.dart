@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sailbrowser_flutter/features/club/domain/clubs_service.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series.dart';
 
 class HomeRaceListItem extends ConsumerWidget {
   final Race race;

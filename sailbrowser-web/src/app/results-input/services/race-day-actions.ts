@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
-import { Race } from 'app/race-calender/model/race';
+import { Race } from 'app/race-calendar/model/race';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import {
   CancelRacesDialog,

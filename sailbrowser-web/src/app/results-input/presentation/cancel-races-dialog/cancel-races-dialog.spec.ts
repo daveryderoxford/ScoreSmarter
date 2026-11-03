@@ -1,8 +1,8 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { RaceCalendarStore } from 'app/race-calender';
-import { Race } from 'app/race-calender/model/race';
+import { RaceCalendarStore } from 'app/race-calendar';
+import { Race } from 'app/race-calendar/model/race';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RaceCancellationService } from '../../services/race-cancellation.service';
 import { CancelRacesDialog, CancelRacesDialogData } from './cancel-races-dialog';

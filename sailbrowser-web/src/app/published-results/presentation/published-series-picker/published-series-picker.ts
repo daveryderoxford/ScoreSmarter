@@ -3,7 +3,7 @@ import { getDoc } from '@angular/fire/firestore';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { FirestoreTenantService } from 'app/club-tenant';
-import type { Series } from 'app/race-calender/model/series';
+import type { Series } from 'app/race-calendar/model/series';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import type { PublishedSeason, SeriesInfo } from '../../model/published-season';
 import {

@@ -14,7 +14,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from 'app/auth/auth.service';
-import { Race } from 'app/race-calender';
+import { Race } from 'app/race-calendar';
 import { ResolvedRaceCompetitor } from 'app/results-input';
 import { CenteredText } from 'app/shared/components/centered-text';
 import { LoadingCentered } from 'app/shared/components/loading-centered';

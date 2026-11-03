@@ -4,7 +4,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import type { RaceDayDutyMember } from '@shared/race-day';
 import { EntryDialog, type EntryDialogResult } from 'app/entry/presentation/entry-dialog/entry-dialog';
-import type { Race } from 'app/race-calender';
+import type { Race } from 'app/race-calendar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { of } from 'rxjs';

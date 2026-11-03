@@ -2,9 +2,9 @@ import { Injectable } from '@angular/core';
 import type { RatingList } from 'app/system-data';
 import { isValidSailNumber, normalizeSailNumber } from 'app/boats/model/sail-number';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
-import type { Division } from 'app/race-calender/model/division';
-import type { Race } from 'app/race-calender/model/race';
-import type { Series } from 'app/race-calender/model/series';
+import type { Division } from 'app/race-calendar/model/division';
+import type { Race } from 'app/race-calendar/model/race';
+import type { Series } from 'app/race-calendar/model/series';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
 import {
   describeIdentity,

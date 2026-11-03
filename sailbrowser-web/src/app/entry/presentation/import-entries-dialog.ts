@@ -8,7 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { ClubStore } from 'app/club-tenant';
-import { RaceCalendarStore } from 'app/race-calender';
+import { RaceCalendarStore } from 'app/race-calendar';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
 import {

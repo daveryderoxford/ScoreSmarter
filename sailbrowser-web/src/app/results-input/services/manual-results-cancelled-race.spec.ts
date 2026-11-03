@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ClubStore } from 'app/club-tenant';
-import { Race, RaceCalendarStore } from 'app/race-calender';
+import { Race, RaceCalendarStore } from 'app/race-calendar';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RaceCompetitor } from '../model/race-competitor';
 import { ManualResultsService, OrderEntryRowState } from './manual-results.service';

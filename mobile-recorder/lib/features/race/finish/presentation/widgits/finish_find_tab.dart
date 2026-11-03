@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loggy/loggy.dart';
 import 'package:sailbrowser_flutter/common_widgets/numeric_keypad.dart';
 import 'package:sailbrowser_flutter/constants/app_sizes.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series.dart';
 import 'package:sailbrowser_flutter/features/race/finish/domain/finish_lists.dart';
 import 'package:sailbrowser_flutter/features/race/finish/presentation/widgits/finish_list_tab.dart';
 

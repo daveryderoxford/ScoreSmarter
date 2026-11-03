@@ -9,7 +9,7 @@ import 'package:sailbrowser_flutter/common_widgets/form_builder_integer_field.da
 import 'package:sailbrowser_flutter/common_widgets/responsive_center.dart';
 import 'package:sailbrowser_flutter/common_widgets/time_input_textfield.dart';
 import 'package:sailbrowser_flutter/common_widgets/will_pop_form.dart';
-import 'package:sailbrowser_flutter/features/race-calander/domain/series_service.dart';
+import 'package:sailbrowser_flutter/features/race-calendar/domain/series_service.dart';
 import 'package:sailbrowser_flutter/features/race/domain/race_competitor.dart';
 import 'package:sailbrowser_flutter/features/race/domain/race_competitor_service.dart';
 import 'package:sailbrowser_flutter/features/race/domain/result_code.dart';

@@ -1,4 +1,4 @@
-import type { Race, Series } from 'app/race-calender';
+import type { Race, Series } from 'app/race-calendar';
 import type { HandicapScheme } from './handicap-scheme';
 import type { ScoringConfiguration } from './scoring-configuration';
 

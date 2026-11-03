@@ -9,9 +9,9 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { RaceCalendarStore } from 'app/race-calender';
-import { Race } from 'app/race-calender/model/race';
-import { racesOnSameDay } from 'app/race-calender/model/races-on-same-day';
+import { RaceCalendarStore } from 'app/race-calendar';
+import { Race } from 'app/race-calendar/model/race';
+import { racesOnSameDay } from 'app/race-calendar/model/races-on-same-day';
 import { format } from 'date-fns';
 import { RaceCancellationService } from '../../services/race-cancellation.service';
 

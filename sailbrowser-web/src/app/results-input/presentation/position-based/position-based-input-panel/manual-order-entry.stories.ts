@@ -1,7 +1,7 @@
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { applicationConfig, Meta, StoryObj } from '@storybook/angular';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
-import { Race } from 'app/race-calender';
+import { Race } from 'app/race-calendar';
 import { ManualResultsService, OrderEntryPersistInput } from 'app/results-input/services/manual-results.service';
 import { RaceCompetitor, ResolvedRaceCompetitor } from 'app/results-input';
 import { SeriesEntry } from 'app/results-input/model/series-entry';
