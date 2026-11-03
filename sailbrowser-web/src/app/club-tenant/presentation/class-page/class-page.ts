@@ -21,10 +21,8 @@ import { LoadingCentered } from "app/shared/components/loading-centered";
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BoatClass } from '../../model/boat-class';
 import { classKind, classRating, isSchemeOverridden } from '../../model/club-class';
-import { listRating, nextRatingList } from '../../model/rating-list';
-import { RatingListStore } from '../../services/rating-list-store';
+import { ClassCatalogueStore, listRating, nextRatingList, RatingListStore } from 'app/system-data';
 import { ClassesCsvService } from '../../services/classes-csv.service';
-import { ClassCatalogueStore } from '../../services/class-catalogue-store';
 
 import { ImportExportMenuComponent } from 'app/shared/components/import-export-menu';
 import {

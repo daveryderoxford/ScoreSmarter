@@ -15,7 +15,7 @@ import { RaceCalendarCsvService } from 'app/race-calender/services/race-calendar
 import { RaceCalendarICalService } from 'app/race-calender/services/race-calendar-ical.service';
 import { BoatsCsvService } from 'app/boats/services/boats-csv.service';
 import { FleetsCsvService } from 'app/club-tenant/services/fleets-csv.service';
-import { RatingListStore } from 'app/club-tenant/services/rating-list-store';
+import { RatingListStore } from 'app/system-data';
 import { ClassesCsvService } from 'app/club-tenant/services/classes-csv.service';
 import { ClubStore } from 'app/club-tenant';
 import { BoatsStore } from 'app/boats/services/boats.store';

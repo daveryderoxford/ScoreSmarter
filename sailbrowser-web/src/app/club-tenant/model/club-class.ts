@@ -2,8 +2,14 @@ import { getHandicapValue, Handicap } from 'app/scoring/model/handicap';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import type { BoatClass, ClassKind } from './boat-class';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
-import { type CatalogClass, isRyaClass, normaliseClassName } from './catalog-class';
-import { listRating, ratingListFor, type RatingList } from './rating-list';
+import {
+  isRyaClass,
+  listRating,
+  normaliseClassName,
+  ratingListFor,
+  type CatalogClass,
+  type RatingList,
+} from 'app/system-data';
 
 export const ryaClassId = (catalogueId: number) => `rya-${catalogueId}`;
 

@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
 import { ClubStore } from 'app/club-tenant';
-import { ClassCatalogueStore } from 'app/club-tenant/services/class-catalogue-store';
+import { ClassCatalogueStore } from 'app/system-data';
 import type { PublishedRace } from 'app/published-results/model/published-race';
 import { PublishedSeriesPicker } from 'app/published-results/presentation/published-series-picker/published-series-picker';
 import { PublishedResultsReader } from 'app/published-results/services/published-results-store';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextNegativeCatalogueId, suggestCatalogClass, type CatalogClass } from './catalog-class';
+import { nextNegativeCatalogueId, suggestCatalogClass, type CatalogClass } from 'app/system-data';
 import { cleanRyaClassName, mergeRyaClassList, parseRyaClassList, pyRatingsFromRyaList } from './rya-class-list';
 
 const RYA_CSV = [

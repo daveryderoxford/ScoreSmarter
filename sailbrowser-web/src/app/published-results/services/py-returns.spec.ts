@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
-import type { CatalogClass } from 'app/club-tenant/model/catalog-class';
+import type { CatalogClass } from 'app/system-data';
 import type { PublishedRace, RaceResult } from '../model/published-race';
 import {
   buildPyReturn,

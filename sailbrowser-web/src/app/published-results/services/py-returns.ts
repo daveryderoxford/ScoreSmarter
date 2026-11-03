@@ -1,5 +1,5 @@
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
-import type { CatalogClass } from 'app/club-tenant/model/catalog-class';
+import type { CatalogClass } from 'app/system-data';
 import { classKind } from 'app/club-tenant/model/club-class';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import { isFinishedComp } from 'app/scoring/model/result-code-scoring';

@@ -1,6 +1,6 @@
 import type { BoatClass } from '../../club-tenant/model/boat-class';
 import { classRating } from '../../club-tenant/model/club-class';
-import { seriesRatingDate, type RatingList } from '../../club-tenant/model/rating-list';
+import { seriesRatingDate, type RatingList } from 'app/system-data';
 import type { Series } from '../../race-calender/model/series';
 import type { Handicap } from '../../scoring/model/handicap';
 import { getHandicapValue } from '../../scoring/model/handicap';

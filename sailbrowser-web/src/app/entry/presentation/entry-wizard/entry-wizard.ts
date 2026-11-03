@@ -36,7 +36,7 @@ import {
 } from 'app/boats';
 import { BoatCoreFields } from 'app/boats/presentation/boat-form/boat-core-fields';
 import { ClubStore } from 'app/club-tenant';
-import { RatingListStore } from 'app/club-tenant/services/rating-list-store';
+import { RatingListStore } from 'app/system-data';
 import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 import { Race, RaceCalendarStore } from 'app/race-calender';
 import { DivisionValuePicker } from 'app/club-tenant/presentation/divisions/division-value-picker';

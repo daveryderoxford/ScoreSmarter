@@ -1,6 +1,6 @@
 import { parseCsv } from 'app/shared/utils/csv';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
-import type { CatalogClass } from './catalog-class';
+import type { CatalogClass } from 'app/system-data';
 
 /** One row of the RYA class configuration / PN list. */
 export interface RyaClassRow {

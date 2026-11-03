@@ -1,8 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { BoatClass } from '../model/boat-class';
-import type { CatalogClass } from '../model/catalog-class';
-import type { RatingList } from '../model/rating-list';
+import type { CatalogClass, RatingList } from 'app/system-data';
 import { ClassesCsvService } from './classes-csv.service';
 
 const ilca7: CatalogClass = { catalogueId: 191, name: 'ILCA 7', crew: 1, rya: { name: 'ILCA 7 / LASER' } };

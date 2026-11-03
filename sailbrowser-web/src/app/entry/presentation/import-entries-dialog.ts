@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
-import { RatingListStore } from 'app/club-tenant/services/rating-list-store';
+import { RatingListStore } from 'app/system-data';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
