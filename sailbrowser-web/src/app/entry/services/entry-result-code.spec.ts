@@ -1,4 +1,4 @@
-import { provideFakeRatingLists } from 'app/club-tenant/services/rating-list-store.testing';
+import { provideFakeRatingLists } from 'app/system-data/services/rating-list-store.testing';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClubStore } from 'app/club-tenant';

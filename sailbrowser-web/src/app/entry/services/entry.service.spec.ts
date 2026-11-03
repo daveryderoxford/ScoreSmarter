@@ -1,4 +1,4 @@
-import { provideFakeRatingLists } from 'app/club-tenant/services/rating-list-store.testing';
+import { provideFakeRatingLists } from 'app/system-data/services/rating-list-store.testing';
 import {
   installMutatorWriteBatchHarness,
   MutatorTestRaceCompetitorStore,

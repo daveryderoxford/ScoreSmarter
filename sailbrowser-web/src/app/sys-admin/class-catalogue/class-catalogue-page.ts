@@ -8,23 +8,24 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
+import { currentPn } from 'app/club-tenant/model/club-class';
 import {
+  ClassCatalogueStore,
   isRyaClass,
   nextNegativeCatalogueId,
   normaliseClassName,
+  RatingListStore,
   type CatalogClass,
-} from 'app/club-tenant/model/catalog-class';
-import { currentPn } from 'app/club-tenant/model/club-class';
+  type RatingList,
+} from 'app/system-data';
 import {
   mergeRyaClassList,
   parseRyaClassList,
   pyRatingsFromRyaList,
   type PyRatingsImport,
   type RyaMergeResult,
-} from 'app/club-tenant/model/rya-class-list';
-import type { RatingList } from 'app/club-tenant/model/rating-list';
-import { ClassCatalogueStore } from 'app/club-tenant/services/class-catalogue-store';
-import { RatingListStore } from 'app/club-tenant/services/rating-list-store';
+} from './rya-class-list';
+import { SystemDataAdminService } from './system-data-admin.service';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
@@ -73,6 +74,7 @@ function dateInputValue(date: Date): string {
 export class ClassCataloguePage {
   protected readonly store = inject(ClassCatalogueStore);
   protected readonly ratingLists = inject(RatingListStore);
+  private readonly systemDataAdmin = inject(SystemDataAdminService);
   private readonly snackbar = inject(MatSnackBar);
   private readonly dialogs = inject(DialogsService);
 
@@ -189,7 +191,7 @@ export class ClassCataloguePage {
     }
     this.busy.set(true);
     try {
-      await this.ratingLists.add({ scheme: 'PY', issuer: 'RYA', name, effectiveFrom, ratings: pending.ratings });
+      await this.systemDataAdmin.addRatingList({ scheme: 'PY', issuer: 'RYA', name, effectiveFrom, ratings: pending.ratings });
       this.pendingPyList.set(null);
       this.pyListName.set('');
       this.snackbar.open(`${name} published.`, undefined, { duration: 4000 });
@@ -210,7 +212,7 @@ export class ClassCataloguePage {
     if (!ok) return;
     this.busy.set(true);
     try {
-      await this.ratingLists.remove(list.id);
+      await this.systemDataAdmin.removeRatingList(list.id);
     } catch (e: unknown) {
       console.error('ClassCataloguePage: deleting PY list failed', e);
       this.snackbar.open('Could not delete the PY list.', 'Dismiss', { duration: 6000 });
@@ -262,7 +264,7 @@ export class ClassCataloguePage {
   private async save(classes: CatalogClass[], ryaListVersion?: string): Promise<boolean> {
     this.busy.set(true);
     try {
-      await this.store.save({
+      await this.systemDataAdmin.saveCatalogue({
         classes,
         ryaListVersion: ryaListVersion ?? this.store.catalogue().ryaListVersion,
       });

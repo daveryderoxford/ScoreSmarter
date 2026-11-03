@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { normalizeSailNumber } from 'app/boats/model/sail-number';
 import { ClubStore } from 'app/club-tenant';
 import { resolveHandicapsForSeries } from 'app/entry/services/entry-helpers';
-import { RatingListStore } from 'app/club-tenant/services/rating-list-store';
+import { RatingListStore } from 'app/system-data';
 import { divisionIdsEqual, entryDivisionIds } from 'app/race-calender/model/division';
 import { Race, RaceCalendarStore, Series } from 'app/race-calender';
 import { getHandicapValue, Handicap } from 'app/scoring/model/handicap';

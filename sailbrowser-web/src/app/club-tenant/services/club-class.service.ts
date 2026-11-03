@@ -1,9 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import type { BoatClass } from '../model/boat-class';
 import { newClubClass, type NewClubClass } from '../model/club-class';
-import { ClassCatalogueStore } from './class-catalogue-store';
+import { ClassCatalogueStore, RatingListStore } from 'app/system-data';
 import { ClubStore } from './club-store';
-import { RatingListStore } from './rating-list-store';
 
 /**
  * Adds classes to the club list. Race officers can add (Firestore rules let them append

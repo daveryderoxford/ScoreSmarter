@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BoatClass } from './boat-class';
-import type { CatalogClass } from './catalog-class';
+import type { CatalogClass, RatingList } from 'app/system-data';
 import {
   classKind,
   classRating,
@@ -11,7 +11,6 @@ import {
   ryaClubClass,
   ryaConfigurationLabel,
 } from './club-class';
-import type { RatingList } from './rating-list';
 
 const ilca7: CatalogClass = { catalogueId: 191, name: 'ILCA 7', crew: 1, rig: 'U', spinnaker: '0', rya: { name: 'ILCA 7 / Laser' } };
 const rs200: CatalogClass = { catalogueId: 303, name: 'RS200', crew: 2, rig: 'S', spinnaker: 'A', rya: { name: 'RS200' } };

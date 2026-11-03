@@ -18,12 +18,17 @@ import { HandicapSchemeInputs } from 'app/shared/components/handicap-scheme-inpu
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
 import type { BoatClass, ClassKind } from '../../model/boat-class';
-import { isRyaClass, normaliseClassName, suggestCatalogClass, type CatalogClass } from '../../model/catalog-class';
+import {
+  ClassCatalogueStore,
+  isRyaClass,
+  normaliseClassName,
+  RatingListStore,
+  suggestCatalogClass,
+  type CatalogClass,
+} from 'app/system-data';
 import { currentPn, ryaConfigurationLabel } from '../../model/club-class';
-import { ClassCatalogueStore } from '../../services/class-catalogue-store';
 import { ClubClassService } from '../../services/club-class.service';
 import { ClubStore } from '../../services/club-store';
-import { RatingListStore } from '../../services/rating-list-store';
 
 const MAX_OPTIONS = 30;
 

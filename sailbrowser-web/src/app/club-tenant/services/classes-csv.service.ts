@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BoatClass, ClassKind } from '../model/boat-class';
-import type { CatalogClass } from '../model/catalog-class';
+import type { CatalogClass, RatingList } from 'app/system-data';
 import { classKind, classRating, currentPn, isSchemeOverridden, localClassId, ryaClubClass } from '../model/club-class';
-import type { RatingList } from '../model/rating-list';
 import { Handicap, getHandicapValue } from 'app/scoring/model/handicap';
 import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import { getHandicapSchemeMetadata } from 'app/scoring/model/handicap-scheme-metadata';

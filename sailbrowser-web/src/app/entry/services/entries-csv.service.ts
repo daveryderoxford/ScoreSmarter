@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import type { RatingList } from 'app/club-tenant/model/rating-list';
+import type { RatingList } from 'app/system-data';
 import { isValidSailNumber, normalizeSailNumber } from 'app/boats/model/sail-number';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import type { Division } from 'app/race-calender/model/division';

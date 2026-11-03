@@ -9,9 +9,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { BoatClass } from '../../model/boat-class';
 import { classKind, isSchemeOverridden, ryaConfigurationLabel } from '../../model/club-class';
-import { listRating, nextRatingList, ratingListFor } from '../../model/rating-list';
-import { ClassCatalogueStore } from '../../services/class-catalogue-store';
-import { RatingListStore } from '../../services/rating-list-store';
+import { ClassCatalogueStore, listRating, nextRatingList, RatingListStore, ratingListFor } from 'app/system-data';
 import { getHandicapValue } from 'app/scoring/model/handicap';
 import { HANDICAP_SCHEMES, HandicapScheme } from 'app/scoring/model/handicap-scheme';
 import {

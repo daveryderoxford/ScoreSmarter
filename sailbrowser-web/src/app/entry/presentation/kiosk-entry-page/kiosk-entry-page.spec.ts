@@ -1,4 +1,4 @@
-import { provideFakeRatingLists } from 'app/club-tenant/services/rating-list-store.testing';
+import { provideFakeRatingLists } from 'app/system-data/services/rating-list-store.testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';

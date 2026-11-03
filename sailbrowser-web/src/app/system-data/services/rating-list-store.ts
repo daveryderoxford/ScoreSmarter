@@ -1,12 +1,12 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { addDoc, collection, deleteDoc, doc, Firestore, getDocs } from '@angular/fire/firestore';
+import { collection, Firestore, getDocs } from '@angular/fire/firestore';
 import { dataObjectConverter } from 'app/shared/firebase/firestore-helper';
-import { firestoreWrite } from 'app/shared/utils/with-timeout';
 import { RATING_LISTS_PATH, type RatingList } from '../model/rating-list';
 
 /**
  * Published rating lists (e.g. yearly RYA PY lists), read once per session. Code that
  * resolves entry handicaps awaits `load()` so entries always use the published ratings.
+ * Written only by sys-admin.
  */
 @Injectable({ providedIn: 'root' })
 export class RatingListStore {
@@ -41,19 +41,8 @@ export class RatingListStore {
     this.load().catch((error: unknown) => console.error('Loading rating lists failed', error));
   }
 
-  /** Sys-admin only (enforced by Firestore rules). */
-  async add(list: Omit<RatingList, 'id'>): Promise<void> {
-    await firestoreWrite(addDoc(this.ref(), list as RatingList), 'Saving rating list');
-    await this.reload();
-  }
-
-  /** Sys-admin only (enforced by Firestore rules). */
-  async remove(id: string): Promise<void> {
-    await firestoreWrite(deleteDoc(doc(this.ref(), id)), 'Deleting rating list');
-    await this.reload();
-  }
-
-  private reload(): Promise<RatingList[]> {
+  /** Discards the cached lists and loads them again. */
+  refresh(): Promise<RatingList[]> {
     this.loading = undefined;
     return this.load();
   }
