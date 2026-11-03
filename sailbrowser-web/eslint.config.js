@@ -100,6 +100,23 @@ module.exports = defineConfig([
     },
   },
   {
+    files: ["src/app/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "^app/.+\\.helpers(\\.ts)?$",
+              message:
+                "A .helpers file is private to its feature. Import it with a relative path from inside that feature.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["**/*.html"],
     extends: [
       angular.configs.templateRecommended,
