@@ -7,7 +7,7 @@ alwaysApply: false
 # Web features
 
 - New features use `model`, `services`, `presentation`, `<feature>.routes.ts`, and `index.ts`.
-- Import models and services from the feature barrel: `import { Boat } from 'app/boats'`. Do not export or import presentation components through `index.ts`; a barrel import of a component pulls the component's dependencies into every consumer. Load a component from its file (`app/<feature>/presentation/...`) or with `loadComponent` in the route. Inside a feature, relative imports are fine. The `app/*` alias maps to `src/app/*`.
+- Import a model or service from the file that defines it (`app/<feature>/model/sail-number`, `app/<feature>/services/event-store`). Do not import it through `app/<feature>` or `app/<feature>/model`: a barrel imported from both the shell and a lazy route can pull the lazy code into the initial bundle. Do not export or import presentation components through `index.ts`. Load a component from its file (`app/<feature>/presentation/...`) or with `loadComponent` in the route. Inside a feature, relative imports are fine. The `app/*` alias maps to `src/app/*`. Existing barrels may stay until a change touches them.
 - Keep routes lazy with `loadChildren` or `loadComponent`. Do not statically import a presentation component, feature route, or heavy library into `app.ts`, `app.config.ts`, or a shared file on the main bundle.
 - New files have no `.component` or `.service` suffix. Pages are `entity-page`, `entity-add`, `entity-form`, `entity-dialog`. Controls include the control type (`submit-button.ts`). Root state services are `*.store.ts`.
 - Firebase access stays in `services`, via AngularFire. Interfaces use `dataObjectConverter`; classes with constructors use `classInstanceConverter`.
@@ -15,3 +15,12 @@ alwaysApply: false
 - Pages use `app-page-layout` and `app-toolbar`. Follow `src/app/shared/layout/LAYOUT.md` instead of inventing a page shell.
 - Tests are colocated `*.spec.ts`, run with Vitest.
 - For Angular API style, use the Angular CLI best-practices tool. Do not add a second style guide.
+
+## Function scope
+
+Place a function by the data it reads and by who calls it.
+
+- A function that reads one type lives in that type's `model` file. A function that reads several types lives in the feature that owns the question. A function with no domain type lives in `shared/utils`.
+- A function used only in its own file stays unexported.
+- A function used in more than one file, and only inside its feature, lives in a `*.helpers.ts` file named for the question (`event-setup.helpers.ts`). Other files in the feature import it with a relative path. Another feature does not import it.
+- A function another feature calls stays in the type file or the feature file that owns the question, not in a helpers file. Callers import that file by its path.

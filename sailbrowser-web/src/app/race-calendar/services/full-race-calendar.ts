@@ -10,8 +10,8 @@ import { raceNumbering } from '../model/race-numbering';
 import { Series } from '../model/series';
 import { RaceCalendarStoreBase, RaceSeriesDetails, seriesSort, sortRaces } from './race-calendar-store-base';
 
-/** Service that returns the complete race calander 
- * Used for race calander administration and planning
+/** Service that returns the complete race calendar 
+ * Used for race calendar administration and planning
  */
 @Injectable({
    providedIn: 'root',
@@ -31,7 +31,7 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
                   .map(s => s)
                   .sort(seriesSort),
             ),
-            tap(seriesList => console.log(`FullRaceCalander. Loaded ${seriesList.length} series`))
+            tap(seriesList => console.log(`FullRaceCalendar. Loaded ${seriesList.length} series`))
          ),
       defaultValue: [],
    });
@@ -41,7 +41,7 @@ export class RaceCalendarStore extends RaceCalendarStoreBase {
       stream: () =>
          collectionData(this.racesCollection, { idField: 'id' }).pipe(
             map(races => races.sort(sortRaces)),
-            tap(races => console.log(`FullRaceCalander. Loaded ${races.length} races`))
+            tap(races => console.log(`FullRaceCalendar. Loaded ${races.length} races`))
          ),
       defaultValue: []
    });

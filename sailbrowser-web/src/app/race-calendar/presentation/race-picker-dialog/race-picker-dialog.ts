@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { RaceCalendarStore } from '../../services/full-race-calander';
+import { RaceCalendarStore } from '../../services/full-race-calendar';
 import { RacesPanel } from '../races-panel/races-panel';
 import type { RacesPanelFilter } from '../races-panel/races-panel-utils';
 

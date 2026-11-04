@@ -5,11 +5,11 @@ alwaysApply: true
 
 # Architecture
 
-Do not scan the repo to rediscover this map. Open the feature `index.ts` or the file you will edit.
+Do not scan the repo to rediscover this map. Open the file you will edit.
 
 ## Packages
 
-- `sailbrowser-web` — Angular app. Routes in `src/app/app.routes.ts`. Features live in `src/app/<feature>` (`model`, `services`, `presentation`). Import models and services through the barrel `app/<feature>`. Import a presentation component from its own file, never from the barrel.
+- `sailbrowser-web` — Angular app. Routes in `src/app/app.routes.ts`. Features live in `src/app/<feature>` (`model`, `services`, `presentation`). Import a model or service from the file that defines it. A function used only inside its feature lives in `*.helpers.ts`. Import a presentation component from its own file. Existing barrels may stay until a change touches them.
 - `firebase/functions` — Cloud Functions. Register exports in `src/index.ts`. Defaults in `src/global-function-options.ts` (`europe-west1`, App Check).
 - `home-site` — public site. `shared/contracts` — types shared across apps (`@shared/...`).
 - Firestore data is club-scoped: `clubs/{clubId}/...`.

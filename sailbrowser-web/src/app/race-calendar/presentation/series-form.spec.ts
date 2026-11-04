@@ -6,7 +6,7 @@ import { ClubStore } from 'app/club-tenant';
 import type { Fleet } from 'app/club-tenant/model/fleet';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { Series } from '../model/series';
-import { RaceCalendarStore } from '../services/full-race-calander';
+import { RaceCalendarStore } from '../services/full-race-calendar';
 import { SeriesForm } from './series-form';
 
 const general: Fleet = { type: 'GeneralHandicap', id: 'general-handicap', name: 'General Handicap' };

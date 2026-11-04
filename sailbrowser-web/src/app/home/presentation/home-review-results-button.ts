@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 import { racesAwaitingReview } from 'app/race-calendar/model/results-review';
-import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calander';
+import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calendar';
 
 /** Club admin shortcut to the results review page, badged with the races awaiting review. */
 @Component({

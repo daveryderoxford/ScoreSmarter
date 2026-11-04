@@ -12,6 +12,6 @@ export { RACE_TYPES } from './model/race-type';
 export type { Race } from './model/race';
 export type { Series } from './model/series';
 
-export { RaceCalendarStore } from './services/full-race-calander';
+export { RaceCalendarStore } from './services/full-race-calendar';
 export { RaceCalendarStoreBase, seriesSort, sortRaces } from './services/race-calendar-store-base';
 export type { RaceSeriesDetails } from './services/race-calendar-store-base';

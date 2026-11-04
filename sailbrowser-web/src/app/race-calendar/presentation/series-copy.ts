@@ -10,7 +10,7 @@ import { DetailPane } from 'app/shared/layout/detail-pane';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { RaceCalendarStore } from '../services/full-race-calander';
+import { RaceCalendarStore } from '../services/full-race-calendar';
 import { Series } from '../model/series';
 import { ClubStore } from 'app/club-tenant';
 import { getFleetName } from 'app/club-tenant/model/fleet';

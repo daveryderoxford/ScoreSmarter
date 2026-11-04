@@ -19,7 +19,7 @@ import { ListPane } from 'app/shared/layout/list-pane';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { debounceTime, distinctUntilChanged, startWith } from 'rxjs';
 import { Series } from '../model/series';
-import { RaceCalendarStore } from '../services/full-race-calander';
+import { RaceCalendarStore } from '../services/full-race-calendar';
 import { normaliseString } from 'app/shared/utils/string-utils';
 import { getFleetName } from 'app/club-tenant/model/fleet';
 import { groupBy } from 'app/shared/utils/group-by';

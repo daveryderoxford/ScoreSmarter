@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Race } from 'app/race-calendar';
 import type { Series } from 'app/race-calendar';
 import { DEFAULT_SHORT_DISCARDS } from 'app/scoring/model/discard-profile';
-import { RaceCalendarStore } from '../../race-calendar/services/full-race-calander';
+import { RaceCalendarStore } from '../../race-calendar/services/full-race-calendar';
 import { CurrentRaces } from './current-races-store';
 
 const FIXED_NOW = new Date('2026-04-06T12:00:00.000Z');

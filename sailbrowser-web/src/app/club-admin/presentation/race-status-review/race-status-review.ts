@@ -18,7 +18,7 @@ import {
 } from 'app/race-calendar';
 import { Race } from 'app/race-calendar/model/race';
 import { StatusPill } from 'app/race-calendar/presentation/status-pill/status-pill';
-import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calander';
+import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calendar';
 import { RaceDayActions } from 'app/results-input/services/race-day-actions';
 import { ResultsStateService } from 'app/results-input/services/results-state.service';
 import { Toolbar } from 'app/shared/components/toolbar';
