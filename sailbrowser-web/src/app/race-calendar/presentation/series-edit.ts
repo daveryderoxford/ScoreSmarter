@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { DetailPane } from 'app/shared/layout/detail-pane';
 import { PageLayout } from 'app/shared/layout/page-layout';
-import { RaceCalendarStore } from '../services/full-race-calander';
+import { RaceCalendarStore } from '../services/full-race-calendar';
 import { Series } from '../model/series';
 import { SeriesForm } from './series-form';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';

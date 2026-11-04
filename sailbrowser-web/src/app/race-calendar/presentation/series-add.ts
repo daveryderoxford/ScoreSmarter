@@ -5,7 +5,7 @@ import { Toolbar } from 'app/shared/components/toolbar';
 import { DetailPane } from 'app/shared/layout/detail-pane';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { SeriesForm } from './series-form';
-import { RaceCalendarStore } from '../services/full-race-calander';
+import { RaceCalendarStore } from '../services/full-race-calendar';
 import { Series } from '../model/series';
 
 

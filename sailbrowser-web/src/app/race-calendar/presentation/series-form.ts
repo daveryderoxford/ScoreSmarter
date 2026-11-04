@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { map, merge, startWith } from 'rxjs';
 import { ClubStore } from 'app/club-tenant';
-import { RaceCalendarStore } from '../services/full-race-calander';
+import { RaceCalendarStore } from '../services/full-race-calendar';
 import { Division } from '../model/division';
 import { Series } from '../model/series';
 import { displayGroupSuggestions, distinctDisplayGroups } from '../model/series-display-group';
