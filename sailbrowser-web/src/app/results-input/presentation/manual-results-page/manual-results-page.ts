@@ -11,6 +11,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { openEntryDialog } from 'app/entry/presentation/entry-dialog/entry-dialog';
+import { EventEntryService } from 'app/events/services/event-entry.service';
 import { ScoringEngine } from 'app/published-results';
 import { Race, RaceCalendarStore } from 'app/race-calendar';
 import { RacePickerDialog, type RacePickerDialogData } from 'app/race-calendar/presentation/race-picker-dialog/race-picker-dialog';
@@ -72,6 +73,7 @@ export class ManualResultsPage {
   private readonly destroyRef = inject(DestroyRef);
   private message = inject(DialogsService);
   protected readonly raceDayActions = inject(RaceDayActions);
+  private readonly eventEntries = inject(EventEntryService);
 
   publishing = signal(false);
   loadingImage = signal(false);
@@ -316,6 +318,30 @@ export class ManualResultsPage {
 
     return result;
   }
+  /** Open-event boats are entered up front; ones that never came out are DNC, not unfinished. */
+  readonly canMarkRemainingDnc = computed(() => {
+    const race = this.selectedRace();
+    if (!race || race.status === 'Canceled') return false;
+    const series = this.raceCalendarStore.allSeries().find(s => s.id === race.seriesId);
+    return !!series?.eventId && this.sortedCompetitors().some(c => c.resultCode === 'NOT FINISHED');
+  });
+
+  async markRemainingDnc(race: Race): Promise<void> {
+    const remaining = this.sortedCompetitors().filter(c => c.resultCode === 'NOT FINISHED').length;
+    const ok = await this.message.confirm(
+      'Mark remaining as DNC?',
+      `${remaining} ${remaining === 1 ? 'boat has' : 'boats have'} no result in this race and will be scored DNC.`,
+      { confirm: 'Mark DNC' },
+    );
+    if (!ok) return;
+    try {
+      await this.eventEntries.markRemainingDnc(race);
+    } catch (e: unknown) {
+      console.error('ManualResultsPage: markRemainingDnc failed', e);
+      this.message.message('Error marking DNC', e instanceof Error ? e.message : String(e));
+    }
+  }
+
   async publish() {
     if (this.selectedRace() && !this.publishing()) {
       const race = this.selectedRace()!;

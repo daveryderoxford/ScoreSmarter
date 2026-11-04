@@ -31,10 +31,12 @@ describe('EntryService.importEntries', () => {
   let service: EntryService;
   const createSeriesEntry = vi.fn();
   const addResult = vi.fn();
+  let allSeries: unknown[] = [];
 
   beforeEach(() => {
     createSeriesEntry.mockReset();
     addResult.mockReset();
+    allSeries = [];
     createSeriesEntry.mockResolvedValue('se-1');
     addResult.mockResolvedValue('rc-1');
 
@@ -44,7 +46,7 @@ describe('EntryService.importEntries', () => {
         EntryService,
         { provide: RaceCompetitorStore, useValue: { addResult, selectedCompetitors: () => [] } },
         { provide: SeriesEntryStore, useValue: { selectedEntries: () => [] } },
-        { provide: RaceCalendarStore, useValue: { allSeries: () => [], allRaces: () => [] } },
+        { provide: RaceCalendarStore, useValue: { allSeries: () => allSeries, allRaces: () => [] } },
         { provide: ClubStore, useValue: { club: () => ({ classes: [] }) } },
         { provide: Firestore, useValue: {} },
         { provide: RaceCompetitorMutator, useValue: { createSeriesEntry } },
@@ -103,6 +105,25 @@ describe('EntryService.importEntries', () => {
       seriesEntryId: 'se-1',
       resultCode: 'NOT FINISHED',
     });
+  });
+
+  it('skips races already sailed for an open-event series', async () => {
+    allSeries = [{ id: 's1', eventId: 'e1' }];
+    await service.importEntries({
+      errors: [],
+      series: [
+        {
+          seriesId: 's1',
+          races: [
+            makeRace({ id: 'r1', seriesId: 's1', status: 'Completed' }),
+            makeRace({ id: 'r2', seriesId: 's1' }),
+          ],
+          entries: [{ helm: 'Alice', boatClass: 'ILCA 7', sailNumber: '1234', divisions: [], handicaps: [] }],
+        },
+      ],
+    });
+    expect(addResult).toHaveBeenCalledTimes(1);
+    expect(addResult).toHaveBeenCalledWith(expect.objectContaining({ raceId: 'r2' }));
   });
 
   it('refuses a plan that still has errors', async () => {

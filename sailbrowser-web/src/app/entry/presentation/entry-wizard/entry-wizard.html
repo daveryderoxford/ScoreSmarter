@@ -138,7 +138,6 @@
                 <div mat-subheader class="boat-picker-helm">{{ group.key }}</div>
                 @for (boat of group.boats; track boat.id) {
                   <mat-list-option
-                    class="boat-picker-boat"
                     [value]="boat.id"
                     [selected]="selectedBoat()?.id === boat.id"
                     togglePosition="before">

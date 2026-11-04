@@ -301,6 +301,18 @@ test('kiosk and regular users cannot add classes', async () => {
   await assertFails(user.doc(`clubs/${CLUB_ID}`).set(append, { merge: true }));
 });
 
+test('anyone can read open events; only club admins can write them', async () => {
+  const path = `clubs/${CLUB_ID}/events/event-1`;
+  const event = { id: 'event-1', name: 'ILCA Open', seasonId: '2026', startDate: new Date('2026-06-06'), endDate: new Date('2026-06-07') };
+  const admin = authedDb('club-admin-user', clubUserClaims('club-admin'));
+  await assertSucceeds(admin.doc(path).set(event));
+  await assertSucceeds(testEnv.unauthenticatedContext().firestore().doc(path).get());
+  await assertFails(authedDb(RO_UID, clubUserClaims('race-officer')).doc(path).set({ ...event, name: 'Renamed' }));
+  await assertFails(admin.doc(`clubs/${CLUB_ID}/events/event-2`).set({ ...event, id: 'event-2', startDate: 'soon' }));
+  await assertFails(admin.doc(`clubs/${CLUB_ID}/events/event-3`).set(event));
+  await assertSucceeds(admin.doc(path).delete());
+});
+
 test('anyone can read rating lists; only sys-admins can write them', async () => {
   const path = 'system/public/ratingLists/pn-2027';
   const list = { scheme: 'PY', issuer: 'RYA', name: 'PN 2027', effectiveFrom: new Date('2027-03-01'), ratings: { 191: 1095 } };

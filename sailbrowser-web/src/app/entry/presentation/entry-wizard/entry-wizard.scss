@@ -82,11 +82,6 @@
   min-height: auto;
 }
 
-/* Indent via leading space (not margin) so 100%-wide options don't force horizontal scroll. */
-.boat-picker-boat {
-  --mat-list-list-item-leading-space: 32px;
-}
-
 .boat-picker-empty {
   margin: 0;
   padding: 24px 12px;

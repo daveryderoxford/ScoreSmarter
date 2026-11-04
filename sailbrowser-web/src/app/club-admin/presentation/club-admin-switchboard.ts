@@ -91,11 +91,12 @@ export class ClubAdminSwitchboard {
 
     {
       title: 'Race Calendar',
-      description: 'Manage seasons, series schedules, and individual race events.',
+      description: 'Manage seasons, series schedules, open events, and individual races.',
       icon: 'calendar_month',
       resources: [
         { label: 'Seasons', route: '/club/seasons' },
         { label: 'Series', route: '/race-calendar' },
+        { label: 'Open events', route: '/events/manage' },
       ],
       importExportContexts: ['race-calendar']
     },

@@ -49,6 +49,12 @@
         <mat-icon>edit_note</mat-icon>
         <span>Race day details</span>
       </button>
+      @if (canMarkRemainingDnc()) {
+        <button mat-menu-item type="button" (click)="markRemainingDnc(sr)">
+          <mat-icon>do_not_disturb_on</mat-icon>
+          <span>Mark remaining as DNC</span>
+        </button>
+      }
       @if (sr.status === 'Canceled') {
         <button mat-menu-item type="button" (click)="raceDayActions.reinstateRace(sr)">
           <mat-icon>restore</mat-icon>
@@ -87,6 +93,12 @@
           <mat-icon>edit_note</mat-icon>
           <span>Race day details</span>
         </button>
+        @if (canMarkRemainingDnc()) {
+          <button mat-menu-item type="button" (click)="markRemainingDnc(sr)">
+            <mat-icon>do_not_disturb_on</mat-icon>
+            <span>Mark remaining as DNC</span>
+          </button>
+        }
         @if (sr.status === 'Canceled') {
           <button mat-menu-item type="button" (click)="raceDayActions.reinstateRace(sr)">
             <mat-icon>restore</mat-icon>
