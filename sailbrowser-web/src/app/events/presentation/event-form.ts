@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
@@ -42,7 +43,7 @@ function endNotBeforeStart(group: FormGroup): { endBeforeStart: true } | null {
   selector: 'app-event-form',
   imports: [
     ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatDatepickerModule,
-    MatButtonModule, RouterLink, NumberField, TimeInput, SubmitButton,
+    MatButtonModule, MatIconModule, RouterLink, NumberField, TimeInput, SubmitButton,
   ],
   providers: [provideNativeDateAdapter()],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -94,9 +95,13 @@ function endNotBeforeStart(group: FormGroup): { endBeforeStart: true } | null {
           <mat-hint>One short series is created for each fleet</mat-hint>
           <mat-error>Choose at least one fleet</mat-error>
         </mat-form-field>
-        <p class="hint">
-          Fleet missing? <a routerLink="/club/fleets/add">Add a fleet</a>, then come back.
-        </p>
+        <div class="fleet-missing">
+          <span>Fleet missing? Add it, then come back.</span>
+          <a mat-stroked-button routerLink="/club/fleets/add">
+            <mat-icon>add</mat-icon>
+            Add fleet
+          </a>
+        </div>
 
         <mat-form-field>
           <mat-label>Races per day</mat-label>
@@ -137,7 +142,15 @@ function endNotBeforeStart(group: FormGroup): { endBeforeStart: true } | null {
   `,
   styles: `
     form { display: flex; flex-direction: column; }
-    .hint { margin: -8px 0 16px; font: var(--mat-sys-body-small); color: var(--mat-sys-on-surface-variant); }
+    .fleet-missing {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 16px;
+      margin: 8px 0 24px;
+      font: var(--mat-sys-body-medium);
+      color: var(--mat-sys-on-surface-variant);
+    }
     .error { color: var(--mat-sys-error); }
   `,
 })
