@@ -11,6 +11,7 @@ export const APP_ROUTES: Routes = [
       path: "results-sheet-phone-capture",
       loadChildren: () => import('./results-sheet-phone-capture/results-sheet-phone-capture.routes').then(r => r.RESULTS_SHEET_PHONE_CAPTURE_ROUTES),
     },
+   { path: "events", loadChildren: () => import('./events/events.routes').then(r => r.EVENTS_ROUTES) },
    { path: "results", loadChildren: () => import('./published-results/published-result.routes').then(r => r.PUBLISHED_RESULTS_ROUTES) },
    { path: "sys-admin", loadChildren: () => import('./sys-admin/sys-admin.routes').then(r => r.SYS_ADMIN_ROUTES) },
    { path: "club", loadChildren: () => import('./club-tenant/club.routes').then(r => r.CLUB_ROUTES) },

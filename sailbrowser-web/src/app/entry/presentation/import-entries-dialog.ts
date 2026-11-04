@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { RatingListStore } from 'app/system-data';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,6 +16,11 @@ import {
   type EntriesCsvSeriesMapping,
 } from '../services/entries-csv.service';
 import { EntryService } from '../services/entry.service';
+
+export interface ImportEntriesDialogData {
+  /** Series to map up front, e.g. every series of an open event. */
+  seriesIds?: string[];
+}
 
 @Component({
   selector: 'app-import-entries-dialog',
@@ -202,7 +207,13 @@ export class ImportEntriesDialog {
 
   readonly fileName = signal('');
   readonly csvText = signal('');
-  readonly mappings = signal<EntriesCsvSeriesMapping[]>([{ seriesId: '', csvSeriesName: '' }]);
+  private readonly data = inject<ImportEntriesDialogData | null>(MAT_DIALOG_DATA, { optional: true });
+
+  readonly mappings = signal<EntriesCsvSeriesMapping[]>(
+    this.data?.seriesIds?.length
+      ? this.data.seriesIds.map(seriesId => ({ seriesId, csvSeriesName: '' }))
+      : [{ seriesId: '', csvSeriesName: '' }],
+  );
   readonly existingBySeries = signal<ReadonlyMap<string, readonly SeriesEntry[]>>(new Map());
   readonly importing = signal(false);
   readonly importError = signal<string | null>(null);

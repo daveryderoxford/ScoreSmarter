@@ -18,6 +18,7 @@ import { Race, RaceCalendarStore } from 'app/race-calendar';
 import { NumberField } from 'app/shared/components/number-field/number-field';
 import { TimeInput } from 'app/shared/components/time-input/time-input';
 import { dateAtSecondsOfDay } from 'app/shared/utils/time-utils';
+import { EventEntryService } from 'app/events/services/event-entry.service';
 
 const DEFAULT_START_SECONDS = 10 * 3600 + 30 * 60; // 10:30:00
 @Component({
@@ -65,6 +66,7 @@ export class RaceAdd {
   private readonly router = inject(Router);
   private readonly rcs = inject(RaceCalendarStore);
   private snackbar = inject(MatSnackBar);
+  private readonly eventEntries = inject(EventEntryService);
   seriesId = input.required<string>(); // Route parameter
 
   private series = this.rcs.getSeries(this.seriesId);
@@ -150,6 +152,8 @@ export class RaceAdd {
           name: series.name,
           fleetId: series.primaryScoringConfiguration.fleet.id
         }, races);
+        // Open-event entries are made up front, so new races need a row for every entry.
+        if (series.eventId) await this.eventEntries.backfillRows(series.id);
       } catch (error: any) {
         this.snackbar.open("Error encountered adding races", "Dismiss", { duration: 3000 });
         console.log('AddRace: Error adding races ' + error.toString());

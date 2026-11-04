@@ -319,6 +319,9 @@ export class EntryService {
     }
 
     for (const seriesPlan of plan.series) {
+      // Open-event entries made after racing starts get no row on races already sailed; those score DNC.
+      const isEvent = !!this.raceCalendarStore.allSeries().find(s => s.id === seriesPlan.seriesId)?.eventId;
+      const races = isEvent ? seriesPlan.races.filter(r => r.status === 'Future') : seriesPlan.races;
       for (const entry of seriesPlan.entries) {
         const seriesEntryId = await this.mutator.createSeriesEntry({
           seriesId: seriesPlan.seriesId,
@@ -331,7 +334,7 @@ export class EntryService {
           handicaps: entry.handicaps,
           divisions: entry.divisions,
         });
-        for (const race of seriesPlan.races) {
+        for (const race of races) {
           await this.raceResultsStore.addResult({
             raceId: race.id,
             seriesId: race.seriesId,

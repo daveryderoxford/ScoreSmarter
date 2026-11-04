@@ -9,6 +9,8 @@ export interface Series {
    name: string;
    /** Free text grouping series in lists, e.g. "Opens" or "Cups"; results can be filtered by it. */
    displayGroup?: string;
+   /** Open meeting this series belongs to (`clubs/{clubId}/events/{eventId}`). */
+   eventId?: string;
    startDate?: Date | null;
    endDate?: Date | null;
    archived: boolean;

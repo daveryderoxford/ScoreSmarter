@@ -1,13 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { IsActiveMatchOptions, NavigationEnd, Router, RouterModule } from '@angular/router';
 import { MatListModule } from '@angular/material/list';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { AuthService } from 'app/auth';
 import { ClubStore } from 'app/club-tenant';
+import { currentSeasonEvents } from 'app/events/model/open-event';
+import { EventStore } from 'app/events/services/event-store';
 import { ClubLogo } from 'app/shared/components/club-logo/club-logo';
 import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { SidenavService } from 'app/shared/services/sidenav.service';
@@ -28,6 +31,7 @@ const ignoredNavMatch: Pick<IsActiveMatchOptions, 'queryParams' | 'fragment' | '
     MatDividerModule,
     MatMenuModule,
     RouterModule,
+    MatExpansionModule,
     MatIconModule,
     ClubLogo,
   ],
@@ -64,6 +68,14 @@ const ignoredNavMatch: Pick<IsActiveMatchOptions, 'queryParams' | 'fragment' | '
       margin: 5px 0;
     }
 
+    a.sidenav-sub-item {
+      margin: 0;
+      padding-left: 56px;
+      @include mat.list-overrides((
+        list-item-one-line-container-height: 32px,
+      ));
+    }
+
     .club-branding {
       display: flex;
       flex-direction: row;
@@ -94,6 +106,54 @@ const ignoredNavMatch: Pick<IsActiveMatchOptions, 'queryParams' | 'fragment' | '
 
     a.club-name:hover {
       text-decoration: underline;
+    }
+
+    .events-panel {
+      --mat-expansion-container-elevation-shadow: none;
+      --mat-expansion-container-background-color: transparent;
+      --mat-expansion-header-collapsed-state-height: 40px;
+      --mat-expansion-header-expanded-state-height: 40px;
+      --mat-expansion-header-text-size: var(--mat-sys-body-medium-size);
+      --mat-expansion-header-text-weight: inherit;
+      --mat-expansion-header-text-tracking: inherit;
+      background: transparent;
+      box-shadow: none;
+      margin: 5px 0;
+    }
+
+    .events-panel-title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .events-panel-title mat-icon {
+      flex: 0 0 auto;
+      width: 19px;
+      height: 19px;
+      font-size: 19px;
+    }
+
+    .events-panel-link {
+      color: inherit;
+      text-decoration: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .events-panel-link.mdc-list-item--activated,
+    .events-panel-link.active {
+      color: var(--mat-sys-primary);
+    }
+
+    :host ::ng-deep .events-panel .mat-expansion-panel-body {
+      padding: 0;
+    }
+
+    :host ::ng-deep .events-panel .mat-expansion-panel-header {
+      padding-left: 12px;
+      border-radius: 100px;
     }
 
   `],
@@ -135,6 +195,23 @@ export class SidenavMenu {
   });
 
   protected readonly club = computed(() => this.clubStore.club());
+
+  private readonly eventStore = inject(EventStore);
+  protected readonly currentEvents = computed(() =>
+    currentSeasonEvents(this.eventStore.events(), this.club().seasons),
+  );
+
+  /** Collapsed until the user opens it, or they are already on an events page. */
+  protected readonly eventsPanelExpanded = signal(false);
+
+  constructor() {
+    effect(() => {
+      const path = this.currentUrl().split('?')[0];
+      if (path === '/events' || path.startsWith('/events/')) {
+        this.eventsPanelExpanded.set(true);
+      }
+    });
+  }
 
   protected readonly clubDisplayName = computed(
     () => this.club().shortName?.trim() || this.club().name,

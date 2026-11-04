@@ -1,0 +1,139 @@
+<app-page-layout>
+  <app-toolbar [title]="event()?.name ?? 'Event'" />
+
+  <div class="page">
+    @if (event(); as ev) {
+      <mat-card appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>{{ ev.name }}</mat-card-title>
+          <mat-card-subtitle>
+            {{ ev.startDate | date: 'EEE d MMM' }}
+            @if (ev.endDate.getTime() !== ev.startDate.getTime()) { – {{ ev.endDate | date: 'EEE d MMM y' }} } @else { {{ ev.startDate | date: 'y' }} }
+            @if (seasonName()) { · {{ seasonName() }} }
+          </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content class="documents">
+          @if (ev.noticeOfRaceUrl) {
+            <a matButton="tonal" [href]="ev.noticeOfRaceUrl" target="_blank" rel="noopener noreferrer">
+              <mat-icon>description</mat-icon> Notice of race
+            </a>
+          }
+          @if (ev.sailingInstructionsUrl) {
+            <a matButton="tonal" [href]="ev.sailingInstructionsUrl" target="_blank" rel="noopener noreferrer">
+              <mat-icon>description</mat-icon> Sailing instructions
+            </a>
+          }
+          @if (!ev.noticeOfRaceUrl && !ev.sailingInstructionsUrl) {
+            <p class="muted">The notice of race and sailing instructions have not been published yet.</p>
+          }
+        </mat-card-content>
+        @if (auth.isClubAdmin()) {
+          <mat-card-actions align="end">
+            <a matButton [routerLink]="['/events/manage/edit', ev.id]">Edit event</a>
+          </mat-card-actions>
+        }
+      </mat-card>
+
+      <mat-card appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>Results</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @for (info of results(); track info.id) {
+            <a class="result-link" [routerLink]="['/results/viewer', info.id]">
+              <mat-icon>emoji_events</mat-icon>
+              <span>{{ info.name }}</span>
+              <span class="muted">{{ info.raceCount }} {{ info.raceCount === 1 ? 'race' : 'races' }}</span>
+            </a>
+          } @empty {
+            <p class="muted">No results published yet.</p>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>Entries ({{ entryCount() }})</mat-card-title>
+        </mat-card-header>
+        @if (auth.isRaceOfficer()) {
+          <mat-card-actions class="entry-actions">
+            <button matButton="filled" type="button" [disabled]="busy() || series().length === 0" (click)="addEntry()">
+              <mat-icon>person_add</mat-icon> Add entry
+            </button>
+            <button matButton="outlined" type="button" [disabled]="busy() || series().length === 0" (click)="importEntries()">
+              <mat-icon>upload_file</mat-icon> Import entries
+            </button>
+          </mat-card-actions>
+          @if (racingStarted()) {
+            <p class="muted notice">
+              Racing has started. To change a boat's class, add a new entry in the other series.
+            </p>
+          }
+        }
+        <mat-card-content>
+          @if (entriesLoading()) {
+            <app-loading-centered />
+          } @else {
+            @for (group of entriesBySeries(); track group.series.id) {
+              <h3 class="series-heading">{{ group.series.name }} ({{ group.entries.length }})</h3>
+              @if (group.entries.length === 0) {
+                <p class="muted">No entries yet.</p>
+              } @else {
+                <table class="entries">
+                  <thead>
+                    <tr>
+                      <th>Sail no.</th>
+                      @if (group.showClass) { <th>Class</th> }
+                      <th>Helm</th>
+                      <th>Club</th>
+                      @if (auth.isRaceOfficer()) { <th class="actions-col"><span class="visually-hidden">Actions</span></th> }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (entry of group.entries; track entry.id) {
+                      <tr>
+                        <td>{{ entry.sailNumber }}</td>
+                        @if (group.showClass) { <td>{{ entry.boatClass }}</td> }
+                        <td>
+                          {{ entry.helm }}@if (entry.crew) { / {{ entry.crew }} }
+                          @if (divisionNames(entry, group.series); as divisions) {
+                            <span class="muted"> · {{ divisions }}</span>
+                          }
+                        </td>
+                        <td>{{ entry.club }}</td>
+                        @if (auth.isRaceOfficer()) {
+                          <td class="actions-col">
+                            <button mat-icon-button type="button" [matMenuTriggerFor]="entryMenu"
+                              [attr.aria-label]="'Actions for ' + entry.helm" [disabled]="busy()">
+                              <mat-icon>more_vert</mat-icon>
+                            </button>
+                            <mat-menu #entryMenu="matMenu">
+                              <button mat-menu-item type="button" (click)="editEntry(entry)">
+                                <mat-icon>edit</mat-icon>
+                                <span>{{ racingStarted() ? 'Edit' : 'Edit or move' }}</span>
+                              </button>
+                              <button mat-menu-item type="button" (click)="deleteEntry(entry)">
+                                <mat-icon>delete</mat-icon>
+                                <span>Delete</span>
+                              </button>
+                            </mat-menu>
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            } @empty {
+              <p class="muted">This event has no series yet.</p>
+            }
+          }
+        </mat-card-content>
+      </mat-card>
+    } @else if (loading()) {
+      <app-loading-centered />
+    } @else {
+      <p class="muted">Event not found.</p>
+    }
+  </div>
+</app-page-layout>

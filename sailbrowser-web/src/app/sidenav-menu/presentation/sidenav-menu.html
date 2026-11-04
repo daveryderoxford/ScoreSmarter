@@ -51,6 +51,49 @@
       <span matListItemTitle>Series Results</span>
     </a>
 
+    @if (currentEvents().length === 0) {
+      <a
+        mat-list-item
+        class="sidenav-nav-item"
+        routerLink="/events"
+        routerLinkActive="mdc-list-item--activated"
+        [routerLinkActiveOptions]="exactNavMatch"
+        (click)="onNavClick()">
+        <mat-icon matListItemIcon>sailing</mat-icon>
+        <span matListItemTitle>Open Events</span>
+      </a>
+    } @else {
+      <mat-expansion-panel
+        class="events-panel"
+        [expanded]="eventsPanelExpanded()"
+        (expandedChange)="eventsPanelExpanded.set($event)">
+        <mat-expansion-panel-header>
+          <mat-panel-title class="events-panel-title">
+            <mat-icon>sailing</mat-icon>
+            <a
+              class="events-panel-link"
+              routerLink="/events"
+              routerLinkActive="active"
+              [routerLinkActiveOptions]="exactNavMatch"
+              (click)="$event.stopPropagation(); onNavClick()">
+              Open Events
+            </a>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        @for (event of currentEvents(); track event.id) {
+          <a
+            mat-list-item
+            class="sidenav-nav-item sidenav-sub-item"
+            [routerLink]="['/events', event.id]"
+            routerLinkActive="mdc-list-item--activated"
+            [routerLinkActiveOptions]="prefixNavMatch"
+            (click)="onNavClick()">
+            <span matListItemTitle>{{ event.name }}</span>
+          </a>
+        }
+      </mat-expansion-panel>
+    }
+
     <mat-divider />
 
     @if (auth.isRaceOfficer()) {

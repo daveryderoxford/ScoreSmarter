@@ -139,6 +139,14 @@ service cloud.firestore {
         && pathKeyUnchanged('seriesId');
     }
 
+    function isValidEvent(eventId) {
+      return hasRequiredFields(['name', 'seasonId', 'startDate', 'endDate'])
+        && request.resource.data.name is string
+        && request.resource.data.startDate is timestamp
+        && request.resource.data.endDate is timestamp
+        && idFieldMatches(eventId);
+    }
+
     function clubUserRequiredFields() {
       return hasRequiredFields(['role', 'tenantId', 'firstname', 'surname']);
     }
@@ -285,6 +293,13 @@ service cloud.firestore {
       match /series/{seriesId} {
         allow read: if true;
         allow create, update: if isRO(clubId) && isValidSeries(seriesId);
+        allow delete: if isClubAdmin(clubId);
+      }
+
+      // Open meetings: public page, managed by club admins.
+      match /events/{eventId} {
+        allow read: if true;
+        allow create, update: if isClubAdmin(clubId) && isValidEvent(eventId);
         allow delete: if isClubAdmin(clubId);
       }
 
