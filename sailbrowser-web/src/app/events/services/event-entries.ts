@@ -3,11 +3,9 @@ import { collectionData, query, where } from '@angular/fire/firestore';
 import { FirestoreTenantService } from 'app/club-tenant/services/firestore-tenant';
 import type { SeriesEntry } from 'app/results-input/model/series-entry';
 import { sortEntries } from 'app/results-input/services/series-entry-store';
+import { collectionDataInChunks } from 'app/shared/firebase/firestore-in-query';
 import { firestoreListenerResource } from 'app/shared/firebase/firestore-listener-resource';
-import { combineLatest, map, of } from 'rxjs';
-
-/** Firestore `in` queries take at most 30 values. */
-const IN_LIMIT = 30;
+import { map } from 'rxjs';
 
 /** Live series entries for an event's series. Provide on the page that shows them. */
 @Injectable()
@@ -21,15 +19,10 @@ export class EventEntries {
   private readonly resource = firestoreListenerResource({
     name: 'event-entries',
     params: () => this.key(),
-    stream: () => {
-      const ids = [...this.seriesIds()];
-      if (ids.length === 0) return of([] as SeriesEntry[]);
-      const chunks: string[][] = [];
-      for (let i = 0; i < ids.length; i += IN_LIMIT) chunks.push(ids.slice(i, i + IN_LIMIT));
-      return combineLatest(
-        chunks.map(chunk => collectionData(query(this.collection, where('seriesId', 'in', chunk)), { idField: 'id' })),
-      ).pipe(map(parts => parts.flat().sort(sortEntries)));
-    },
+    stream: () =>
+      collectionDataInChunks(this.seriesIds(), chunk =>
+        collectionData(query(this.collection, where('seriesId', 'in', chunk)), { idField: 'id' }),
+      ).pipe(map(entries => [...entries].sort(sortEntries))),
     defaultValue: [] as SeriesEntry[],
   });
 

@@ -171,8 +171,27 @@ describe('CurrentRaces', () => {
     ]);
 
     expect(current.selectedSeries().map(s => s.id).sort()).toEqual(['series-1', 'series-2']);
-    expect(current.selectedSeriesIds()).toEqual(['series-1', 'series-2']);
-    expect(current.selectedSeriesIdsKey()).toBe('series-1\0series-2');
+  });
+
+  it('loads series of upcoming races that are not selected, and skips races beyond the window', () => {
+    const inDays = (days: number) => {
+      const d = todayAt(18, 0);
+      d.setDate(d.getDate() + days);
+      return d;
+    };
+    fakeCalendar.setAllRaces([
+      raceFixture({ id: 'today', seriesId: 'series-today', scheduledStart: todayAt(10, 0) }),
+      raceFixture({ id: 'upcoming-1', seriesId: 'series-future', scheduledStart: inDays(2) }),
+      raceFixture({ id: 'upcoming-2', seriesId: 'series-future', scheduledStart: inDays(2) }),
+      raceFixture({ id: 'far', seriesId: 'series-far', scheduledStart: inDays(30) }),
+      raceFixture({ id: 'manual', seriesId: 'series-old', scheduledStart: yesterdayAt(12, 0) }),
+    ]);
+    current.addRaceId('manual');
+
+    expect(current.selectedRaceIds()).toEqual(['today', 'manual']);
+    expect(current.loadedRaceIds()).toEqual(['manual', 'today', 'upcoming-1', 'upcoming-2']);
+    expect(current.loadedSeriesIds()).toEqual(['series-future', 'series-old', 'series-today']);
+    expect(current.loadedSeriesIdsKey()).toBe('series-future\0series-old\0series-today');
   });
 
   it('selectedRaceIdsKey is stable when selectedRaceIds is recomputed with the same ids', () => {
