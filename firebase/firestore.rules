@@ -19,7 +19,7 @@ service cloud.firestore {
     }
 
     function getClubRole(clubId) {
-      return request.auth.token.clubs[clubId];
+      return request.auth.token.get('clubs', {}).get(clubId, null);
     }
 
     function isClubAdmin(clubId) {
@@ -65,8 +65,17 @@ service cloud.firestore {
         && isValidNewClubClass(after[before.size()]);
     }
 
+    // Members signed up through ensureUserData have a club user doc but no `clubs` claim;
+    // only assignRole sets the claim.
+    function isClubMember(clubId) {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/clubs/$(clubId)/users/$(request.auth.uid));
+    }
+
     function isAuthorisedUser(clubId) {
-      return isRO(clubId) || (isAuthenticated() && getClubRole(clubId) != null);
+      return isRO(clubId)
+        || (isAuthenticated() && getClubRole(clubId) != null)
+        || isClubMember(clubId);
     }
 
     function isOwner(userId) {

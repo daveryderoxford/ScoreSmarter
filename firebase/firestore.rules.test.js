@@ -110,6 +110,45 @@ test('race result update rejects raceId mutation', async () => {
   );
 });
 
+test('member with a club user doc and no clubs claim can enter a race', async () => {
+  const uid = 'member-no-claim';
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc(`clubs/${CLUB_ID}/users/${uid}`).set({
+      id: uid,
+      role: 'user',
+      tenantId: CLUB_ID,
+      firstname: 'Pat',
+      surname: 'Member',
+    });
+  });
+
+  const db = authedDb(uid);
+  await assertSucceeds(
+    db.doc(`clubs/${CLUB_ID}/series-entries/entry-member`).set({
+      seriesId: 'series-1',
+      helm: 'Pat Member',
+    }),
+  );
+  await assertSucceeds(
+    db.doc(`clubs/${CLUB_ID}/race-results/comp-member`).set({
+      raceId: 'race-a',
+      seriesId: 'series-1',
+      seriesEntryId: 'entry-member',
+      enteredByUid: uid,
+    }),
+  );
+});
+
+test('signed-in user without a club user doc or claim cannot enter a race', async () => {
+  const db = authedDb('not-a-member');
+  await assertFails(
+    db.doc(`clubs/${CLUB_ID}/series-entries/entry-outsider`).set({
+      seriesId: 'series-1',
+      helm: 'Outsider',
+    }),
+  );
+});
+
 test('club-admin can read authorized_kiosks', async () => {
   const path = `clubs/${CLUB_ID}/authorized_kiosks/device-1`;
   await testEnv.withSecurityRulesDisabled(async (context) => {
