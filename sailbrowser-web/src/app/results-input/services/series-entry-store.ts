@@ -19,10 +19,11 @@ import {
 import { compareSailNumbers, normalizeSailNumber } from 'app/boats/model/sail-number';
 import { FirestoreTenantService } from 'app/club-tenant';
 import { generateSecureID } from 'app/shared/firebase/firestore-helper';
+import { collectionDataInChunks } from 'app/shared/firebase/firestore-in-query';
 import { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { firestoreWrite } from 'app/shared/utils/with-timeout';
 import { normaliseWhitespace } from 'app/shared/utils/string-utils';
-import { map, of, tap } from 'rxjs';
+import { map, tap } from 'rxjs';
 import { SeriesEntry } from '../model/series-entry';
 import { CurrentRaces } from './current-races-store';
 
@@ -90,24 +91,17 @@ export class SeriesEntryStore {
     return { ...snapshot.data(), id: snapshot.id };
   }
 
+  /** Series entries for the series of selected and upcoming races. */
   private readonly selectedEntriesResource = rxResource({
-    params: () => this.currentRaces.selectedSeriesIdsKey(),
-    stream: () => {
-      const selectedIds = this.currentRaces.selectedSeriesIds();
-      if (selectedIds.length === 0) {
-        return of([]);
-      } else {
-        const q = query(
-          this.collection,
-          where('seriesId', 'in', selectedIds)
-        );
-        return collectionData(q, { idField: 'id' }).pipe(
-          map(entries => [...entries].sort(sortEntries)),
-          tap(entries => console.log(`SeriesEntryStore. Loaded ${entries.length} entries`))
-        );
-      }
-    },
-    defaultValue: []
+    params: () => this.currentRaces.loadedSeriesIdsKey(),
+    stream: () =>
+      collectionDataInChunks(this.currentRaces.loadedSeriesIds(), chunk =>
+        collectionData(query(this.collection, where('seriesId', 'in', chunk)), { idField: 'id' }),
+      ).pipe(
+        map(entries => [...entries].sort(sortEntries)),
+        tap(entries => console.log(`SeriesEntryStore. Loaded ${entries.length} entries`)),
+      ),
+    defaultValue: [],
   });
 
   private tidyStrings<T extends Partial<SeriesEntry> | SeriesEntryPartialUpdate>(entry: T): T {

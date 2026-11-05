@@ -47,8 +47,6 @@ export class CurrentRaces {
       .sort(sortRaces);
   });
 
-  readonly upcomingRaceIds = computed(() => this.upcomingRaces().map(race => race.id));
-
   /** Today's races (from calendar) plus any manual extras still present in `allRaces`. */
   readonly selectedRaceIds = computed(() => {
     const racesById = this.allRacesById();
@@ -90,13 +88,28 @@ export class CurrentRaces {
     return allSeries.filter(series => seriesIds.includes(series.id));
   });
 
-  readonly selectedSeriesIds = computed(() => [...new Set(this.selectedRaces().map(race => race.seriesId))]);
-
-  /** Order-independent key; changes only when series ids for selected races change. */
-  readonly selectedSeriesIdsKey = computed(() => {
-    const ids = this.selectedSeriesIds();
-    return ids.length === 0 ? '' : ids.slice().sort().join('\0');
+  /**
+   * Selected plus upcoming races, sorted by id. Competitor rows and series entries are
+   * kept in memory for these races so entry lists and duplicate checks see future entries.
+   */
+  readonly loadedRaces = computed(() => {
+    const byId = new Map<string, Race>();
+    for (const race of [...this.selectedRaces(), ...this.upcomingRaces()]) byId.set(race.id, race);
+    return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
   });
+
+  readonly loadedRaceIds = computed(() => this.loadedRaces().map(race => race.id));
+
+  /** Changes only when the loaded race id set changes. */
+  readonly loadedRaceIdsKey = computed(() => this.loadedRaceIds().join('\0'));
+
+  /** Series owning {@link loadedRaces}, sorted. */
+  readonly loadedSeriesIds = computed(() =>
+    [...new Set(this.loadedRaces().map(race => race.seriesId))].sort(),
+  );
+
+  /** Changes only when the loaded series id set changes. */
+  readonly loadedSeriesIdsKey = computed(() => this.loadedSeriesIds().join('\0'));
 
   addRaceId = (raceId: string) =>
     this.manuallyAddedRaceIds.update(ids => {
