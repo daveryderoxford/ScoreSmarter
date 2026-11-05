@@ -360,6 +360,10 @@ protected raceLabel2(race: Race): string | undefined {
 
   protected onSelectionChange(event: MatSelectionListChange): void {
     let ids = event.source.selectedOptions.selected.map(opt => opt.value as string);
+    if (this.isMultiSelect()) {
+      const shown = new Set(event.source.options.map(opt => opt.value as string));
+      ids = [...ids, ...this.selectedRaceIds().filter(id => !shown.has(id))];
+    }
 
     const max = this.maxSelections();
     if (max != null && max > 1 && ids.length > max) {

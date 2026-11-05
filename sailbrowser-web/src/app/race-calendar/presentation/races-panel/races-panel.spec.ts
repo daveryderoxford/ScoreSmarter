@@ -62,4 +62,21 @@ describe('RacesPanel', () => {
     const comp = fixture.componentInstance;
     expect((comp as unknown as { selectedPeriod: () => string | null }).selectedPeriod()).toBe('future');
   });
+
+  it('keeps selected races the filter hides when another race is toggled', () => {
+    const fixture = TestBed.createComponent(RacesPanel);
+    fixture.componentRef.setInput('now', now);
+    fixture.componentRef.setInput('availableFilters', []);
+    fixture.componentRef.setInput('races', [todayRace, futureRace]);
+    fixture.componentRef.setInput('selectedRaceIds', ['r-today', 'r-future']);
+    fixture.detectChanges();
+
+    const emitted: string[][] = [];
+    fixture.componentInstance.selectedRaceIdsChange.subscribe(ids => emitted.push(ids));
+    const option = fixture.nativeElement.querySelector('[data-race-id="r-today"]') as HTMLElement;
+    option.click();
+    fixture.detectChanges();
+
+    expect(emitted).toEqual([['r-future']]);
+  });
 });

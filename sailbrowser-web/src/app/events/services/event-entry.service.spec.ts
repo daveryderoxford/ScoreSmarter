@@ -96,15 +96,8 @@ describe('EventEntryService', () => {
 
   const toAero7 = { seriesId: 's7', helm: 'Sam', boatClass: 'Aero 7', sailNumber: '101', divisions: [] };
 
-  it('adds an entry with a row on each race that has not started', async () => {
-    racesBySeries['s7'] = [race('r7a', 's7', 'Completed'), race('r7b', 's7')];
-    await service.addEntry(toAero7);
-    expect(addResult).toHaveBeenCalledTimes(1);
-    expect(addResult).toHaveBeenCalledWith({ raceId: 'r7b', seriesId: 's7', seriesEntryId: 'se-new', resultCode: 'NOT FINISHED' });
-  });
-
-  it('refuses a class that is not in the series fleet', async () => {
-    await expect(service.addEntry({ ...toAero7, boatClass: 'Aero 9' })).rejects.toThrow(/not in the Aero 7 fleet/);
+  it('refuses to move to a series whose fleet does not include the class', async () => {
+    await expect(service.moveEntry(oldEntry, { ...toAero7, boatClass: 'Aero 9' })).rejects.toThrow(/not in the Aero 7 fleet/);
     expect(createSeriesEntry).not.toHaveBeenCalled();
   });
 

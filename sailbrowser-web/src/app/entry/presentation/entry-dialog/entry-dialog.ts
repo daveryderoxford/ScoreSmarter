@@ -1,14 +1,17 @@
-import { ChangeDetectionStrategy, Component, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calendar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { EntryWizard, type EntryWizardResult } from '../entry-wizard/entry-wizard';
 
 export interface EntryDialogData {
   /** Race to pre-select on the race step. */
   raceId?: string;
+  /** Enter this series (every race that has not started) instead of choosing races. */
+  seriesId?: string;
   /** Seeds the boat search, e.g. a sail number the race officer could not match. */
   initialSearch?: string;
   /** Enter as Officer of the Day for this duty member. */
@@ -22,7 +25,7 @@ export type EntryDialogResult = EntryWizardResult;
   imports: [MatDialogModule, MatButtonModule, MatIconModule, EntryWizard],
   template: `
     <div class="title-row">
-      <h2 mat-dialog-title>{{ data.oodHelm !== undefined ? 'Enter as OOD' : 'Add entry' }}</h2>
+      <h2 mat-dialog-title>{{ title() }}</h2>
       <button mat-icon-button type="button" aria-label="Close" (click)="requestClose()">
         <mat-icon>close</mat-icon>
       </button>
@@ -30,6 +33,7 @@ export type EntryDialogResult = EntryWizardResult;
     <mat-dialog-content>
       <app-entry-wizard
         [scopedRaceId]="data.raceId"
+        [scopedSeriesId]="data.seriesId"
         [initialSearch]="data.initialSearch"
         [oodHelm]="data.oodHelm"
         (entered)="dialogRef.close($event)" />
@@ -57,7 +61,16 @@ export class EntryDialog {
   protected readonly dialogRef = inject<MatDialogRef<EntryDialog, EntryDialogResult>>(MatDialogRef);
   protected readonly data = inject<EntryDialogData>(MAT_DIALOG_DATA);
   private readonly dialogs = inject(DialogsService);
+  private readonly calendar = inject(RaceCalendarStore);
   private readonly wizard = viewChild.required(EntryWizard);
+
+  protected readonly title = computed(() => {
+    if (this.data.oodHelm !== undefined) return 'Enter as OOD';
+    const series = this.data.seriesId
+      ? this.calendar.allSeries().find(s => s.id === this.data.seriesId)
+      : undefined;
+    return series ? `Enter ${series.name}` : 'Add entry';
+  });
 
   constructor() {
     this.dialogRef

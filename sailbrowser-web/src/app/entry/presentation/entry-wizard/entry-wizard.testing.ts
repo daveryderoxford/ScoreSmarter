@@ -9,6 +9,7 @@ import { EntryWizard, type EntryWizardResult } from './entry-wizard';
 })
 export class FakeEntryWizard {
   readonly scopedRaceId = input<string>();
+  readonly scopedSeriesId = input<string>();
   readonly initialBoatClass = input<string>();
   readonly initialSailNumber = input<string>();
   readonly oodHelm = input<string>();

@@ -314,3 +314,104 @@ describe('EntryService.swapAndEnter', () => {
     expect(comps.comps.some(c => c.id === 'rc2')).toBe(true);
   });
 });
+
+describe('EntryService.enterRaces for open-event series', () => {
+  let service: EntryService;
+  let comps: MutatorTestRaceCompetitorStore;
+  let entries: MutatorTestSeriesEntryStore;
+  let cal: FakeRaceCalendarStore;
+
+  beforeEach(() => {
+    const raceCompetitors = new MutatorTestRaceCompetitorStore();
+    const seriesEntries = new MutatorTestSeriesEntryStore();
+    installMutatorWriteBatchHarness({ raceCompetitors, seriesEntries }, afterEach);
+    TestBed.configureTestingModule({
+      providers: [
+        provideTestAuth(),
+        EntryService,
+        { provide: RaceCompetitorStore, useValue: raceCompetitors },
+        { provide: SeriesEntryStore, useValue: seriesEntries },
+        { provide: RaceCalendarStore, useClass: FakeRaceCalendarStore },
+        provideFakeRatingLists(),
+        { provide: ClubStore, useClass: FakeClubStore },
+        provideMutatorTestFirestore(),
+        RaceCompetitorMutator,
+      ],
+    });
+    service = TestBed.inject(EntryService);
+    comps = raceCompetitors;
+    entries = seriesEntries;
+    cal = TestBed.inject(RaceCalendarStore) as unknown as FakeRaceCalendarStore;
+  });
+
+  const satRace = makeRace({ id: 'sat1', seriesId: 's1', status: 'In progress' });
+  const series = (eventId?: string) => ({ ...makeSeries('helm'), eventId });
+
+  beforeEach(() => {
+    cal.races = [
+      makeRace({ id: 'done', seriesId: 's1', status: 'Completed' }),
+      satRace,
+      makeRace({ id: 'sat2', seriesId: 's1', status: 'Future' }),
+      makeRace({ id: 'sun1', seriesId: 's1', status: 'Future' }),
+      makeRace({ id: 'gone', seriesId: 's1', status: 'Canceled' }),
+    ];
+  });
+
+  const details = (): EntryDetails => ({
+    races: [satRace],
+    helm: 'Sam',
+    boatClass: 'ILCA 7',
+    sailNumber: '100',
+  });
+
+  const rowRaceIds = () => comps.comps.map(c => c.raceId).sort();
+
+  it('enters the selected race and every Future race, with one series entry', async () => {
+    cal.series = [series('ev1')];
+
+    const created = await service.enterRaces(details());
+
+    expect(created.map(c => c.raceId)).toEqual(['sat1']);
+    expect(rowRaceIds()).toEqual(['sat1', 'sat2', 'sun1']);
+    expect(entries.entries).toHaveLength(1);
+    expect(new Set(comps.comps.map(c => c.seriesEntryId))).toEqual(new Set([entries.entries[0].id]));
+    expect(comps.comps.every(c => c.resultCode === 'NOT FINISHED')).toBe(true);
+  });
+
+  it('marks races that already have results for rescoring', async () => {
+    cal.series = [series('ev1')];
+
+    await service.enterRaces(details());
+
+    expect(cal.races.filter(r => r.dirty).map(r => r.id)).toEqual(['done', 'sat1']);
+  });
+
+  it('enters only the selected race for a club series', async () => {
+    cal.series = [series()];
+
+    await service.enterRaces(details());
+
+    expect(rowRaceIds()).toEqual(['sat1']);
+  });
+
+  it('does not add a second row where the boat is already entered', async () => {
+    cal.series = [series('ev1')];
+    entries.entries = [makeEntry({ id: 'e1' })];
+    comps.comps = [makeComp('e1', 'sun1', 'rc-sun')];
+
+    await service.enterRaces(details());
+
+    expect(rowRaceIds()).toEqual(['sat1', 'sat2', 'sun1']);
+  });
+
+  it('skips a Future race where the helm is already on another boat', async () => {
+    cal.series = [series('ev1')];
+    entries.entries = [makeEntry({ id: 'e1', boatClass: 'RS Aero 6', sailNumber: '4787' })];
+    comps.comps = [makeComp('e1', 'sun1', 'rc-sun')];
+
+    await service.enterRaces(details());
+
+    expect(comps.comps.filter(c => c.raceId === 'sun1').map(c => c.id)).toEqual(['rc-sun']);
+    expect(rowRaceIds()).toEqual(['sat1', 'sat2', 'sun1']);
+  });
+});

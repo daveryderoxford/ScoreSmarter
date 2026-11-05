@@ -39,6 +39,7 @@ import { ClubStore } from 'app/club-tenant';
 import { RatingListStore } from 'app/system-data';
 import { isSinglehanderClass } from 'app/club-tenant/model/boat-class';
 import { Race, RaceCalendarStore } from 'app/race-calendar';
+import type { Series } from 'app/race-calendar/model/series';
 import { DivisionValuePicker } from 'app/club-tenant/presentation/divisions/division-value-picker';
 import { RacesPanel } from 'app/race-calendar/presentation/races-panel/races-panel';
 import {
@@ -50,6 +51,7 @@ import {
 import { CurrentRaces } from 'app/results-input';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
 import { prefillDivisionsFromExistingEntry, divisionCatalogForRaces } from '../../services/prefill-entry-divisions';
+import { eventSeriesNames, selectWholeEventSeries } from '../../services/event-race-selection.helpers';
 import { type Handicap } from 'app/scoring/model/handicap';
 import { handicapSchemesRequiredForRaces } from 'app/scoring/model/handicap-race-requirements';
 import type { HandicapScheme } from 'app/scoring/model/handicap-scheme';
@@ -140,6 +142,11 @@ export class EntryWizard {
 
   /** Race to pre-select on the race step. */
   readonly scopedRaceId = input<string>();
+  /**
+   * Enter this series rather than chosen races: boats are limited to its fleet and the entry
+   * covers every race that has not started. Used for open-event series.
+   */
+  readonly scopedSeriesId = input<string>();
   readonly initialBoatClass = input<string>();
   readonly initialSailNumber = input<string>();
   /** Duty member's name when entering as Officer of the Day; the entry gets the OOD result code. */
@@ -150,6 +157,17 @@ export class EntryWizard {
   readonly entered = output<EntryWizardResult>();
 
   protected readonly isOodEntry = computed(() => this.oodHelm() !== undefined);
+
+  readonly scopedSeries = computed(() => {
+    const id = this.scopedSeriesId();
+    return id ? this.rc.allSeries().find(s => s.id === id) : undefined;
+  });
+
+  /** Class every boat must be when the scoped series is a class fleet. */
+  private readonly fixedBoatClass = computed(() => {
+    const fleet = this.scopedSeries()?.primaryScoringConfiguration.fleet;
+    return fleet?.type === 'BoatClass' ? fleet.boatClassId : undefined;
+  });
 
   private readonly searchSeed = computed(() => {
     const oodHelm = this.oodHelm()?.trim();
@@ -313,8 +331,11 @@ export class EntryWizard {
     const seriesById = new Map(this.rc.allSeries().map(s => [s.id, s]));
     const now = new Date();
     const isRO = this.auth.isRaceOfficer();
+    const scopedId = this.scopedSeriesId();
     return this.rc.allRaces().filter(race => {
-      if (!isRO) {
+      if (scopedId) {
+        if (race.seriesId !== scopedId) return false;
+      } else if (!isRO) {
         if (!isWithinNextDays(race, now, 7)) return false;
       }
       const series = seriesById.get(race.seriesId);
@@ -340,6 +361,15 @@ export class EntryWizard {
 
   readonly enteredRaceIds = computed(() => (this.enteredRacesSig() ?? []).map(race => race.id));
 
+  /** Races a series-scoped entry is entered in. */
+  readonly scopedSeriesRaces = computed(() =>
+    this.scopedSeries() ? this.eligibleRaces().filter(r => r.status === 'Future') : [],
+  );
+
+  readonly enteredEventSeries = computed(() =>
+    eventSeriesNames(this.enteredRacesSig() ?? [], this.rc.allSeries()),
+  );
+
   readonly divisionCatalog = computed(() =>
     divisionCatalogForRaces(this.enteredRacesSig() ?? [], this.rc.allSeries()),
   );
@@ -354,9 +384,11 @@ export class EntryWizard {
 
   readonly filteredBoats = computed(() => {
     const term = this.boatSearch().trim();
+    const series = this.scopedSeries();
     return this.bs.boats().filter(boat => {
       const isClub = this.boatCategory() === 'club';
       if (boat.isClub !== isClub) return false;
+      if (series && !this.boatFitsSeries(boat, series)) return false;
       return boatFilter(boat, term);
     });
   });
@@ -481,10 +513,22 @@ export class EntryWizard {
       const scopedRaceId = this.scopedRaceId();
       if (!scopedRaceId) return;
       if (this.scopedRacePreselected()) return;
-      const scopedRace = this.eligibleRaces().find(r => r.id === scopedRaceId);
+      const eligible = this.eligibleRaces();
+      const scopedRace = eligible.find(r => r.id === scopedRaceId);
       if (!scopedRace) return;
-      this.raceSelectionGroup.get('enteredRaces')?.setValue([scopedRace]);
+      this.raceSelectionGroup.get('enteredRaces')?.setValue(
+        selectWholeEventSeries([], [scopedRace], eligible, untracked(() => this.rc.allSeries())),
+      );
       this.scopedRacePreselected.set(true);
+    });
+
+    effect(() => {
+      if (!this.scopedSeries()) return;
+      const races = this.scopedSeriesRaces();
+      untracked(() => {
+        const current = (this.enteredRacesSig() ?? []).map(r => r.id).join('\0');
+        if (current !== races.map(r => r.id).join('\0')) this.selectRaces(races);
+      });
     });
 
     // Replace temporary locally-selected new boat with the persisted store record once loaded.
@@ -664,8 +708,12 @@ export class EntryWizard {
   }
 
   private resetVisitorForm(): void {
+    const fixedClass = this.fixedBoatClass();
+    const classControl = this.visitorForm.controls['boatClass'];
+    if (fixedClass) classControl.disable({ emitEvent: false });
+    else classControl.enable({ emitEvent: false });
     this.visitorForm.reset({
-      boatClass: '',
+      boatClass: fixedClass ?? '',
       sailNumber: '',
       name: '',
       helm: '',
@@ -683,10 +731,35 @@ export class EntryWizard {
   }
 
   onEntryRaceIdsChange(ids: string[]): void {
-    const eligibleById = new Map(this.eligibleRaces().map(race => [race.id, race]));
-    const races = ids
+    const eligible = this.eligibleRaces();
+    const eligibleById = new Map(eligible.map(race => [race.id, race]));
+    const ticked = ids
       .map(id => eligibleById.get(id))
       .filter((race): race is Race => !!race);
+    this.selectRaces(selectWholeEventSeries(
+      this.enteredRacesSig() ?? [],
+      ticked,
+      eligible,
+      this.rc.allSeries(),
+    ));
+  }
+
+  private boatFitsSeries(boat: Boat, series: Series): boolean {
+    const handicaps = resolveHandicapsForSeries(
+      series,
+      {
+        boatClassName: boat.boatClass,
+        handicaps: boat.handicaps,
+        personalHandicapBand: boat.personalHandicapBand,
+        personalHandicapUnknown: !boat.personalHandicapBand,
+      },
+      this.cs.club().classes,
+      this.ratingLists.lists(),
+    );
+    return meetsPrimaryFleetEligibility(series, { boatClass: boat.boatClass, handicaps });
+  }
+
+  private selectRaces(races: Race[]): void {
     this.raceSelectionGroup.get('enteredRaces')?.setValue(races);
     for (const race of races) {
       this.currentRacesStore.addRaceId(race.id);

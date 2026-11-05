@@ -194,15 +194,34 @@
       <form [formGroup]="raceSelectionGroup">
         @if (!showForm()) {
           <app-centered-text>Select a boat first.</app-centered-text>
-        } @else if (eligibleRaces().length > 0) {
-          <mat-card appearance="outlined" class="form-card race-selection-card">
-            <app-races-panel
-              [races]="eligibleRaces()"
-              [selectedRaceIds]="enteredRaceIds()"
-              [availableFilters]="racePanelFilters()"
-              [initialPeriod]="racePanelInitialPeriod()"
-              emptyMessage="No eligible races for this boat."
-              (selectedRaceIdsChange)="onEntryRaceIdsChange($event)" />
+        } @else if (scopedSeries() || eligibleRaces().length > 0) {
+          <mat-card appearance="outlined" class="form-card" [class.race-selection-card]="!scopedSeries()">
+            @if (scopedSeries(); as series) {
+              @let raceCount = scopedSeriesRaces().length;
+              <p class="series-entry-summary" role="status">
+                @if (raceCount > 0) {
+                  Enters {{ selectedBoatLabel() }} in {{ series.name }}:
+                  {{ raceCount }} {{ raceCount === 1 ? 'race' : 'races' }} still to sail.
+                } @else if (eligibleRaces().length > 0) {
+                  Every race in {{ series.name }} has started, so there are no races left to enter.
+                } @else {
+                  This boat is not in the {{ series.name }} fleet.
+                }
+              </p>
+            } @else {
+              <app-races-panel
+                [races]="eligibleRaces()"
+                [selectedRaceIds]="enteredRaceIds()"
+                [availableFilters]="racePanelFilters()"
+                [initialPeriod]="racePanelInitialPeriod()"
+                emptyMessage="No eligible races for this boat."
+                (selectedRaceIdsChange)="onEntryRaceIdsChange($event)" />
+              @for (name of enteredEventSeries(); track name) {
+                <p class="event-entry-note" role="status">
+                  {{ name }} is an event. Entering enters every race that has not started.
+                </p>
+              }
+            }
             @if (divisionCatalog().length > 0) {
               <div class="divisions-block" role="group" aria-label="Divisions">
                 <span class="divisions-block-title">Divisions</span>

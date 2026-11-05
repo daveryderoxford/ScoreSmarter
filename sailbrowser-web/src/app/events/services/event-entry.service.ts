@@ -61,6 +61,7 @@ export function mapDivisionsByName(ids: readonly string[], from: Series, to: Ser
 /**
  * Open-meeting entry management. Every entry has a `NOT FINISHED` row on each race that had not
  * started when it was entered; races already sailed have no row and score as DNC.
+ * New entries go through `EntryService.enterRaces`, which applies the same rule.
  */
 @Injectable({ providedIn: 'root' })
 export class EventEntryService {
@@ -72,16 +73,6 @@ export class EventEntryService {
   private readonly mutator = inject(RaceCompetitorMutator);
   private readonly competitors = inject(RaceCompetitorStore);
   private readonly seriesEntries = inject(SeriesEntryStore);
-
-  async addEntry(details: EventEntryDetails): Promise<string> {
-    const series = this.series(details.seriesId);
-    const handicaps = await this.eligibleHandicaps(series, details.boatClass);
-    const entryId = await this.createEntry(details, handicaps);
-    const races = await this.calendar.getSeriesRacesById(series.id);
-    await this.addRows(entryId, series.id, races.filter(r => r.status === 'Future'));
-    await this.markScoredRacesDirty(races);
-    return entryId;
-  }
 
   /** Edits an entry within its series. A class change must stay in the series fleet. */
   async updateEntry(entry: SeriesEntry, details: EventEntryDetails): Promise<void> {
