@@ -58,6 +58,20 @@ const testSeries: Series = {
   },
 };
 
+const aeroEventSeries: Series = {
+  ...testSeries,
+  id: 'ev-aero',
+  name: 'Open RS Aero',
+  eventId: 'e1',
+  primaryScoringConfiguration: {
+    id: 'overall',
+    name: 'RS Aero',
+    type: 'LevelRating',
+    handicapScheme: 'Level Rating',
+    fleet: { type: 'BoatClass', id: 'RS Aero', boatClassId: 'RS Aero' },
+  },
+};
+
 describe('EntryWizard self-entry flows', () => {
   let isRaceOfficerSig: ReturnType<typeof signal<boolean>>;
   let loggedInSig: ReturnType<typeof signal<boolean>>;
@@ -71,7 +85,7 @@ describe('EntryWizard self-entry flows', () => {
     loggedIn?: boolean;
     userBoats?: Boat[];
     races?: Race[];
-    inputs?: Partial<Record<'scopedRaceId' | 'oodHelm' | 'initialSearch', string>>;
+    inputs?: Partial<Record<'scopedRaceId' | 'scopedSeriesId' | 'oodHelm' | 'initialSearch', string>>;
   } = {}) {
     enterRaces = vi.fn(async () => {});
     entered = [];
@@ -136,7 +150,7 @@ describe('EntryWizard self-entry flows', () => {
           provide: RaceCalendarStore,
           useValue: {
             allRaces: racesSig,
-            allSeries: signal([testSeries]),
+            allSeries: signal([testSeries, aeroEventSeries]),
           },
         },
         {
@@ -431,6 +445,64 @@ describe('EntryWizard self-entry flows', () => {
       await comp.onSubmit();
 
       expect(enterRaces).toHaveBeenCalledWith(expect.objectContaining({ resultCode: undefined }));
+    });
+  });
+
+  describe('entering an event series', () => {
+    const seriesInputs = { scopedSeriesId: 'ev-aero' };
+
+    function eventRace(id: string, status: Race['status'], seriesId = 'ev-aero'): Race {
+      return {
+        id,
+        seriesId,
+        seriesName: 'Open RS Aero',
+        fleetId: 'RS Aero',
+        index: 1,
+        raceOfDay: 1,
+        scheduledStart: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        type: 'Level Rating',
+        status,
+        isDiscardable: true,
+        isAverageLap: false,
+        resultsSheetImage: '',
+        dirty: false,
+      };
+    }
+
+    it('only lists boats in the series fleet', () => {
+      const fixture = setupTestBed({ isRO: true, inputs: seriesInputs });
+      const comp = fixture.componentInstance;
+      comp.startMember();
+      expect(comp.filteredBoats().map(b => b.id)).toEqual(['b2']);
+    });
+
+    it('fixes a visitor to the series class', () => {
+      const fixture = setupTestBed({ isRO: true, inputs: seriesInputs });
+      const comp = fixture.componentInstance;
+      comp.startVisitor();
+      const classControl = comp.visitorForm.controls['boatClass'];
+      expect(classControl.value).toBe('RS Aero');
+      expect(classControl.disabled).toBe(true);
+    });
+
+    it('enters every race of the series that has not started', async () => {
+      const races = [
+        eventRace('e1', 'In progress'),
+        eventRace('e2', 'Future'),
+        eventRace('e3', 'Future'),
+        eventRace('club', 'Future', 's1'),
+      ];
+      const fixture = setupTestBed({ isRO: true, races, inputs: seriesInputs });
+      const comp = fixture.componentInstance;
+      comp.selectedBoat.set(testBoat2);
+      fixture.detectChanges();
+
+      expect(comp.scopedSeriesRaces().map(r => r.id)).toEqual(['e2', 'e3']);
+      await comp.onSubmit();
+
+      expect(enterRaces).toHaveBeenCalledWith(
+        expect.objectContaining({ races: [races[1], races[2]], boatClass: 'RS Aero' }),
+      );
     });
   });
 });

@@ -11,6 +11,7 @@ import { ScoreSmarterError } from 'app/shared/utils/scoresmarter-error';
 import { ClubStore } from '../../club-tenant';
 import { RatingListStore } from 'app/system-data';
 import { Race } from '../../race-calendar/model/race';
+import { hasResults } from 'app/race-calendar/model/race-status';
 import { RaceCompetitor } from '../../results-input/model/race-competitor';
 import { SeriesEntry } from '../../results-input/model/series-entry';
 import { RaceCompetitorStore } from '../../results-input/services/race-competitor-store';
@@ -108,6 +109,10 @@ export class EntryService {
    * Callers that want to surface conflicts to the user (boat-swap UX) should
    * call `findEntryConflicts` first and, if appropriate, `swapAndEnter`. This
    * method is a strict guard for any caller that doesn't.
+   *
+   * A race in an open-event series also enters every other race of that series
+   * that has not started, as the event entry page does. Returns the rows for
+   * `details.races` only.
    */
   async enterRaces(details: EntryDetails): Promise<RaceCompetitor[]> {
 
@@ -153,7 +158,62 @@ export class EntryService {
       const id = await this.raceResultsStore.addResult(competitor);
       created.push(new RaceCompetitor({ ...competitor, id }));
     }
+
+    const eventEntries = new Map<string, string>();
+    for (const row of created) {
+      if (this.raceCalendarStore.allSeries().find(s => s.id === row.seriesId)?.eventId) {
+        eventEntries.set(row.seriesId, row.seriesEntryId);
+      }
+    }
+    for (const [seriesId, seriesEntryId] of eventEntries) {
+      await this.enterRemainingEventRaces(seriesId, seriesEntryId, details);
+    }
     return created;
+  }
+
+  /**
+   * Adds a `NOT FINISHED` row on each race of an open-event series that has not started.
+   * Skips races where this boat already has a row, or another row would clash with it.
+   * Entry counts change DNC points, so races that already have results are rescored.
+   */
+  private async enterRemainingEventRaces(
+    seriesId: string,
+    seriesEntryId: string,
+    details: EntryDetails,
+  ): Promise<void> {
+    const series = this.raceCalendarStore.allSeries().find(s => s.id === seriesId);
+    const strategy = series?.entryAlgorithm ?? 'classSailNumberHelm';
+    const incoming: PerHullIdentity = {
+      boatClass: details.boatClass,
+      sailNumber: details.sailNumber,
+      helm: details.helm,
+    };
+    const races = this.raceCalendarStore.allRaces().filter(r => r.seriesId === seriesId);
+    const [rows, entries] = await Promise.all([
+      this.raceResultsStore.getSeriesCompetitors(seriesId),
+      this.seriesEntryStore.getSeriesEntries(seriesId),
+    ]);
+    const entriesById = new Map(entries.map(e => [e.id, e] as const));
+    const blocked = (raceId: string) => rows.some(row => {
+      if (row.raceId !== raceId) return false;
+      if (row.seriesEntryId === seriesEntryId) return true;
+      const entry = entriesById.get(row.seriesEntryId);
+      return !!entry && detectInRaceConflict(entry, incoming, strategy) !== null;
+    });
+
+    for (const race of races.filter(hasResults)) {
+      await this.raceCalendarStore.ensureRaceDirty(race.id);
+    }
+    for (const race of races) {
+      if (race.status !== 'Future' || blocked(race.id)) continue;
+      await this.raceResultsStore.addResult({
+        raceId: race.id,
+        seriesId,
+        seriesEntryId,
+        resultCode: 'NOT FINISHED',
+        enteredByUid: this.auth.currentUser?.uid,
+      });
+    }
   }
 
   /**

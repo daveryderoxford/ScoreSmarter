@@ -57,9 +57,6 @@
         </mat-card-header>
         @if (auth.isRaceOfficer()) {
           <mat-card-actions class="entry-actions">
-            <button matButton="filled" type="button" [disabled]="busy() || series().length === 0" (click)="addEntry()">
-              <mat-icon>person_add</mat-icon> Add entry
-            </button>
             <button matButton="outlined" type="button" [disabled]="busy() || series().length === 0" (click)="importEntries()">
               <mat-icon>upload_file</mat-icon> Import entries
             </button>
@@ -75,7 +72,14 @@
             <app-loading-centered />
           } @else {
             @for (group of entriesBySeries(); track group.series.id) {
-              <h3 class="series-heading">{{ group.series.name }} ({{ group.entries.length }})</h3>
+              <div class="series-heading-row">
+                <h3 class="series-heading">{{ group.series.name }} ({{ group.entries.length }})</h3>
+                @if (auth.isRaceOfficer()) {
+                  <button matButton="tonal" type="button" [disabled]="busy()" (click)="addEntry(group.series)">
+                    <mat-icon>person_add</mat-icon> Enter
+                  </button>
+                }
+              </div>
               @if (group.entries.length === 0) {
                 <p class="muted">No entries yet.</p>
               } @else {

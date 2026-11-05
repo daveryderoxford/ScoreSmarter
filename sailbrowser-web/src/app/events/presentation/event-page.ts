@@ -17,6 +17,7 @@ import { LoadingCentered } from 'app/shared/components/loading-centered';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import { PageLayout } from 'app/shared/layout/page-layout';
+import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { firstValueFrom } from 'rxjs';
 import { eventRacingStarted, seriesForEvent } from '../model/open-event';
 import { EventEntries } from '../services/event-entries';
@@ -52,6 +53,7 @@ export class EventPage {
   private readonly dialog = inject(MatDialog);
   private readonly dialogs = inject(DialogsService);
   private readonly snackbar = inject(MatSnackBar);
+  private readonly breakpoints = inject(AppBreakpoints);
 
   readonly event = this.store.event(this.id);
   readonly loading = computed(() => this.store.loading() || this.calendar.isLoading());
@@ -94,14 +96,21 @@ export class EventPage {
       .join(', ');
   }
 
-  async addEntry(): Promise<void> {
-    const details = await this.openDialog({ series: this.series(), canMove: false });
-    if (!details) return;
-    await this.run(() => this.entryService.addEntry(details), 'Entry added');
+  async addEntry(series: Series): Promise<void> {
+    const { openEntryDialog } = await import('app/entry/presentation/entry-dialog/entry-dialog');
+    const dialogRef = openEntryDialog(this.dialog, { seriesId: series.id }, this.breakpoints.isMobile());
+    if (await firstValueFrom(dialogRef.afterClosed())) {
+      this.snackbar.open('Entry added', 'Dismiss', { duration: 3000 });
+    }
   }
 
   async editEntry(entry: SeriesEntry): Promise<void> {
-    const details = await this.openDialog({ series: this.series(), entry, canMove: !this.racingStarted() });
+    const details = await firstValueFrom(
+      this.dialog.open<EventEntryDialog, EventEntryDialogData, EventEntryDetails>(EventEntryDialog, {
+        data: { series: this.series(), entry, canMove: !this.racingStarted() },
+        maxWidth: '95vw',
+      }).afterClosed(),
+    );
     if (!details) return;
     if (details.seriesId === entry.seriesId) {
       await this.run(() => this.entryService.updateEntry(entry, details), 'Entry saved');
@@ -130,13 +139,6 @@ export class EventPage {
       }).afterClosed(),
     );
     if (imported) this.snackbar.open('Entries imported', 'Dismiss', { duration: 4000 });
-  }
-
-  private openDialog(data: EventEntryDialogData): Promise<EventEntryDetails | undefined> {
-    return firstValueFrom(
-      this.dialog.open<EventEntryDialog, EventEntryDialogData, EventEntryDetails>(EventEntryDialog, { data, maxWidth: '95vw' })
-        .afterClosed(),
-    );
   }
 
   private async run(work: () => Promise<unknown>, done: string): Promise<void> {

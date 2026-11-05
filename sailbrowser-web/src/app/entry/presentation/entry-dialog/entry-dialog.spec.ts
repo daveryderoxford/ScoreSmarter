@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { By } from '@angular/platform-browser';
+import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calendar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
 import type { Race } from 'app/race-calendar';
 import { Subject } from 'rxjs';
@@ -24,6 +25,7 @@ describe('EntryDialog', () => {
           useValue: { close, backdropClick: () => backdropClick, keydownEvents: () => keydownEvents },
         },
         { provide: DialogsService, useValue: { confirm } },
+        { provide: RaceCalendarStore, useValue: { allSeries: () => [{ id: 's1', name: 'Open Aero 7' }] } },
       ],
     });
     TestBed.overrideComponent(EntryDialog, {
@@ -46,6 +48,12 @@ describe('EntryDialog', () => {
     expect(wizard.scopedRaceId()).toBe('r1');
     expect(wizard.initialSearch()).toBe('1234');
     expect(wizard.oodHelm()).toBeUndefined();
+  });
+
+  it('enters a series under a title naming it', () => {
+    const { fixture, wizard } = render({ seriesId: 's1' });
+    expect(title(fixture)).toBe('Enter Open Aero 7');
+    expect(wizard.scopedSeriesId()).toBe('s1');
   });
 
   it('uses the OOD title and passes the duty member to the wizard', () => {

@@ -17,19 +17,18 @@ import { type EventEntryDetails, mapDivisionsByName } from '../services/event-en
 
 export interface EventEntryDialogData {
   series: Series[];
-  /** Edit an existing entry; omit to add one. */
-  entry?: SeriesEntry;
+  entry: SeriesEntry;
   /** Moving to another series is only offered before racing starts. */
   canMove: boolean;
 }
 
-/** Add or edit one event entry. Choosing another series on edit moves the entry. */
+/** Edit one event entry. Choosing another series moves the entry. New entries use the entry dialog. */
 @Component({
   selector: 'app-event-entry-dialog',
   imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatAutocompleteModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h2 mat-dialog-title>{{ data.entry ? 'Edit entry' : 'Add entry' }}</h2>
+    <h2 mat-dialog-title>Edit entry</h2>
     <mat-dialog-content>
       <form [formGroup]="form" class="form">
         <mat-form-field>
@@ -39,7 +38,7 @@ export interface EventEntryDialogData {
               <mat-option [value]="s.id">{{ s.name }}</mat-option>
             }
           </mat-select>
-          @if (data.entry && !data.canMove) {
+          @if (!data.canMove) {
             <mat-hint>Racing has started. To change class, add a new entry in the other series.</mat-hint>
           } @else if (moving()) {
             <mat-hint>The entry moves to {{ selectedSeries()?.name }}</mat-hint>
@@ -115,14 +114,14 @@ export class EventEntryDialog {
   private readonly clubStore = inject(ClubStore);
 
   readonly form = new FormGroup({
-    seriesId: new FormControl(this.data.entry?.seriesId ?? this.data.series[0]?.id ?? '', { nonNullable: true, validators: [Validators.required] }),
-    boatClass: new FormControl(this.data.entry?.boatClass ?? '', { nonNullable: true, validators: [Validators.required] }),
-    sailNumber: new FormControl(String(this.data.entry?.sailNumber ?? ''), { nonNullable: true, validators: [Validators.required, sailNumberValidator] }),
-    helm: new FormControl(this.data.entry?.helm ?? '', { nonNullable: true, validators: [Validators.required] }),
-    crew: new FormControl(this.data.entry?.crew ?? '', { nonNullable: true }),
-    club: new FormControl(this.data.entry?.club ?? '', { nonNullable: true }),
-    boatName: new FormControl(this.data.entry?.boatName ?? '', { nonNullable: true }),
-    divisions: new FormControl<string[]>([...(this.data.entry?.divisions ?? [])], { nonNullable: true }),
+    seriesId: new FormControl(this.data.entry.seriesId, { nonNullable: true, validators: [Validators.required] }),
+    boatClass: new FormControl(this.data.entry.boatClass, { nonNullable: true, validators: [Validators.required] }),
+    sailNumber: new FormControl(String(this.data.entry.sailNumber ?? ''), { nonNullable: true, validators: [Validators.required, sailNumberValidator] }),
+    helm: new FormControl(this.data.entry.helm, { nonNullable: true, validators: [Validators.required] }),
+    crew: new FormControl(this.data.entry.crew ?? '', { nonNullable: true }),
+    club: new FormControl(this.data.entry.club ?? '', { nonNullable: true }),
+    boatName: new FormControl(this.data.entry.boatName ?? '', { nonNullable: true }),
+    divisions: new FormControl<string[]>([...(this.data.entry.divisions ?? [])], { nonNullable: true }),
   });
 
   private readonly seriesId = toSignal(
@@ -135,7 +134,7 @@ export class EventEntryDialog {
   );
 
   readonly selectedSeries = computed(() => this.data.series.find(s => s.id === this.seriesId()));
-  readonly moving = computed(() => !!this.data.entry && this.seriesId() !== this.data.entry.seriesId);
+  readonly moving = computed(() => this.seriesId() !== this.data.entry.seriesId);
   readonly divisionOptions = computed(() => this.selectedSeries()?.divisions ?? []);
   readonly singlehander = computed(() => isSinglehanderClass(this.boatClass().trim(), this.clubStore.club().classes));
 
@@ -150,7 +149,7 @@ export class EventEntryDialog {
   private lastSeriesId = this.form.controls.seriesId.value;
 
   constructor() {
-    if (this.data.entry && !this.data.canMove) this.form.controls.seriesId.disable();
+    if (!this.data.canMove) this.form.controls.seriesId.disable();
     this.applySeriesFleet(this.form.controls.seriesId.value, false);
     this.form.controls.seriesId.valueChanges.subscribe(id => this.applySeriesFleet(id, true));
   }

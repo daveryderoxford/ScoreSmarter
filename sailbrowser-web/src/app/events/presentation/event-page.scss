@@ -46,9 +46,17 @@
   padding: 0 16px;
 }
 
+.series-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 16px 0 4px;
+}
+
 .series-heading {
   font: var(--mat-sys-title-small);
-  margin: 16px 0 4px;
+  margin: 0;
 }
 
 .entries {
