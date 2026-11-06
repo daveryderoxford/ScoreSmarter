@@ -64,3 +64,25 @@ When a sail number is entered on a multi-race sheet, the system automatically "p
 *   Enable multi-selection of races from the calendar.
 *   Enforce the "Unified Entry Mode" by detecting compatibility between selected races.
 *   Provide a clear indication of the active entry mode (Time vs. Position).
+
+---
+
+## 5. Race starts
+
+A race may have several starts. Each start names who uses that start time: one fleet, one division, or neither (the default start).
+
+*   A fleet start applies to competitors in that fleet. A division start applies to competitors who have that division.
+*   A competitor uses the first start in the list that they match. The same rule applies when they match two fleets, two divisions, or a fleet and a division.
+*   Competitors who match no named start use the default start.
+*   This chooses a start time only. It does not change who is scored in the series.
+
+---
+
+## 5. Race starts
+
+A race may have several starts. Each start names who uses that start time: one fleet, one division, or neither (the default start).
+
+*   A fleet start applies to competitors in that fleet. A division start applies to competitors who have that division.
+*   A competitor uses the first start in the list that they match. The same rule applies when they match two fleets, two divisions, or a fleet and a division.
+*   Competitors who match no named start use the default start.
+*   This chooses a start time only. It does not change who is scored in the series.
