@@ -373,7 +373,8 @@ export class ScoringEngine {
       race.divisionDefinitions = buildDivisionSnapshot(ids, catalog);
       const source = racesToScore.find(r => r.id === race.id);
       if (source?.raceOfficer) race.raceOfficer = source.raceOfficer;
-      if (source?.wind) race.wind = source.wind;
+      if (source?.windSpeed != null) race.windSpeed = source.windSpeed;
+      if (source?.windDirection) race.windDirection = source.windDirection;
       race.resultsState = source ? resultsStateOf(source) : 'provisional';
     }
     for (const competitor of currentSeriesResults) {

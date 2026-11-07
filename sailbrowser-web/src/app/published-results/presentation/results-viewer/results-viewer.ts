@@ -9,6 +9,7 @@ import { RouterLink, Router } from '@angular/router';
 import { PublishedResultsReader } from 'app/published-results/services/published-results-store';
 import { publishedDivisionDefinitions, type Division } from 'app/race-calendar/model/division';
 import type { PublishedRace } from 'app/published-results/model/published-race';
+import { windLabel } from 'app/race-calendar/model/wind';
 import { getConfigName } from 'app/scoring/model/scoring-configuration';
 import { LoadingCentered } from 'app/shared/components/loading-centered';
 import { Toolbar } from "app/shared/components/toolbar";
@@ -48,6 +49,7 @@ export class ResultsViewer {
   private currentRacesStore = inject(CurrentRaces);
   private dutyRaceOfficerLookup = inject(DutyRaceOfficerLookup);
   private readonly autoScrolledTarget = signal('');
+  protected readonly windLabel = windLabel;
 
   id = input<string>('');  // Route parameter
   raceId = input<string>(''); // Query parameter

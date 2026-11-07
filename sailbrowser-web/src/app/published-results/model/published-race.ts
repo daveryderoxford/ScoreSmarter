@@ -2,6 +2,7 @@ import type { SailNumber } from 'app/boats/model/sail-number';
 import { RaceType } from '../../race-calendar/model/race-type';
 import type { Division } from 'app/race-calendar/model/division';
 import type { ResultsState } from 'app/race-calendar/model/results-state';
+import type { WindDirection } from 'app/race-calendar/model/wind';
 import type { PersonalHandicapBand } from 'app/scoring/model/personal-handicap';
 import { ResultCode } from 'app/scoring/model/result-code';
 
@@ -23,7 +24,8 @@ export interface PublishedRace {
     */
    divisionDefinitions: Division[];
    raceOfficer?: string;
-   wind?: string;
+   windSpeed?: number;
+   windDirection?: WindDirection;
    /** Absent on races published before results states were added (shown without a badge). */
    resultsState?: ResultsState;
 }
