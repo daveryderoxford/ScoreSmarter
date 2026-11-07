@@ -3,14 +3,13 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
-import { MatMenuModule } from '@angular/material/menu';
 import { AuthService } from 'app/auth/auth.service';
 import { CurrentRaces } from 'app/results-input/services/current-races-store';
 import { RaceDayActions } from 'app/results-input/services/race-day-actions';
 
 @Component({
   selector: 'app-home-races-section',
-  imports: [MatListModule, MatButtonModule, MatIconModule, MatMenuModule, DatePipe],
+  imports: [MatListModule, MatButtonModule, MatIconModule, DatePipe],
   template: `
     <div class="races-section">
       @if (currentRaces.todaysRaces().length > 0) {
@@ -40,35 +39,9 @@ import { RaceDayActions } from 'app/results-input/services/race-day-actions';
                   Cancelled{{ race.cancellationReason ? ': ' + race.cancellationReason : '' }}
                 </span>
               }
-              @if (auth.isRaceOfficer()) {
-                <button
-                  matListItemMeta
-                  matIconButton
-                  type="button"
-                  [matMenuTriggerFor]="raceMenu"
-                  [matMenuTriggerData]="{ race }"
-                  [attr.aria-label]="'Actions for ' + race.seriesName + ' race ' + race.raceOfDay">
-                  <mat-icon>more_vert</mat-icon>
-                </button>
-              }
             </mat-list-item>
           }
         </mat-list>
-        <mat-menu #raceMenu="matMenu">
-          <ng-template matMenuContent let-race="race">
-            @if (race.status === 'Canceled') {
-              <button mat-menu-item type="button" (click)="actions.reinstateRace(race)">
-                <mat-icon>restore</mat-icon>
-                Reinstate race
-              </button>
-            } @else {
-              <button mat-menu-item type="button" (click)="actions.cancelRaces(race)">
-                <mat-icon>event_busy</mat-icon>
-                Cancel race
-              </button>
-            }
-          </ng-template>
-        </mat-menu>
       } @else {
         <p class="placeholder">No races scheduled for today.</p>
       }
