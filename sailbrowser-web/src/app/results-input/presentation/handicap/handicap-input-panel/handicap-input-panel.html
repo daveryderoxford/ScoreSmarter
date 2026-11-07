@@ -46,9 +46,9 @@
       }
     </div>
     <div class="stat-row">
-      <span>Elapsed: <b>{{ stats ? (stats.elapsedSeconds | duration) : ''}}</b></span>
-      <span>Corrected: <b>{{ stats ? (stats.correctedTime | duration) : ''}}</b></span>
+      <span>Finish: <b>{{ enteredFinishTime() | date:'HH:mm:ss' }}</b></span>
       <span>Start: <b>{{ displayedStartTime() | date:'HH:mm:ss' }}</b></span>
+      <span>Elapsed: <b>{{ stats ? (stats.elapsedSeconds | duration) : ''}}</b></span>
     </div>
   </div>
 
