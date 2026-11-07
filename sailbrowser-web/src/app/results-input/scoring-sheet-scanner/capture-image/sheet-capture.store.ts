@@ -52,6 +52,8 @@ export class SheetCaptureStore {
   /** User chose "Capture new image" instead of the race's stored sheet for this visit. */
   private readonly dismissedStoredRaceSheet = signal(false);
   private readonly _justAcquired = signal<AcquisitionEvent | null>(null);
+  private readonly _saving = signal(false);
+  private readonly _saveError = signal<string | null>(null);
 
   private readonly raceStoredPath = computed(
     () => this.raceSelection.selectedRace()?.resultsSheetImage?.trim() ?? null,
@@ -59,6 +61,8 @@ export class SheetCaptureStore {
 
   readonly hasImage = computed(() => isCaptureReady(this.captureImage()));
   readonly justAcquired = this._justAcquired.asReadonly();
+  readonly saving = this._saving.asReadonly();
+  readonly saveError = this._saveError.asReadonly();
 
   readonly mode = computed<CaptureStepMode>(() => {
     const img = this.captureImage();
@@ -104,12 +108,14 @@ export class SheetCaptureStore {
   });
 
   resetToRaceStoredSheet(): void {
+    this._saveError.set(null);
     this.dismissedStoredRaceSheet.set(false);
     const path = this.raceStoredPath();
     this.captureImage.set(path ? { kind: 'storagePath', path } : null);
   }
 
   startNewCapture(): void {
+    this._saveError.set(null);
     this.dismissedStoredRaceSheet.set(true);
     this.captureImage.set(null);
   }
@@ -117,7 +123,7 @@ export class SheetCaptureStore {
   async setFromFile(file: File): Promise<void> {
     this.dismissedStoredRaceSheet.set(true);
     this.captureImage.set(await toScanInlineCapture(file));
-    this.markAcquired(false);
+    await this.saveCapture();
   }
 
   async openCameraCapture(): Promise<void> {
@@ -130,7 +136,7 @@ export class SheetCaptureStore {
     const result = (await firstValueFrom(ref.afterClosed())) as CameraCaptureResult | null;
     if (!result) return;
     this.captureImage.set(await toScanInlineCapture(result.preview));
-    this.markAcquired(false);
+    await this.saveCapture();
   }
 
   async startPhoneCapture(): Promise<void> {
@@ -154,11 +160,28 @@ export class SheetCaptureStore {
     if (result?.outcome === 'uploaded') {
       this.captureImage.set({ kind: 'storagePath', path: result.storagePath });
       this.dismissedStoredRaceSheet.set(false);
-      this.markAcquired(true);
+      this.markAcquired();
+    }
+  }
+
+  /** Stores the image just taken or chosen; on failure it stays as a preview to retry. */
+  async saveCapture(): Promise<void> {
+    if (this._saving()) return;
+    this._saving.set(true);
+    this._saveError.set(null);
+    try {
+      await this.persistIfNeeded();
+      this.markAcquired();
+    } catch (err: unknown) {
+      console.error('SheetCaptureStore: saving the captured sheet failed', err);
+      this._saveError.set(err instanceof Error ? err.message : 'Could not save the scoring sheet.');
+    } finally {
+      this._saving.set(false);
     }
   }
 
   clear(): void {
+    this._saveError.set(null);
     if (!this.dismissedStoredRaceSheet()) {
       const path = this.raceStoredPath();
       if (path) {
@@ -219,7 +242,7 @@ export class SheetCaptureStore {
     return { useStoredRaceSheet: true, imageBase64: null, imageMimeType: null };
   }
 
-  private markAcquired(autoAdvance: boolean): void {
-    this._justAcquired.set({ at: Date.now(), autoAdvance });
+  private markAcquired(): void {
+    this._justAcquired.set({ at: Date.now() });
   }
 }

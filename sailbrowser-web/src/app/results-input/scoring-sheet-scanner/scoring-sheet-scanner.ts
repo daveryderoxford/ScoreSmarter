@@ -1,7 +1,11 @@
 import { afterNextRender, Component, computed, effect, inject, Injector, signal, untracked, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatStepper, MatStepperModule } from '@angular/material/stepper';
+import { MatTooltip } from '@angular/material/tooltip';
 import { CaptureStep, CaptureStepViewModel } from '../capture/capture-step/capture-step';
+import { SheetImage } from '../capture/sheet-image/sheet-image';
+import { SheetWorkspace } from '../capture/sheet-workspace/sheet-workspace';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { ListPane } from 'app/shared/layout/list-pane';
 import { PageLayout } from 'app/shared/layout/page-layout';
@@ -18,11 +22,26 @@ import { RaceStep } from './select-race/race-step';
 import { SetupStep } from './run-scan/setup-step';
 
 const CAPTURE_STEP_INDEX = 1;
+const DETAILS_STEP_INDEX = 2;
 const REVIEW_STEP_INDEX = 3;
 
 @Component({
   selector: 'app-scoring-sheet-scanner',
-  imports: [MatStepperModule, MatButtonModule, Toolbar, RaceStep, CaptureStep, SetupStep, ReviewStep, PageLayout, ListPane],
+  imports: [
+    MatStepperModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltip,
+    Toolbar,
+    RaceStep,
+    CaptureStep,
+    SetupStep,
+    ReviewStep,
+    PageLayout,
+    ListPane,
+    SheetWorkspace,
+    SheetImage,
+  ],
   templateUrl: './scoring-sheet-scanner.html',
   styleUrl: './scoring-sheet-scanner.scss',
   providers: [
@@ -46,6 +65,12 @@ export class ScoringSheetScanner {
   protected readonly capturePersisting = signal(false);
   protected readonly reviewStepIndex = REVIEW_STEP_INDEX;
   private readonly stepper = viewChild.required<MatStepper>('stepper');
+  private readonly stepIndex = signal(0);
+
+  /** Details and Review show the captured sheet beside the step. */
+  protected readonly sheetStep = computed(() => this.stepIndex() >= DETAILS_STEP_INDEX);
+  /** Starts open where it fits beside the step, closed where it would cover it. */
+  protected readonly sheetOpen = signal(this.breakpoints.isWideLayout());
 
   protected readonly captureVm = computed<CaptureStepViewModel>(() => {
     const preview = this.sheetCapture.preview();
@@ -55,6 +80,8 @@ export class ScoringSheetScanner {
       previewSrc: preview.src,
       storedImageError: preview.error,
       previewLoading: preview.loading,
+      saving: this.sheetCapture.saving(),
+      saveError: this.sheetCapture.saveError(),
     };
   });
 
@@ -68,8 +95,7 @@ export class ScoringSheetScanner {
     });
 
     effect(() => {
-      const acquired = this.sheetCapture.justAcquired();
-      if (!acquired?.autoAdvance) return;
+      if (!this.sheetCapture.justAcquired()) return;
       untracked(() => {
         const stepper = this.stepper();
         if (stepper.selectedIndex !== CAPTURE_STEP_INDEX) return;
@@ -80,6 +106,7 @@ export class ScoringSheetScanner {
   }
 
   async onStepChange(event: { selectedIndex: number }): Promise<void> {
+    this.stepIndex.set(event.selectedIndex);
     if (event.selectedIndex !== REVIEW_STEP_INDEX) return;
     if (!this.sheetCapture.hasImage()) return;
     if (this.scanRun.running()) return;

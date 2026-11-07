@@ -99,6 +99,18 @@
   }
 }
 
+.saving {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.save-error {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
 .capture-actions {
   display: flex;
   justify-content: center;

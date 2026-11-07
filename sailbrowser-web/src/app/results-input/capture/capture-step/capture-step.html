@@ -15,7 +15,7 @@
         <h3 class="reuse-caption">Previously captured results sheet</h3>
         @if (vm().previewSrc; as previewUrl) {
           <div class="preview-container">
-            <app-image-viewer [src]="previewUrl" />
+            <app-image-viewer [src]="previewUrl" fit="width" />
           </div>
         } @else {
           <p class="reuse-caption">This race's stored image will be used for scanning.</p>
@@ -32,13 +32,23 @@
       <div class="capture-zone">
         @if (vm().previewSrc; as previewUrl) {
           <div class="preview-container">
-            <app-image-viewer [src]="previewUrl" />
+            <app-image-viewer [src]="previewUrl" fit="width" />
           </div>
         } @else if (vm().previewLoading) {
           <p class="reuse-caption">Loading preview…</p>
         }
+        @if (vm().saveError; as saveError) {
+          <p class="save-error" role="alert">{{ saveError }}</p>
+        }
         <div class="capture-actions">
-          <button matButton="outlined" type="button" (click)="clearImage.emit()">Retake/Upload Another</button>
+          @if (vm().saving) {
+            <span class="saving" aria-live="polite">Saving scoring sheet…</span>
+          } @else {
+            <button matButton="outlined" type="button" (click)="clearImage.emit()">Retake/Upload Another</button>
+            @if (vm().saveError) {
+              <button matButton="filled" type="button" (click)="retrySave.emit()">Retry save</button>
+            }
+          }
         </div>
       </div>
     }

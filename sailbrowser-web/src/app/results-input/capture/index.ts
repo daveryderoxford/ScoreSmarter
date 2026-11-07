@@ -1,6 +1,5 @@
 export {
   ResultsSheetCaptureService,
-  type CaptureAndStoreOptions,
   type UploadInlineImageOptions,
 } from './services/results-sheet-capture.service';
 export { ScannerPhoneCaptureService } from './services/scanner-phone-capture.service';

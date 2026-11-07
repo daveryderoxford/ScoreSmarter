@@ -31,11 +31,9 @@
           Start
         </button>
       }
-      <button mat-menu-item type="button" (click)="displayOrCaptureImage()">
-        <mat-icon matBadge="1" [matBadgeHidden]="!selectedRace()?.resultsSheetImage">
-          photo_camera
-        </mat-icon>
-        <span>Scoring sheet</span>
+      <button mat-menu-item type="button" (click)="toggleSheet()">
+        <mat-icon>{{ hasSheetImage() ? 'image' : 'add_a_photo' }}</mat-icon>
+        <span>{{ sheetActionLabel() }}</span>
       </button>
       <button mat-menu-item type="button" [disabled]="publishing()" (click)="publish()">
         <mat-icon>upload</mat-icon>
@@ -74,10 +72,10 @@
           Start
         </button>
       }
-      <button mat-icon-button type="button" matTooltip="Scoring Sheet Photo" [disabled]=loadingImage() aria-label="Open scoring sheet" (click)="displayOrCaptureImage()">
-        <mat-icon matBadge="1" [matBadgeHidden]="!selectedRace()?.resultsSheetImage">
-          photo_camera
-        </mat-icon>
+      <button mat-icon-button type="button" class="sheet-toggle" [class.active]="sheetPane() !== 'closed'"
+        [attr.aria-pressed]="sheetPane() !== 'closed'" [matTooltip]="sheetActionLabel()" [attr.aria-label]="sheetActionLabel()"
+        (click)="toggleSheet()">
+        <mat-icon>{{ hasSheetImage() ? 'image' : 'add_a_photo' }}</mat-icon>
       </button>
       <app-busy-button matTooltip="Publish results" [style]="'text'" [busy]="publishing()" (click)="publish()">
         Publish
@@ -118,6 +116,10 @@
 
 @if (selectedRace()) {
 @let race = selectedRace()!;
+<app-sheet-workspace
+  [sheetOpen]="sheetPane() !== 'closed'"
+  (sheetOpenChange)="onSheetOpenChange($event)"
+  [title]="sheetPane() === 'capture' ? 'Capture scoring sheet' : 'Scoring sheet'">
 @if (race.status === 'Canceled') {
 <div class="cancelled-banner" role="status">
   <mat-icon>event_busy</mat-icon>
@@ -145,6 +147,35 @@
   </div>
 </div>
 }
+
+<div sheetActions>
+  @if (sheetPane() === 'view') {
+    <button matButton type="button" (click)="captureSheet()">
+      <mat-icon>add_a_photo</mat-icon>
+      New capture
+    </button>
+  } @else if (hasSheetImage()) {
+    <button matButton type="button" (click)="viewSheet()">
+      <mat-icon>image</mat-icon>
+      View current
+    </button>
+  }
+</div>
+
+<div sheet class="sheet-content">
+  @switch (sheetPane()) {
+    @case ('view') {
+      <app-sheet-image [src]="sheetImageUrl()" [loading]="sheetImageLoading()"
+        emptyMessage="No scoring sheet image for this race.">
+        <button matButton="filled" type="button" (click)="captureSheet()">Capture scoring sheet</button>
+      </app-sheet-image>
+    }
+    @case ('capture') {
+      <app-sheet-capture-pane [raceId]="race.id" [isMobile]="isMobile()" (saved)="onSheetSaved($event)" />
+    }
+  }
+</div>
+</app-sheet-workspace>
 } @else {
 <div class="manual-results-empty mat-elevation-z1">
   <p class="manual-results-empty-title">No race on the scoring sheet yet.</p>

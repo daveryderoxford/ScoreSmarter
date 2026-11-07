@@ -1,6 +1,18 @@
 <app-page-layout>
-<app-toolbar title="Scan Results Sheet"></app-toolbar>
+<app-toolbar title="Scan Results Sheet">
+  @if (sheetStep()) {
+    <button mat-icon-button type="button" class="sheet-toggle" [class.active]="sheetOpen()"
+      [attr.aria-pressed]="sheetOpen()" matTooltip="Scoring sheet" aria-label="Show scoring sheet"
+      (click)="sheetOpen.set(!sheetOpen())">
+      <mat-icon>image</mat-icon>
+    </button>
+  }
+</app-toolbar>
 
+<app-sheet-workspace
+  [sheetOpen]="sheetStep() && sheetOpen()"
+  (sheetOpenChange)="sheetOpen.set($event)"
+  workLabel="Scan">
 <app-list-pane maxWidth="1120px">
 <mat-stepper
   class="stepper"
@@ -39,11 +51,12 @@
         (openCamera)="onOpenCameraCapture()"
         (startPhoneCapture)="onStartPhoneCapture()"
         (captureNewInstead)="onCaptureNewInstead()"
-        (clearImage)="sheetCapture.clear()" />
+        (clearImage)="sheetCapture.clear()"
+        (retrySave)="sheetCapture.saveCapture()" />
       <div class="step-actions">
         <button matButton matStepperPrevious>Previous</button>
         <button matButton="filled" type="button"
-          [disabled]="!sheetCapture.hasImage() || capturePersisting()"
+          [disabled]="!sheetCapture.hasImage() || capturePersisting() || sheetCapture.saving()"
           (click)="onCaptureStepNext()">
           {{ capturePersisting() ? 'Saving…' : 'Next' }}
         </button>
@@ -72,4 +85,12 @@
   </mat-step>
 </mat-stepper>
 </app-list-pane>
+
+<div sheet class="sheet-content">
+  @if (sheetStep() && sheetOpen()) {
+    @let preview = sheetCapture.preview();
+    <app-sheet-image [src]="preview.src" [loading]="preview.loading" [error]="preview.error" />
+  }
+</div>
+</app-sheet-workspace>
 </app-page-layout>
