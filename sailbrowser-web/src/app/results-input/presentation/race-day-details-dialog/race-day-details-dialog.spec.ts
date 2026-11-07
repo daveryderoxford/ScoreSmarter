@@ -1,11 +1,14 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { deleteField } from '@angular/fire/firestore';
+import { FormControl, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { DutiesService } from 'app/duties';
 import { raceDayDateId } from 'app/duties/services/duties.service';
 import { ScoringEngine } from 'app/published-results/services/scoring-engine';
 import { RaceCalendarStore } from 'app/race-calendar';
 import { Race } from 'app/race-calendar/model/race';
+import type { WindDirection } from 'app/race-calendar/model/wind';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RaceDayDetailsDialog } from './race-day-details-dialog';
 
@@ -38,7 +41,11 @@ describe('RaceDayDetailsDialog', () => {
     const fixture = TestBed.createComponent(RaceDayDetailsDialog);
     fixture.detectChanges();
     const dialog = fixture.componentInstance as unknown as {
-      form: { controls: { raceOfficer: { value: string; setValue(v: string): void }; wind: { value: string; setValue(v: string): void } } };
+      form: FormGroup<{
+        raceOfficer: FormControl<string>;
+        windSpeed: FormControl<number | null>;
+        windDirection: FormControl<WindDirection | null>;
+      }>;
       save(): Promise<void>;
     };
     return { fixture, dialog };
@@ -51,12 +58,22 @@ describe('RaceDayDetailsDialog', () => {
   });
 
   it('pre-fills from the race, then from another race that day', () => {
-    const r1 = race('r1', day, { wind: 'SW 10' });
-    const r2 = race('r2', sameDayLater, { raceOfficer: 'Pat', wind: 'NE 20' });
+    const r1 = race('r1', day, { windSpeed: 10 });
+    const r2 = race('r2', sameDayLater, { raceOfficer: 'Pat', windSpeed: 20, windDirection: 'NE' });
     const { dialog } = render({ race: r1, allRaces: [r1, r2] });
 
     expect(dialog.form.controls.raceOfficer.value).toBe('Pat');
-    expect(dialog.form.controls.wind.value).toBe('SW 10');
+    expect(dialog.form.controls.windSpeed.value).toBe(10);
+    expect(dialog.form.controls.windDirection.value).toBeNull();
+  });
+
+  it('pre-fills wind from another race that day when the race has none', () => {
+    const r1 = race('r1', day);
+    const r2 = race('r2', sameDayLater, { windSpeed: 20, windDirection: 'NE' });
+    const { dialog } = render({ race: r1, allRaces: [r1, r2] });
+
+    expect(dialog.form.controls.windSpeed.value).toBe(20);
+    expect(dialog.form.controls.windDirection.value).toBe('NE');
   });
 
   it("uses the duty team's race officer for today's races", () => {
@@ -89,15 +106,39 @@ describe('RaceDayDetailsDialog', () => {
     const other = race('r3', new Date('2026-06-11T11:00:00'), { status: 'Completed' });
     const { dialog } = render({ race: r1, allRaces: [r1, r2, other] });
     dialog.form.controls.raceOfficer.setValue(' Pat ');
-    dialog.form.controls.wind.setValue('SW 8-12 kts');
+    dialog.form.controls.windSpeed.setValue(12);
+    dialog.form.controls.windDirection.setValue('SW');
 
     await dialog.save();
 
     expect(updateRaces).toHaveBeenCalledWith([
-      { id: 'r1', data: { raceOfficer: 'Pat', wind: 'SW 8-12 kts' } },
-      { id: 'r2', data: { raceOfficer: 'Pat', wind: 'SW 8-12 kts' } },
+      { id: 'r1', data: { raceOfficer: 'Pat', windSpeed: 12, windDirection: 'SW' } },
+      { id: 'r2', data: { raceOfficer: 'Pat', windSpeed: 12, windDirection: 'SW' } },
     ]);
     expect(scoreCompleteSeries.mock.calls).toEqual([['s-r1']]);
     expect(close).toHaveBeenCalledWith(true);
+  });
+
+  it('deletes cleared wind fields', async () => {
+    const r1 = race('r1', day, { windSpeed: 10, windDirection: 'N' });
+    const { dialog } = render({ race: r1, allRaces: [r1] });
+    dialog.form.controls.windSpeed.setValue(null);
+    dialog.form.controls.windDirection.setValue(null);
+
+    await dialog.save();
+
+    expect(updateRaces).toHaveBeenCalledWith([
+      { id: 'r1', data: { raceOfficer: '', windSpeed: deleteField(), windDirection: deleteField() } },
+    ]);
+  });
+
+  it('does not save an out-of-range wind speed', async () => {
+    const r1 = race('r1', day);
+    const { dialog } = render({ race: r1, allRaces: [r1] });
+    dialog.form.controls.windSpeed.setValue(150);
+
+    await dialog.save();
+
+    expect(updateRaces).not.toHaveBeenCalled();
   });
 });

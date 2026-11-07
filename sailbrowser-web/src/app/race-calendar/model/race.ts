@@ -2,6 +2,7 @@ import { RaceStatus } from './race-status';
 import { RaceType } from './race-type';
 import { RaceStart } from './race-start';
 import type { ResultsState } from './results-state';
+import type { WindDirection } from './wind';
 
 export interface Race {
   id: string;
@@ -34,8 +35,10 @@ export interface Race {
   dirty: boolean;
   /** Race officer for the day; set for every race on the day together. */
   raceOfficer?: string;
-  /** Free-text wind description, e.g. "SW 8-12 kts". */
-  wind?: string;
+  /** Wind speed in knots; set for every race on the day together. */
+  windSpeed?: number;
+  /** Direction the wind blows from; set for every race on the day together. */
+  windDirection?: WindDirection;
   /** Why the race was cancelled. Only meaningful when status is 'Canceled'. */
   cancellationReason?: string;
 }

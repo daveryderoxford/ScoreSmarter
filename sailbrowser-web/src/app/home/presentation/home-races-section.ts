@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { AuthService } from 'app/auth/auth.service';
+import { windLabel } from 'app/race-calendar/model/wind';
 import { CurrentRaces } from 'app/results-input/services/current-races-store';
 import { RaceDayActions } from 'app/results-input/services/race-day-actions';
 
@@ -112,7 +113,7 @@ export class HomeRacesSection {
   protected readonly dayDetails = computed(() => {
     const races = this.currentRaces.todaysRaces();
     const raceOfficer = races.find(r => r.raceOfficer)?.raceOfficer;
-    const wind = races.find(r => r.wind)?.wind;
+    const wind = races.map(windLabel).find(Boolean);
     return [raceOfficer && `Race officer: ${raceOfficer}`, wind && `Wind: ${wind}`].filter(Boolean).join(' · ');
   });
 }

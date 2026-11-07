@@ -105,19 +105,20 @@
                   <app-info-popover label="Race information" (opened)="loadDutyRaceOfficer(race)">
                      @let officer = race.raceOfficer || dutyRaceOfficers().get(race.id);
                      @let lookingUp = !race.raceOfficer && !dutyRaceOfficers().has(race.id);
+                     @let wind = windLabel(race);
                      <dl class="info-list">
                         @if (officer) {
                            <dt>Race officer</dt>
                            <dd>{{ officer }}</dd>
                         }
-                        @if (race.wind) {
+                        @if (wind) {
                            <dt>Wind</dt>
-                           <dd>{{ race.wind }}</dd>
+                           <dd>{{ wind }}</dd>
                         }
                      </dl>
                      @if (lookingUp) {
                         <span class="info-note">Looking up race officer…</span>
-                     } @else if (!officer && !race.wind) {
+                     } @else if (!officer && !wind) {
                         <span class="info-note">No details recorded</span>
                      }
                   </app-info-popover>
