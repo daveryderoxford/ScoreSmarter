@@ -14,6 +14,9 @@ export interface CaptureStepViewModel {
   previewSrc: string | null;
   storedImageError: string | null;
   previewLoading: boolean;
+  /** A new image is being stored. */
+  saving: boolean;
+  saveError: string | null;
 }
 
 @Component({
@@ -30,6 +33,7 @@ export class CaptureStep {
   captureNewInstead = output<void>();
   clearImage = output<void>();
   startPhoneCapture = output<void>();
+  retrySave = output<void>();
 
   hasBackCamera = resource({
     loader: () => hasBackCamera()

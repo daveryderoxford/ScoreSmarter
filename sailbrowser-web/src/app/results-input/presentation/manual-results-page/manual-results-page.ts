@@ -1,5 +1,5 @@
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { afterNextRender, ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, input, linkedSignal, signal, untracked, viewChild } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, Component, computed, effect, inject, input, linkedSignal, signal, untracked, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatBadge } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,9 +7,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { ClubTenant } from 'app/club-tenant/services/club-tenant';
 import { openEntryDialog } from 'app/entry/presentation/entry-dialog/entry-dialog';
 import { EventEntryService } from 'app/events/services/event-entry.service';
 import { ScoringEngine } from 'app/published-results';
@@ -21,20 +19,24 @@ import { BusyButton } from 'app/shared/components/busy-button';
 import { Toolbar } from 'app/shared/components/toolbar';
 import { PageLayout } from 'app/shared/layout/page-layout';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
+import { AppBreakpoints } from 'app/shared/services/breakpoints';
 import { FIRESTORE_BULK_WRITE_TIMEOUT_MS, withTimeout } from 'app/shared/utils/with-timeout';
 import { firstValueFrom, map } from 'rxjs';
 import { RaceTitlePipe } from '../../../shared/pipes/race-title-pipe';
 import { manualRaceTableSort, ManualResultsService } from '../../services/manual-results.service';
 import { RaceDayActions } from '../../services/race-day-actions';
-import { ResultsSheetCaptureService } from '../../capture';
+import { SheetCapturePane } from '../../capture/sheet-capture-pane/sheet-capture-pane';
+import { ResultsSheetCaptureService } from '../../capture/services/results-sheet-capture.service';
+import { SheetImage } from '../../capture/sheet-image/sheet-image';
+import { SheetWorkspace } from '../../capture/sheet-workspace/sheet-workspace';
 import { HandicapInputPanel } from '../handicap/handicap-input-panel/handicap-input-panel';
 import { HandicapResultsTable } from '../handicap/handicap-results-table/handicap-results-table';
 import { RaceStartTimeDialog, type RaceStartTimeResult } from '../handicap/race-start-time-dialog';
 import { PositionBasedInputPanel } from '../position-based/position-based-input-panel/position-based-input-panel';
 import { MatTooltip } from '@angular/material/tooltip';
 
-const SHEET_POPUP_NAME = 'scoring-sheet';
-const SHEET_POPUP_FEATURES = 'popup,width=720,height=900';
+/** What the scoring-sheet pane beside results entry shows. */
+type SheetPane = 'closed' | 'view' | 'capture';
 
 @Component({
   selector: 'app-manual-results-page',
@@ -53,8 +55,11 @@ const SHEET_POPUP_FEATURES = 'popup,width=720,height=900';
     RaceTitlePipe,
     HandicapInputPanel,
     PositionBasedInputPanel,
-    MatBadge, 
-    MatTooltip
+    MatBadge,
+    MatTooltip,
+    SheetImage,
+    SheetCapturePane,
+    SheetWorkspace,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -66,17 +71,14 @@ export class ManualResultsPage {
   private readonly publishService = inject(ScoringEngine);
   private readonly manualResultsService = inject(ManualResultsService);
   private readonly captureService = inject(ResultsSheetCaptureService);
-  private readonly clubTenant = inject(ClubTenant);
   private readonly breakpointObserver = inject(BreakpointObserver);
+  private readonly appBreakpoints = inject(AppBreakpoints);
   private readonly router = inject(Router);
-  private readonly snackbar = inject(MatSnackBar);
-  private readonly destroyRef = inject(DestroyRef);
   private message = inject(DialogsService);
   protected readonly raceDayActions = inject(RaceDayActions);
   private readonly eventEntries = inject(EventEntryService);
 
   publishing = signal(false);
-  loadingImage = signal(false);
 
   readonly raceId = input<string>();
 
@@ -119,12 +121,21 @@ export class ManualResultsPage {
     { initialValue: false },
   );
 
-  /** Reference to the pop-out window currently showing the scoring sheet image (null when none). */
-  private readonly imageWindowRef = signal<Window | null>(null);
-  /** True while the scoring-sheet pop-out window is open; used to colour the toolbar toggle. */
-  protected readonly imageWindowOpen = computed(() => this.imageWindowRef() !== null);
+  protected readonly hasSheetImage = computed(() => !!this.selectedRace()?.resultsSheetImage?.trim());
+
+  /**
+   * Opens on the stored sheet when a race is selected on a wide screen; on a narrow screen
+   * results entry stays in front until the sheet is asked for.
+   */
+  protected readonly sheetPane = linkedSignal<string | undefined, SheetPane>({
+    source: () => this.selectedRace()?.id,
+    computation: () =>
+      untracked(() => (this.appBreakpoints.isWideLayout() && this.hasSheetImage() ? 'view' : 'closed')),
+  });
+
   /** Resolved download URL for the selected race's `resultsSheetImage`. */
-  private readonly sheetImageUrl = signal<string | null>(null);
+  protected readonly sheetImageUrl = signal<string | null>(null);
+  protected readonly sheetImageLoading = signal(false);
   private sheetImageResolveVersion = 0;
 
   constructor() {
@@ -149,8 +160,6 @@ export class ManualResultsPage {
       }, 0);
     });
 
-    // Close any open pop-out and re-resolve the sheet image 
-    // whenever the selected race changes.
     effect(() => {
       const race = this.selectedRace();
       const path = race?.resultsSheetImage?.trim() ?? '';
@@ -165,8 +174,10 @@ export class ManualResultsPage {
     const version = ++this.sheetImageResolveVersion;
     if (!path) {
       this.sheetImageUrl.set(null);
+      this.sheetImageLoading.set(false);
       return;
     }
+    this.sheetImageLoading.set(true);
     try {
       const url = await this.captureService.resolveDownloadUrl(path);
       if (version !== this.sheetImageResolveVersion) return;
@@ -175,71 +186,42 @@ export class ManualResultsPage {
       if (version !== this.sheetImageResolveVersion) return;
       this.sheetImageUrl.set(null);
       console.error('ManualResultsPage: failed to resolve resultsSheetImage', { path, err });
-    }
-  }
-
-  async displayOrCaptureImage(): Promise<void> {
-    const race = this.selectedRace();
-    if (!race) return;
-
-    // If a popup is already open (named window), refocus it instead of doing
-    // anything else 
-    if (this.imageWindowOpen()) {
-      try { this.imageWindowRef()?.focus(); } catch { /* ignore */ }
-      return;
-    }
-
-    try {
-      this.loadingImage.set(true);
-      const result = await this.captureService.captureAndStore({
-        clubId: this.clubTenant.clubId,
-        raceId: race.id,
-        isMobile: this.isMobile(),
-        storedImagePath: race.resultsSheetImage?.trim() ?? null,
-      });
-
-      if (!result) return;
-      await this.refreshSheetImageUrl(result.storagePath);
-      const url = this.sheetImageUrl();
-      if (url) this.openBrowserWindow(url);
     } finally {
-      this.loadingImage.set(false);
+      if (version === this.sheetImageResolveVersion) this.sheetImageLoading.set(false);
     }
   }
 
-  /**
-   * Opens the scoring sheet image in a pop-out window. On mobile the `popup`
-   * feature is dropped so the browser opens it as a tab (popups are
-   * disruptive on phones). When the browser blocks the window (commonly
-   * after an awaited capture/upload, which severs the original user
-   * gesture), surface a snackbar with an "Open" action so the next click is
-   * itself a fresh user gesture the popup blocker will allow through.
-   */
-  private openBrowserWindow(url: string): void {
-    const win = this.tryOpenWindow(url);
-    if (win) {
+  /** Toolbar action: view the stored sheet, or capture one when the race has none. */
+  protected readonly sheetActionLabel = computed(() => {
+    if (this.sheetPane() !== 'closed') return 'Hide scoring sheet';
+    return this.hasSheetImage() ? 'View scoring sheet' : 'Capture scoring sheet';
+  });
+
+  toggleSheet(): void {
+    if (this.sheetPane() !== 'closed') {
+      this.sheetPane.set('closed');
       return;
     }
-    const ref = this.snackbar.open(
-      'Pop-up blocked. Allow pop-ups for this site, or click Open to view the scoring sheet.',
-      'Open',
-      { duration: 8000 },
-    );
-    ref.onAction().subscribe(() => {
-      this.tryOpenWindow(url);
-    });
+    this.sheetPane.set(this.hasSheetImage() ? 'view' : 'capture');
   }
 
-  private tryOpenWindow(url: string): Window | null {
-    const features = this.isMobile() ? undefined : SHEET_POPUP_FEATURES;
-    try {
-      const popup = window.open(url, SHEET_POPUP_NAME, features);
-      if (popup) return popup;
-      // If a popup was requested but blocked, try once more as a plain tab.
-      return features ? window.open(url, SHEET_POPUP_NAME) : null;
-    } catch {
-      return null;
-    }
+  viewSheet(): void {
+    this.sheetPane.set('view');
+  }
+
+  captureSheet(): void {
+    this.sheetPane.set('capture');
+  }
+
+  onSheetOpenChange(open: boolean): void {
+    if (!open) this.sheetPane.set('closed');
+  }
+
+  /** The new image keeps the race's storage path, so drop the old URL to reload the viewer. */
+  async onSheetSaved(storagePath: string): Promise<void> {
+    this.sheetImageUrl.set(null);
+    this.sheetPane.set('view');
+    await this.refreshSheetImageUrl(storagePath);
   }
 
   async openRaceDialog(): Promise<void> {

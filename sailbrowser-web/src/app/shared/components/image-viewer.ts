@@ -21,6 +21,7 @@ import { CommonModule } from '@angular/common';
     <div 
       #container 
       class="viewer-container"
+      [class.fit-width]="fit() === 'width'"
       (mousedown)="onMouseDown($event)"
       (touchstart)="onTouchStart($event)"
       (touchend)="onTouchEnd()"
@@ -100,6 +101,16 @@ import { CommonModule } from '@angular/common';
       user-select: none;
     }
 
+    .viewer-container.fit-width {
+      align-items: flex-start;
+      justify-content: flex-start;
+
+      .viewer-image {
+        flex-shrink: 0;
+        transform-origin: 0 0;
+      }
+    }
+
     .viewer-controls {
       position: absolute;
       bottom: 1.5rem;
@@ -175,6 +186,11 @@ import { CommonModule } from '@angular/common';
 })
 export class ImageViewerComponent implements AfterViewInit, OnDestroy {
   src = input.required<string>();
+  /**
+   * `contain` centres the whole image. `width` pins it to the top left at the full width of
+   * the viewer, for reading a sheet from the top.
+   */
+  fit = input<'contain' | 'width'>('contain');
   
   container = viewChild<ElementRef<HTMLDivElement>>('container');
   imageElement = viewChild<ElementRef<HTMLImageElement>>('image');
@@ -224,9 +240,8 @@ export class ImageViewerComponent implements AfterViewInit, OnDestroy {
 
     const scaleX = containerWidth / imgWidth;
     const scaleY = containerHeight / imgHeight;
-    
-    // Fit image inside container while maintaining aspect ratio
-    const fitScale = Math.min(scaleX, scaleY, 1);
+
+    const fitScale = this.fit() === 'width' ? scaleX : Math.min(scaleX, scaleY, 1);
 
     this.scale.set(fitScale);
     this.position.set({ x: 0, y: 0 });

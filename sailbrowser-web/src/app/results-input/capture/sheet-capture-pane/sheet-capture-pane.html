@@ -1,0 +1,29 @@
+@if (image(); as img) {
+  <div class="preview">
+    <app-image-viewer [src]="img.previewUrl" fit="width" />
+  </div>
+  @if (error(); as message) {
+    <p class="error-text" role="alert">{{ message }}</p>
+  }
+  <div class="preview-actions">
+    @if (saving()) {
+      <span class="saving" aria-live="polite">Saving scoring sheet…</span>
+    } @else {
+      <button matButton type="button" (click)="retake()">
+        <mat-icon>replay</mat-icon>
+        Retake
+      </button>
+      @if (error()) {
+        <app-busy-button [busy]="saving()" (click)="save()">Retry save</app-busy-button>
+      }
+    }
+  </div>
+} @else {
+  <div class="choices">
+    <app-capture-step
+      [vm]="vm()"
+      (fileChanged)="onFile($event)"
+      (openCamera)="openCamera()"
+      (startPhoneCapture)="startPhoneCapture()" />
+  </div>
+}

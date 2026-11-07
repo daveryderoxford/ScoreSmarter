@@ -14,15 +14,9 @@ export function capturePreviewUrl(img: CaptureImage | null): string | null {
   return img.previewUrl ?? null;
 }
 
-/**
- * Source-agnostic signal that a fresh image was just acquired.
- * `autoAdvance` is true when the image was already reviewed at the source (e.g.
- * a phone capture), so the container may advance the stepper without the user
- * re-reviewing it.
- */
+/** Source-agnostic signal that a fresh image was just acquired and stored. */
 export interface AcquisitionEvent {
   at: number;
-  autoAdvance: boolean;
 }
 
 /** Minimal render contract for the capture preview. */

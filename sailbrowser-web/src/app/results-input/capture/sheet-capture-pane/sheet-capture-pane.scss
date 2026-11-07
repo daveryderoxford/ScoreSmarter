@@ -1,0 +1,38 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.preview {
+  flex: 1 1 auto;
+  min-height: 240px;
+}
+
+.preview-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+  flex-shrink: 0;
+}
+
+.saving {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.error-text {
+  margin: 8px 12px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+
+.choices {
+  padding: 16px;
+  overflow-y: auto;
+}
