@@ -5,37 +5,34 @@ import { Router, RouterLink } from '@angular/router';
 import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calendar';
 import { DeleteButton } from 'app/shared/components/delete-button';
 import { LoadingCentered } from 'app/shared/components/loading-centered';
-import { Toolbar } from 'app/shared/components/toolbar';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
-import { DetailPane } from 'app/shared/layout/detail-pane';
-import { PageLayout } from 'app/shared/layout/page-layout';
+import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { seriesForEvent } from '../model/open-event';
 import { EventSetupService } from '../services/event-setup.service';
 import { EventStore } from '../services/event-store';
 import { EventForm, type EventFormValue } from './event-form';
 
+/** Detail fragment inside `EventManagePage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-event-edit',
-  imports: [PageLayout, Toolbar, DetailPane, EventForm, DeleteButton, LoadingCentered, MatButtonModule, RouterLink],
+  imports: [DetailHeading, EventForm, DeleteButton, LoadingCentered, MatButtonModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-page-layout>
-      <app-toolbar [title]="event()?.name ?? 'Event'" showBack />
-      <app-detail-pane maxWidth="430px">
-        @let ev = event();
-        @if (ev && !calendar.isLoading()) {
-          <app-event-form [event]="ev" [linkedSeriesIds]="linkedSeriesIds()" [busy]="busy()" (save)="save($event)" />
-          <div class="actions">
-            <a matButton="outlined" [routerLink]="['/events', ev.id]">Event page</a>
-            <app-delete-button [busy]="busy()" (delete)="remove()">Delete event</app-delete-button>
-          </div>
-        } @else if (store.loading() || calendar.isLoading()) {
-          <app-loading-centered />
-        } @else {
-          <p>Event not found.</p>
-        }
-      </app-detail-pane>
-    </app-page-layout>
+    @let ev = event();
+    @if (ev && !calendar.isLoading()) {
+      <app-detail-heading>{{ ev.name }}</app-detail-heading>
+      @for (currentId of [id()]; track currentId) {
+        <app-event-form [event]="ev" [linkedSeriesIds]="linkedSeriesIds()" [busy]="busy()" (save)="save($event)" />
+      }
+      <div class="actions">
+        <a matButton="outlined" [routerLink]="['/events', ev.id]">Event page</a>
+        <app-delete-button [busy]="busy()" (delete)="remove()">Delete event</app-delete-button>
+      </div>
+    } @else if (store.loading() || calendar.isLoading()) {
+      <app-loading-centered />
+    } @else {
+      <p>Event not found.</p>
+    }
   `,
   styles: `
     .actions { display: flex; justify-content: space-between; margin-top: 24px; }

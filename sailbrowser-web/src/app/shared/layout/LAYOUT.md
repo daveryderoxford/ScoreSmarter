@@ -35,7 +35,7 @@ sizes itself to the body (panes, `height: 100%` layouts) keeps its own internal 
 
 ## Recipe 2 — list and detail
 
-For master-detail screens: boats, fleets, seasons, classes, series and the results viewer.
+For master-detail screens: boats, fleets, seasons, classes, series, open events and the results viewer.
 Series use `series-details/:id` for the item: `listDetailRoute({ editPath: 'series-details' })`.
 
 ```html
@@ -80,4 +80,4 @@ Do not put `ListDetailLayout` on home, login, settings, or a single form.
 - Entry kiosk (`/entry/kiosk`) — custom full-viewport chrome, no toolbar
 - Phone capture (`/results-sheet-phone-capture/...`) — no toolbar
 - Nested detail children (`BoatAdd`, `BoatEdit`, `FleetAdd`, `FleetEdit`, `SeasonAdd`,
-  `SeasonEdit`, `ClassAdd`, `ClassEdit`) — already inside the parent layout
+  `SeasonEdit`, `ClassAdd`, `ClassEdit`, `EventAdd`, `EventEdit`) — already inside the parent layout
