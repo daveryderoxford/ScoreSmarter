@@ -135,13 +135,13 @@ export interface EventFormValue {
     </form>
   `,
   styles: `
-    form { display: flex; flex-direction: column; gap: 12px; }
+    form { display: flex; flex-direction: column; }
     .fleet-missing {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 8px 16px;
-      margin: 4px 0 12px;
+      margin: 8px 0 24px;
       font: var(--mat-sys-body-medium);
       color: var(--mat-sys-on-surface-variant);
     }
