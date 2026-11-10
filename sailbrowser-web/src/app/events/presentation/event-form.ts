@@ -16,7 +16,7 @@ import { RaceCalendarStore } from 'app/race-calendar/services/full-race-calendar
 import { NumberField } from 'app/shared/components/number-field/number-field';
 import { SubmitButton } from 'app/shared/components/submit-button';
 import { TimeInput } from 'app/shared/components/time-input/time-input';
-import { isAfter, startOfDay } from 'date-fns';
+import { startOfDay } from 'date-fns';
 import { map, startWith } from 'rxjs';
 import type { OpenEvent } from '../model/open-event';
 
@@ -30,12 +30,6 @@ export interface EventFormValue {
   firstStartSeconds: number;
   /** Edit only: the series linked to the event. */
   seriesIds: string[];
-}
-
-function endNotBeforeStart(group: FormGroup): { endBeforeStart: true } | null {
-  const start = group.get('startDate')?.value as Date | null;
-  const end = group.get('endDate')?.value as Date | null;
-  return start && end && isAfter(startOfDay(start), startOfDay(end)) ? { endBeforeStart: true } : null;
 }
 
 /** Open meeting details. Adding also sets up one series per fleet; editing links existing series. */
@@ -67,20 +61,30 @@ function endNotBeforeStart(group: FormGroup): { endBeforeStart: true } | null {
         }
       </mat-form-field>
 
-      <mat-form-field>
-        <mat-label>First day</mat-label>
-        <input matInput [matDatepicker]="startPicker" formControlName="startDate">
-        <mat-datepicker-toggle matIconSuffix [for]="startPicker" />
-        <mat-datepicker #startPicker />
-      </mat-form-field>
+      @if (event()) {
+        <mat-form-field>
+          <mat-label>Series</mat-label>
+          <mat-select formControlName="seriesIds" multiple>
+            @for (series of seasonSeries(); track series.id) {
+              <mat-option [value]="series.id">{{ series.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Removing a series keeps its races and entries</mat-hint>
+        </mat-form-field>
+      }
 
       <mat-form-field>
-        <mat-label>Last day</mat-label>
-        <input matInput [matDatepicker]="endPicker" formControlName="endDate">
-        <mat-datepicker-toggle matIconSuffix [for]="endPicker" />
-        <mat-datepicker #endPicker />
-        @if (form.hasError('endBeforeStart')) {
-          <mat-hint class="error">Last day is before the first day</mat-hint>
+        <mat-label>Duration</mat-label>
+        <mat-date-range-input [rangePicker]="dayPicker">
+          <input matStartDate formControlName="startDate" placeholder="First day">
+          <input matEndDate formControlName="endDate" placeholder="Last day">
+        </mat-date-range-input>
+        <mat-datepicker-toggle matIconSuffix [for]="dayPicker" />
+        <mat-date-range-picker #dayPicker />
+        @if (form.controls.endDate.hasError('matEndDateInvalid')) {
+          <mat-error>Last day is before the first day</mat-error>
+        } @else {
+          <mat-error>Choose the first and last day</mat-error>
         }
       </mat-form-field>
 
@@ -113,16 +117,6 @@ function endNotBeforeStart(group: FormGroup): { endBeforeStart: true } | null {
           <mat-label>First start time</mat-label>
           <input matInput appTimeInput formControlName="firstStartTime">
         </mat-form-field>
-      } @else {
-        <mat-form-field>
-          <mat-label>Series in this event</mat-label>
-          <mat-select formControlName="seriesIds" multiple>
-            @for (series of seasonSeries(); track series.id) {
-              <mat-option [value]="series.id">{{ series.name }}</mat-option>
-            }
-          </mat-select>
-          <mat-hint>Removing a series keeps its races and entries</mat-hint>
-        </mat-form-field>
       }
 
       <mat-form-field>
@@ -141,17 +135,16 @@ function endNotBeforeStart(group: FormGroup): { endBeforeStart: true } | null {
     </form>
   `,
   styles: `
-    form { display: flex; flex-direction: column; }
+    form { display: flex; flex-direction: column; gap: 12px; }
     .fleet-missing {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 8px 16px;
-      margin: 8px 0 24px;
+      margin: 4px 0 12px;
       font: var(--mat-sys-body-medium);
       color: var(--mat-sys-on-surface-variant);
     }
-    .error { color: var(--mat-sys-error); }
   `,
 })
 export class EventForm {
@@ -179,7 +172,7 @@ export class EventForm {
     seriesIds: new FormControl<string[]>([], { nonNullable: true }),
     noticeOfRaceUrl: new FormControl('', { nonNullable: true }),
     sailingInstructionsUrl: new FormControl('', { nonNullable: true }),
-  }, { validators: g => endNotBeforeStart(g as FormGroup) });
+  });
 
   private readonly seasonId = toSignal(
     this.form.controls.seasonId.valueChanges.pipe(startWith(this.form.controls.seasonId.value)),
