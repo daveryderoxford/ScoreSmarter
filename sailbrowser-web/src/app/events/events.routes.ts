@@ -12,21 +12,27 @@ export const EVENTS_ROUTES: Routes = [
     path: 'manage',
     title: 'Manage events',
     canActivate: [clubAdminGuard],
-    loadComponent: () => import('./presentation/event-manage-list').then(m => m.EventManageList),
-  },
-  {
-    path: 'manage/add',
-    title: 'New event',
-    canActivate: [clubAdminGuard],
-    canDeactivate: [pendingChangesGuard],
-    loadComponent: () => import('./presentation/event-add').then(m => m.EventAdd),
-  },
-  {
-    path: 'manage/edit/:id',
-    title: 'Edit event',
-    canActivate: [clubAdminGuard],
-    canDeactivate: [pendingChangesGuard],
-    loadComponent: () => import('./presentation/event-edit').then(m => m.EventEdit),
+    loadComponent: () => import('./presentation/event-manage-page').then(m => m.EventManagePage),
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () => import('app/shared/layout/detail-placeholder').then(m => m.DetailPlaceholder),
+        data: { message: 'Select an event to edit, or create a new one.' },
+      },
+      {
+        path: 'add',
+        title: 'New event',
+        canDeactivate: [pendingChangesGuard],
+        loadComponent: () => import('./presentation/event-add').then(m => m.EventAdd),
+      },
+      {
+        path: 'edit/:id',
+        title: 'Edit event',
+        canDeactivate: [pendingChangesGuard],
+        loadComponent: () => import('./presentation/event-edit').then(m => m.EventEdit),
+      },
+    ],
   },
   {
     path: ':id',

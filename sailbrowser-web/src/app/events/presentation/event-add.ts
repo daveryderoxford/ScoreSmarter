@@ -1,23 +1,18 @@
 import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { Toolbar } from 'app/shared/components/toolbar';
-import { DetailPane } from 'app/shared/layout/detail-pane';
-import { PageLayout } from 'app/shared/layout/page-layout';
+import { DetailHeading } from 'app/shared/layout/detail-heading';
 import { EventSetupService } from '../services/event-setup.service';
 import { EventForm, type EventFormValue } from './event-form';
 
+/** Detail fragment inside `EventManagePage`. Do not wrap in `PageLayout`. */
 @Component({
   selector: 'app-event-add',
-  imports: [PageLayout, Toolbar, DetailPane, EventForm],
+  imports: [DetailHeading, EventForm],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-page-layout>
-      <app-toolbar title="New event" showBack />
-      <app-detail-pane maxWidth="430px">
-        <app-event-form [busy]="busy()" (save)="create($event)" />
-      </app-detail-pane>
-    </app-page-layout>
+    <app-detail-heading>New event</app-detail-heading>
+    <app-event-form [busy]="busy()" (save)="create($event)" />
   `,
 })
 export class EventAdd {
