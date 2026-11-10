@@ -22,6 +22,14 @@
       @if (cs.isLoading()) {
         <app-loading-centered />
       } @else {
+        @if (systemSchemes().length > 0) {
+          <div class="system-schemes">
+            <div class="system-schemes-title">System Fleets</div>
+            @for (name of systemSchemes(); track name) {
+              <div>{{ name }}</div>
+            }
+          </div>
+        }
         <mat-list class="dense-list">
           @for (fleet of filteredFleets(); track fleet.id) {
           <mat-list-item

@@ -55,7 +55,7 @@ export class FleetForm {
 
   fleet = input<Fleet | undefined>();
 
-  handicapSchemes = HANDICAP_SCHEMES;
+  handicapSchemes = HANDICAP_SCHEMES.filter(h => h !== 'Level Rating');
 
   busy = input<boolean>(false);
   submitted = output<Partial<Fleet>>();
