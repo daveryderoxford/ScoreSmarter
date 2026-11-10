@@ -57,6 +57,17 @@ import { FleetsCsvService } from '../../services/fleets-csv.service';
       margin-left: auto;
       margin-right: 8px;
     }
+
+    .system-schemes {
+      margin: 0 16px 12px;
+      font: var(--mat-sys-body-large);
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    .system-schemes-title {
+      font: var(--mat-sys-title-medium);
+      margin-bottom: 4px;
+    }
   `
 })
 export class FleetPage {
@@ -95,6 +106,14 @@ export class FleetPage {
       const name = getFleetName(fleet).toLowerCase();
       return name.includes(filter);
     }).sort((a, b) => getFleetName(a).localeCompare(getFleetName(b)));
+  });
+
+  systemSchemes = computed(() => {
+    const filter = this.searchTerm()?.toLowerCase() || '';
+    return (this.cs.club().supportedHandicapSchemes ?? [])
+      .filter(s => s !== 'Level Rating')
+      .map(s => `General - ${s}`)
+      .filter(name => name.toLowerCase().includes(filter));
   });
 
   getFleetName = getFleetName;

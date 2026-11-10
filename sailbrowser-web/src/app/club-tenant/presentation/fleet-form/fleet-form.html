@@ -1,10 +1,10 @@
 <form (ngSubmit)="submit()" [formGroup]="form" novalidate>
 
   <mat-form-field>
-    <mat-label>Define fleet using</mat-label>
+    <mat-label>Type</mat-label>
     <mat-select formControlName="type">
-      <mat-option value="HandicapRange">Handicap Range</mat-option>
-      <mat-option value="BoatClass">Class of boat</mat-option>
+      <mat-option value="HandicapRange">Handicap</mat-option>
+      <mat-option value="BoatClass">Level rating</mat-option>
     </mat-select>
   </mat-form-field>
 
@@ -29,6 +29,15 @@
 
   @if (form.get('type')?.value === 'HandicapRange') {
 
+      <mat-form-field style="width: 100%;">
+        <mat-label>Handicap scheme</mat-label>
+        <mat-select formControlName="scheme">
+          @for (h of handicapSchemes; track h) {
+          <mat-option [value]="h">{{h}}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
     <div style="display: flex; gap: 1rem;">
       <mat-form-field style="flex: 1;">
         <mat-label>Min Handicap</mat-label>
@@ -39,15 +48,6 @@
         <input matInput appNumberField="decimal" formControlName="max">
       </mat-form-field>
     </div>
-
-      <mat-form-field style="width: 100%;">
-        <mat-label>In handicap scheme</mat-label>
-        <mat-select formControlName="scheme">
-          @for (h of handicapSchemes; track h) {
-          <mat-option [value]="h">{{h}}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
   }
 
   <div class="actions">
