@@ -175,6 +175,7 @@
           </mat-form-field>
           }
         </form>
+        <ng-container *ngTemplateOutlet="raceSelection" />
         <div class="summary">
           <p>{{ raceCountLabel() }}</p>
         </div>
@@ -242,6 +243,7 @@
           </mat-form-field>
           }
         </form>
+        <ng-container *ngTemplateOutlet="raceSelection" />
         <div class="summary">
           <p>{{ raceCountLabel() }}</p>
         </div>
@@ -274,6 +276,26 @@
       }
     }
   </div>
+
+  <ng-template #raceSelection>
+    @if (raceGroups().length > 0) {
+      <div class="race-selection" role="group" aria-label="Races to enter">
+        <span class="race-selection-title">Races to enter</span>
+        @for (group of raceGroups(); track group[0].id) {
+          <div class="race-group">
+            @for (race of group; track race.id) {
+              <mat-checkbox
+                class="race-option"
+                [checked]="isRaceSelected(race)"
+                (change)="setRaceSelected(race, $event.checked)">
+                {{ race.seriesName }} – Race {{ race.index }}
+              </mat-checkbox>
+            }
+          </div>
+        }
+      </div>
+    }
+  </ng-template>
 
   @if (deviceId) {
     <p class="kiosk-device-id" aria-hidden="true">{{ deviceId }}</p>

@@ -9,6 +9,7 @@ import { ClubStore, ClubTenant } from 'app/club-tenant';
 import type { BoatClass } from 'app/club-tenant/model/boat-class';
 import { DutiesService } from 'app/duties';
 import { RaceCalendarStore } from 'app/race-calendar';
+import type { Race } from 'app/race-calendar/model/race';
 import { CurrentRaces } from 'app/results-input';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
 import { DialogsService } from 'app/shared/dialogs/dialogs.service';
@@ -30,6 +31,7 @@ const todayRace = {
   seriesId: 's1',
   seriesName: 'Spring',
   index: 1,
+  raceOfDay: 1,
   scheduledStart: new Date(),
 };
 
@@ -451,6 +453,79 @@ describe('KioskEntryPage', () => {
     expect(page.raceCountLabel()).toContain('Enter helm to sign on');
     expect(page.raceCountLabel()).not.toContain('No races today');
     expect(page.canEnter()).toBe(false);
+  });
+
+  describe('race selection', () => {
+    const laterStart = new Date(todayRace.scheduledStart.getTime() + 60 * 60 * 1000);
+    const races = [
+      { ...todayRace, id: 'l1', seriesName: 'Late', raceOfDay: 1, scheduledStart: laterStart },
+      { ...todayRace, id: 'r2', index: 2, raceOfDay: 2 },
+      { ...todayRace, id: 'r1', index: 1, raceOfDay: 1 },
+      { ...todayRace, id: 'w1', seriesName: 'Autumn', raceOfDay: 1 },
+    ] as unknown as Race[];
+    const tomorrowRace = { ...todayRace, id: 't1', index: 3, raceOfDay: 1 };
+
+    beforeEach(() => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [KioskEntryPage],
+        providers: [
+          ...baseProviders({
+            raceCalendar: { allRaces: () => [...races, tomorrowRace] },
+          }),
+          {
+            provide: CurrentRaces,
+            useValue: { todaysRaces: () => races, selectedRaces: () => races },
+          },
+        ],
+      });
+    });
+
+    function pageAtConfirm() {
+      const page = createPage();
+      page.startMember();
+      page.selectMemberHelm('Alice Smith');
+      page.selectMemberBoat(TestBed.inject(BoatsStore).boats()[0]);
+      return page;
+    }
+
+    it("offers only today's races, grouped by start time then race of day, all selected", () => {
+      const page = pageAtConfirm();
+      expect(page.raceGroups().map(g => g.map(r => r.id))).toEqual([['w1', 'r1'], ['r2'], ['l1']]);
+      expect(page.selectedRaces().map(r => r.id).sort()).toEqual(['l1', 'r1', 'r2', 'w1']);
+      expect(page.raceCountLabel()).toBe('Enter 4 races today.');
+    });
+
+    it('enters only the ticked races', async () => {
+      const entry = TestBed.inject(EntryService);
+      vi.mocked(entry.enterRaces).mockResolvedValue([]);
+      const page = pageAtConfirm();
+
+      page.setRaceSelected(races[1], false);
+      expect(page.isRaceSelected(races[1])).toBe(false);
+      expect(page.raceCountLabel()).toBe('Enter 3 races today.');
+      await page.submit();
+
+      const entered = vi.mocked(entry.enterRaces).mock.calls[0][0].races.map(r => r.id);
+      expect(entered.sort()).toEqual(['l1', 'r1', 'w1']);
+    });
+
+    it('cannot enter with no races ticked', () => {
+      const page = pageAtConfirm();
+      for (const race of races) page.setRaceSelected(race, false);
+      expect(page.canEnter()).toBe(false);
+      expect(page.raceCountLabel()).toBe('Select at least one race.');
+    });
+
+    it('selects all races again for the next boat', () => {
+      const page = pageAtConfirm();
+      page.setRaceSelected(races[0], false);
+      page.resetToCategory();
+      page.startMember();
+      page.selectMemberHelm('Alice Smith');
+      page.selectMemberBoat({ ...TestBed.inject(BoatsStore).boats()[0] });
+      expect(page.selectedRaces()).toHaveLength(4);
+    });
   });
 
   it('includes boat name in pick labels when present', () => {
