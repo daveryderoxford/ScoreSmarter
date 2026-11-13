@@ -5,6 +5,7 @@
       "type": "Handicap",
       "seriesName": "Training - Handicap",
       "startTime": "10:30",
+      "isAverageLap": true,
       "rows": [
         { "boatClass": "ILCA 7", "sailNumber": "214567", "helm": "Harriet Quill", "py": 1100 },
         { "boatClass": "ILCA 6", "sailNumber": "209884", "helm": "Desmond Fogg", "py": 1145 },

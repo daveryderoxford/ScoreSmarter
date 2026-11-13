@@ -59,6 +59,7 @@ test("buildTrainingDocs creates a training series and today's race per spec", ()
   assert.equal(race["type"], "Handicap");
   assert.equal(race["fleetId"], "f-gh");
   assert.equal((race["scheduledStart"] as Timestamp).toDate().toISOString(), "2026-06-10T09:30:00.000Z");
+  assert.equal(race["isAverageLap"], false);
   assert.equal(docs["races/R-training-pursuit-2026-06-10"]["type"], "Pursuit");
 
   const series = docs["series/S-training-handicap"];
@@ -79,6 +80,12 @@ test("buildTrainingDocs creates a training series and today's race per spec", ()
     manualLaps: 0,
     lapTimes: [],
   });
+});
+
+test("buildTrainingDocs scores the race on average lap when the spec asks", () => {
+  const { docs } = buildTrainingDocs({ races: [handicap({ isAverageLap: true })] }, baseline, now);
+
+  assert.equal(docs["races/R-training-handicap-2026-06-10"]["isAverageLap"], true);
 });
 
 test("buildTrainingDocs copies scoring rules and fleet from a template series", () => {
