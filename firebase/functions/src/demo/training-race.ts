@@ -20,6 +20,8 @@ export interface TrainingRaceSpec {
   seriesName?: string;
   /** Local (UK) start time, "HH:mm". Defaults to "11:00". */
   startTime?: string;
+  /** Score on average lap, so boats can sail different numbers of laps. Default false. */
+  isAverageLap?: boolean;
   /**
    * Baseline series whose scoring rules (scheme, entry grouping, discards and primary
    * scoring configuration with its fleet) the training series copies. Optional.
@@ -185,7 +187,7 @@ export function buildTrainingDocs(sheet: TrainingSheet, baseline: DemoBaseline, 
       type: spec.type,
       status: "Future",
       isDiscardable: true,
-      isAverageLap: false,
+      isAverageLap: spec.isAverageLap ?? false,
       resultsSheetImage: "",
       dirty: false,
     };
