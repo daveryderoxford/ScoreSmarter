@@ -4,13 +4,16 @@ import {
   effect,
   ElementRef,
   inject,
+  linkedSignal,
   signal,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -34,6 +37,9 @@ import { DutiesService } from 'app/duties';
 import { DutiesTeamPanel } from 'app/duties/presentation/duties-team-panel';
 import type { RaceDayDutyMember } from '@shared/race-day';
 import { RaceCalendarStore } from 'app/race-calendar';
+import type { Race } from 'app/race-calendar/model/race';
+import { sortRaces } from 'app/race-calendar/services/race-calendar-store-base';
+import { groupBy } from 'app/shared/utils/group-by';
 import { DivisionValuePicker } from 'app/club-tenant/presentation/divisions/division-value-picker';
 import { CurrentRaces } from 'app/results-input';
 import { SeriesEntryStore } from 'app/results-input/services/series-entry-store';
@@ -53,6 +59,7 @@ import {
 } from '../../services/entry-helpers';
 import { formatBoatOptionLabel, trimBoatName } from 'app/boats/model/boat-display';
 import { EntryConflict, EntryService } from '../../services/entry.service';
+import { selectWholeEventSeries } from '../../services/event-race-selection.helpers';
 import {
   formatHelmSurnameLast,
   HELM_LETTER_RANGES,
@@ -85,6 +92,13 @@ function sortBoatsInGroup(a: Boat, b: Boat): number {
   const classCmp = (a.boatClass ?? '').localeCompare(b.boatClass ?? '');
   if (classCmp !== 0) return classCmp;
   return compareSailNumbers(a.sailNumber, b.sailNumber);
+}
+
+function groupByStartAndRaceOfDay(races: readonly Race[]): Race[][] {
+  const sorted = [...races].sort(sortRaces);
+  return [
+    ...groupBy(sorted, r => `${new Date(r.scheduledStart).getTime()}|${r.raceOfDay}`).values(),
+  ];
 }
 
 const HELM_GRID_ROW_HEIGHT = 64;
@@ -125,8 +139,10 @@ export function helmGridLayout(
   templateUrl: './kiosk-entry-page.html',
   styleUrl: './kiosk-entry-page.scss',
   imports: [
+    NgTemplateOutlet,
     ReactiveFormsModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatIconModule,
     MatChipsModule,
     MatFormFieldModule,
@@ -368,9 +384,22 @@ export class KioskEntryPage {
     return this.eligibleRaces().filter(r => todayIds.has(r.id));
   });
 
+  /** Races the sailor unticked; every eligible race is entered by default, reset per boat. */
+  private readonly deselectedRaceIds = linkedSignal<Boat | null, ReadonlySet<string>>({
+    source: this.selectedBoat,
+    computation: () => new Set(),
+  });
+
+  readonly selectedRaces = computed(() =>
+    this.todaysEligibleRaces().filter(r => !this.deselectedRaceIds().has(r.id)),
+  );
+
+  readonly raceGroups = computed(() => groupByStartAndRaceOfDay(this.todaysEligibleRaces()));
+
   readonly raceCountLabel = computed(() => {
-    const count = this.todaysEligibleRaces().length;
-    if (count === 0) return 'No races today for this boat';
+    if (this.todaysEligibleRaces().length === 0) return 'No races today for this boat';
+    const count = this.selectedRaces().length;
+    if (count === 0) return 'Select at least one race.';
     const raceText = count === 1 ? 'Enter 1 race today.' : `Enter ${count} races today.`;
     if (!this.candidateBoat()) return `${raceText} Enter helm to sign on.`;
     return raceText;
@@ -405,7 +434,7 @@ export class KioskEntryPage {
     }
   });
 
-  readonly canEnter = computed(() => this.todaysEligibleRaces().length > 0 && !!this.candidateBoat());
+  readonly canEnter = computed(() => this.selectedRaces().length > 0 && !!this.candidateBoat());
 
   readonly divisionCatalog = computed(() =>
     divisionCatalogForRaces(this.todaysEligibleRaces(), this.raceCalendar.allSeries()),
@@ -502,6 +531,22 @@ export class KioskEntryPage {
         this.divisionsControl.setValue(ids, { emitEvent: false });
       });
     });
+  }
+
+  isRaceSelected(race: Race): boolean {
+    return !this.deselectedRaceIds().has(race.id);
+  }
+
+  setRaceSelected(race: Race, selected: boolean): void {
+    const previous = this.selectedRaces();
+    const next = selected
+      ? [...previous.filter(r => r.id !== race.id), race]
+      : previous.filter(r => r.id !== race.id);
+    const eligible = this.todaysEligibleRaces();
+    const chosen = new Set(
+      selectWholeEventSeries(previous, next, eligible, this.raceCalendar.allSeries()).map(r => r.id),
+    );
+    this.deselectedRaceIds.set(new Set(eligible.filter(r => !chosen.has(r.id)).map(r => r.id)));
   }
 
   formatHelm(helm: string): string {
@@ -738,7 +783,7 @@ export class KioskEntryPage {
   async submit(): Promise<void> {
     const selected = this.selectedBoat();
     const candidate = this.candidateBoat();
-    const races = this.todaysEligibleRaces();
+    const races = this.selectedRaces();
     if (!selected || !candidate || races.length === 0) return;
 
     if (this.category() === 'member' && this.needsRegisterSave(selected)) {

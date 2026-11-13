@@ -289,6 +289,34 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
+.race-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.race-selection-title {
+  font-weight: 500;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.race-group {
+  display: flex;
+  flex-direction: column;
+  padding-block: 4px;
+
+  & + & {
+    border-top: 2px solid var(--mat-sys-outline-variant);
+    padding-top: 8px;
+  }
+}
+
+.race-option {
+  font-size: calc(var(--mat-sys-title-medium-size) * 1.15);
+}
+
 .crew {
   max-width: 200px;
 }
