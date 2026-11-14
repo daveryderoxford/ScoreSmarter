@@ -1,0 +1,95 @@
+.onboarding {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2rem;
+}
+
+.lead,
+.hint,
+.note,
+.status {
+  margin: 0 0 1rem;
+}
+
+ol.hint {
+  padding-left: 1.25rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.file-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.file-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.url-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.url-row mat-form-field {
+  flex: 1 1 280px;
+}
+
+.series-list,
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.review-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.75rem;
+  border: 1px solid var(--mat-sys-outline-variant, #ccc);
+  border-radius: 8px;
+}
+
+.review-item div {
+  flex: 1;
+}
+
+.scoring-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.scoring-grid mat-form-field,
+.duty-row mat-form-field {
+  width: 100%;
+}
+
+.duty-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.status {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: var(--mat-sys-surface-container, #f4f4f4);
+}
+
+h3 {
+  margin: 1.5rem 0 0.5rem;
+}

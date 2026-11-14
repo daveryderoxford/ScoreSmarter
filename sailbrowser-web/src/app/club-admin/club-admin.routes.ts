@@ -26,6 +26,12 @@ export const CLUB_ADMIN_ROUTES: Routes = [
     loadComponent: () => import('./presentation/scoring-defaults/scoring-defaults').then(m => m.ScoringDefaultsComponent),
   },
   {
+    path: 'onboarding',
+    title: 'Onboard club',
+    canActivate: [clubAdminGuard],
+    loadChildren: () => import('../club-onboarding/club-onboarding.routes').then(m => m.CLUB_ONBOARDING_ROUTES),
+  },
+  {
     path: 'kiosk-devices',
     title: 'Kiosk tablets',
     loadComponent: () =>

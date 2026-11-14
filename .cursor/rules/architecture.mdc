@@ -16,7 +16,7 @@ Do not scan the repo to rediscover this map. Open the file you will edit.
 
 ## Web routes
 
-These paths load the folder of the same name: `home`, `entry`, `boats`, `events`, `race-calendar`, `results-input`, `results-sheet-phone-capture`, `sys-admin`, `club-admin`, `auth`, `user`. `results` loads `published-results`. `club` loads `club-tenant`. `scoring`, `shared`, `duties`, and `system-data` are libraries with no `APP_ROUTES` entry. Series scoring runs in the client (`app/scoring`, function `score`). Cloud Functions do not score races.
+These paths load the folder of the same name: `home`, `entry`, `boats`, `events`, `race-calendar`, `results-input`, `results-sheet-phone-capture`, `sys-admin`, `club-admin`, `auth`, `user`. `results` loads `published-results`. `club` loads `club-tenant`. `scoring`, `shared`, `duties`, `system-data`, and `club-onboarding` are libraries with no `APP_ROUTES` entry. Club onboarding opens at `club-admin/onboarding`. Series scoring runs in the client (`app/scoring`, function `score`). Cloud Functions do not score races. `interpretSailingInstructions` reads sailing-instruction text. `fetchSailwaveResults` fetches a public results address and the Sailwave pages it links to, on the club's site or sailwave.com. Neither function scores races, parses result tables, or writes the club.
 
 ## Keep this file current
 

@@ -27,6 +27,9 @@
       ],
       "@shared/race-day": [
         "../../shared/contracts/race-day.d.ts"
+      ],
+      "@shared/sailing-instructions": [
+        "../../shared/contracts/sailing-instructions.d.ts"
       ]
     },
     "rootDir": "src",

@@ -87,6 +87,8 @@ export class ClubAdminSwitchboard {
 
   readonly pastUnverifiedRacesCount = computed(() => racesAwaitingReview(this.raceCalendarStore.allRaces()).length);
 
+  protected readonly settingUp = computed(() => this.clubStore.club()?.onboardingStatus === 'setting-up');
+
   readonly actions: AdminAction[] = [
 
     {
@@ -108,6 +110,7 @@ export class ClubAdminSwitchboard {
         { label: 'Boats', route: '/boats' },
         { label: 'Classes', route: '/club/classes' },
         { label: 'Fleets', route: '/club/fleets' },
+        { label: 'Onboard from results', route: '/club-admin/onboarding' },
 
       ],
       importExportContexts: ['boats', 'classes', 'fleets']

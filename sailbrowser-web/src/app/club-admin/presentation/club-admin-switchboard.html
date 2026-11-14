@@ -22,6 +22,16 @@
     </div>
   }
 
+  @if (settingUp()) {
+    <div class="alert-banner info">
+      <mat-icon>sailing</mat-icon>
+      <div class="alert-content">
+        <strong>Set up this club:</strong> read the sailing instructions and Sailwave results to fill boats, classes, fleets, and scoring defaults.
+      </div>
+      <a matButton="elevated" routerLink="/club-admin/onboarding">Onboard</a>
+    </div>
+  }
+
   <div class="action-grid">
     @for (action of actions; track action.title) {
       <mat-card class="action-card" appearance="outlined">

@@ -14,7 +14,8 @@
       "@shared/scan-metrics": ["../shared/contracts/scan-metrics.d.ts"],
       "@shared/scan-ai-config": ["../shared/contracts/scan-ai-config.d.ts"],
       "@shared/duty-member": ["../shared/contracts/duty-member.d.ts"],
-      "@shared/race-day": ["../shared/contracts/race-day.d.ts"]
+      "@shared/race-day": ["../shared/contracts/race-day.d.ts"],
+      "@shared/sailing-instructions": ["../shared/contracts/sailing-instructions.d.ts"]
     }
   },
   "include": [

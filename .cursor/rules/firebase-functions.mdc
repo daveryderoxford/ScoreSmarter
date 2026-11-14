@@ -10,3 +10,5 @@ alwaysApply: false
 - Region is `europe-west1`. Callable App Check is on by default in `global-function-options.ts`. An endpoint that must opt out sets that on its own options and authenticates another way.
 - `raceResultsChanged` updates race status from `clubs/{clubId}/race-results`. `seriesCreated` and `seriesChanged` copy series metadata onto the published series document. Neither function scores a race.
 - Leave scoring in `sailbrowser-web/src/app/scoring` unless the task explicitly moves it.
+- `interpretSailingInstructions` reads sailing-instruction text into discard, DNC, and OOD defaults. It does not fetch URLs, parse results, or write the club.
+- `fetchSailwaveResults` fetches one public https results address for a club admin, then the Sailwave pages it links to on the club's site or on sailwave.com, newest first. When the club's site refuses the server, the wizard sends the admin's saved results page as `indexHtml` and only its links are fetched. It returns the HTML. It does not parse tables, call Gemini, or write the club.

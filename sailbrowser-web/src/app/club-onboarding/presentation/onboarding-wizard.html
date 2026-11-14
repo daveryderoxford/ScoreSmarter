@@ -1,0 +1,233 @@
+<app-page-layout>
+  <app-toolbar title="Onboard club" showBack />
+  <div class="onboarding">
+    <p class="lead">
+      Bring in boats, classes, fleets, and the club's discard, DNC, and duty defaults from a sailing-instructions file and Sailwave results.
+    </p>
+
+    @if (session.message()) {
+      <p class="status" role="status">{{ session.message() }}</p>
+    }
+
+    <mat-stepper>
+      <mat-step label="Sources">
+        <h3>Sailing instructions</h3>
+        <p class="hint">Upload the PDF or Word file. The scoring section is read on the server.</p>
+        <div class="actions">
+          <label class="file-button">
+            <a matButton="outlined">Choose sailing instructions</a>
+            <input type="file" accept=".pdf,.docx,.txt,application/pdf" aria-label="Sailing instructions file" (change)="onInstructions($event)" />
+          </label>
+        </div>
+        @if (session.instructionStatus()) {
+          <p class="status" role="status">{{ session.instructionStatus() }}</p>
+        }
+
+        <h3>Results</h3>
+        @if (session.resultsEntry() === 'fetch') {
+          <p class="hint">Paste the address of the club's results page.</p>
+          <div class="url-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Results page address</mat-label>
+              <input matInput name="resultsIndex" [value]="indexUrl()" [disabled]="session.fetching()" (input)="indexUrl.set($any($event.target).value)" (keyup.enter)="fetchResults()" />
+            </mat-form-field>
+            <button matButton="filled" type="button" [disabled]="session.fetching()" (click)="fetchResults()">
+              {{ session.fetching() ? 'Fetching…' : 'Fetch' }}
+            </button>
+          </div>
+        } @else {
+          <p class="hint">The club's website would not let ScoreSmarter read the results page.</p>
+          <ol class="hint">
+            <li>Open the results page in your browser.</li>
+            <li>Save it with Save Page, so the file stays HTML.</li>
+            <li>Upload the saved file here. The series it links to are fetched for you.</li>
+          </ol>
+          <p class="hint">If those series cannot be fetched either, save each series page and upload them all together.</p>
+          <div class="actions">
+            <label class="file-button">
+              <a matButton="outlined" [disabled]="session.fetching()">{{ session.fetching() ? 'Fetching…' : 'Upload saved page' }}</a>
+              <input type="file" accept=".html,.htm,text/html" multiple aria-label="Saved results or series pages" [disabled]="session.fetching()" (change)="onHtml($event)" />
+            </label>
+            <button matButton type="button" (click)="session.showResultsAddress()">Try the results address again</button>
+          </div>
+        }
+        <div>
+          <button matButton="filled" matStepperNext type="button" [disabled]="session.seriesChoices().length === 0">Review series</button>
+        </div>
+      </mat-step>
+
+      <mat-step label="Series">
+        <p class="hint">Series from the last two years, newest first. Untick junior, open-meeting, or visitor series. Boats, classes, and fleets are taken from the ticked series.</p>
+        <div class="series-list">
+          @for (choice of session.seriesChoices(); track choice.series.id; let index = $index) {
+            <div class="review-item">
+              <mat-checkbox [checked]="choice.included" (change)="session.toggleSeries(index, $event.checked)">
+                {{ choice.series.title }}
+              </mat-checkbox>
+              <div>{{ describe(choice.series) }}</div>
+            </div>
+          }
+        </div>
+        <div class="actions">
+          <button matButton matStepperPrevious type="button">Back</button>
+          <button matButton="filled" matStepperNext type="button">Review draft</button>
+        </div>
+      </mat-step>
+
+      <mat-step label="Review">
+        <h3>Classes</h3>
+        @if (session.classes().length === 0) {
+          <p class="hint">No classes in the selected series.</p>
+        }
+        <div class="review-list">
+          @for (row of session.classes(); track row.sourceName; let index = $index) {
+            <div class="review-item">
+              <mat-checkbox [checked]="row.included" [disabled]="!row.boatClass" (change)="session.toggleClass(index, $event.checked)">
+                {{ row.boatClass?.name ?? row.sourceName }}
+              </mat-checkbox>
+              <div>
+                <div>{{ row.note }}</div>
+                @if (row.py !== null) {
+                  <div>PY {{ row.py }}</div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <h3>Fleets</h3>
+        @for (note of session.draft().notes; track note) {
+          <p class="note">{{ note }}</p>
+        }
+        @if (session.fleets().length === 0 && session.draft().notes.length === 0) {
+          <p class="hint">No new fleets. General Handicap is already available.</p>
+        }
+        <div class="review-list">
+          @for (row of session.fleets(); track row.fleet.id; let index = $index) {
+            <div class="review-item">
+              <mat-checkbox [checked]="row.included" (change)="session.toggleFleet(index, $event.checked)">
+                {{ row.fleet.type === 'BoatClass' ? row.fleet.boatClassId : row.fleet.type === 'HandicapRange' ? row.fleet.name : 'General Handicap' }}
+              </mat-checkbox>
+              <div>{{ row.reason }}</div>
+            </div>
+          }
+        </div>
+
+        <h3>Boats</h3>
+        <p class="hint">A helm who sailed one race is listed on the regular helm's boat and is not added. Club-owned boats are left unset.</p>
+        <div class="review-list">
+          @for (row of session.boats(); track row.sailNumber + row.helm + row.boatClass; let index = $index) {
+            <div class="review-item">
+              <mat-checkbox [checked]="row.included" (change)="session.toggleBoat(index, $event.checked)">
+                {{ row.sailNumber }} {{ row.boatClass }}
+              </mat-checkbox>
+              <div>
+                <div>{{ row.helm }}@if (row.crew) {, {{ row.crew }}}</div>
+                @if (row.note) {
+                  <div>{{ row.note }}</div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <h3>Scoring defaults</h3>
+        @if (session.reading()?.longSeriesNote) {
+          <p class="note">{{ session.reading()?.longSeriesNote }}</p>
+        }
+        <div class="scoring-grid">
+          <section>
+            <h3>Short series</h3>
+            <mat-form-field appearance="outline">
+              <mat-label>Discards after races</mat-label>
+              <input matInput [value]="session.scoring().shortDiscards" (change)="session.updateScoring({ shortDiscards: $any($event.target).value })" />
+            </mat-form-field>
+            <p class="hint">{{ checkLabel(session.scoringCheck()?.shortDiscards) }}</p>
+            @if (session.reading()?.shortSeries?.discardQuote) {
+              <p class="note">“{{ session.reading()?.shortSeries?.discardQuote }}”</p>
+            }
+            @if (session.reading()?.shortSeries?.unmapped) {
+              <p class="note">{{ session.reading()?.shortSeries?.unmapped }}</p>
+            }
+            <ng-container *ngTemplateOutlet="dncFields; context: { which: 'short' }" />
+            <p class="hint">{{ checkLabel(session.scoringCheck()?.shortDnc) }}</p>
+          </section>
+          <section>
+            <h3>Long series</h3>
+            <mat-form-field appearance="outline">
+              <mat-label>Discards after races</mat-label>
+              <input matInput [value]="session.scoring().longDiscards" (change)="session.updateScoring({ longDiscards: $any($event.target).value })" />
+            </mat-form-field>
+            <p class="hint">{{ checkLabel(session.scoringCheck()?.longDiscards) }}</p>
+            @if (session.reading()?.longSeries?.discardQuote) {
+              <p class="note">“{{ session.reading()?.longSeries?.discardQuote }}”</p>
+            }
+            @if (session.reading()?.longSeries?.unmapped) {
+              <p class="note">{{ session.reading()?.longSeries?.unmapped }}</p>
+            }
+            <ng-container *ngTemplateOutlet="dncFields; context: { which: 'long' }" />
+            <p class="hint">{{ checkLabel(session.scoringCheck()?.longDnc) }}</p>
+          </section>
+        </div>
+
+        <h3>OOD duties</h3>
+        <div class="duty-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Duty score</mat-label>
+            <mat-select [value]="session.scoring().oodCode" (selectionChange)="session.updateScoring({ oodCode: $event.value })">
+              <mat-option value="AvgAll">Average of races sailed</mat-option>
+              <mat-option value="AvgExcludingDiscards">Average excluding discards</mat-option>
+              <mat-option value="FixedScore">Fixed score</mat-option>
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Duties that count</mat-label>
+            <input matInput type="number" min="0" [value]="session.scoring().maxDuties" (change)="session.updateScoring({ maxDuties: +$any($event.target).value })" />
+          </mat-form-field>
+        </div>
+        <p class="hint">{{ checkLabel(session.scoringCheck()?.oodCheck) }}</p>
+        @if (session.reading()?.ood?.quote) {
+          <p class="note">“{{ session.reading()?.ood?.quote }}”</p>
+        }
+        @if (session.reading()?.ood?.unmapped) {
+          <p class="note">{{ session.reading()?.ood?.unmapped }}</p>
+        }
+
+        <div class="actions">
+          <button matButton matStepperPrevious type="button">Back</button>
+          <button matButton="filled" type="button" [disabled]="session.applying()" (click)="session.apply()">
+            Save to this club
+          </button>
+        </div>
+      </mat-step>
+    </mat-stepper>
+  </div>
+</app-page-layout>
+
+<ng-template #dncFields let-which="which">
+  <mat-form-field appearance="outline">
+    <mat-label>DNC score</mat-label>
+    <mat-select
+      [value]="which === 'short' ? session.scoring().shortDnc.basis : session.scoring().longDnc.basis"
+      (selectionChange)="session.updateDnc(which, { basis: $event.value })">
+      <mat-option value="SeriesEntries">Series entries + 1</mat-option>
+      <mat-option value="MaxRaceCompetitors">Largest race</mat-option>
+    </mat-select>
+  </mat-form-field>
+  @if ((which === 'short' ? session.scoring().shortDnc.basis : session.scoring().longDnc.basis) === 'MaxRaceCompetitors') {
+    <mat-form-field appearance="outline">
+      <mat-label>Plus</mat-label>
+      <mat-select
+        [value]="which === 'short' ? session.scoring().shortDnc.offset : session.scoring().longDnc.offset"
+        (selectionChange)="session.updateDnc(which, { offset: $event.value })">
+        <mat-option [value]="1">1</mat-option>
+        <mat-option [value]="2">2</mat-option>
+      </mat-select>
+    </mat-form-field>
+  }
+  <mat-checkbox
+    [checked]="which === 'short' ? session.scoring().shortDnc.excludeNeverRaced : session.scoring().longDnc.excludeNeverRaced"
+    (change)="session.updateDnc(which, { excludeNeverRaced: $event.checked })">
+    Exclude boats that never raced
+  </mat-checkbox>
+</ng-template>

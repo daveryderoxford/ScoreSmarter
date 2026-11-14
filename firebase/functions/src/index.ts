@@ -18,6 +18,8 @@ export {
 } from "./scoring-sheet-scanner/scoring-sheet-scanner.js";
 export { uploadClubLogo } from "./club/upload-club-logo.js";
 export { approveClubRegistration } from "./onboarding/approve-club-registration.js";
+export { interpretSailingInstructions } from "./onboarding/interpret-sailing-instructions.js";
+export { fetchSailwaveResults } from "./onboarding/fetch-sailwave-results.js";
 export { clubRegistrationCreated } from "./onboarding/club-registration-created.js";
 export { completeClubWelcome, getClubWelcome, reissueClubWelcome } from "./onboarding/club-welcome.js";
 export { assignRole } from "./sys-admin/roles.js";
