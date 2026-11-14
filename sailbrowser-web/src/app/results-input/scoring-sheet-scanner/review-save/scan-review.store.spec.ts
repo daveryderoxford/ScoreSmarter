@@ -145,7 +145,8 @@ class FakeRaceSelectionStore {
   readonly selectedRaceIds = signal([RACE_ID]).asReadonly();
   readonly selectedRaceId = signal(RACE_ID).asReadonly();
   readonly selectedRace = computed(() => race);
-  readonly isLevelRatingSelection = signal(false).asReadonly();
+  readonly levelRating = signal(false);
+  readonly isLevelRatingSelection = this.levelRating.asReadonly();
   select = vi.fn();
   selectMany = vi.fn();
 }
@@ -639,6 +640,31 @@ describe('ScanReviewStore', () => {
         expect.objectContaining({ id: COMPETITOR_ID }),
         expect.anything(),
         expect.anything(),
+      );
+    });
+
+    it('saves a level rating result code that has no position', async () => {
+      (TestBed.inject(ScanSelectedRace) as unknown as FakeRaceSelectionStore).levelRating.set(true);
+      seriesEntries.set([seriesEntry('e-5555', 'Casey', '5555')]);
+      scanRun.setScanResult(scanOf(
+        { ...scanResponse.scannedResults[0], position: { value: 1, confidence: 'HIGH' } },
+        { ...scannedRow(3, '5555'), status: 'OCS' },
+        { ...scannedRow(4, '9999'), status: 'OK' },
+      ));
+
+      await store.save();
+
+      expect(enterRaces).toHaveBeenCalledTimes(1);
+      expect(recordResult).toHaveBeenCalledTimes(2);
+      expect(recordResult).toHaveBeenCalledWith(
+        expect.objectContaining({ id: COMPETITOR_ID }),
+        race,
+        expect.objectContaining({ position: 1, resultCode: 'OK' }),
+      );
+      expect(recordResult).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'new-1' }),
+        race,
+        expect.objectContaining({ position: null, resultCode: 'OCS', scoringSheetRow: 3 }),
       );
     });
 

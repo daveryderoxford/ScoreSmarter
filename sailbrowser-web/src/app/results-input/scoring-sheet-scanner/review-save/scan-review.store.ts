@@ -502,11 +502,14 @@ export class ScanReviewStore {
       const racesById = new Map(this.raceCalendar.allRaces().map((r) => [r.id, r] as const));
       const raceForRow = (row: ScannedResultRow): Race =>
         racesById.get(this.raceIdForRow(row) ?? sessionRaceId) ?? sessionRace;
-      const hasResult = (row: ScannedResultRow): boolean => {
-        if (!isLevelRating) return true;
+      const scannedPosition = (row: ScannedResultRow): number | null => {
         const position = row.position?.value;
-        return position != null && Number.isFinite(position);
+        return position != null && Number.isFinite(position) ? position : null;
       };
+      const hasResult = (row: ScannedResultRow): boolean =>
+        !isLevelRating ||
+        scannedPosition(row) != null ||
+        this.rowMatching.normalizeResultCode(row.status) !== 'OK';
       await withTimeout(
         (async () => {
           const createdByRow = new Map<number, RaceCompetitor>();
@@ -524,11 +527,10 @@ export class ScanReviewStore {
             const race = raceForRow(vm.row);
 
             if (isLevelRating) {
-              const position = vm.row.position!.value;
               await this.manualResults.recordResult(competitor, race, {
                 finishTime: null,
                 laps: 1,
-                position,
+                position: scannedPosition(vm.row),
                 resultCode: this.rowMatching.normalizeResultCode(vm.row.status),
                 scoringSheetRow: vm.row.rowIndex,
               });
